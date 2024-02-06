@@ -1,2 +1,3 @@
-# bug-free-umbrella
-Intune Scripts
+A collection of Intune related powershell scripts.
+
+Proactive remediations
