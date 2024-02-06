@@ -24,11 +24,6 @@ RemoteUpdateManager exiting with Return Code (0)
 
 ---------------------------------------------------------------
 
-Adrian Scott
-3rd April 2023
-
-2023-04-03  Initial script to update any Adobe Creative Cloud apps where updates are required
-
 #>
 
 #region functions
