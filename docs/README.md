@@ -65,19 +65,22 @@ Multiple versions of Windows Update management scripts for controlling automatic
 Detection and remediation script pairs for automated application updates via Windows Package Manager (winget):
 - Adobe Reader (32-bit & 64-bit)
 - Azure CLI
+- Firefox
 - Google Chrome
+- Lenovo Dock Manager (multiple versions)
+- Lenovo System Update
+- Microsoft Remote Desktop
 - Microsoft Visual Studio Code
 - Microsoft Visual Studio Professional (2019 & 2022)
+- Microsoft Edge WebView2
 - NotePad++
 - OBS Studio
 - Oh My Posh
 - SQL Server Management Studio (SSMS)
 - TeamViewer (Full & Host)
-- Visual C++ Redistributables (2008, 2013, 2015-2019)
+- Visual C++ Redistributables (2008, 2010, 2012, 2013, 2015-2019)
 - WinSCP
 - Zoom
-- Edge WebView2
-- Lenovo System Update
 
 Each application folder contains:
 - `detect.ps1` - Checks if an update is needed
