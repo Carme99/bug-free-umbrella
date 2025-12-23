@@ -49,7 +49,7 @@ These permissions will be requested during the interactive login process.
 Run the script interactively:
 
 ```powershell
-.\Sync-UserGroupToPrimaryDeviceGroup.ps1
+.\scripts\utilities\Sync-UserGroupToPrimaryDeviceGroup.ps1
 ```
 
 The script will prompt you for:
@@ -63,7 +63,7 @@ The script will prompt you for:
 You can also provide group names as parameters:
 
 ```powershell
-.\Sync-UserGroupToPrimaryDeviceGroup.ps1 -SourceGroupName "Early Updates Users" -TargetGroupName "Early Updates Devices"
+.\scripts\utilities\Sync-UserGroupToPrimaryDeviceGroup.ps1 -SourceGroupName "Early Updates Users" -TargetGroupName "Early Updates Devices"
 ```
 
 ## Features
