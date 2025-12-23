@@ -47,29 +47,419 @@ Most scripts use built-in modules. Additional requirements are automatically che
 ### Monitoring & Health
 
 #### 1. Monitor-ServerHealth
+
+**File**: `Monitor-ServerHealth.ps1`
+
+Comprehensive real-time health monitoring for Windows Server.
+
+**Features**:
+- CPU utilization and trending
+- Memory usage and available RAM
+- Disk space and I/O performance
+- Critical service status monitoring
+- Event log error analysis (last 24 hours)
+- Network adapter status
+- System uptime tracking
+- Process resource consumption analysis
+
+**Usage**:
+```powershell
+# Standard health check
+.\Monitor-ServerHealth.ps1
+
+# With high alert sensitivity and HTML report
+.\Monitor-ServerHealth.ps1 -AlertThreshold High -ExportReport
+
+# Monitor specific services
+.\Monitor-ServerHealth.ps1 -CheckServices "W3SVC,MSSQLSERVER"
+```
+
+**Parameters**:
+- `-ExportReport` - Exports detailed report to HTML
+- `-AlertThreshold` - Set threshold: High, Medium, Low (default: Medium)
+- `-CheckServices` - Additional services to monitor
+- `-EmailReport` - Send report via email (requires SMTP configuration)
+
+---
+
 #### 2. Get-EventLogReport
+
+**File**: `Get-EventLogReport.ps1`
+
+Analyzes Windows event logs for critical errors and security events.
+
+**Features**:
+- System, Application, and Security log analysis
+- Event frequency and pattern detection
+- Top error sources identification
+- Customizable time range and severity filtering
+- Export to HTML or CSV
+
+**Usage**:
+```powershell
+# Analyze all logs for errors (last 24 hours)
+.\Get-EventLogReport.ps1
+
+# System log warnings for last 7 days
+.\Get-EventLogReport.ps1 -LogName System -Days 7 -Severity Warning -ExportHTML
+
+# Security log analysis
+.\Get-EventLogReport.ps1 -LogName Security -Hours 12 -ExportCSV
+```
+
+**Parameters**:
+- `-LogName` - Log to analyze: System, Application, Security, All (default: All)
+- `-Hours` - Hours to look back (default: 24)
+- `-Days` - Days to look back (overrides Hours)
+- `-Severity` - Filter: Critical, Error, Warning, All (default: Error)
+- `-MaxEvents` - Maximum events per log (default: 1000)
+- `-ExportHTML` / `-ExportCSV` - Export options
+- `-GroupBySource` - Group events by source for pattern analysis
+
+---
+
 #### 3. Get-PerformanceReport
+
+**File**: `Get-PerformanceReport.ps1`
+
+Generates comprehensive performance metrics and bottleneck analysis.
+
+**Features**:
+- CPU usage trends and peak time identification
+- Memory consumption patterns
+- Disk I/O performance (IOPS, latency, queue length)
+- Network bandwidth utilization
+- Top resource-consuming processes
+- Performance counter analysis
+- Bottleneck identification
+- HTML export with graphs
+
+**Usage**:
+```powershell
+# Standard 5-minute performance capture
+.\Get-PerformanceReport.ps1
+
+# Extended 10-minute capture with HTML report
+.\Get-PerformanceReport.ps1 -DurationMinutes 10 -SampleInterval 2 -ExportHTML
+
+# Detailed disk and network analysis
+.\Get-PerformanceReport.ps1 -IncludeDiskIO -IncludeNetworkStats -ExportHTML
+```
+
+**Parameters**:
+- `-DurationMinutes` - Collection duration (default: 5)
+- `-SampleInterval` - Interval between samples in seconds (default: 5)
+- `-IncludeDiskIO` - Include detailed disk I/O analysis
+- `-IncludeNetworkStats` - Include network statistics
+- `-ExportHTML` / `-ExportCSV` - Export options
+
+---
 
 ### Network & Connectivity
 
 #### 4. Test-ServerConnectivity
+
+**File**: `Test-ServerConnectivity.ps1`
+
+Comprehensive network connectivity testing including ping, port checks, and DNS resolution.
+
+**Features**:
+- ICMP ping tests with latency measurement
+- TCP port connectivity tests
+- DNS resolution verification
+- Trace route analysis
+- Network path MTU discovery
+- Supports multiple targets and ports
+- Export to HTML or CSV
+
+**Usage**:
+```powershell
+# Basic connectivity test
+.\Test-ServerConnectivity.ps1 -ComputerName "server01.domain.com"
+
+# Test specific ports
+.\Test-ServerConnectivity.ps1 -ComputerName "webserver" -Port 80,443
+
+# Comprehensive test with trace route
+.\Test-ServerConnectivity.ps1 -ComputerName "dc01","dc02" -Port 389,636 -IncludeTraceRoute -ExportHTML
+```
+
+**Parameters**:
+- `-ComputerName` - Target computer(s) (hostname, FQDN, or IP)
+- `-Port` - TCP port(s) to test
+- `-PingCount` - Number of ping attempts (default: 4)
+- `-Timeout` - Timeout in milliseconds (default: 3000)
+- `-IncludeTraceRoute` - Perform trace route
+- `-ExportHTML` / `-ExportCSV` - Export options
+
+**Common Ports**: 80 (HTTP), 443 (HTTPS), 3389 (RDP), 445 (SMB), 1433 (SQL)
+
+---
+
 #### 5. Get-NetworkConfiguration
+
+**File**: `Get-NetworkConfiguration.ps1`
+
+Documents complete network configuration for Windows Server.
+
+**Features**:
+- Network adapter details and status
+- IP configuration (IPv4, IPv6, DNS, DHCP)
+- Routing table
+- DNS resolver configuration
+- Network adapter advanced properties
+- Network bindings and protocols
+- Firewall profile status
+- Network shares
+
+**Usage**:
+```powershell
+# Basic network configuration
+.\Get-NetworkConfiguration.ps1
+
+# Comprehensive documentation
+.\Get-NetworkConfiguration.ps1 -IncludeRouting -IncludeShares -IncludeFirewall -ExportHTML
+```
+
+**Parameters**:
+- `-IncludeRouting` - Include routing table
+- `-IncludeShares` - Include network shares
+- `-IncludeFirewall` - Include firewall profile status
+- `-ExportHTML` / `-ExportCSV` - Export options
+
+**Use Cases**: Documentation, troubleshooting, compliance audits
+
+---
+
 #### 6. Get-FirewallRulesReport
+
+**File**: `Get-FirewallRulesReport.ps1`
+
+Generates detailed reports on Windows Firewall rules.
+
+**Features**:
+- Lists all firewall rules with details
+- Filter by profile, direction, or action
+- Identify enabled/disabled rules
+- Port and application mapping
+- Export to HTML or CSV
+
+**Usage**:
+```powershell
+# All firewall rules
+.\Get-FirewallRulesReport.ps1 -ExportHTML
+
+# Only enabled inbound rules
+.\Get-FirewallRulesReport.ps1 -Direction Inbound -Enabled $true -ExportHTML
+```
+
+---
 
 ### Security & Compliance
 
 #### 7. Test-CertificateExpiration
 
+**File**: `Test-CertificateExpiration.ps1`
+
+Checks SSL/TLS certificates for expiration across local stores and remote servers.
+
+**Features**:
+- Local certificate store scanning
+- Remote server certificate checking
+- Expiration warnings with configurable thresholds
+- Subject Alternative Name (SAN) analysis
+- Export to HTML or CSV
+
+**Usage**:
+```powershell
+# Check local certificates
+.\Test-CertificateExpiration.ps1 -CheckLocal -ExportHTML
+
+# Check remote server certificates
+.\Test-CertificateExpiration.ps1 -ComputerName "webserver.domain.com" -Port 443
+
+# Custom warning threshold (30 days)
+.\Test-CertificateExpiration.ps1 -CheckLocal -WarningDays 30
+```
+
+**Parameters**:
+- `-CheckLocal` - Scan local certificate stores
+- `-ComputerName` - Remote server(s) to check
+- `-Port` - Port for SSL/TLS connection (default: 443)
+- `-WarningDays` - Days before expiration to warn (default: 60)
+- `-ExportHTML` / `-ExportCSV` - Export options
+
+---
+
 ### Storage Management
 
-#### 8. Get-DiskReport
+#### 8. Get-DiskReport (Original)
+
+**File**: `Get-DiskReport.ps1`
+
+Analyzes disk usage and provides cleanup suggestions with potential space savings.
+
+---
+
 #### 9. Optimize-ServerStorage
+
+**File**: `Optimize-ServerStorage.ps1`
+
+Automated disk cleanup and optimization for Windows Server.
+
+**Features**:
+- Windows Update cleanup (old updates, download cache)
+- Temporary file removal (Windows Temp, User Temp, IIS logs)
+- Log file rotation and cleanup
+- Recycle Bin cleanup
+- Windows Error Reporting archives
+- Thumbnail cache cleanup
+- Shadow copy management
+- IIS log cleanup
+- Optional DISM component store cleanup
+- Reports space saved
+
+**Usage**:
+```powershell
+# Preview cleanup (WhatIf mode)
+.\Optimize-ServerStorage.ps1 -WhatIf
+
+# Full cleanup on C: drive
+.\Optimize-ServerStorage.ps1 -DriveLetter C -IncludeWindowsUpdate -Force
+
+# Clean IIS logs older than 14 days
+.\Optimize-ServerStorage.ps1 -IncludeIISLogs -IISLogRetentionDays 14
+```
+
+**Parameters**:
+- `-DriveLetter` - Target drive (default: all drives)
+- `-IncludeWindowsUpdate` - Clean Windows Update cache
+- `-IncludeIISLogs` - Clean old IIS logs
+- `-IISLogRetentionDays` - IIS log retention (default: 30)
+- `-IncludeDISM` - Run DISM component cleanup
+- `-WhatIf` - Preview without deleting
+- `-Force` - Skip confirmation prompts
+
+**Typical Space Savings**: 5-20 GB depending on system age and usage
+
+---
+
 #### 10. Get-LargeFilesReport
+
+**File**: `Get-LargeFilesReport.ps1`
+
+Identifies and reports large files consuming disk space.
+
+**Features**:
+- Top largest files by size
+- Files grouped by type/extension
+- Optional duplicate file detection
+- Age analysis of large files
+- Customizable size threshold
+- Interactive cleanup suggestions
+- Export to HTML or CSV
+
+**Usage**:
+```powershell
+# Scan all drives for files > 100 MB
+.\Get-LargeFilesReport.ps1
+
+# Find files > 500 MB with duplicate detection
+.\Get-LargeFilesReport.ps1 -MinimumSizeMB 500 -IncludeDuplicates -ExportHTML
+
+# Scan specific path, exclude system folders
+.\Get-LargeFilesReport.ps1 -Path "D:\Data" -ExcludePath "D:\Data\Backups"
+```
+
+**Parameters**:
+- `-Path` - Path to scan (default: all fixed drives)
+- `-MinimumSizeMB` - Minimum file size (default: 100 MB)
+- `-TopCount` - Number of largest files to report (default: 50)
+- `-IncludeDuplicates` - Scan for duplicates (by size and hash)
+- `-ExcludePath` - Paths to exclude
+- `-ExportHTML` / `-ExportCSV` - Export options
+
+---
 
 ### Active Directory
 
 #### 11. Get-ADHealthCheck
+
+**File**: `Get-ADHealthCheck.ps1`
+
+Comprehensive Active Directory health check for domain controllers.
+
+**Features**:
+- Domain controller availability and connectivity
+- AD replication status and error detection
+- FSMO role holder identification
+- DNS service status
+- SYSVOL and NETLOGON share accessibility
+- AD database and log file size monitoring
+- Event log analysis (AD-related errors)
+- Service status (AD DS, DNS, KDC, Netlogon)
+- Time synchronization status
+- Export to HTML or CSV
+
+**Usage**:
+```powershell
+# Basic health check on all DCs
+.\Get-ADHealthCheck.ps1
+
+# Comprehensive check with replication and event logs
+.\Get-ADHealthCheck.ps1 -IncludeReplication -IncludeEventLogs -ExportHTML
+
+# Check specific domain controller
+.\Get-ADHealthCheck.ps1 -DomainController "DC01.domain.com"
+```
+
+**Parameters**:
+- `-DomainController` - Specific DC to check (default: all DCs)
+- `-IncludeReplication` - Include detailed replication status
+- `-IncludeEventLogs` - Analyze AD-related event logs
+- `-ExportHTML` / `-ExportCSV` - Export options
+
+**Requirements**:
+- Active Directory PowerShell module
+- Domain Admin or equivalent permissions
+- Must run from domain-joined computer
+
+---
+
 #### 12. Find-InactiveADComputers
+
+**File**: `Find-InactiveADComputers.ps1`
+
+Identifies inactive computer accounts in Active Directory.
+
+**Features**:
+- Finds computers that haven't logged in for specified days
+- Filters by OU, operating system, or other criteria
+- Option to disable or delete stale accounts
+- Export list to CSV
+- Supports WhatIf mode for safe testing
+
+**Usage**:
+```powershell
+# Find computers inactive for 90+ days
+.\Find-InactiveADComputers.ps1 -DaysInactive 90 -ExportHTML
+
+# Disable inactive computers (with confirmation)
+.\Find-InactiveADComputers.ps1 -DaysInactive 120 -Action Disable
+
+# Preview deletion (WhatIf)
+.\Find-InactiveADComputers.ps1 -DaysInactive 180 -Action Delete -WhatIf
+```
+
+**Parameters**:
+- `-DaysInactive` - Inactivity threshold (default: 90)
+- `-Action` - Report, Disable, or Delete (default: Report)
+- `-SearchBase` - Specific OU to search
+- `-ExcludeOU` - OUs to exclude from search
+- `-WhatIf` - Preview changes without executing
+- `-ExportHTML` / `-ExportCSV` - Export options
+
+---
 
 ### System Maintenance
 
