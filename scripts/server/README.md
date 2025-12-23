@@ -44,7 +44,36 @@ Most scripts use built-in modules. Additional requirements are automatically che
 
 ## Scripts
 
-### 1. Reset Windows Update
+### Monitoring & Health
+
+#### 1. Monitor-ServerHealth
+#### 2. Get-EventLogReport
+#### 3. Get-PerformanceReport
+
+### Network & Connectivity
+
+#### 4. Test-ServerConnectivity
+#### 5. Get-NetworkConfiguration
+#### 6. Get-FirewallRulesReport
+
+### Security & Compliance
+
+#### 7. Test-CertificateExpiration
+
+### Storage Management
+
+#### 8. Get-DiskReport
+#### 9. Optimize-ServerStorage
+#### 10. Get-LargeFilesReport
+
+### Active Directory
+
+#### 11. Get-ADHealthCheck
+#### 12. Find-InactiveADComputers
+
+### System Maintenance
+
+#### 13. Reset Windows Update
 
 **File**: `Reset-WindowsUpdate.ps1`
 
@@ -83,7 +112,7 @@ Resolves Windows Update issues by resetting all update components.
 
 ---
 
-### 2. Check System Integrity
+### 14. Check System Integrity
 
 **File**: `Check-SystemIntegrity.ps1`
 
@@ -136,11 +165,31 @@ Comprehensive system health verification using SFC, DISM, and event log analysis
 
 ---
 
-### 3. Get Disk Report
+### 15. Set English UK Regional Settings
+
+**File**: `Set-EnglishUKRegion.ps1`
+
+Configures Windows Server to use English (UK) regional settings system-wide.
+
+---
+
+### 16. Remove US Language Pack
+
+**File**: `Remove-USLanguagePack.ps1`
+
+Removes US English (en-US) language packs and ensures UK English is properly configured.
+
+---
+
+## Legacy Scripts
+
+The following scripts provide disk analysis functionality and are complemented by the newer Optimize-ServerStorage.ps1 and Get-LargeFilesReport.ps1 scripts.
+
+### Get Disk Report (Original)
 
 **File**: `Get-DiskReport.ps1`
 
-Analyzes disk usage and provides intelligent cleanup suggestions with potential space savings.
+Analyzes disk usage and provides cleanup suggestions with potential space savings.
 
 #### Features
 - Detailed disk space analysis per volume
@@ -240,13 +289,6 @@ IIS Log Files         C:\inetpub\logs\LogFiles               12.80 GB   Archive 
 Windows Temp Files    C:\Windows\Temp                         8.20 GB   Delete old files
 ```
 
----
-
-### 4. Set English UK Regional Settings
-
-**File**: `Set-EnglishUKRegion.ps1`
-
-Configures Windows Server to use English (UK) regional settings system-wide.
 
 #### Features
 - Sets system locale to en-GB
@@ -313,13 +355,6 @@ Configures Windows Server to use English (UK) regional settings system-wide.
 - Existing users are only updated if `-ApplyToExistingUsers` is specified
 - The script will prompt for restart unless automated
 
----
-
-### 5. Remove US Language Pack
-
-**File**: `Remove-USLanguagePack.ps1`
-
-Removes US English (en-US) language packs and ensures UK English is properly configured.
 
 #### Features
 - Verifies en-GB is installed before removal
@@ -605,14 +640,32 @@ These scripts are provided as-is for system administration purposes. Use at your
 
 | Task | Script | Basic Command |
 |------|--------|---------------|
+| **Monitoring** |
+| Server Health Check | Monitor-ServerHealth.ps1 | `.\Monitor-ServerHealth.ps1 -ExportReport` |
+| Event Log Analysis | Get-EventLogReport.ps1 | `.\Get-EventLogReport.ps1 -ExportHTML` |
+| Performance Analysis | Get-PerformanceReport.ps1 | `.\Get-PerformanceReport.ps1 -ExportHTML` |
+| **Network** |
+| Test Connectivity | Test-ServerConnectivity.ps1 | `.\Test-ServerConnectivity.ps1 -ComputerName "server01"` |
+| Network Config | Get-NetworkConfiguration.ps1 | `.\Get-NetworkConfiguration.ps1 -ExportHTML` |
+| Firewall Rules | Get-FirewallRulesReport.ps1 | `.\Get-FirewallRulesReport.ps1 -ExportHTML` |
+| **Security** |
+| Certificate Expiry | Test-CertificateExpiration.ps1 | `.\Test-CertificateExpiration.ps1 -CheckLocal -ExportHTML` |
+| **Storage** |
+| Disk Report | Get-DiskReport.ps1 | `.\Get-DiskReport.ps1 -ExportReport` |
+| Storage Cleanup | Optimize-ServerStorage.ps1 | `.\Optimize-ServerStorage.ps1 -Force` |
+| Large Files | Get-LargeFilesReport.ps1 | `.\Get-LargeFilesReport.ps1 -ExportHTML` |
+| **Active Directory** |
+| AD Health Check | Get-ADHealthCheck.ps1 | `.\Get-ADHealthCheck.ps1 -ExportHTML` |
+| Inactive Computers | Find-InactiveADComputers.ps1 | `.\Find-InactiveADComputers.ps1 -ExportHTML` |
+| **Maintenance** |
 | Fix Windows Update | Reset-WindowsUpdate.ps1 | `.\Reset-WindowsUpdate.ps1` |
-| Check System Health | Check-SystemIntegrity.ps1 | `.\Check-SystemIntegrity.ps1 -GenerateReport` |
-| Analyze Disk Space | Get-DiskReport.ps1 | `.\Get-DiskReport.ps1 -ExportReport` |
+| System Integrity | Check-SystemIntegrity.ps1 | `.\Check-SystemIntegrity.ps1 -GenerateReport` |
 | Configure UK Settings | Set-EnglishUKRegion.ps1 | `.\Set-EnglishUKRegion.ps1 -ApplyToExistingUsers` |
 | Remove US Language | Remove-USLanguagePack.ps1 | `.\Remove-USLanguagePack.ps1 -BackupFirst` |
 
 ---
 
-**Last Updated**: 2024-01-15
+**Last Updated**: 2024-12-23
 **Compatible**: Windows Server 2016, 2019, 2022
 **PowerShell**: 5.1+
+**Total Scripts**: 16
