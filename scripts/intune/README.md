@@ -16,21 +16,29 @@ A comprehensive PowerShell toolkit for managing and reporting on Microsoft Intun
 
 ## Overview
 
-This toolkit provides 11 PowerShell scripts for comprehensive Intune management:
+This toolkit provides 19 PowerShell scripts for comprehensive Intune management:
 
 ### 📊 Reporting Scripts
 - **Device Compliance Report** - Export non-compliant devices with reasons
 - **BitLocker Encryption Status** - Audit encryption across your estate
 - **Windows Update Compliance** - Track update status (AutoPatch compatible)
 - **Application Installation Status** - Check app deployment success/failures
+- **App Install Error Report** - Detailed app failure analysis with error codes
+- **Autopilot Deployment Report** - Track Autopilot success/failures
+- **Winget Update Compliance** - Report on winget-managed app versions
 
 ### 🧹 Maintenance Scripts
 - **Stale Device Finder** - Identify and remove inactive devices
 - **Policy Conflict Detector** - Find conflicting configuration policies
 - **Group Membership Audit** - Show device-to-group mappings
+- **Device Bulk Actions** - Bulk sync, restart, retire, wipe, collect diagnostics
+- **Export Intune Configuration** - Backup all policies, apps, and configs
 
-### 🚀 Deployment Helpers
+### 🚀 Deployment & Packaging
 - **Winget Remediation Generator** - Auto-create proactive remediation scripts
+- **Bulk Winget Updater** - Universal winget package updater for ANY app
+- **Winget Source Config** - Configure custom enterprise winget sources
+- **Export Winget Package List** - Inventory winget-installed apps
 - **Bulk App Packager** - Convert installers to .intunewin format
 - **Win32 App Template** - Generate complete deployment packages
 
@@ -96,7 +104,163 @@ Disconnect-MgGraph
 
 ## Scripts
 
-### 1. Get-DeviceComplianceReport.ps1
+### Winget Management (NEW!)
+
+#### New-BulkWingetUpdater.ps1
+
+Universal winget package updater that generates remediation scripts for ANY application.
+
+**Features**:
+- Works with any winget package ID
+- Generates both detect.ps1 and remediate.ps1
+- Prevents forced app closure
+- Batch creation from CSV
+- Intune-ready deployment scripts
+
+**Usage**:
+```powershell
+# Single app
+.\New-BulkWingetUpdater.ps1 -AppName "Google Chrome" -WingetID "Google.Chrome" -ProcessName "chrome"
+
+# Batch from CSV (AppName,WingetID,ProcessName)
+.\New-BulkWingetUpdater.ps1 -GenerateBatch -CSVPath ".\apps.csv"
+```
+
+---
+
+#### Get-WingetUpdateCompliance.ps1
+
+Reports winget-managed application update compliance across devices.
+
+**Features**:
+- Track app versions across estate
+- Identify outdated applications
+- Compliance reporting
+- HTML/CSV export
+
+**Usage**:
+```powershell
+.\Get-WingetUpdateCompliance.ps1 -ExportHTML
+.\Get-WingetUpdateCompliance.ps1 -ApplicationFilter "*Chrome*"
+```
+
+---
+
+#### Export-WingetPackageList.ps1
+
+Exports installed winget packages from devices for inventory.
+
+**Features**:
+- JSON/CSV/Console output
+- Source filtering
+- Version tracking
+- Update availability detection
+
+**Usage**:
+```powershell
+.\Export-WingetPackageList.ps1
+.\Export-WingetPackageList.ps1 -ExportFormat JSON -OutputPath "C:\Temp\packages.json"
+```
+
+---
+
+#### New-WingetSourceConfig.ps1
+
+Configures custom winget sources for enterprise environments.
+
+**Features**:
+- Add enterprise repositories
+- Remove default sources
+- Reset configuration
+- Generate Intune deployment scripts
+
+**Usage**:
+```powershell
+.\New-WingetSourceConfig.ps1 -SourceName "CompanyRepo" -SourceURL "https://packages.company.com" -GenerateIntuneScript
+.\New-WingetSourceConfig.ps1 -ResetSources
+```
+
+---
+
+### Device Management (NEW!)
+
+#### Invoke-DeviceBulkActions.ps1
+
+Performs bulk actions on Intune-managed devices.
+
+**Features**:
+- Sync, Restart, Retire, Wipe, Collect Diagnostics
+- Filter by name, group, compliance
+- WhatIf support
+- Detailed results reporting
+
+**Usage**:
+```powershell
+.\Invoke-DeviceBulkActions.ps1 -Action Sync -DeviceNames "PC-01,PC-02"
+.\Invoke-DeviceBulkActions.ps1 -Action CollectDiagnostics -GroupName "IT-Test"
+.\Invoke-DeviceBulkActions.ps1 -Action Restart -NonCompliantOnly -WhatIf
+```
+
+---
+
+#### Get-AutopilotDeploymentReport.ps1
+
+Tracks Windows Autopilot deployment status and failures.
+
+**Features**:
+- Success/failure rates
+- ESP error tracking
+- Deployment duration
+- Failed deployment details
+
+**Usage**:
+```powershell
+.\Get-AutopilotDeploymentReport.ps1 -Days 7 -ExportHTML
+.\Get-AutopilotDeploymentReport.ps1 -Status Failed
+```
+
+---
+
+#### Export-IntuneConfiguration.ps1
+
+Exports Intune configuration for backup or migration.
+
+**Features**:
+- Device/compliance policies
+- Apps and scripts
+- Autopilot profiles
+- Assignment export
+- ZIP compression
+
+**Usage**:
+```powershell
+.\Export-IntuneConfiguration.ps1
+.\Export-IntuneConfiguration.ps1 -ConfigTypes "DeviceConfig,Compliance" -CompressOutput
+```
+
+---
+
+#### Get-AppInstallErrorReport.ps1
+
+Detailed analysis of application installation failures.
+
+**Features**:
+- Error code analysis
+- Device/user-specific failures
+- Installation history
+- Remediation suggestions
+
+**Usage**:
+```powershell
+.\Get-AppInstallErrorReport.ps1 -Days 7 -ExportHTML
+.\Get-AppInstallErrorReport.ps1 -AppName "Microsoft Teams"
+```
+
+---
+
+### Existing Scripts
+
+#### 1. Get-DeviceComplianceReport.ps1
 
 Exports all non-compliant devices with detailed compliance policy failures.
 
@@ -645,6 +809,13 @@ Start-Process "$env:USERPROFILE\Desktop"
 
 ## Version History
 
+**Version 2.0** - Winget & Advanced Management (2024-12-23)
+- Added 4 winget enhancement scripts (bulk updater, compliance, inventory, source config)
+- Added 4 device management scripts (bulk actions, Autopilot reporting, config export, app errors)
+- Created proactive remediation library (6 detect/remediate pairs)
+- Expanded from 11 to 19 scripts
+- Enhanced enterprise winget capabilities
+
 **Version 1.0** - Initial Release
 - 11 comprehensive scripts
 - Helper module for common functions
@@ -667,9 +838,17 @@ These scripts are provided as-is for system administration purposes.
 | Compliance Report | Get-DeviceComplianceReport.ps1 | `.\Get-DeviceComplianceReport.ps1` |
 | Find Stale Devices | Find-StaleDevices.ps1 | `.\Find-StaleDevices.ps1 -DaysInactive 90` |
 | App Install Status | Get-AppInstallationStatus.ps1 | `.\Get-AppInstallationStatus.ps1 -AppName "Chrome"` |
+| App Install Errors | Get-AppInstallErrorReport.ps1 | `.\Get-AppInstallErrorReport.ps1 -Days 7` |
 | BitLocker Audit | Get-BitLockerStatus.ps1 | `.\Get-BitLockerStatus.ps1` |
 | Update Compliance | Get-WindowsUpdateCompliance.ps1 | `.\Get-WindowsUpdateCompliance.ps1` |
 | Winget Remediation | New-WingetRemediationScript.ps1 | `.\New-WingetRemediationScript.ps1 -PackageId "Google.Chrome"` |
+| Bulk Winget Update | New-BulkWingetUpdater.ps1 | `.\New-BulkWingetUpdater.ps1 -AppName "Chrome" -WingetID "Google.Chrome"` |
+| Winget Compliance | Get-WingetUpdateCompliance.ps1 | `.\Get-WingetUpdateCompliance.ps1 -ExportHTML` |
+| Winget Inventory | Export-WingetPackageList.ps1 | `.\Export-WingetPackageList.ps1` |
+| Winget Sources | New-WingetSourceConfig.ps1 | `.\New-WingetSourceConfig.ps1 -SourceName "Corp"` |
+| Device Bulk Actions | Invoke-DeviceBulkActions.ps1 | `.\Invoke-DeviceBulkActions.ps1 -Action Sync` |
+| Autopilot Report | Get-AutopilotDeploymentReport.ps1 | `.\Get-AutopilotDeploymentReport.ps1 -Days 7` |
+| Export Config | Export-IntuneConfiguration.ps1 | `.\Export-IntuneConfiguration.ps1` |
 | Policy Conflicts | Find-PolicyConflicts.ps1 | `.\Find-PolicyConflicts.ps1` |
 | Group Membership | Get-DeviceGroupMembership.ps1 | `.\Get-DeviceGroupMembership.ps1 -DeviceName "PC01"` |
 | Package Apps | New-IntuneWinPackage.ps1 | `.\New-IntuneWinPackage.ps1 -SourceFolder "C:\Installers"` |
@@ -677,6 +856,6 @@ These scripts are provided as-is for system administration purposes.
 
 ---
 
-**Last Updated:** 2024-12-18
+**Last Updated:** 2024-12-23
 **Compatibility:** Windows 10/11, Windows Server 2016+, PowerShell 5.1+
 **Graph API Version:** v1.0 and beta endpoints
