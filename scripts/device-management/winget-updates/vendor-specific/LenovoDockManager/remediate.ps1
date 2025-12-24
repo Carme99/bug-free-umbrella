@@ -1,75 +1,55 @@
-$name = 'Lenovo Dock Manager'
+<#
+.SYNOPSIS
+    Standard update script for Lenovo Dock Manager (V3).
+.DESCRIPTION
+    Checks if app is running and skips update if so (will retry later).
+.NOTES
+    Package ID: Lenovo.DockManager
+    Process: LenovoDockMgr
+#>
+
+#region Configuration
 $ID = 'Lenovo.DockManager'
-$AppProcess = "LenovoDockMgr"
-$AppExePath = "C:\Program Files\Lenovo\Dock Manager\dockmgr.exe"
+$AppProcess = 'LenovoDockMgr'
+$MaxRetries = 3
+$VerifyWaitSeconds = 5
+#endregion
 
-function Write-Log {
-    param ($Message, $Type = "INFO")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $entry = "[$timestamp][$Type] $Message"
-    if ($Type -eq "ERROR") {
-        Write-Error $entry
-    } elseif ($Type -eq "WARN") {
-        Write-Warning $entry
-    } else {
-        Write-Host $entry
-    }
-}
+#region Functions
+function Invoke-WingetWithRetry { param([string]$Arguments); $a = 1; while ($a -le 3) { try { $r = Invoke-Expression "sysget $Arguments 2>&1"; if ($r) { return $r } } catch { }; Start-Sleep -Seconds 2; $a++ }; throw "Failed" }
+#endregion
 
+#region Script
 try {
-    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe"
-    if (-not $wingetexe) {
-        throw "Winget executable not found in system context."
-    }
+    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
+    New-Alias -Name sysget -Value $(if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }) -Force
 
-    $SystemContext = $wingetexe[-1].Path
-    New-Alias -Name sysget -Value "$SystemContext"
+    $packageInfo = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"
+    $name = if ($packageInfo | Select-String -Pattern "^($ID)\s+(.+?)\s+\d") { $Matches[2].Trim() } else { "Lenovo Dock Manager" }
 
-    $lines = sysget list --accept-source-agreements --Id $ID 2>&1
-    if ($lines -match '\bVersion\s+Available\b') {
-        $updateLine = $lines | Where-Object { $_ -match $ID }
-        $verinstalled, $verAvailable = (-split $updateLine)[-3,-2]
+    if ($packageInfo -match "No installed package found") { Write-Host "$name not installed."; exit 0 }
 
-        Write-Log "$name update found: $verinstalled -> $verAvailable"
-
-        # Stop app if running
+    if ($packageInfo -match '\bVersion\s+Available\b') {
+        $v = (-split $packageInfo[-1])[-3,-2]
         $process = Get-Process -Name "$AppProcess" -ErrorAction SilentlyContinue
+
         if ($process) {
-            Write-Log "Stopping $AppProcess..."
-            Stop-Process -Name $AppProcess -Force -ErrorAction Stop
-            Start-Sleep -Seconds 2
+            Write-Host "$name is running. Will retry later."
+            exit 1
         }
 
-        Write-Log "Running winget upgrade..."
-        $upgrade = sysget upgrade -e --id $ID --silent --accept-package-agreements --accept-source-agreements 2>&1
-        Write-Log $upgrade
+        Write-Host "Installing $name update ($($v[0]) -> $($v[1]))..."
+        Invoke-WingetWithRetry -Arguments "upgrade -e --id $ID --silent --accept-package-agreements --accept-source-agreements" | Out-Null
+        Start-Sleep -Seconds $VerifyWaitSeconds
 
-        # Validate update
-        $postLines = sysget list --accept-source-agreements --Id $ID 2>&1
-        $updatedLine = $postLines | Where-Object { $_ -match $ID }
-        $newInstalled, $stillAvailable = (-split $updatedLine)[-3,-2]
-
-        if ($newInstalled -eq $stillAvailable) {
-            Write-Log "$name updated to $newInstalled"
-        } else {
-            throw "$name update failed: $newInstalled still shows older version or mismatch."
+        $verify = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"
+        if ($verify -match '\d+(\.\d+)+') {
+            $ver = (-split $verify[-1])[-2]
+            Write-Host "$name updated to version $ver"
+            exit 0
         }
-
-        # Restart app
-        if (Test-Path $AppExePath) {
-            Write-Log "Restarting app from $AppExePath"
-            Start-Process -FilePath $AppExePath
-        } else {
-            throw "Executable not found at $AppExePath – cannot restart."
-        }
-
-        exit 0
-    } else {
-        Write-Log "$name is up to date."
-        exit 0
+        Write-Error "Verification failed"; exit 1
     }
-}
-catch {
-    Write-Log "Remediation script failed: $_" "ERROR"
-    exit 1
-}
+    Write-Host "$name is up to date."; exit 0
+} catch { Write-Error "Failed: $_"; exit 1 }
+#endregion

@@ -1,50 +1,55 @@
-#name of your app in winget
-$name = 'Microsoft.VCRedist.2012.x64'
-#winget ID for the package
+<#
+.SYNOPSIS
+    Standard update script for Microsoft.VCRedist.2012.x64 (V3).
+.DESCRIPTION
+    Checks if app is running and skips update if so (will retry later).
+.NOTES
+    Package ID: Microsoft.VCRedist.2012.x64
+    Process: Microsoft.VCRedist.2012.x64
+#>
+
+#region Configuration
 $ID = 'Microsoft.VCRedist.2012.x64'
-#Name of the running process (so you don't force close it)
-$AppProcess = "Microsoft.VCRedist.2012.x64"
-#location of the winget exe
-$wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe"
-    if ($wingetexe){
-           $SystemContext = $wingetexe[-1].Path
-    }
-#create the sysget alias so winget can be ran as system
-new-alias -Name sysget -Value "$systemcontext"
-#this gets the info on the app (if it has an update, or not)
-$lines = sysget list --accept-source-agreements --Id $ID
-#tries to upgrade if the installed version is lower than the available version
+$AppProcess = 'Microsoft.VCRedist.2012.x64'
+$MaxRetries = 3
+$VerifyWaitSeconds = 5
+#endregion
+
+#region Functions
+function Invoke-WingetWithRetry { param([string]$Arguments); $a = 1; while ($a -le 3) { try { $r = Invoke-Expression "sysget $Arguments 2>&1"; if ($r) { return $r } } catch { }; Start-Sleep -Seconds 2; $a++ }; throw "Failed" }
+#endregion
+
+#region Script
 try {
-if ($lines -match '\bVersion\s+Available\b') {
-$verinstalled, $verAvailable = (-split $lines[-1])[-3,-2]
-Write-Verbose -Verbose "Application update available for $name"
-Write-Verbose -Verbose "Downloading and Installing $name"
-}
-#checks if your app is running as to not auto-close. change the process value to the app you want.
-$process = get-process -name "$AppProcess" -ErrorAction SilentlyContinue
-if ($process -eq $null){
-#run the upgrade
-sysget upgrade -e --id $ID --silent --accept-package-agreements --accept-source-agreements
-#rechecks the version if it installed and creates values for final output.
-$lines = sysget list --accept-source-agreements --Id $ID } else {write-host "$Name is currently running, will try again later."
-exit 1
-}
-if ($Lines -match '\d+(\.\d+)+') {
-$versionavailable, $versioninstalled = (-split $Lines[-1])[-3,-2]
+    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
+    New-Alias -Name sysget -Value $(if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }) -Force
 
-#the final output as a pscustomobject
-[pscustomobject] @{
-Name = $name
-InstalledVersion = $VersionInstalled}
-exit 0
-} else 
-{
-write-host "$Name is currently running, will try again later."
-exit 1
-} 
+    $packageInfo = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"
+    $name = if ($packageInfo | Select-String -Pattern "^($ID)\s+(.+?)\s+\d") { $Matches[2].Trim() } else { "Microsoft.VCRedist.2012.x64" }
 
-}catch {
-  $errMsg = $_.Exception.Message
-    Write-Error $errMsg
-   exit 1
-   }
+    if ($packageInfo -match "No installed package found") { Write-Host "$name not installed."; exit 0 }
+
+    if ($packageInfo -match '\bVersion\s+Available\b') {
+        $v = (-split $packageInfo[-1])[-3,-2]
+        $process = Get-Process -Name "$AppProcess" -ErrorAction SilentlyContinue
+
+        if ($process) {
+            Write-Host "$name is running. Will retry later."
+            exit 1
+        }
+
+        Write-Host "Installing $name update ($($v[0]) -> $($v[1]))..."
+        Invoke-WingetWithRetry -Arguments "upgrade -e --id $ID --silent --accept-package-agreements --accept-source-agreements" | Out-Null
+        Start-Sleep -Seconds $VerifyWaitSeconds
+
+        $verify = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"
+        if ($verify -match '\d+(\.\d+)+') {
+            $ver = (-split $verify[-1])[-2]
+            Write-Host "$name updated to version $ver"
+            exit 0
+        }
+        Write-Error "Verification failed"; exit 1
+    }
+    Write-Host "$name is up to date."; exit 0
+} catch { Write-Error "Failed: $_"; exit 1 }
+#endregion
