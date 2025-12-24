@@ -197,7 +197,101 @@ This collection provides security professionals and IT administrators with tools
 ```
 
 **Output**: Failed login statistics with pattern analysis
-**Exit Code**: 0 = No suspicious activity, 1 = Failed logins detected
+**Exit Code**: 0 = No suspicious activity, 1 = Failed logins or lockouts detected
+
+---
+
+### 7. Get-USBDeviceAudit.ps1
+**Purpose**: Audit USB device connections and usage history
+
+**Features**:
+- Lists currently connected USB devices
+- Shows historical USB device connections from registry
+- Identifies device serial numbers and manufacturers
+- Detects unauthorized USB devices (with authorized vendor list)
+- Extracts vendor ID (VID) and product ID (PID)
+- Tracks first connection time
+- Export to HTML and CSV formats
+
+**Usage**:
+```powershell
+# Basic USB device audit
+.\Get-USBDeviceAudit.ps1
+
+# Include historical connections
+.\Get-USBDeviceAudit.ps1 -IncludeHistory $true
+
+# Highlight unauthorized devices
+.\Get-USBDeviceAudit.ps1 -AuthorizedVendors @("045E", "046D") -HighlightUnauthorized
+
+# Generate HTML report
+.\Get-USBDeviceAudit.ps1 -OutputFormat HTML -OutputPath "C:\Reports"
+```
+
+**Output**: List of USB devices with authorization status
+**Exit Code**: 0 = Audit completed successfully
+
+---
+
+### 8. Get-SoftwareLicenseCompliance.ps1
+**Purpose**: Inventory installed software and check license compliance
+
+**Features**:
+- Complete software inventory from registry
+- License key detection for major applications (Office, Windows)
+- Software installation dates and publishers
+- Identification of unlicensed software
+- Duplicate software installation detection
+- License status verification (Licensed/Unlicensed/Unknown)
+- Export to HTML and CSV formats
+
+**Usage**:
+```powershell
+# Basic software inventory
+.\Get-SoftwareLicenseCompliance.ps1
+
+# Enable license key checking
+.\Get-SoftwareLicenseCompliance.ps1 -CheckLicenseKeys $true
+
+# Highlight potentially unlicensed software
+.\Get-SoftwareLicenseCompliance.ps1 -HighlightUnlicensed $true
+
+# Generate compliance report
+.\Get-SoftwareLicenseCompliance.ps1 -OutputFormat HTML -OutputPath "C:\Reports"
+```
+
+**Output**: Software inventory with license compliance status
+**Exit Code**: 0 = Inventory completed successfully
+
+---
+
+### 9. Get-AntivirusStatus.ps1
+**Purpose**: Check antivirus and endpoint protection status
+
+**Features**:
+- Windows Defender/Microsoft Defender status
+- Third-party antivirus detection
+- Real-time protection verification
+- Signature/definition update status
+- Scan history and last scan time
+- Threat detection history
+- Windows Firewall status across all profiles
+- Export to HTML and CSV formats
+
+**Usage**:
+```powershell
+# Check antivirus status
+.\Get-AntivirusStatus.ps1
+
+# Include third-party AV detection
+.\Get-AntivirusStatus.ps1 -CheckThirdParty $true
+
+# Generate detailed report
+.\Get-AntivirusStatus.ps1 -OutputFormat HTML -OutputPath "C:\Reports"
+```
+
+**Output**: Comprehensive antivirus and firewall status
+**Exit Code**: 0 = Protection is active, 1 = Issues detected
 
 ---
 
