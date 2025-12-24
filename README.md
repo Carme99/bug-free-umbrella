@@ -14,6 +14,7 @@ A comprehensive collection of PowerShell scripts for Windows system administrati
 - **[Intune Sync Guide](docs/INTUNE-SYNC-README.md)** - User group to device group synchronization
 - **[Intune Management Scripts](scripts/intune/README.md)** - Comprehensive Intune administration toolkit
 - **[Server Management Scripts](scripts/server/README.md)** - Windows Server administration tools
+- **[Security & Compliance Scripts](scripts/security-compliance/README.md)** - Security auditing and compliance verification
 - **[Proactive Remediations](scripts/device-management/proactive-remediations/README.md)** - Auto-fix common issues
 - **[Winget Update Templates](scripts/device-management/winget-updates/Template/README.md)** - Application auto-update setup
 
@@ -25,6 +26,7 @@ bug-free-umbrella/
 ├── scripts/
 │   ├── intune/                        # Intune management tools
 │   ├── server/                        # Server management tools
+│   ├── security-compliance/           # Security auditing and compliance
 │   ├── device-management/             # Device management scripts
 │   │   ├── autopatch/                 # Windows Update policies
 │   │   ├── winget-updates/            # Application update scripts
@@ -170,6 +172,49 @@ cd scripts\server
 ```
 
 **Expected Output**: Detailed disk analysis with cleanup recommendations
+
+#### Security & Compliance
+
+**Run Security Baseline Check**:
+```powershell
+cd scripts\security-compliance
+
+# Check system against security baseline
+.\Get-SecurityBaseline.ps1
+
+# Generate detailed report
+.\Get-SecurityBaseline.ps1 -ExportReport
+```
+
+**Expected Time**: 30-60 seconds
+**Expected Output**: Security compliance report with pass/fail status
+
+**Audit Local Administrators**:
+```powershell
+# Audit administrator accounts
+.\Get-LocalAdminAudit.ps1
+
+# Generate detailed report
+.\Get-LocalAdminAudit.ps1 -Detailed -ExportReport
+```
+
+**Expected Time**: 10-20 seconds
+**Expected Output**: List of admin accounts with risk assessment
+
+**Monthly Security Audit**:
+```powershell
+# Run comprehensive security checks
+.\Get-SecurityBaseline.ps1 -ExportReport
+.\Get-LocalAdminAudit.ps1 -ExportReport
+.\Test-SecurityFeatures.ps1 -ExportReport
+.\Get-ExpiredCertificates.ps1 -DaysToExpire 60 -ExportReport
+.\Get-FailedLoginReport.ps1 -Hours 720 -ExportReport
+
+# All reports saved to Desktop
+```
+
+**Expected Time**: 2-5 minutes
+**Expected Output**: Comprehensive security and compliance reports
 
 #### Winget Application Updates
 
