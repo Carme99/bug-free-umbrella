@@ -1,64 +1,30 @@
-#name of your app in winget
-$name = 'Microsoft.VCRedist.2010.x86'
-#winget ID for the package
+<#
+.SYNOPSIS
+    Winget update detection script for Microsoft.VCRedist.2010.x86 (V3).
+.NOTES
+    Package ID: Microsoft.VCRedist.2010.x86
+#>
+
+#region Configuration
 $ID = 'Microsoft.VCRedist.2010.x86'
-#Name of the running process (so you don't force close it)
-$AppProcess = "Microsoft.VCRedist.2010.x86"
-#location of the winget exe
-$wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe"
-    if ($wingetexe){
-           $SystemContext = $wingetexe[-1].Path
-    }
-#create the sysget alias so winget can be ran as system
-new-alias -Name sysget -Value "$systemcontext"
-#this gets the info on the app (if it has an update, or not)
-$lines = sysget list --accept-source-agreements --Id $ID
+$MaxRetries = 3
+$CheckNetworkConnectivity = $true
+#endregion
+
+#region Functions
+function Test-NetworkConnectivity { try { return (Test-Connection -ComputerName "www.microsoft.com" -Count 1 -Quiet -ErrorAction SilentlyContinue) } catch { return $false } }
+function Invoke-WingetWithRetry { param([string]$Arguments); $attempt = 1; while ($attempt -le 3) { try { $result = Invoke-Expression "sysget $Arguments 2>&1"; if ($result) { return $result } } catch { }; Start-Sleep -Seconds 2; $attempt++ }; throw "Failed" }
+#endregion
+
+#region Script
 try {
-$process = get-process -name "$AppProcess" -ErrorAction SilentlyContinue
-#check if there's an available update
-if (($lines -match '\bVersion\s+Available\b' -and $process -ne $null)) {
-$verinstalled, $verAvailable = (-split $lines[-1])[-3,-2]
-Write-Verbose -Verbose "Application update available for $Name. Current version is $verinstalled, version available is $verAvailable. $Name is currently running, will try again later."
-#create custom psobject for reporting the output in intune
-[pscustomobject] @{
-Name = $Name
-InstalledVersion = $verInstalled
-AvailableVersion = $verAvailable
-}
-write-host "Application update available for $Name. Current version is $verinstalled, version available is $verAvailable. $Name is currently running, will try again later."
-exit 1
-}
-if (($lines -match '\bVersion\s+Available\b' -and $process -eq $null)) {
-$verinstalled, $verAvailable = (-split $lines[-1])[-3,-2]
-Write-Verbose -Verbose "Application update available for $Name. Current version is $verinstalled, version available is $verAvailable"
-#create custom psobject for reporting the output in intune
-[pscustomobject] @{
-Name = $Name
-InstalledVersion = $verInstalled
-AvailableVersion = $verAvailable
-}
-write-host "Application update available for $Name. Current version is $verinstalled, version available is $verAvailable"
-exit 1
-}else {
-if ($lines -eq "No installed package found matching input criteria.") {write-host "$name is not installed on this device." 
-exit 0
-}else{
-#rechecks the version if it installed and creates values for final output.
-$lines = sysget list --accept-source-agreements --Id $ID
-if ($Lines -match '\d+(\.\d+)+') {
-$versionavailable, $versioninstalled = (-split $Lines[-1])[-3,-2]
-}
-#the final output as a pscustomobject
-[pscustomobject] @{
-Name = $name
-InstalledVersion = $VersionInstalled
-}}
-Write-Host "$name upgraded to $versioninstalled, or $name was already up to date."
-exit 0
-}
-}
-catch {
-  $errMsg = $_.Exception.Message
-    Write-Error $errMsg
-   exit 1
-} 
+    if (-not (Test-NetworkConnectivity)) { exit 0 }
+    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
+    New-Alias -Name sysget -Value $(if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }) -Force
+    $packageInfo = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"
+    $name = if ($packageInfo | Select-String -Pattern "^($ID)\s+(.+?)\s+\d") { $Matches[2].Trim() } else { $ID }
+    if ($packageInfo -match "No installed package found") { Write-Host "$name not installed."; exit 0 }
+    if ($packageInfo -match '\bVersion\s+Available\b') { $v = (-split $packageInfo[-1])[-3,-2]; Write-Host "Update available: $($v[0]) -> $($v[1])"; exit 1 }
+    Write-Host "$name is up to date."; exit 0
+} catch { exit 0 }
+#endregion
