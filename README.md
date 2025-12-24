@@ -12,11 +12,13 @@ A comprehensive collection of PowerShell scripts for Windows system administrati
 
 ### 🎯 Specialized Guides
 - **[Intune Sync Guide](docs/INTUNE-SYNC-README.md)** - User group to device group synchronization
-- **[Intune Management Scripts](scripts/intune/README.md)** - Comprehensive Intune administration toolkit
+- **[Intune Management Scripts](scripts/intune/README.md)** - Comprehensive Intune administration toolkit (reporting, maintenance, deployment)
 - **[Server Management Scripts](scripts/server/README.md)** - Windows Server administration tools
-- **[Security & Compliance Scripts](scripts/security-compliance/README.md)** - Security auditing and compliance verification
-- **[Proactive Remediations](scripts/device-management/proactive-remediations/README.md)** - Auto-fix common issues
-- **[Winget Update Templates](scripts/device-management/winget-updates/Template/README.md)** - Application auto-update setup
+- **[Security & Compliance Scripts](scripts/security-compliance/README.md)** - Security auditing and compliance verification (9 comprehensive scripts)
+- **[Monitoring Scripts](scripts/monitoring/)** - System health checks and performance monitoring
+- **[Network Management Scripts](scripts/network-management/)** - Network diagnostics and troubleshooting
+- **[Proactive Remediations](scripts/device-management/proactive-remediations/README.md)** - Auto-fix common issues (9 remediation pairs)
+- **[Winget Update Templates](scripts/device-management/winget-updates/Template/README.md)** - Application auto-update setup (40+ apps)
 
 ## Repository Structure
 
@@ -24,12 +26,32 @@ A comprehensive collection of PowerShell scripts for Windows system administrati
 bug-free-umbrella/
 ├── docs/                              # Documentation
 ├── scripts/
-│   ├── intune/                        # Intune management tools
-│   ├── server/                        # Server management tools
-│   ├── security-compliance/           # Security auditing and compliance
+│   ├── intune/                        # Intune management tools (18 scripts)
+│   │   ├── reporting/                 # Compliance, status, and audit reports
+│   │   ├── maintenance/               # Device cleanup and policy management
+│   │   └── deployment/                # Packaging and deployment tools
+│   ├── server/                        # Server management tools (16 scripts)
+│   ├── security-compliance/           # Security auditing and compliance (9 scripts)
+│   ├── monitoring/                    # System health checks and monitoring (NEW)
+│   ├── network-management/            # Network diagnostics and troubleshooting (NEW)
 │   ├── device-management/             # Device management scripts
+│   │   ├── proactive-remediations/    # Auto-fix scripts (9 pairs)
+│   │   ├── winget-updates/            # Application update scripts (40+ apps)
+│   │   │   ├── browsers/              # Firefox, Chrome
+│   │   │   ├── communication/         # Slack, Discord (NEW)
+│   │   │   ├── development/           # VS Code, Git, Docker, Node.js, etc.
+│   │   │   ├── security/              # 1Password, Bitwarden, KeePass (NEW)
+│   │   │   ├── cloud-storage/         # Dropbox, Google Drive, Box (NEW)
+│   │   │   ├── vpn/                   # NordVPN, ProtonVPN (NEW)
+│   │   │   ├── database/              # MySQL Workbench, Azure Data Studio (NEW)
+│   │   │   ├── media/                 # OBS, VLC, Zoom
+│   │   │   ├── productivity/          # Teams, Notepad++, Adobe Reader
+│   │   │   ├── remote-access/         # TeamViewer, WinSCP
+│   │   │   ├── runtimes/              # C++ Redist, Edge WebView2
+│   │   │   ├── utilities/             # 7-Zip
+│   │   │   ├── vendor-specific/       # Lenovo tools
+│   │   │   └── _templates/            # V3 enhanced templates
 │   │   ├── autopatch/                 # Windows Update policies
-│   │   ├── winget-updates/            # Application update scripts
 │   │   ├── bitlocker-backup/          # BitLocker key backup
 │   │   ├── device-uptime/             # Uptime monitoring
 │   │   ├── l16-driver-block/          # Lenovo L16 driver management
@@ -215,6 +237,44 @@ cd scripts\security-compliance
 
 **Expected Time**: 2-5 minutes
 **Expected Output**: Comprehensive security and compliance reports
+
+#### System Monitoring & Health Checks
+
+**Run Comprehensive System Health Check**:
+```powershell
+cd scripts\monitoring
+
+# Full system health check
+.\Get-SystemHealthCheck.ps1
+
+# Generate HTML report
+.\Get-SystemHealthCheck.ps1 -OutputFormat HTML -OutputPath "C:\Reports"
+
+# Custom thresholds
+.\Get-SystemHealthCheck.ps1 -DiskThresholdPercent 85 -MemoryThresholdPercent 85
+```
+
+**Expected Time**: 30-60 seconds
+**Expected Output**: Overall health score, CPU/memory/disk status, service status, uptime analysis
+
+#### Network Management & Diagnostics
+
+**Troubleshoot Network Connectivity**:
+```powershell
+cd scripts\network-management
+
+# Comprehensive network diagnostic
+.\Test-NetworkConnectivity.ps1
+
+# Test specific endpoints
+.\Test-NetworkConnectivity.ps1 -TestEndpoints @("office.com", "microsoft.com", "google.com")
+
+# Generate diagnostic report
+.\Test-NetworkConnectivity.ps1 -OutputFormat HTML -OutputPath "C:\Reports"
+```
+
+**Expected Time**: 30-90 seconds
+**Expected Output**: Adapter status, gateway connectivity, DNS resolution, internet connectivity tests
 
 #### Winget Application Updates
 
