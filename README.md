@@ -2,6 +2,58 @@
 
 A comprehensive collection of PowerShell scripts for Windows system administration, Intune management, and automated device maintenance.
 
+## 🆕 What's New
+
+### Server Management Expansion (December 2025)
+
+Major expansion of server management capabilities with **18 new enterprise-grade scripts** organized into specialized categories:
+
+**🗂️ Group Policy Management** (3 scripts)
+- **Get-GPOReport.ps1** - Comprehensive GPO reporting with HTML/XML exports
+- **Backup-GroupPolicies.ps1** - Automated GPO backups with retention management
+- **Find-GPOConflicts.ps1** - Detect GPO conflicts and configuration issues
+
+**💾 Backup & Disaster Recovery** (2 scripts)
+- **Get-BackupStatus.ps1** - Windows Server Backup verification and validation
+- **Manage-RestorePoints.ps1** - System restore point creation and management
+
+**👥 Active Directory Management** (2 scripts)
+- **Get-ADUserAudit.ps1** - Comprehensive user account security auditing
+- **Get-ServiceAccountAudit.ps1** - Service account security and compliance auditing
+
+**📊 Advanced Monitoring** (2 scripts)
+- **Get-BatteryHealth.ps1** - Laptop battery health tracking and reporting
+- **Get-PerformanceTrends.ps1** - Performance monitoring with trend analysis
+
+**🌐 Network Management** (2 scripts)
+- **Test-NetworkDiagnostics.ps1** - Comprehensive network diagnostics toolkit
+- **Reset-NetworkStack.ps1** - Network stack reset for troubleshooting
+
+**🔐 User Access Management** (1 script)
+- **Get-UserAccessReport.ps1** - User permissions and access rights auditing
+
+**Reorganized Server Structure:**
+```
+scripts/server/
+├── active-directory/      # AD management and auditing
+├── backup-recovery/       # Backup and restore operations
+├── group-policy/          # GPO management and reporting
+├── monitoring/            # Server health and performance
+├── network/               # Network configuration and testing
+├── security/              # Security and certificates
+├── storage/               # Disk and file management
+├── system/                # System configuration and updates
+└── user-management/       # User access and permissions
+```
+
+All new scripts include:
+- ✅ Comprehensive error handling
+- ✅ HTML and CSV reporting
+- ✅ Detailed documentation with examples
+- ✅ Enterprise-ready design patterns
+
+---
+
 ## Quick Links
 
 ### 📖 Documentation
@@ -30,7 +82,16 @@ bug-free-umbrella/
 │   │   ├── reporting/                 # Compliance, status, and audit reports
 │   │   ├── maintenance/               # Device cleanup and policy management
 │   │   └── deployment/                # Packaging and deployment tools
-│   ├── server/                        # Server management tools (16 scripts)
+│   ├── server/                        # Server management tools (34 scripts)
+│   │   ├── active-directory/          # AD user/service account auditing
+│   │   ├── backup-recovery/           # Backup verification and restore points
+│   │   ├── group-policy/              # GPO management and reporting
+│   │   ├── monitoring/                # Server health and performance
+│   │   ├── network/                   # Network configuration and connectivity
+│   │   ├── security/                  # Security and certificates
+│   │   ├── storage/                   # Disk and file management
+│   │   ├── system/                    # System configuration and updates
+│   │   └── user-management/           # User access and permissions
 │   ├── security-compliance/           # Security auditing and compliance (9 scripts)
 │   ├── monitoring/                    # System health checks and monitoring (NEW)
 │   ├── network-management/            # Network diagnostics and troubleshooting (NEW)
