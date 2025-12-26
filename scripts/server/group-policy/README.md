@@ -178,4 +178,4 @@ Include GPO backups in your disaster recovery plan:
 
 ---
 
-*Last Updated: 2025-12-25*
+*Last Updated: December 26, 2024*

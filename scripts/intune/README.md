@@ -856,6 +856,6 @@ These scripts are provided as-is for system administration purposes.
 
 ---
 
-**Last Updated:** 2024-12-23
+**Last Updated:** December 26, 2024
 **Compatibility:** Windows 10/11, Windows Server 2016+, PowerShell 5.1+
 **Graph API Version:** v1.0 and beta endpoints

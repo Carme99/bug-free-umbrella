@@ -1,175 +1,467 @@
-# Bug-Free Umbrella
+# Bug-Free Umbrella - Complete Documentation
 
 A comprehensive collection of PowerShell scripts for Windows system administration, Intune management, and automated device maintenance.
 
+## 📚 Documentation Index
+
+This documentation hub provides detailed information about all scripts and tools in the bug-free-umbrella repository.
+
+### Quick Navigation
+
+- **[Main README](../README.md)** - Repository overview and quick start
+- **[Script Examples & Outputs](SCRIPT-EXAMPLES.md)** - Detailed examples with sample outputs
+- **[End-to-End Workflows](WORKFLOWS.md)** - Step-by-step guides for common scenarios
+- **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Intune Sync Guide](INTUNE-SYNC-README.md)** - User group to device group synchronization
+
+### Script Categories
+
+- **[Intune Management](../scripts/intune/README.md)** - 19 comprehensive scripts for Intune administration
+- **[Server Management](../scripts/server/README.md)** - 16 Windows Server administration tools
+- **[Security & Compliance](../scripts/security-compliance/README.md)** - 9 security auditing scripts
+- **[System Monitoring](../scripts/monitoring/README.md)** - Health checks and performance monitoring
+- **[Network Management](../scripts/network-management/README.md)** - Network diagnostics and troubleshooting
+- **[Proactive Remediations](../scripts/device-management/proactive-remediations/README.md)** - 6 auto-fix remediation pairs
+- **[Winget Updates](../scripts/device-management/winget-updates/README.md)** - Application auto-update management
+
+---
+
 ## Overview
 
-This repository contains production-ready PowerShell scripts designed for IT administrators managing Windows environments through Microsoft Intune and traditional server infrastructure. The scripts follow best practices for detection/remediation patterns and enterprise deployment.
+The bug-free-umbrella repository contains production-ready PowerShell scripts designed for IT administrators managing Windows environments through Microsoft Intune and traditional server infrastructure. All scripts follow best practices for detection/remediation patterns and enterprise deployment.
+
+### What's Included
+
+#### Device Management (Intune)
+- **Compliance Reporting** - Device compliance, BitLocker, Windows Update status
+- **Application Management** - Installation status, winget updates, deployment
+- **Device Maintenance** - Stale device cleanup, bulk actions, Autopilot tracking
+- **Configuration Management** - Policy conflicts, group membership, backup/restore
+
+#### Server Management
+- **System Maintenance** - Windows Update reset, system integrity checks
+- **Storage Management** - Disk analysis, cleanup, large file reports
+- **Active Directory** - User/service account auditing, health checks, inactive computers
+- **Group Policy** - GPO reporting, backups, conflict detection
+- **Backup & Recovery** - Backup verification, restore point management
+- **Monitoring & Performance** - Server health, event logs, performance trends
+- **Network Configuration** - Connectivity testing, diagnostics, stack reset
+
+#### Security & Compliance
+- **Security Baselines** - CIS/Microsoft baseline verification
+- **Access Auditing** - Local admin audit, failed logins, USB devices
+- **Feature Verification** - TPM, Secure Boot, Credential Guard
+- **Certificate Management** - Expiration checks, validation
+- **Software Compliance** - License compliance, antivirus status
+
+#### Automation & Proactive Remediations
+- **Auto-Fix Scripts** - Disk space, temp files, stale profiles
+- **Windows Update** - Stuck update resolution
+- **Security Enforcement** - BitLocker key backup, security baseline
+- **Application Updates** - Winget-based automatic updates for 40+ applications
+
+---
 
 ## Repository Structure
 
 ```
 bug-free-umbrella/
-├── docs/                              # Documentation
-│   ├── README.md                      # This file
-│   ├── INTUNE-SYNC-README.md          # Intune sync guide
-│   └── TROUBLESHOOTING.md             # Troubleshooting guide
+├── docs/                              # Documentation (you are here)
+│   ├── README.md                      # This file - documentation index
+│   ├── INTUNE-SYNC-README.md          # Intune user-to-device sync guide
+│   ├── TROUBLESHOOTING.md             # Common issues and solutions
+│   ├── WORKFLOWS.md                   # Step-by-step workflow guides
+│   └── SCRIPT-EXAMPLES.md             # Detailed script examples with outputs
 │
 ├── scripts/
-│   ├── intune/                        # Intune management tools
-│   ├── server/                        # Server management tools
-│   ├── device-management/             # Device management scripts
-│   │   ├── autopatch/                 # Windows Update policies
-│   │   ├── winget-updates/            # Application update scripts
-│   │   ├── bitlocker-backup/          # BitLocker key backup
-│   │   ├── device-uptime/             # Uptime monitoring
-│   │   ├── l16-driver-block/          # Lenovo L16 driver management
-│   │   ├── adobe-rum/                 # Adobe Remote Update Manager
-│   │   └── remove-sccm/               # SCCM client removal
-│   └── utilities/                     # Standalone utilities
+│   ├── intune/                        # Intune management tools (19 scripts)
+│   │   ├── reporting/                 # Compliance, status, and audit reports
+│   │   ├── maintenance/               # Device cleanup and policy management
+│   │   └── deployment/                # Packaging and deployment tools
+│   │
+│   ├── server/                        # Server management tools (16+ scripts)
+│   │   ├── active-directory/          # AD user/service account auditing
+│   │   ├── backup-recovery/           # Backup verification and restore points
+│   │   ├── group-policy/              # GPO management and reporting
+│   │   ├── monitoring/                # Server health and performance
+│   │   ├── network/                   # Network configuration and connectivity
+│   │   ├── security/                  # Security and certificates
+│   │   ├── storage/                   # Disk and file management
+│   │   ├── system/                    # System configuration and updates
+│   │   └── user-management/           # User access and permissions
+│   │
+│   ├── security-compliance/           # Security auditing and compliance (9 scripts)
+│   │
+│   ├── monitoring/                    # System health checks and monitoring
+│   │
+│   ├── network-management/            # Network diagnostics and troubleshooting
+│   │
+│   └── device-management/             # Device management scripts
+│       ├── proactive-remediations/    # Auto-fix scripts (6 pairs)
+│       ├── winget-updates/            # Application update scripts (40+ apps)
+│       │   ├── browsers/              # Firefox, Chrome
+│       │   ├── communication/         # Slack, Discord
+│       │   ├── development/           # VS Code, Git, Docker, Node.js
+│       │   ├── security/              # 1Password, Bitwarden, KeePass
+│       │   ├── cloud-storage/         # Dropbox, Google Drive, Box
+│       │   ├── vpn/                   # NordVPN, ProtonVPN
+│       │   ├── database/              # MySQL Workbench, Azure Data Studio
+│       │   ├── media/                 # OBS, VLC, Zoom
+│       │   ├── productivity/          # Teams, Notepad++, Adobe Reader
+│       │   ├── remote-access/         # TeamViewer, WinSCP
+│       │   ├── runtimes/              # C++ Redist, Edge WebView2
+│       │   ├── utilities/             # 7-Zip
+│       │   ├── vendor-specific/       # Lenovo tools
+│       │   └── _templates/            # V3 enhanced templates
+│       ├── autopatch/                 # Windows Update policies
+│       ├── bitlocker-backup/          # BitLocker key backup
+│       ├── device-uptime/             # Uptime monitoring
+│       ├── l16-driver-block/          # Lenovo L16 driver management
+│       ├── adobe-rum/                 # Adobe Remote Update Manager
+│       └── remove-sccm/               # SCCM client removal
 │
 ├── templates/                         # Reusable script templates
-├── LICENSE
-└── .gitignore
+└── LICENSE
 ```
 
-### Intune Management Scripts (`scripts/intune/`)
-Enterprise-grade tools for Microsoft Intune administration:
-- **Find-PolicyConflicts.ps1** - Identifies conflicting policies across your Intune environment
-- **Find-StaleDevices.ps1** - Locates inactive or stale devices in Intune
-- **Get-AppInstallationStatus.ps1** - Monitors application installation status across devices
-- **Get-BitLockerStatus.ps1** - Retrieves BitLocker encryption status for managed devices
-- **Get-DeviceComplianceReport.ps1** - Generates compliance reports for enrolled devices
-- **Get-DeviceGroupMembership.ps1** - Queries device group assignments
-- **Get-WindowsUpdateCompliance.ps1** - Tracks Windows Update compliance status
-- **New-IntuneWinPackage.ps1** - Creates .intunewin packages for app deployment
-- **New-Win32AppTemplate.ps1** - Generates templates for Win32 app deployments
-- **New-WingetRemediationScript.ps1** - Creates remediation scripts for Winget-based applications
+---
 
-### Server Management Scripts (`scripts/server/`)
-PowerShell utilities for Windows Server administration:
-- **Check-SystemIntegrity.ps1** - Performs system health checks and integrity verification
-- **Get-DiskReport.ps1** - Generates comprehensive disk usage and health reports
-- **Remove-USLanguagePack.ps1** - Removes US language packs from systems
-- **Reset-WindowsUpdate.ps1** - Resets Windows Update components to resolve update issues
-- **Set-EnglishUKRegion.ps1** - Configures regional settings to English (UK)
+## Getting Started
 
-### AutoPatch (`scripts/device-management/autopatch/`)
-Multiple versions of Windows Update management scripts for controlling automatic patching behavior. Each version provides detect and remediate scripts for managing Windows Update policies.
+### Prerequisites
 
-**Versions:**
-- **V1** - Granular control over individual update policies (UseWUServer, DisableWindowsUpdateAccess, etc.)
-- **V2-V5** - Progressive iterations of consolidated AutoPatch management
+#### For All Scripts
+- **PowerShell 5.1 or later** (PowerShell 7+ recommended)
+- **Administrator privileges** (most scripts require elevation)
+- **Execution Policy** set appropriately
 
-### Winget Updates (`scripts/device-management/winget-updates/`)
-Detection and remediation script pairs for automated application updates via Windows Package Manager (winget):
-- Adobe Reader (32-bit & 64-bit)
-- Azure CLI
-- Firefox
-- Google Chrome
-- Lenovo Dock Manager (multiple versions)
-- Lenovo System Update
-- Microsoft Remote Desktop
-- Microsoft Visual Studio Code
-- Microsoft Visual Studio Professional (2019 & 2022)
-- Microsoft Edge WebView2
-- NotePad++
-- OBS Studio
-- Oh My Posh
-- SQL Server Management Studio (SSMS)
-- TeamViewer (Full & Host)
-- Visual C++ Redistributables (2008, 2010, 2012, 2013, 2015-2019)
-- WinSCP
-- Zoom
+#### For Intune Scripts
+- **Microsoft Graph PowerShell SDK**
+  ```powershell
+  Install-Module Microsoft.Graph -Scope CurrentUser
+  ```
+- **Required Permissions**: DeviceManagementManagedDevices.Read.All (minimum)
+- **Intune Administrator** or **Global Reader** role
 
-Each application folder contains:
-- `detect.ps1` - Checks if an update is needed
-- `remediate.ps1` - Performs the application update
+#### For Server Scripts
+- **Windows Server 2016, 2019, or 2022**
+- **Local Administrator** privileges
+- No additional modules required (uses built-in cmdlets)
 
-### Device Management (`scripts/device-management/`)
+### Quick Start
 
-**bitlocker-backup/** - Ensures BitLocker recovery keys are properly backed up to Azure AD/Intune
-
-**device-uptime/** - Monitors and manages device uptime with remediation actions
-
-**l16-driver-block/** - Manages AMD driver blocking/unblocking for Lenovo L16 devices
-
-**adobe-rum/** - Scripts for Adobe Remote Update Manager
-
-**remove-sccm/** - Cleanly removes SCCM client components from devices
-
-### Templates (`templates/`)
-
-**App Detection Template.ps1** - Reusable template for creating custom application detection scripts
-
-### Utilities (`scripts/utilities/`)
-
-**Sync-UserGroupToPrimaryDeviceGroup.ps1** - Synchronizes user group memberships to device groups
-
-## Usage
-
-### For Intune Administrators
-
-1. **Deploy Proactive Remediations:**
-   - Upload detect/remediate script pairs to Intune
-   - Configure appropriate detection and remediation schedules
-   - Assign to target device groups
-
-2. **Run Management Scripts:**
+1. **Clone or download the repository**
    ```powershell
-   # Example: Check BitLocker status across devices
-   .\scripts\intune\Get-BitLockerStatus.ps1
+   git clone https://github.com/Carme99/bug-free-umbrella.git
+   cd bug-free-umbrella
    ```
 
-3. **Create Win32 App Packages:**
+2. **Choose your script category**
+   - Browse to the appropriate folder (intune/, server/, security-compliance/, etc.)
+   - Read the category README for script descriptions
+
+3. **Run a script**
    ```powershell
-   # Package an application for Intune deployment
-   .\scripts\intune\New-IntuneWinPackage.ps1
+   # View script help
+   Get-Help .\ScriptName.ps1 -Detailed
+
+   # Execute the script
+   .\ScriptName.ps1 -Parameters
    ```
 
-### For Server Administrators
+---
 
+## Documentation Guides
+
+### [Script Examples & Expected Outputs](SCRIPT-EXAMPLES.md)
+
+Comprehensive guide showing:
+- Exact command syntax for common scenarios
+- Sample output with interpretation
+- Exit codes and their meanings
+- Execution time expectations
+- Best practices for each script category
+
+**When to use**: Learning how scripts behave, understanding expected results, troubleshooting unexpected output
+
+### [End-to-End Workflows](WORKFLOWS.md)
+
+Step-by-step guides for complete processes:
+- Monthly compliance audits
+- Automated winget updates deployment
+- New server setup procedures
+- Intune device cleanup
+- BitLocker deployment and monitoring
+- Proactive remediation deployment
+
+**When to use**: Following a complete process from start to finish, onboarding new team members
+
+### [Troubleshooting Guide](TROUBLESHOOTING.md)
+
+Solutions for common issues:
+- Microsoft Graph API authentication problems
+- PowerShell execution policy errors
+- Module installation issues
+- Intune script deployment problems
+- Winget update failures
+- BitLocker backup issues
+- Network and proxy problems
+- Permission errors
+
+**When to use**: Resolving errors, investigating failures, fixing deployment issues
+
+### [Intune Sync Guide](INTUNE-SYNC-README.md)
+
+Detailed guide for synchronizing user groups to device groups:
+- Use case and benefits
+- Prerequisites and permissions
+- Step-by-step configuration
+- Interactive device selection
+- Full sync process
+- Troubleshooting
+
+**When to use**: Implementing user-to-device group synchronization for autopatch or similar scenarios
+
+---
+
+## Common Use Cases
+
+### Monthly IT Operations
+
+#### Compliance Reporting
 ```powershell
-# Generate disk health report
-.\scripts\server\Get-DiskReport.ps1
+# Generate all compliance reports
+cd scripts\intune
+.\Get-DeviceComplianceReport.ps1
+.\Get-BitLockerStatus.ps1
+.\Get-WindowsUpdateCompliance.ps1
+.\Find-StaleDevices.ps1 -DaysInactive 90
 
-# Reset Windows Update components
-.\scripts\server\Reset-WindowsUpdate.ps1
-
-# Verify system integrity
-.\scripts\server\Check-SystemIntegrity.ps1
+# Review generated reports on Desktop
 ```
 
-### Script Execution Requirements
+#### Security Audit
+```powershell
+cd scripts\security-compliance
+.\Get-SecurityBaseline.ps1 -ExportReport
+.\Get-LocalAdminAudit.ps1 -ExportReport
+.\Test-SecurityFeatures.ps1 -ExportReport
+.\Get-FailedLoginReport.ps1 -Hours 720 -ExportReport
+```
 
-- **PowerShell Version:** 5.1 or later recommended
-- **Execution Policy:** Scripts may require execution policy adjustment
-- **Permissions:** Many scripts require administrator privileges
-- **Intune Scripts:** Graph API permissions may be required for Intune management scripts
+### Server Maintenance
+
+#### Pre-Change Checklist
+```powershell
+cd scripts\server
+# Create restore point
+.\backup-recovery\Manage-RestorePoints.ps1 -Action Create -Description "Before updates"
+
+# Verify system health
+.\Check-SystemIntegrity.ps1 -GenerateReport
+
+# Backup Group Policies (if applicable)
+.\group-policy\Backup-GroupPolicies.ps1 -BackupPath "D:\Backups"
+```
+
+#### Post-Change Verification
+```powershell
+# Check system integrity
+.\Check-SystemIntegrity.ps1 -AutoRepair
+
+# Verify services
+.\monitoring\Get-SystemHealthCheck.ps1 -OutputFormat HTML
+
+# Test network
+.\network\Test-NetworkConnectivity.ps1 -OutputFormat HTML
+```
+
+### Application Management
+
+#### Deploy Winget Auto-Updates
+```powershell
+cd scripts\device-management\winget-updates
+
+# Use pre-built scripts for popular apps
+# or generate new ones from templates
+
+# Example: Deploy Chrome updates
+# Upload GoogleChrome/detect.ps1 and remediate.ps1 to Intune
+# Configure as Proactive Remediation, schedule daily
+```
+
+#### Monitor Application Deployments
+```powershell
+cd scripts\intune
+.\Get-AppInstallationStatus.ps1 -AppName "Google Chrome"
+.\Get-AppInstallErrorReport.ps1 -Days 7 -ExportHTML
+```
+
+---
+
+## Integration Scenarios
+
+### Intune + Server Management
+```powershell
+# Sync user group to device group for Autopatch
+.\scripts\utilities\Sync-UserGroupToPrimaryDeviceGroup.ps1
+
+# Then monitor update compliance
+.\scripts\intune\Get-WindowsUpdateCompliance.ps1 -IncludeAutoPatchInfo
+```
+
+### Active Directory + Group Policy
+```powershell
+# Before AD changes
+.\scripts\server\backup-recovery\Manage-RestorePoints.ps1 -Action Create
+
+# Audit users
+.\scripts\server\active-directory\Get-ADUserAudit.ps1 -CheckPrivilegedAccounts
+
+# Backup GPOs
+.\scripts\server\group-policy\Backup-GroupPolicies.ps1 -BackupPath "D:\Backups"
+
+# Make changes...
+
+# Verify no conflicts
+.\scripts\server\group-policy\Find-GPOConflicts.ps1
+```
+
+### Proactive Remediation + Security
+```powershell
+# Deploy security baseline enforcement
+cd scripts\device-management\proactive-remediations\Check-SecurityBaseline
+# Upload to Intune as Proactive Remediation
+
+# Monitor compliance
+cd ..\..\security-compliance
+.\Get-SecurityBaseline.ps1 -ExportReport
+```
+
+---
 
 ## Best Practices
 
-1. **Test Before Deployment:** Always test scripts in a non-production environment first
-2. **Review Permissions:** Ensure scripts have appropriate permissions for your environment
-3. **Monitor Execution:** Use Intune reporting to monitor detection/remediation outcomes
-4. **Customize as Needed:** Scripts may require customization for your specific environment
-5. **Version Control:** Track any modifications you make to these scripts
+### Script Execution
+1. **Always read script help first**
+   ```powershell
+   Get-Help .\ScriptName.ps1 -Detailed
+   ```
 
-## Contributing
+2. **Test in non-production first**
+   - Use test device groups
+   - Verify expected behavior
+   - Check for unintended side effects
 
-When adding new scripts:
-- Follow the existing detection/remediation pattern
-- Include clear comments and documentation
-- Test thoroughly before committing
-- Update this README with new script descriptions
+3. **Monitor execution and outputs**
+   - Review console output
+   - Check generated reports
+   - Verify expected results
+
+### Automation
+1. **Use appropriate scheduling**
+   - Daily: System health, disk space
+   - Weekly: Stale devices, profile cleanup
+   - Monthly: Compliance audits, security reviews
+
+2. **Centralize report storage**
+   - Create consistent output paths
+   - Implement retention policies
+   - Archive for compliance
+
+3. **Implement alerting**
+   - Email reports for critical items
+   - Integrate with monitoring systems
+   - Set appropriate thresholds
+
+### Security
+1. **Secure script storage**
+   - Use version control (Git)
+   - Restrict access appropriately
+   - Review changes before deployment
+
+2. **Protect sensitive outputs**
+   - Reports may contain PII
+   - Secure report storage locations
+   - Implement data retention policies
+
+3. **Audit script usage**
+   - Log script executions
+   - Review who runs what
+   - Track configuration changes
+
+---
+
+## Script Categories Quick Reference
+
+| Category | Script Count | Primary Use Cases |
+|----------|--------------|-------------------|
+| **Intune Management** | 19 | Compliance reporting, app deployment, device maintenance |
+| **Server Management** | 16+ | System maintenance, AD/GPO management, backup verification |
+| **Security & Compliance** | 9 | Security auditing, baseline verification, access reviews |
+| **Monitoring** | 3 | System health, battery health, performance trending |
+| **Network Management** | 3 | Connectivity testing, diagnostics, network stack reset |
+| **Proactive Remediations** | 6 pairs | Auto-fix disk space, temp files, Windows Update, security |
+| **Winget Updates** | 40+ apps | Application auto-updates via Intune remediations |
+
+---
+
+## Support and Resources
+
+### Getting Help
+1. **Check built-in help**
+   ```powershell
+   Get-Help .\ScriptName.ps1 -Full
+   ```
+
+2. **Review documentation**
+   - Script Examples for usage patterns
+   - Troubleshooting Guide for common issues
+   - Workflow Guides for complete processes
+
+3. **Check script comments**
+   - All scripts include detailed comments
+   - Parameter descriptions
+   - Example usage
+
+### Contributing
+When adding new scripts or documentation:
+- Follow existing patterns and structures
+- Include comprehensive help
+- Test thoroughly
+- Update relevant README files
+- Add examples to documentation
+
+### Feedback
+- Report issues with detailed error messages
+- Suggest improvements
+- Share success stories
+- Contribute enhancements
+
+---
+
+## Version History
+
+**Version 2.0** - December 2024
+- Expanded server management (18 new scripts)
+- Enhanced Intune scripts (19 total)
+- Added monitoring and network categories
+- Improved documentation structure
+- Added comprehensive workflow guides
+
+**Version 1.0** - Initial Release
+- Core Intune management scripts
+- Basic server utilities
+- Winget update templates
+- Proactive remediation library
+
+---
 
 ## License
 
-This project is licensed under the terms specified in the LICENSE file.
+Licensed under the Apache License 2.0. See [LICENSE](../LICENSE) for details.
 
-## Support
+---
 
-For issues or questions:
-- Review script comments for usage details
-- Check the README files in subdirectories for specific guidance
-- Test in a controlled environment before production deployment
+**Last Updated**: December 26, 2024
+**Documentation Version**: 2.0

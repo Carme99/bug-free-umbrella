@@ -242,7 +242,7 @@ For issues or questions:
 
 ## Version History
 
-- **V3 (2025)** - Enhanced templates with retry logic, logging, notifications, maintenance windows
+- **V3 (2024)** - Enhanced templates with retry logic, logging, notifications, maintenance windows
 - **V2 (2024)** - Auto-detection, simplified configuration
 - **V1 (2023)** - Basic templates, manual configuration
 
@@ -259,4 +259,4 @@ When adding new applications:
 
 ---
 
-**Last Updated:** 2025-01-15
+**Last Updated:** December 26, 2024
