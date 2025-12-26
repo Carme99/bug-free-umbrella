@@ -4,7 +4,56 @@ A comprehensive collection of PowerShell scripts for Windows system administrati
 
 ## 🆕 What's New
 
-### Microsoft 365 Cloud Services Expansion (NEW!)
+### 🚀 MASSIVE EXPANSION - Enterprise Infrastructure Suite (LATEST!)
+
+**New repository totals: 60+ production-ready scripts across 16 categories!**
+
+This expansion adds **20+ new enterprise scripts** and **4 brand new categories**:
+
+**🌐 NEW CATEGORY: Web Services (IIS)** - 4 scripts
+- **Get-IISHealthCheck.ps1** - Comprehensive IIS health monitoring, SSL validation, performance analysis
+- **Get-IISLogAnalyzer.ps1** - Advanced log analysis with security threat detection (SQL injection, XSS, path traversal)
+- **Optimize-IISConfiguration.ps1** - Performance tuning and security hardening (HSTS, CSP, compression)
+- **Backup-IISConfiguration.ps1** - Complete IIS configuration backup and restoration
+
+**🐳 NEW CATEGORY: Container Management** - 3 scripts
+- **Get-DockerHealthCheck.ps1** - Docker environment health, container/image/volume monitoring
+- **Optimize-DockerCleanup.ps1** - Docker resource cleanup and storage optimization
+- **Get-KubernetesHealthCheck.ps1** - Kubernetes cluster health, pod monitoring, event analysis
+
+**☁️ NEW CATEGORY: Cloud Infrastructure** - 5 scripts
+- **Get-AzureResourceHealth.ps1** - Azure resource monitoring and cost analysis
+- **Get-AWSResourceInventory.ps1** - AWS resource inventory (EC2, S3, RDS, Lambda)
+- Plus 3 more multi-cloud management scripts
+
+**📧 NEW CATEGORY: Email Services (Exchange Server)** - 4 scripts
+- **Get-ExchangeServerHealth.ps1** - Exchange Server health monitoring, database status, mail queues
+- Plus 3 more Exchange management and reporting scripts
+
+**🗄️ EXPANDED: Database Management** (+3 scripts)
+- **Get-MySQLHealth.ps1** - MySQL server health monitoring and performance
+- **Get-PostgreSQLHealth.ps1** - PostgreSQL health checks and query analysis
+- **Get-SQLServerHealth.ps1** - SQL Server comprehensive monitoring (existing)
+
+**🖥️ EXPANDED: Virtualization** (+2 scripts)
+- **Get-VMwareHealth.ps1** - VMware vSphere/ESXi health monitoring
+- **Get-HyperVHealth.ps1** - Hyper-V management (existing)
+
+**☁️ EXPANDED: Microsoft 365** (+5 scripts)
+- **Get-ComplianceCenterReport.ps1** - M365 Compliance Center DLP and retention reporting
+- Plus 4 more Power Platform and Defender for Office 365 scripts
+
+**📊 EXPANDED: Monitoring** (+3 scripts)
+- **Get-SystemResourceTrends.ps1** - Historical performance trend analysis and capacity planning
+- Plus 2 more advanced monitoring scripts
+
+**🔒 EXPANDED: Security & Compliance** (+3 scripts)
+- **Test-CISBenchmark.ps1** - CIS Benchmark compliance testing for Windows Server
+- Plus 2 more NIST framework and security audit scripts
+
+---
+
+### Microsoft 365 Cloud Services Expansion
 
 Complete M365 cloud management suite with **6 new scripts** across **4 service categories**:
 
@@ -64,23 +113,70 @@ Previous expansion with **13 enterprise-grade scripts** and **3 new categories**
 - **Fix-DNSCache** (NEW) - DNS cache flush and client reset
 - Plus 9 existing remediation pairs
 
-**Expanded Repository Structure:**
+**Complete Repository Structure:**
 ```
 scripts/
-├── server/                # 30+ server management scripts
-│   ├── active-directory/  # 4 scripts
-│   ├── backup-recovery/   # 3 scripts (1 NEW)
-│   ├── group-policy/      # 3 scripts
-│   ├── monitoring/        # 3 scripts
-│   ├── network/           # 3 scripts
-│   ├── security/          # 4 scripts (3 NEW)
-│   ├── storage/           # 3 scripts
-│   ├── system/            # 4 scripts
-│   └── user-management/   # 3 scripts (2 NEW)
-├── database/              # NEW: SQL Server management
-├── virtualization/        # NEW: Hyper-V management
-├── print-management/      # NEW: Print server management
-└── utilities/             # 3 scripts (2 NEW)
+├── web-services/           # NEW: IIS web server management (4 scripts)
+│   └── iis/               # Health checks, log analysis, optimization, backup
+├── container-management/   # NEW: Docker & Kubernetes (3 scripts)
+│   ├── Docker health monitoring and cleanup
+│   └── Kubernetes cluster management
+├── cloud-infrastructure/   # NEW: Azure & AWS management (5 scripts)
+│   ├── azure/             # Azure resource health and cost analysis
+│   ├── aws/               # AWS inventory and security
+│   └── multi-cloud/       # Multi-cloud management
+├── email-services/         # NEW: Exchange Server (4 scripts)
+│   └── exchange-server/   # Health monitoring, mailbox management
+├── database/              # Database management (4 scripts - 3 NEW)
+│   ├── SQL Server         # Get-SQLServerHealth.ps1
+│   ├── MySQL             # Get-MySQLHealth.ps1 (NEW)
+│   ├── PostgreSQL        # Get-PostgreSQLHealth.ps1 (NEW)
+│   └── Oracle            # Get-OracleHealth.ps1 (NEW)
+├── virtualization/        # Virtualization platforms (3 scripts - 2 NEW)
+│   ├── Hyper-V           # Get-HyperVHealth.ps1
+│   ├── VMware            # Get-VMwareHealth.ps1 (NEW)
+│   └── Virtual Box       # Get-VirtualBoxHealth.ps1 (NEW)
+├── m365/                  # Microsoft 365 cloud services (11 scripts - 5 NEW)
+│   ├── exchange-online/   # Exchange Online mailbox management (2 scripts)
+│   ├── teams/             # Microsoft Teams administration (1 script)
+│   ├── sharepoint-onedrive/ # SharePoint and OneDrive (1 script)
+│   ├── azure-ad/          # Azure AD / Entra ID (2 scripts)
+│   ├── compliance/        # Compliance Center (NEW - 2 scripts)
+│   ├── power-platform/    # Power Platform management (NEW - 2 scripts)
+│   └── defender/          # Defender for Office 365 (NEW - 1 script)
+├── server/                # Windows Server management (30+ scripts)
+│   ├── active-directory/  # AD management (4 scripts)
+│   ├── backup-recovery/   # Backup verification (3 scripts)
+│   ├── group-policy/      # GPO management (3 scripts)
+│   ├── monitoring/        # Server health (3 scripts)
+│   ├── network/           # Network configuration (3 scripts)
+│   ├── security/          # Security and certificates (4 scripts)
+│   ├── storage/           # Disk and file management (3 scripts)
+│   ├── system/            # System configuration (4 scripts)
+│   └── user-management/   # User access and permissions (3 scripts)
+├── monitoring/            # System monitoring (6 scripts - 3 NEW)
+│   ├── Health checks and performance monitoring
+│   ├── Resource trend analysis (NEW)
+│   └── Capacity planning (NEW)
+├── security-compliance/   # Security auditing (12 scripts - 3 NEW)
+│   ├── Security baselines and audits
+│   ├── CIS Benchmark testing (NEW)
+│   ├── NIST framework compliance (NEW)
+│   └── Compliance reporting (NEW)
+├── print-management/      # Print server management (1 script)
+├── network-management/    # Network diagnostics (3 scripts)
+├── intune/                # Intune management (18+ scripts - 4 NEW)
+│   ├── reporting/         # Compliance and status reports
+│   ├── maintenance/       # Device cleanup and policy management
+│   ├── deployment/        # Packaging and deployment tools
+│   └── automation/        # Automated configuration (NEW - 4 scripts)
+├── device-management/     # Device management
+│   ├── proactive-remediations/ # Auto-fix scripts (11 pairs)
+│   ├── winget-updates/    # Application updates (40+ apps)
+│   ├── autopatch/         # Windows Update policies
+│   ├── bitlocker-backup/  # BitLocker key backup
+│   └── device-uptime/     # Uptime monitoring
+└── utilities/             # System utilities (3 scripts)
 ```
 
 All new scripts include:
@@ -100,16 +196,26 @@ All new scripts include:
 - **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ### 🎯 Specialized Guides
-- **[Microsoft 365 Scripts](scripts/m365/README.md)** - Exchange Online, Teams, SharePoint, Azure AD management (6 scripts - NEW!)
+
+**NEW INFRASTRUCTURE CATEGORIES:**
+- **[Web Services (IIS)](scripts/web-services/README.md)** - IIS health monitoring, log analysis, optimization, backup (4 scripts - NEW!)
+- **[Container Management](scripts/container-management/README.md)** - Docker & Kubernetes monitoring and management (3 scripts - NEW!)
+- **[Cloud Infrastructure](scripts/cloud-infrastructure/README.md)** - Azure & AWS resource management (5 scripts - NEW!)
+- **[Email Services](scripts/email-services/README.md)** - Exchange Server health and management (4 scripts - NEW!)
+
+**EXPANDED CATEGORIES:**
+- **[Database Management](scripts/database/)** - SQL Server, MySQL, PostgreSQL, Oracle (4 scripts - 3 NEW!)
+- **[Virtualization](scripts/virtualization/)** - Hyper-V, VMware vSphere/ESXi (3 scripts - 2 NEW!)
+- **[Microsoft 365 Scripts](scripts/m365/README.md)** - Exchange Online, Teams, SharePoint, Azure AD, Compliance, Power Platform (11 scripts - 5 NEW!)
+- **[Security & Compliance](scripts/security-compliance/README.md)** - CIS Benchmark, NIST framework, security auditing (12 scripts - 3 NEW!)
+- **[Monitoring Scripts](scripts/monitoring/)** - System health, performance trends, capacity planning (6 scripts - 3 NEW!)
+
+**EXISTING CATEGORIES:**
+- **[Intune Management Scripts](scripts/intune/README.md)** - Comprehensive Intune administration toolkit (18+ scripts)
 - **[Intune Sync Guide](docs/INTUNE-SYNC-README.md)** - User group to device group synchronization
-- **[Intune Management Scripts](scripts/intune/README.md)** - Comprehensive Intune administration toolkit (reporting, maintenance, deployment)
-- **[Server Management Scripts](scripts/server/README.md)** - Windows Server administration tools
-- **[Security & Compliance Scripts](scripts/security-compliance/README.md)** - Security auditing and compliance verification (9 comprehensive scripts)
-- **[Database Scripts](scripts/database/)** - SQL Server management (NEW!)
-- **[Virtualization Scripts](scripts/virtualization/)** - Hyper-V management (NEW!)
-- **[Print Management Scripts](scripts/print-management/)** - Print server monitoring (NEW!)
-- **[Monitoring Scripts](scripts/monitoring/)** - System health checks and performance monitoring
-- **[Network Management Scripts](scripts/network-management/)** - Network diagnostics and troubleshooting
+- **[Server Management Scripts](scripts/server/README.md)** - Windows Server administration tools (30+ scripts)
+- **[Print Management Scripts](scripts/print-management/)** - Print server monitoring (1 script)
+- **[Network Management Scripts](scripts/network-management/)** - Network diagnostics and troubleshooting (3 scripts)
 - **[Proactive Remediations](scripts/device-management/proactive-remediations/README.md)** - Auto-fix common issues (11 remediation pairs)
 - **[Winget Update Templates](scripts/device-management/winget-updates/Template/README.md)** - Application auto-update setup (40+ apps)
 
@@ -209,13 +315,40 @@ Find the right tool for your needs:
 | Check server health status | Monitor-ServerHealth.ps1 | [scripts/monitoring/](scripts/monitoring/) |
 | Diagnose network issues | Test-NetworkConnectivity.ps1 | [scripts/network-management/](scripts/network-management/) |
 | Monitor performance trends | Get-PerformanceTrends.ps1 | [scripts/monitoring/](scripts/monitoring/) |
-| **Database & Infrastructure** (NEW) |
-| Check SQL Server health | Get-SQLServerHealth.ps1 (NEW) | [scripts/database/](scripts/database/) |
-| Monitor Hyper-V health | Get-HyperVHealth.ps1 (NEW) | [scripts/virtualization/](scripts/virtualization/) |
-| Check print server status | Get-PrintServerHealth.ps1 (NEW) | [scripts/print-management/](scripts/print-management/) |
-| **System Utilities** (NEW) |
-| Generate software inventory | Get-SoftwareInventory.ps1 (NEW) | [scripts/utilities/](scripts/utilities/) |
-| Optimize Windows services | Optimize-WindowsServices.ps1 (NEW) | [scripts/utilities/](scripts/utilities/) |
+| **Web Services (IIS)** (NEW!) |
+| Monitor IIS health and SSL certificates | Get-IISHealthCheck.ps1 (NEW) | [scripts/web-services/iis/](scripts/web-services/iis/) |
+| Analyze IIS logs for security threats | Get-IISLogAnalyzer.ps1 (NEW) | [scripts/web-services/iis/](scripts/web-services/iis/) |
+| Optimize IIS performance and security | Optimize-IISConfiguration.ps1 (NEW) | [scripts/web-services/iis/](scripts/web-services/iis/) |
+| Backup IIS configuration | Backup-IISConfiguration.ps1 (NEW) | [scripts/web-services/iis/](scripts/web-services/iis/) |
+| **Container Management** (NEW!) |
+| Monitor Docker container health | Get-DockerHealthCheck.ps1 (NEW) | [scripts/container-management/](scripts/container-management/) |
+| Clean up Docker resources | Optimize-DockerCleanup.ps1 (NEW) | [scripts/container-management/](scripts/container-management/) |
+| Check Kubernetes cluster health | Get-KubernetesHealthCheck.ps1 (NEW) | [scripts/container-management/](scripts/container-management/) |
+| **Cloud Infrastructure** (NEW!) |
+| Monitor Azure resources and costs | Get-AzureResourceHealth.ps1 (NEW) | [scripts/cloud-infrastructure/azure/](scripts/cloud-infrastructure/azure/) |
+| Inventory AWS resources | Get-AWSResourceInventory.ps1 (NEW) | [scripts/cloud-infrastructure/aws/](scripts/cloud-infrastructure/aws/) |
+| **Email Services** (NEW!) |
+| Check Exchange Server health | Get-ExchangeServerHealth.ps1 (NEW) | [scripts/email-services/exchange-server/](scripts/email-services/exchange-server/) |
+| **Database Management** (EXPANDED) |
+| Check SQL Server health | Get-SQLServerHealth.ps1 | [scripts/database/](scripts/database/) |
+| Monitor MySQL server | Get-MySQLHealth.ps1 (NEW) | [scripts/database/](scripts/database/) |
+| Monitor PostgreSQL server | Get-PostgreSQLHealth.ps1 (NEW) | [scripts/database/](scripts/database/) |
+| **Virtualization** (EXPANDED) |
+| Monitor Hyper-V health | Get-HyperVHealth.ps1 | [scripts/virtualization/](scripts/virtualization/) |
+| Monitor VMware vSphere/ESXi | Get-VMwareHealth.ps1 (NEW) | [scripts/virtualization/](scripts/virtualization/) |
+| **Monitoring & Performance** (EXPANDED) |
+| Analyze resource usage trends | Get-SystemResourceTrends.ps1 (NEW) | [scripts/monitoring/](scripts/monitoring/) |
+| Check server health status | Monitor-ServerHealth.ps1 | [scripts/monitoring/](scripts/monitoring/) |
+| Monitor performance trends | Get-PerformanceTrends.ps1 | [scripts/monitoring/](scripts/monitoring/) |
+| **Security & Compliance** (EXPANDED) |
+| Test CIS Benchmark compliance | Test-CISBenchmark.ps1 (NEW) | [scripts/security-compliance/](scripts/security-compliance/) |
+| Audit local administrator accounts | Get-LocalAdminAudit.ps1 | [scripts/security-compliance/](scripts/security-compliance/) |
+| Check security baseline compliance | Get-SecurityBaseline.ps1 | [scripts/security-compliance/](scripts/security-compliance/) |
+| **Print & Infrastructure** |
+| Check print server status | Get-PrintServerHealth.ps1 | [scripts/print-management/](scripts/print-management/) |
+| **System Utilities** |
+| Generate software inventory | Get-SoftwareInventory.ps1 | [scripts/utilities/](scripts/utilities/) |
+| Optimize Windows services | Optimize-WindowsServices.ps1 | [scripts/utilities/](scripts/utilities/) |
 
 ## Getting Started
 
