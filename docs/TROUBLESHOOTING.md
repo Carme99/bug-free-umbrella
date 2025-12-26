@@ -2,6 +2,21 @@
 
 This guide covers common issues and solutions for the bug-free-umbrella PowerShell toolkit.
 
+## Quick Reference
+
+Common issues and their quick fixes:
+
+| Issue | Quick Fix | Section |
+|-------|-----------|---------|
+| "Connect-MgGraph not recognized" | `Install-Module Microsoft.Graph -Scope CurrentUser` | [Module Installation](#module-installation-issues) |
+| "Insufficient privileges" | Grant admin consent in Azure AD | [Authentication Problems](#authentication-problems) |
+| "Execution policy" error | `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser` | [Execution Policy](#powershell-execution-policy) |
+| "Too many requests (429)" | Implement retry logic with delays | [Graph API Issues](#microsoft-graph-api-issues) |
+| Winget not found | Install App Installer from Microsoft Store | [Winget Issues](#winget-update-scripts) |
+| Script running too slow | Use filtering parameters to reduce scope | [Performance](#script-performance-issues) |
+| BitLocker key backup fails | Verify device is Azure AD joined | [BitLocker](#bitlocker-backup-issues) |
+| Proxy blocking connections | Configure proxy settings or bypass | [Network Issues](#network-and-proxy-issues) |
+
 ## Table of Contents
 
 - [Microsoft Graph API Issues](#microsoft-graph-api-issues)

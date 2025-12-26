@@ -242,9 +242,9 @@ For issues or questions:
 
 ## Version History
 
-- **V3 (2024)** - Enhanced templates with retry logic, logging, notifications, maintenance windows
-- **V2 (2024)** - Auto-detection, simplified configuration
-- **V1 (2023)** - Basic templates, manual configuration
+- **V3** - Enhanced templates with retry logic, logging, notifications, maintenance windows
+- **V2** - Auto-detection, simplified configuration
+- **V1** - Basic templates, manual configuration
 
 Current repository uses **V3 templates** exclusively.
 

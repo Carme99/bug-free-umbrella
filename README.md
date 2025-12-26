@@ -4,7 +4,7 @@ A comprehensive collection of PowerShell scripts for Windows system administrati
 
 ## 🆕 What's New
 
-### Server Management Expansion (December 2024)
+### Server Management Expansion
 
 Major expansion of server management capabilities with **18 new enterprise-grade scripts** organized into specialized categories:
 
@@ -122,6 +122,32 @@ bug-free-umbrella/
 ├── templates/                         # Reusable script templates
 └── LICENSE
 ```
+
+## 💡 Common Use Cases
+
+Find the right tool for your needs:
+
+| I need to... | Use this script | Location |
+|--------------|----------------|----------|
+| **Intune Management** |
+| Find devices that haven't synced in months | Find-StaleDevices.ps1 | [scripts/intune/](scripts/intune/) |
+| Check BitLocker encryption status | Get-BitLockerStatus.ps1 | [scripts/intune/](scripts/intune/) |
+| See which devices are non-compliant | Get-DeviceComplianceReport.ps1 | [scripts/intune/](scripts/intune/) |
+| Auto-update applications via winget | Winget Update Templates | [scripts/device-management/winget-updates/](scripts/device-management/winget-updates/) |
+| **Server Management** |
+| Fix stuck Windows Updates | Reset-WindowsUpdate.ps1 | [scripts/server/](scripts/server/) |
+| Clean up server disk space | Get-DiskReport.ps1 / Optimize-ServerStorage.ps1 | [scripts/server/](scripts/server/) |
+| Audit Active Directory users | Get-ADUserAudit.ps1 | [scripts/server/active-directory/](scripts/server/active-directory/) |
+| Backup all Group Policies | Backup-GroupPolicies.ps1 | [scripts/server/group-policy/](scripts/server/group-policy/) |
+| **Security & Compliance** |
+| Audit local administrator accounts | Get-LocalAdminAudit.ps1 | [scripts/security-compliance/](scripts/security-compliance/) |
+| Check security baseline compliance | Get-SecurityBaseline.ps1 | [scripts/security-compliance/](scripts/security-compliance/) |
+| Find expired certificates | Get-ExpiredCertificates.ps1 | [scripts/security-compliance/](scripts/security-compliance/) |
+| Review failed login attempts | Get-FailedLoginReport.ps1 | [scripts/security-compliance/](scripts/security-compliance/) |
+| **Monitoring & Troubleshooting** |
+| Check server health status | Monitor-ServerHealth.ps1 | [scripts/monitoring/](scripts/monitoring/) |
+| Diagnose network issues | Test-NetworkConnectivity.ps1 | [scripts/network-management/](scripts/network-management/) |
+| Monitor performance trends | Get-PerformanceTrends.ps1 | [scripts/monitoring/](scripts/monitoring/) |
 
 ## Getting Started
 

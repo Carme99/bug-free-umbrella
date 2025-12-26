@@ -210,7 +210,6 @@ Track script versions with comments:
 <#
 .NOTES
     Version: 1.1
-    Updated: 2024-12-23
     Changes: Added additional temp folder cleanup
 #>
 ```
