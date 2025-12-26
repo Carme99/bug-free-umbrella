@@ -258,5 +258,3 @@ When adding new applications:
 5. Add app to `_templates/app-catalog.md` if widely used
 
 ---
-
-**Last Updated:** December 26, 2024

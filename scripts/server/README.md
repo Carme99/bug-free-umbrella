@@ -1055,7 +1055,6 @@ These scripts are provided as-is for system administration purposes. Use at your
 
 ---
 
-**Last Updated**: December 26, 2024
 **Compatible**: Windows Server 2016, 2019, 2022
 **PowerShell**: 5.1+
 **Total Scripts**: 16

@@ -241,5 +241,4 @@ To add new remediations:
 ---
 
 **Version**: 1.0
-**Last Updated**: 2024-12-23
 **Compatible**: Windows 10/11, Windows Server 2016+

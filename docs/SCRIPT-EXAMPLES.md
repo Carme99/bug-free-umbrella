@@ -1213,5 +1213,4 @@ If script outputs don't match these examples:
 
 ---
 
-**Last Updated**: December 26, 2024
 **Version**: 1.0

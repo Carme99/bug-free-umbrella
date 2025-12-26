@@ -352,5 +352,3 @@ if ((Import-Csv $audit.CSVPath).Count -gt 50) {
 - [AD Account Cleanup Guidance](https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-server-2012-R2-and-2012/hh831702(v=ws.11))
 
 ---
-
-*Last Updated: December 26, 2024*

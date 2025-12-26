@@ -177,5 +177,3 @@ Include GPO backups in your disaster recovery plan:
 - [GPO Backup and Restore](https://docs.microsoft.com/en-us/powershell/module/grouppolicy/)
 
 ---
-
-*Last Updated: December 26, 2024*
