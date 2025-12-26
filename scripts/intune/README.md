@@ -809,7 +809,7 @@ Start-Process "$env:USERPROFILE\Desktop"
 
 ## Version History
 
-**Version 2.0** - Winget & Advanced Management (2024-12-23)
+**Version 2.0** - Winget & Advanced Management
 - Added 4 winget enhancement scripts (bulk updater, compliance, inventory, source config)
 - Added 4 device management scripts (bulk actions, Autopilot reporting, config export, app errors)
 - Created proactive remediation library (6 detect/remediate pairs)

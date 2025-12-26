@@ -26,6 +26,31 @@ This documentation hub provides detailed information about all scripts and tools
 
 ---
 
+## 🚀 Quick Start Guide
+
+New to this repository? Follow these steps to get started:
+
+1. **Choose Your Focus Area**
+   - Managing Intune devices? Start with [Intune Management Scripts](../scripts/intune/README.md)
+   - Managing servers? Check out [Server Management Scripts](../scripts/server/README.md)
+   - Want to automate common fixes? Explore [Proactive Remediations](../scripts/device-management/proactive-remediations/README.md)
+
+2. **Check Prerequisites**
+   - PowerShell 5.1 or later (PowerShell 7+ recommended)
+   - Administrator privileges for most scripts
+   - Microsoft Graph SDK for Intune scripts: `Install-Module Microsoft.Graph -Scope CurrentUser`
+
+3. **Review Examples**
+   - See [Script Examples](SCRIPT-EXAMPLES.md) for detailed usage examples with expected outputs
+   - Follow [Workflows](WORKFLOWS.md) for complete end-to-end scenarios
+
+4. **Test Safely**
+   - Always test scripts in a non-production environment first
+   - Review script contents before running
+   - Check [Troubleshooting Guide](TROUBLESHOOTING.md) if you encounter issues
+
+---
+
 ## Overview
 
 The bug-free-umbrella repository contains production-ready PowerShell scripts designed for IT administrators managing Windows environments through Microsoft Intune and traditional server infrastructure. All scripts follow best practices for detection/remediation patterns and enterprise deployment.
@@ -442,7 +467,7 @@ When adding new scripts or documentation:
 
 ## Version History
 
-**Version 2.0** - December 2024
+**Version 2.0**
 - Expanded server management (18 new scripts)
 - Enhanced Intune scripts (19 total)
 - Added monitoring and network categories

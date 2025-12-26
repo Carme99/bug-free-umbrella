@@ -1294,7 +1294,7 @@ Ongoing:   Monitor and adjust
 ### Sample Monthly Report
 
 ```
-Proactive Remediation Summary - December 2025
+Proactive Remediation Summary - Monthly Report
 ==============================================
 
 Overall Statistics:

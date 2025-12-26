@@ -843,11 +843,11 @@ $ForceCloseInMaintenanceWindow = $true        # Optional
 
 ## 🏷️ Version History
 
-| Version | Release | Key Features |
-|---------|---------|-------------|
-| **V1** (Legacy) | 2023 | Basic templates, manual configuration of all variables |
-| **V2** | 2024 | Auto-detection, simplified one-variable configuration |
-| **V3** (Current) | 2025 | Retry logic, logging, notifications, maintenance windows, hooks |
+| Version | Key Features |
+|---------|-------------|
+| **V1** (Legacy) | Basic templates, manual configuration of all variables |
+| **V2** | Auto-detection, simplified one-variable configuration |
+| **V3** (Current) | Retry logic, logging, notifications, maintenance windows, hooks |
 
 ---
 
