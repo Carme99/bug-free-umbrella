@@ -4,46 +4,63 @@ A comprehensive collection of PowerShell scripts for Windows system administrati
 
 ## 🆕 What's New
 
-### Server Management Expansion
+### Major Script Expansion - Extended Limits Release
 
-Major expansion of server management capabilities with **18 new enterprise-grade scripts** organized into specialized categories:
+Massive expansion with **13 new enterprise-grade scripts** and **3 new categories**, bringing the total to **200+ scripts**:
 
-**🗂️ Group Policy Management** (3 scripts)
-- **Get-GPOReport.ps1** - Comprehensive GPO reporting with HTML/XML exports
-- **Backup-GroupPolicies.ps1** - Automated GPO backups with retention management
-- **Find-GPOConflicts.ps1** - Detect GPO conflicts and configuration issues
+**🔒 Enhanced Security Scripts** (Server/Security - 4 total)
 
-**💾 Backup & Disaster Recovery** (2 scripts)
-- **Get-BackupStatus.ps1** - Windows Server Backup verification and validation
-- **Manage-RestorePoints.ps1** - System restore point creation and management
+- **Manage-FirewallRules.ps1** (NEW) - Windows Firewall audit, compliance, and bulk management
+- **Get-SecurityEventAudit.ps1** (NEW) - Analyze security logs for suspicious activities
+- **Test-ServerHardening.ps1** (NEW) - Server hardening compliance (CIS/STIG/Microsoft baselines)
+- **Test-CertificateExpiration.ps1** - SSL/TLS certificate monitoring
 
-**👥 Active Directory Management** (2 scripts)
-- **Get-ADUserAudit.ps1** - Comprehensive user account security auditing
-- **Get-ServiceAccountAudit.ps1** - Service account security and compliance auditing
-
-**📊 Advanced Monitoring** (2 scripts)
-- **Get-BatteryHealth.ps1** - Laptop battery health tracking and reporting
-- **Get-PerformanceTrends.ps1** - Performance monitoring with trend analysis
-
-**🌐 Network Management** (2 scripts)
-- **Test-NetworkDiagnostics.ps1** - Comprehensive network diagnostics toolkit
-- **Reset-NetworkStack.ps1** - Network stack reset for troubleshooting
-
-**🔐 User Access Management** (1 script)
+**👥 Enhanced User Management** (Server/User-Management - 3 total)
 - **Get-UserAccessReport.ps1** - User permissions and access rights auditing
+- **Get-InactiveUserReport.ps1** (NEW) - Find inactive AD accounts with privilege detection
+- **Get-UserLockoutReport.ps1** (NEW) - Account lockout analysis and brute force detection
 
-**Reorganized Server Structure:**
+**💾 Backup & Recovery** (Server/Backup-Recovery - 3 total)
+- **Get-BackupStatus.ps1** - Windows Server Backup verification
+- **Manage-RestorePoints.ps1** - System restore point management
+- **Test-BackupIntegrity.ps1** (NEW) - Backup integrity verification and VSS health
+
+**🔧 System Utilities** (Utilities - 3 total)
+- **Sync-UserGroupToPrimaryDeviceGroup.ps1** - Intune user-to-device sync
+- **Get-SoftwareInventory.ps1** (NEW) - Comprehensive software inventory with winget support
+- **Optimize-WindowsServices.ps1** (NEW) - Service optimization with Minimal/Balanced/Performance profiles
+
+**🗄️ NEW CATEGORY: Database Management**
+- **Get-SQLServerHealth.ps1** - SQL Server health monitoring (backups, logs, jobs, performance)
+
+**🖥️ NEW CATEGORY: Virtualization**
+- **Get-HyperVHealth.ps1** - Hyper-V host and VM health monitoring
+
+**🖨️ NEW CATEGORY: Print Management**
+- **Get-PrintServerHealth.ps1** - Print server monitoring and stuck job cleanup
+
+**🔄 Enhanced Proactive Remediations** (11 pairs total - 2 NEW)
+- **Fix-BrokenShortcuts** (NEW) - Remove broken Desktop/Start Menu shortcuts
+- **Fix-DNSCache** (NEW) - DNS cache flush and client reset
+- Plus 9 existing remediation pairs
+
+**Expanded Repository Structure:**
 ```
-scripts/server/
-├── active-directory/      # AD management and auditing
-├── backup-recovery/       # Backup and restore operations
-├── group-policy/          # GPO management and reporting
-├── monitoring/            # Server health and performance
-├── network/               # Network configuration and testing
-├── security/              # Security and certificates
-├── storage/               # Disk and file management
-├── system/                # System configuration and updates
-└── user-management/       # User access and permissions
+scripts/
+├── server/                # 30+ server management scripts
+│   ├── active-directory/  # 4 scripts
+│   ├── backup-recovery/   # 3 scripts (1 NEW)
+│   ├── group-policy/      # 3 scripts
+│   ├── monitoring/        # 3 scripts
+│   ├── network/           # 3 scripts
+│   ├── security/          # 4 scripts (3 NEW)
+│   ├── storage/           # 3 scripts
+│   ├── system/            # 4 scripts
+│   └── user-management/   # 3 scripts (2 NEW)
+├── database/              # NEW: SQL Server management
+├── virtualization/        # NEW: Hyper-V management
+├── print-management/      # NEW: Print server management
+└── utilities/             # 3 scripts (2 NEW)
 ```
 
 All new scripts include:
@@ -69,7 +86,7 @@ All new scripts include:
 - **[Security & Compliance Scripts](scripts/security-compliance/README.md)** - Security auditing and compliance verification (9 comprehensive scripts)
 - **[Monitoring Scripts](scripts/monitoring/)** - System health checks and performance monitoring
 - **[Network Management Scripts](scripts/network-management/)** - Network diagnostics and troubleshooting
-- **[Proactive Remediations](scripts/device-management/proactive-remediations/README.md)** - Auto-fix common issues (9 remediation pairs)
+- **[Proactive Remediations](scripts/device-management/proactive-remediations/README.md)** - Auto-fix common issues (11 remediation pairs - 2 NEW)
 - **[Winget Update Templates](scripts/device-management/winget-updates/Template/README.md)** - Application auto-update setup (40+ apps)
 
 ## Repository Structure
@@ -82,21 +99,25 @@ bug-free-umbrella/
 │   │   ├── reporting/                 # Compliance, status, and audit reports
 │   │   ├── maintenance/               # Device cleanup and policy management
 │   │   └── deployment/                # Packaging and deployment tools
-│   ├── server/                        # Server management tools (34 scripts)
-│   │   ├── active-directory/          # AD user/service account auditing
-│   │   ├── backup-recovery/           # Backup verification and restore points
-│   │   ├── group-policy/              # GPO management and reporting
-│   │   ├── monitoring/                # Server health and performance
-│   │   ├── network/                   # Network configuration and connectivity
-│   │   ├── security/                  # Security and certificates
-│   │   ├── storage/                   # Disk and file management
-│   │   ├── system/                    # System configuration and updates
-│   │   └── user-management/           # User access and permissions
+│   ├── server/                        # Server management tools (30 scripts)
+│   │   ├── active-directory/          # AD user/service account auditing (4 scripts)
+│   │   ├── backup-recovery/           # Backup verification and restore points (3 scripts)
+│   │   ├── group-policy/              # GPO management and reporting (3 scripts)
+│   │   ├── monitoring/                # Server health and performance (3 scripts)
+│   │   ├── network/                   # Network configuration and connectivity (3 scripts)
+│   │   ├── security/                  # Security and certificates (4 scripts)
+│   │   ├── storage/                   # Disk and file management (3 scripts)
+│   │   ├── system/                    # System configuration and updates (4 scripts)
+│   │   └── user-management/           # User access and permissions (3 scripts)
+│   ├── database/                      # Database management (SQL Server) (NEW)
+│   ├── virtualization/                # Hyper-V management (NEW)
+│   ├── print-management/              # Print server management (NEW)
 │   ├── security-compliance/           # Security auditing and compliance (9 scripts)
-│   ├── monitoring/                    # System health checks and monitoring (NEW)
-│   ├── network-management/            # Network diagnostics and troubleshooting (NEW)
+│   ├── monitoring/                    # System health checks and monitoring (3 scripts)
+│   ├── network-management/            # Network diagnostics and troubleshooting (3 scripts)
+│   ├── utilities/                     # System utilities (3 scripts)
 │   ├── device-management/             # Device management scripts
-│   │   ├── proactive-remediations/    # Auto-fix scripts (9 pairs)
+│   │   ├── proactive-remediations/    # Auto-fix scripts (11 pairs)
 │   │   ├── winget-updates/            # Application update scripts (40+ apps)
 │   │   │   ├── browsers/              # Firefox, Chrome
 │   │   │   ├── communication/         # Slack, Discord (NEW)
@@ -139,15 +160,26 @@ Find the right tool for your needs:
 | Clean up server disk space | Get-DiskReport.ps1 / Optimize-ServerStorage.ps1 | [scripts/server/](scripts/server/) |
 | Audit Active Directory users | Get-ADUserAudit.ps1 | [scripts/server/active-directory/](scripts/server/active-directory/) |
 | Backup all Group Policies | Backup-GroupPolicies.ps1 | [scripts/server/group-policy/](scripts/server/group-policy/) |
+| Find inactive user accounts | Get-InactiveUserReport.ps1 (NEW) | [scripts/server/user-management/](scripts/server/user-management/) |
+| Test backup integrity | Test-BackupIntegrity.ps1 (NEW) | [scripts/server/backup-recovery/](scripts/server/backup-recovery/) |
 | **Security & Compliance** |
 | Audit local administrator accounts | Get-LocalAdminAudit.ps1 | [scripts/security-compliance/](scripts/security-compliance/) |
 | Check security baseline compliance | Get-SecurityBaseline.ps1 | [scripts/security-compliance/](scripts/security-compliance/) |
 | Find expired certificates | Get-ExpiredCertificates.ps1 | [scripts/security-compliance/](scripts/security-compliance/) |
 | Review failed login attempts | Get-FailedLoginReport.ps1 | [scripts/security-compliance/](scripts/security-compliance/) |
+| Audit Windows Firewall rules | Manage-FirewallRules.ps1 (NEW) | [scripts/server/security/](scripts/server/security/) |
+| Check server hardening compliance | Test-ServerHardening.ps1 (NEW) | [scripts/server/security/](scripts/server/security/) |
 | **Monitoring & Troubleshooting** |
 | Check server health status | Monitor-ServerHealth.ps1 | [scripts/monitoring/](scripts/monitoring/) |
 | Diagnose network issues | Test-NetworkConnectivity.ps1 | [scripts/network-management/](scripts/network-management/) |
 | Monitor performance trends | Get-PerformanceTrends.ps1 | [scripts/monitoring/](scripts/monitoring/) |
+| **Database & Infrastructure** (NEW) |
+| Check SQL Server health | Get-SQLServerHealth.ps1 (NEW) | [scripts/database/](scripts/database/) |
+| Monitor Hyper-V health | Get-HyperVHealth.ps1 (NEW) | [scripts/virtualization/](scripts/virtualization/) |
+| Check print server status | Get-PrintServerHealth.ps1 (NEW) | [scripts/print-management/](scripts/print-management/) |
+| **System Utilities** (NEW) |
+| Generate software inventory | Get-SoftwareInventory.ps1 (NEW) | [scripts/utilities/](scripts/utilities/) |
+| Optimize Windows services | Optimize-WindowsServices.ps1 (NEW) | [scripts/utilities/](scripts/utilities/) |
 
 ## Getting Started
 
