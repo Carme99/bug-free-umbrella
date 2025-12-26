@@ -4,9 +4,29 @@ A comprehensive collection of PowerShell scripts for Windows system administrati
 
 ## 🆕 What's New
 
+### Microsoft 365 Cloud Services Expansion (NEW!)
+
+Complete M365 cloud management suite with **6 new scripts** across **4 service categories**:
+
+**📧 Exchange Online Management** (2 scripts)
+- **Get-MailboxHealth.ps1** - Mailbox quota monitoring, archive status, litigation hold, permissions
+- **Get-SharedMailboxReport.ps1** - Shared mailbox auditing, permission analysis, sign-in status
+
+**👥 Microsoft Teams** (1 script)
+- **Get-TeamsReport.ps1** - Team usage, guest access, channel analysis, ownership verification
+
+**📁 SharePoint / OneDrive** (1 script)
+- **Get-OneDriveUsageReport.ps1** - OneDrive storage monitoring, quota warnings, inactive sites
+
+**🔐 Azure AD / Entra ID** (2 scripts)
+- **Get-AzureADGuestAudit.ps1** - Guest user security audit, privilege detection, domain analysis
+- **Get-AzureADLicenseReport.ps1** - M365 license tracking, unused licenses, cost optimization
+
+---
+
 ### Major Script Expansion - Extended Limits Release
 
-Massive expansion with **13 new enterprise-grade scripts** and **3 new categories**, bringing the total to **200+ scripts**:
+Previous expansion with **13 enterprise-grade scripts** and **3 new categories**:
 
 **🔒 Enhanced Security Scripts** (Server/Security - 4 total)
 
@@ -80,13 +100,17 @@ All new scripts include:
 - **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** - Common issues and solutions
 
 ### 🎯 Specialized Guides
+- **[Microsoft 365 Scripts](scripts/m365/README.md)** - Exchange Online, Teams, SharePoint, Azure AD management (6 scripts - NEW!)
 - **[Intune Sync Guide](docs/INTUNE-SYNC-README.md)** - User group to device group synchronization
 - **[Intune Management Scripts](scripts/intune/README.md)** - Comprehensive Intune administration toolkit (reporting, maintenance, deployment)
 - **[Server Management Scripts](scripts/server/README.md)** - Windows Server administration tools
 - **[Security & Compliance Scripts](scripts/security-compliance/README.md)** - Security auditing and compliance verification (9 comprehensive scripts)
+- **[Database Scripts](scripts/database/)** - SQL Server management (NEW!)
+- **[Virtualization Scripts](scripts/virtualization/)** - Hyper-V management (NEW!)
+- **[Print Management Scripts](scripts/print-management/)** - Print server monitoring (NEW!)
 - **[Monitoring Scripts](scripts/monitoring/)** - System health checks and performance monitoring
 - **[Network Management Scripts](scripts/network-management/)** - Network diagnostics and troubleshooting
-- **[Proactive Remediations](scripts/device-management/proactive-remediations/README.md)** - Auto-fix common issues (11 remediation pairs - 2 NEW)
+- **[Proactive Remediations](scripts/device-management/proactive-remediations/README.md)** - Auto-fix common issues (11 remediation pairs)
 - **[Winget Update Templates](scripts/device-management/winget-updates/Template/README.md)** - Application auto-update setup (40+ apps)
 
 ## Repository Structure
@@ -95,6 +119,11 @@ All new scripts include:
 bug-free-umbrella/
 ├── docs/                              # Documentation
 ├── scripts/
+│   ├── m365/                          # Microsoft 365 cloud services (6 scripts - NEW)
+│   │   ├── exchange-online/           # Exchange Online mailbox management
+│   │   ├── teams/                     # Microsoft Teams administration
+│   │   ├── sharepoint-onedrive/       # SharePoint and OneDrive management
+│   │   └── azure-ad/                  # Azure AD / Entra ID management
 │   ├── intune/                        # Intune management tools (18 scripts)
 │   │   ├── reporting/                 # Compliance, status, and audit reports
 │   │   ├── maintenance/               # Device cleanup and policy management
@@ -150,6 +179,13 @@ Find the right tool for your needs:
 
 | I need to... | Use this script | Location |
 |--------------|----------------|----------|
+| **Microsoft 365 Cloud Services** (NEW) |
+| Check Exchange mailbox health | Get-MailboxHealth.ps1 (NEW) | [scripts/m365/exchange-online/](scripts/m365/exchange-online/) |
+| Audit shared mailboxes | Get-SharedMailboxReport.ps1 (NEW) | [scripts/m365/exchange-online/](scripts/m365/exchange-online/) |
+| Monitor Microsoft Teams usage | Get-TeamsReport.ps1 (NEW) | [scripts/m365/teams/](scripts/m365/teams/) |
+| Check OneDrive storage usage | Get-OneDriveUsageReport.ps1 (NEW) | [scripts/m365/sharepoint-onedrive/](scripts/m365/sharepoint-onedrive/) |
+| Audit Azure AD guest users | Get-AzureADGuestAudit.ps1 (NEW) | [scripts/m365/azure-ad/](scripts/m365/azure-ad/) |
+| Review M365 license usage | Get-AzureADLicenseReport.ps1 (NEW) | [scripts/m365/azure-ad/](scripts/m365/azure-ad/) |
 | **Intune Management** |
 | Find devices that haven't synced in months | Find-StaleDevices.ps1 | [scripts/intune/](scripts/intune/) |
 | Check BitLocker encryption status | Get-BitLockerStatus.ps1 | [scripts/intune/](scripts/intune/) |
