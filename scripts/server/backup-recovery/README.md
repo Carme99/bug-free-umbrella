@@ -248,5 +248,3 @@ Create monitoring system for backup health:
 - [Disaster Recovery Planning](https://docs.microsoft.com/en-us/azure/site-recovery/site-recovery-overview)
 
 ---
-
-*Last Updated: December 26, 2024*

@@ -638,5 +638,3 @@ If you encounter issues not covered in this guide:
 - [Azure AD App Registration](https://learn.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app)
 
 ---
-
-**Last Updated:** December 26, 2024

@@ -1380,5 +1380,4 @@ These workflows demonstrate end-to-end processes for:
 
 ---
 
-**Last Updated**: December 26, 2024
 **Version**: 1.0
