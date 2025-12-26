@@ -4,7 +4,7 @@ A comprehensive collection of PowerShell scripts for Windows system administrati
 
 ## 🆕 What's New
 
-### Server Management Expansion (December 2025)
+### Server Management Expansion (December 2024)
 
 Major expansion of server management capabilities with **18 new enterprise-grade scripts** organized into specialized categories:
 
