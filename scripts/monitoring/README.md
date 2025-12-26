@@ -119,15 +119,94 @@ These monitoring scripts can be deployed as Intune Proactive Remediations for au
 - **[Server Management](../server/)** - Server-specific health tools
 - **[Proactive Remediations](../device-management/proactive-remediations/)** - Automated fixes
 
+### Get-BatteryHealth.ps1
+
+Monitors laptop and tablet battery health with detailed analysis and reporting.
+
+**Features:**
+- Battery health percentage calculation
+- Design vs. full charge capacity comparison
+- Wear level detection
+- Battery age calculation (from manufacture date)
+- Current charge and runtime estimation
+- Optional Windows battery report generation
+- Configurable health alert thresholds
+- CSV export for trend tracking
+
+**Usage:**
+```powershell
+# Basic battery health check
+.\Get-BatteryHealth.ps1 -OutputPath "C:\Reports"
+
+# Generate detailed Windows report with 70% alert threshold
+.\Get-BatteryHealth.ps1 -GenerateDetailedReport -AlertThreshold 70
+
+# Export to CSV for historical tracking
+.\Get-BatteryHealth.ps1 -ExportToCSV -OutputPath "C:\BatteryTracking"
+```
+
+**Battery Health Indicators:**
+- **80-100%**: Excellent - Battery in good condition, no action needed
+- **60-79%**: Fair - Monitor performance, consider replacement in 6-12 months
+- **Below 60%**: Poor - Battery replacement recommended soon
+
+**Use Cases:**
+- Laptop fleet asset management
+- Battery warranty claims
+- Replacement planning
+- User satisfaction monitoring
+
+---
+
+### Get-PerformanceTrends.ps1
+
+Monitors system performance trends over time to identify patterns and anomalies.
+
+**Features:**
+- Real-time performance data collection (CPU, Memory, Disk, Network)
+- Configurable monitoring duration and sample intervals
+- Alert threshold monitoring with real-time notifications
+- Top process tracking (optional)
+- Statistical analysis (average, min, max)
+- Performance spike detection
+- Comprehensive HTML and CSV reporting
+
+**Usage:**
+```powershell
+# Monitor for 30 minutes with default settings
+.\Get-PerformanceTrends.ps1 -DurationMinutes 30 -OutputPath "C:\Reports"
+
+# Extended 2-hour monitoring with process tracking
+.\Get-PerformanceTrends.ps1 -DurationMinutes 120 -MonitorProcesses -SampleInterval 60
+
+# Custom alert thresholds
+$thresholds = @{ CPU = 80; Memory = 90; Disk = 95 }
+.\Get-PerformanceTrends.ps1 -DurationMinutes 60 -AlertThresholds $thresholds
+```
+
+**Monitoring Metrics:**
+- CPU utilization percentage
+- Memory usage (percentage and GB)
+- Disk activity percentage
+- Network throughput (MB/s)
+- Top 5 resource-consuming processes (when enabled)
+
+**Common Scenarios:**
+- Performance troubleshooting during slow periods
+- Establishing performance baselines
+- Capacity planning data collection
+- Pre/post-deployment performance comparison
+- Resource leak detection
+
+---
+
 ## Future Enhancements
 
 Planned additions to this category:
-- Battery health monitoring for laptops
 - Temperature monitoring via WMI
-- Application performance tracking
-- Historical health trend analysis
-- Automated remediation triggers
+- Application-specific performance tracking
 - Integration with Azure Monitor
+- Predictive failure detection
 
 ## Support
 

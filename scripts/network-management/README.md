@@ -245,15 +245,88 @@ ipconfig /all
 - **[Server Management](../server/)** - Server network configuration
 - **[Proactive Remediations](../device-management/proactive-remediations/)** - Network adapter fixes
 
+### Test-NetworkDiagnostics.ps1
+
+Performs comprehensive network diagnostics including adapter analysis, DNS testing, connectivity testing, traceroute, and port scanning.
+
+**Features:**
+- Network adapter configuration and status
+- DNS resolution testing (multiple DNS servers)
+- Internet connectivity tests with latency measurement
+- Packet loss detection
+- Traceroute to specified destinations
+- Port scanning for common services
+- Network statistics and error counts
+- Detailed HTML reporting
+
+**Usage:**
+```powershell
+# Basic network diagnostics
+.\Test-NetworkDiagnostics.ps1 -OutputPath "C:\Reports"
+
+# Comprehensive diagnostics with all tests
+.\Test-NetworkDiagnostics.ps1 -TestInternetConnectivity -TraceRoute -TestDNS -ScanPorts
+
+# Test DNS functionality
+.\Test-NetworkDiagnostics.ps1 -TestDNS -OutputPath "C:\Reports"
+```
+
+**Common Scenarios:**
+- Deep network troubleshooting
+- Network infrastructure validation
+- Performance baseline establishment
+- Security audit (port scanning)
+- Documentation for support tickets
+
+---
+
+### Reset-NetworkStack.ps1
+
+Resets Windows network stack to resolve persistent connectivity issues.
+
+**Features:**
+- Winsock catalog reset
+- TCP/IP stack reset (IPv4 and IPv6)
+- DNS cache flush
+- Proxy settings reset
+- Windows Firewall reset (optional)
+- Network adapter reset (optional)
+- System restore point creation (optional)
+- DHCP lease renewal
+
+**Usage:**
+```powershell
+# Basic network stack reset
+.\Reset-NetworkStack.ps1
+
+# Comprehensive reset with restore point
+.\Reset-NetworkStack.ps1 -FlushDNS -ResetProxy -CreateRestorePoint
+
+# Full reset including firewall and adapters
+.\Reset-NetworkStack.ps1 -ResetFirewall -ResetAdapters -FlushDNS -ResetProxy -CreateRestorePoint
+
+# Skip confirmation prompts
+.\Reset-NetworkStack.ps1 -FlushDNS -ResetProxy -Force
+```
+
+**WARNING:** This script makes significant system changes. A system restart may be required after completion.
+
+**When to Use:**
+- Persistent "no internet" issues after other troubleshooting
+- After malware removal
+- Corrupt network stack symptoms
+- DNS resolution failures
+- Network adapter errors
+
+---
+
 ## Future Enhancements
 
 Planned additions to this category:
-- Network adapter reset/remediation script
 - VPN connectivity testing
-- Proxy configuration validation
-- Bandwidth testing
-- Firewall rule validation
+- Bandwidth throughput testing
 - Network drive connectivity testing
+- Wireless network optimization
 
 ## Support
 
