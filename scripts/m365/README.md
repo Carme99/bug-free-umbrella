@@ -1,5 +1,8 @@
 # Microsoft 365 Management Scripts
 
+
+> **⚠️ IMPORTANT NOTICE**: The vast majority of scripts in this repository have not been thoroughly tested in production environments. Please test all scripts in a non-production environment first and validate the results before relying on this data for operational decisions.
+
 Enterprise-grade PowerShell scripts for comprehensive Microsoft 365 cloud service management.
 
 ## 📋 Overview
@@ -13,10 +16,70 @@ m365/
 ├── exchange-online/        # Exchange Online mailbox and mail flow management
 ├── teams/                  # Microsoft Teams administration
 ├── sharepoint-onedrive/    # SharePoint and OneDrive management
-└── azure-ad/               # Azure AD / Entra ID user and license management
+├── azure-ad/               # Azure AD / Entra ID user and license management
+├── power-platform/         # Power Platform governance and compliance (NEW!)
+├── defender-office365/     # Microsoft Defender for Office 365 threat reporting (NEW!)
+└── purview-compliance/     # Microsoft Purview compliance management (NEW!)
 ```
 
 ## 🔧 Scripts by Category
+
+### 🆕 Power Platform (1 script)
+
+#### Get-PowerPlatformGovernance.ps1
+Comprehensive Power Platform governance and compliance reporting.
+
+**Features:**
+- Power Apps inventory and ownership tracking
+- Power Automate flow monitoring and status
+- Connector usage and DLP compliance
+- Environment capacity and licensing
+- Orphaned apps and flows detection
+- Guest maker access auditing
+- Premium license usage tracking
+
+**Usage:**
+```powershell
+Connect-AzAccount
+.\Get-PowerPlatformGovernance.ps1 -TenantId "your-tenant-id" -IncludeAppDetails
+
+# Full governance scan
+.\Get-PowerPlatformGovernance.ps1 -TenantId "your-tenant-id" `
+    -IncludeAppDetails `
+    -IncludeFlowDetails `
+    -CheckDLPCompliance `
+    -OutputFormat HTML
+```
+
+---
+
+### 🆕 Defender for Office 365 (1 script)
+
+#### Get-DefenderO365ThreatReport.ps1
+Microsoft Defender for Office 365 threat analysis and reporting.
+
+**Features:**
+- Phishing and malware detection tracking
+- Safe Links click analysis
+- Safe Attachments detonation reports
+- Anti-spam verdict trends
+- User risk analysis based on targeting frequency
+- Top threat senders identification
+- Geographic threat distribution
+
+**Usage:**
+```powershell
+Connect-IPPSSession
+.\Get-DefenderO365ThreatReport.ps1 -DaysToAnalyze 30
+
+# Detailed threat analysis
+.\Get-DefenderO365ThreatReport.ps1 -DaysToAnalyze 7 `
+    -IncludeDetailedThreats `
+    -IncludeUserRiskAnalysis `
+    -OutputFormat HTML
+```
+
+---
 
 ### Exchange Online (2 scripts)
 

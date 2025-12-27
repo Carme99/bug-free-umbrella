@@ -1,5 +1,8 @@
 # Windows Server Management Scripts
 
+
+> **⚠️ IMPORTANT NOTICE**: The vast majority of scripts in this repository have not been thoroughly tested in production environments. Please test all scripts in a non-production environment first and validate the results before relying on this data for operational decisions.
+
 A comprehensive collection of PowerShell scripts for managing Windows Server 2016, 2019, and 2022 environments.
 
 ## 📋 Table of Contents

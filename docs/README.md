@@ -1,5 +1,8 @@
 # Bug-Free Umbrella - Complete Documentation
 
+
+> **⚠️ IMPORTANT NOTICE**: The vast majority of scripts in this repository have not been thoroughly tested in production environments. Please test all scripts in a non-production environment first and validate the results before relying on this data for operational decisions.
+
 A comprehensive collection of PowerShell scripts for Windows system administration, Intune management, and automated device maintenance.
 
 ## 📚 Documentation Index

@@ -1,5 +1,8 @@
 # Proactive Remediation Library
 
+
+> **⚠️ IMPORTANT NOTICE**: The vast majority of scripts in this repository have not been thoroughly tested in production environments. Please test all scripts in a non-production environment first and validate the results before relying on this data for operational decisions.
+
 A collection of ready-to-deploy Intune proactive remediation scripts for common Windows device issues.
 
 ## 📋 Overview

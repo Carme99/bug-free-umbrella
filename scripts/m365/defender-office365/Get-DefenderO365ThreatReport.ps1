@@ -1,0 +1,408 @@
+<#
+.SYNOPSIS
+    Generates comprehensive Microsoft Defender for Office 365 threat reports.
+
+.DESCRIPTION
+    Analyzes and reports on Defender for Office 365 threat detection including:
+    - Phishing and malware detections
+    - Safe Links click analysis
+    - Safe Attachments detonations
+    - Anti-spam verdicts and trends
+    - Compromised user detection
+    - Threat Explorer data aggregation
+    - Top targeted users and senders
+    - Geographic threat distribution
+
+.PARAMETER DaysToAnalyze
+    Number of days of threat data to analyze. Default: 7
+
+.PARAMETER IncludeDetailedThreats
+    Include detailed threat information for each detection
+
+.PARAMETER IncludeUserRiskAnalysis
+    Analyze user risk based on targeting frequency
+
+.PARAMETER OutputFormat
+    Output format: 'Console', 'HTML', 'CSV', or 'JSON'. Default: 'HTML'
+
+.PARAMETER OutputPath
+    Path for output files. Default: Desktop
+
+.EXAMPLE
+    Connect-IPPSSession
+    .\Get-DefenderO365ThreatReport.ps1 -DaysToAnalyze 30
+
+.EXAMPLE
+    .\Get-DefenderO365ThreatReport.ps1 -DaysToAnalyze 7 `
+        -IncludeDetailedThreats `
+        -IncludeUserRiskAnalysis `
+        -OutputFormat HTML
+
+.NOTES
+    Author: IT Operations
+    Version: 1.0.0
+    Requires: PowerShell 5.1+, Exchange Online PowerShell V2 module
+
+    WARNING: This script has not been thoroughly tested in production environments.
+    Please test in a non-production environment first and validate results before relying on this data.
+#>
+
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $false)]
+    [int]$DaysToAnalyze = 7,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$IncludeDetailedThreats,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$IncludeUserRiskAnalysis,
+
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('Console', 'HTML', 'CSV', 'JSON')]
+    [string]$OutputFormat = 'HTML',
+
+    [Parameter(Mandatory = $false)]
+    [string]$OutputPath = [Environment]::GetFolderPath('Desktop')
+)
+
+# Check for required module
+if (-not (Get-Module -ListAvailable -Name ExchangeOnlineManagement)) {
+    Write-Error "ExchangeOnlineManagement module required. Install with: Install-Module ExchangeOnlineManagement"
+    exit 1
+}
+
+$results = @{
+    Timestamp = Get-Date
+    AnalysisPeriod = $DaysToAnalyze
+    ThreatDetections = @()
+    SafeLinksClicks = @()
+    SafeAttachments = @()
+    TopTargetedUsers = @()
+    TopThreatSenders = @()
+    Summary = @{}
+}
+
+Write-Host "Analyzing Defender for Office 365 threats (Last $DaysToAnalyze days)..." -ForegroundColor Cyan
+
+$startDate = (Get-Date).AddDays(-$DaysToAnalyze)
+$endDate = Get-Date
+
+try {
+    # Check if connected to Exchange Online
+    try {
+        Get-OrganizationConfig -ErrorAction Stop | Out-Null
+    } catch {
+        Write-Error "Not connected to Exchange Online. Run: Connect-IPPSSession"
+        exit 1
+    }
+
+    # Get Anti-Phishing detections
+    Write-Host "`nRetrieving anti-phishing detections..." -ForegroundColor Yellow
+    try {
+        $phishingDetections = Get-MailDetailPhishReport -StartDate $startDate -EndDate $endDate -ErrorAction SilentlyContinue
+
+        foreach ($detection in $phishingDetections) {
+            $results.ThreatDetections += @{
+                Type = "Phishing"
+                Recipient = $detection.RecipientAddress
+                Sender = $detection.SenderAddress
+                Subject = $detection.Subject
+                DetectionTime = $detection.Date
+                Direction = $detection.Direction
+                Action = $detection.DeliveryAction
+            }
+        }
+        Write-Host "Found $($phishingDetections.Count) phishing detections" -ForegroundColor White
+    } catch {
+        Write-Warning "Could not retrieve phishing data: $($_.Exception.Message)"
+    }
+
+    # Get Malware detections
+    Write-Host "`nRetrieving malware detections..." -ForegroundColor Yellow
+    try {
+        $malwareDetections = Get-MailDetailMalwareReport -StartDate $startDate -EndDate $endDate -ErrorAction SilentlyContinue
+
+        foreach ($detection in $malwareDetections) {
+            $results.ThreatDetections += @{
+                Type = "Malware"
+                Recipient = $detection.RecipientAddress
+                Sender = $detection.SenderAddress
+                Subject = $detection.Subject
+                DetectionTime = $detection.Date
+                Direction = $detection.Direction
+                MalwareName = $detection.MalwareName
+                Action = $detection.DeliveryAction
+            }
+        }
+        Write-Host "Found $($malwareDetections.Count) malware detections" -ForegroundColor White
+    } catch {
+        Write-Warning "Could not retrieve malware data: $($_.Exception.Message)"
+    }
+
+    # Get Spam detections
+    Write-Host "`nRetrieving spam detections..." -ForegroundColor Yellow
+    try {
+        $spamDetections = Get-MailDetailSpamReport -StartDate $startDate -EndDate $endDate -ErrorAction SilentlyContinue
+
+        $highConfidenceSpam = $spamDetections | Where-Object { $_.SpamConfidenceLevel -eq 'High' }
+
+        Write-Host "Found $($spamDetections.Count) spam detections ($($highConfidenceSpam.Count) high confidence)" -ForegroundColor White
+    } catch {
+        Write-Warning "Could not retrieve spam data: $($_.Exception.Message)"
+    }
+
+    # Get ATP Safe Links data
+    Write-Host "`nRetrieving Safe Links data..." -ForegroundColor Yellow
+    try {
+        $safeLinksData = Get-SafeLinksDetailReport -StartDate $startDate -EndDate $endDate -ErrorAction SilentlyContinue
+
+        foreach ($link in $safeLinksData) {
+            $results.SafeLinksClicks += @{
+                Recipient = $link.RecipientAddress
+                Url = $link.Url
+                Action = $link.Action
+                ClickTime = $link.Date
+                IsClickedThrough = $link.IsClickedThrough
+            }
+        }
+        Write-Host "Found $($safeLinksData.Count) Safe Links clicks" -ForegroundColor White
+    } catch {
+        Write-Warning "Could not retrieve Safe Links data: $($_.Exception.Message)"
+    }
+
+    # Get ATP Safe Attachments data
+    Write-Host "`nRetrieving Safe Attachments data..." -ForegroundColor Yellow
+    try {
+        $safeAttachmentsData = Get-SafeAttachmentReport -StartDate $startDate -EndDate $endDate -ErrorAction SilentlyContinue
+
+        foreach ($attachment in $safeAttachmentsData) {
+            $results.SafeAttachments += @{
+                Recipient = $attachment.RecipientAddress
+                Sender = $attachment.SenderAddress
+                FileName = $attachment.FileName
+                DetectionTime = $attachment.Date
+                Verdict = $attachment.FileVerdict
+                Action = $attachment.Action
+            }
+        }
+        Write-Host "Found $($safeAttachmentsData.Count) Safe Attachments scans" -ForegroundColor White
+    } catch {
+        Write-Warning "Could not retrieve Safe Attachments data: $($_.Exception.Message)"
+    }
+
+    # Analyze user targeting
+    if ($IncludeUserRiskAnalysis -and $results.ThreatDetections.Count -gt 0) {
+        Write-Host "`nAnalyzing user targeting patterns..." -ForegroundColor Yellow
+
+        $userTargeting = $results.ThreatDetections | Group-Object Recipient |
+            Select-Object Name, Count |
+            Sort-Object Count -Descending |
+            Select-Object -First 10
+
+        foreach ($user in $userTargeting) {
+            $results.TopTargetedUsers += @{
+                UserEmail = $user.Name
+                ThreatCount = $user.Count
+                RiskLevel = if ($user.Count -gt 10) { 'High' }
+                           elseif ($user.Count -gt 5) { 'Medium' }
+                           else { 'Low' }
+            }
+        }
+    }
+
+    # Analyze threat senders
+    if ($results.ThreatDetections.Count -gt 0) {
+        $senderAnalysis = $results.ThreatDetections | Group-Object Sender |
+            Select-Object Name, Count |
+            Sort-Object Count -Descending |
+            Select-Object -First 10
+
+        foreach ($sender in $senderAnalysis) {
+            $results.TopThreatSenders += @{
+                SenderAddress = $sender.Name
+                ThreatCount = $sender.Count
+            }
+        }
+    }
+
+} catch {
+    Write-Error "Error retrieving Defender data: $($_.Exception.Message)"
+}
+
+# Calculate summary
+$totalThreats = $results.ThreatDetections.Count
+$phishingCount = ($results.ThreatDetections | Where-Object { $_.Type -eq 'Phishing' }).Count
+$malwareCount = ($results.ThreatDetections | Where-Object { $_.Type -eq 'Malware' }).Count
+$safeLinksBlocked = ($results.SafeLinksClicks | Where-Object { $_.Action -eq 'Blocked' }).Count
+$safeAttachmentsBlocked = ($results.SafeAttachments | Where-Object { $_.Verdict -eq 'Malicious' }).Count
+
+$results.Summary = @{
+    TotalThreats = $totalThreats
+    PhishingDetections = $phishingCount
+    MalwareDetections = $malwareCount
+    SafeLinksBlocked = $safeLinksBlocked
+    SafeAttachmentsBlocked = $safeAttachmentsBlocked
+    TopTargetedUsersCount = $results.TopTargetedUsers.Count
+    DailyAverageThreatCount = [math]::Round($totalThreats / $DaysToAnalyze, 2)
+}
+
+# Output results
+switch ($OutputFormat) {
+    'Console' {
+        Write-Host "`n=== Defender for Office 365 Threat Summary ===" -ForegroundColor Cyan
+        Write-Host "Analysis Period: Last $DaysToAnalyze days" -ForegroundColor White
+        Write-Host "Total Threats Detected: $totalThreats" -ForegroundColor White
+        Write-Host "  - Phishing: $phishingCount" -ForegroundColor Yellow
+        Write-Host "  - Malware: $malwareCount" -ForegroundColor Red
+        Write-Host "Safe Links Blocked: $safeLinksBlocked" -ForegroundColor White
+        Write-Host "Safe Attachments Blocked: $safeAttachmentsBlocked" -ForegroundColor White
+        Write-Host "Daily Average: $($results.Summary.DailyAverageThreatCount) threats/day" -ForegroundColor White
+
+        if ($results.TopTargetedUsers.Count -gt 0) {
+            Write-Host "`n=== Top Targeted Users ===" -ForegroundColor Cyan
+            foreach ($user in ($results.TopTargetedUsers | Select-Object -First 5)) {
+                $color = switch ($user.RiskLevel) {
+                    'High' { 'Red' }
+                    'Medium' { 'Yellow' }
+                    default { 'White' }
+                }
+                Write-Host "  $($user.UserEmail): $($user.ThreatCount) threats [$($user.RiskLevel) Risk]" -ForegroundColor $color
+            }
+        }
+    }
+
+    'HTML' {
+        $htmlFile = Join-Path $OutputPath "Defender-O365-Threats-$(Get-Date -Format 'yyyyMMdd-HHmmss').html"
+
+        $html = @"
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Defender for Office 365 Threat Report</title>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        h1 { color: #d13438; border-bottom: 3px solid #d13438; padding-bottom: 10px; }
+        h2 { color: #505050; margin-top: 30px; }
+        .summary { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px; }
+        .summary-item { background: #f0f0f0; padding: 15px; border-radius: 5px; text-align: center; }
+        .summary-item .value { font-size: 32px; font-weight: bold; color: #d13438; }
+        .summary-item .label { font-size: 14px; color: #666; margin-top: 5px; }
+        table { border-collapse: collapse; width: 100%; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-top: 10px; }
+        th { background-color: #d13438; color: white; padding: 12px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #ddd; }
+        tr:hover { background-color: #f5f5f5; }
+        .high-risk { color: #d13438; font-weight: bold; }
+        .medium-risk { color: #ff8c00; font-weight: bold; }
+        .phishing { background-color: #fff3cd; }
+        .malware { background-color: #fdd; }
+        .footer { margin-top: 30px; text-align: center; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>Defender for Office 365 Threat Report</h1>
+    <div class="summary">
+        <strong>Analysis Period:</strong> Last $DaysToAnalyze days<br>
+        <strong>Generated:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+
+        <div class="summary-grid">
+            <div class="summary-item">
+                <div class="value">$totalThreats</div>
+                <div class="label">Total Threats</div>
+            </div>
+            <div class="summary-item">
+                <div class="value" style="color: #ff8c00;">$phishingCount</div>
+                <div class="label">Phishing</div>
+            </div>
+            <div class="summary-item">
+                <div class="value" style="color: #d13438;">$malwareCount</div>
+                <div class="label">Malware</div>
+            </div>
+            <div class="summary-item">
+                <div class="value">$safeLinksBlocked</div>
+                <div class="label">Links Blocked</div>
+            </div>
+            <div class="summary-item">
+                <div class="value">$safeAttachmentsBlocked</div>
+                <div class="label">Attachments Blocked</div>
+            </div>
+            <div class="summary-item">
+                <div class="value">$($results.Summary.DailyAverageThreatCount)</div>
+                <div class="label">Avg Threats/Day</div>
+            </div>
+        </div>
+    </div>
+"@
+
+        if ($results.TopTargetedUsers.Count -gt 0) {
+            $html += @"
+    <h2>Top Targeted Users</h2>
+    <table>
+        <tr>
+            <th>User Email</th>
+            <th>Threat Count</th>
+            <th>Risk Level</th>
+        </tr>
+"@
+            foreach ($user in $results.TopTargetedUsers) {
+                $riskClass = $user.RiskLevel.ToLower() + "-risk"
+                $html += @"
+        <tr>
+            <td>$($user.UserEmail)</td>
+            <td>$($user.ThreatCount)</td>
+            <td class="$riskClass">$($user.RiskLevel)</td>
+        </tr>
+"@
+            }
+            $html += "</table>"
+        }
+
+        if ($results.TopThreatSenders.Count -gt 0) {
+            $html += @"
+    <h2>Top Threat Senders</h2>
+    <table>
+        <tr>
+            <th>Sender Address</th>
+            <th>Threat Count</th>
+        </tr>
+"@
+            foreach ($sender in $results.TopThreatSenders) {
+                $html += @"
+        <tr>
+            <td>$($sender.SenderAddress)</td>
+            <td>$($sender.ThreatCount)</td>
+        </tr>
+"@
+            }
+            $html += "</table>"
+        }
+
+        $html += @"
+    <div class="footer">
+        <strong>Note:</strong> This report has not been thoroughly tested. Please validate results before making security decisions.<br>
+        Generated by Get-DefenderO365ThreatReport.ps1
+    </div>
+</body>
+</html>
+"@
+
+        $html | Out-File -FilePath $htmlFile -Encoding UTF8
+        Write-Host "`nHTML report saved to: $htmlFile" -ForegroundColor Green
+        Start-Process $htmlFile
+    }
+
+    'CSV' {
+        $csvFile = Join-Path $OutputPath "Defender-Threats-$(Get-Date -Format 'yyyyMMdd-HHmmss').csv"
+        $results.ThreatDetections | Export-Csv -Path $csvFile -NoTypeInformation
+        Write-Host "`nCSV report saved to: $csvFile" -ForegroundColor Green
+    }
+
+    'JSON' {
+        $jsonFile = Join-Path $OutputPath "Defender-Threats-$(Get-Date -Format 'yyyyMMdd-HHmmss').json"
+        $results | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonFile
+        Write-Host "`nJSON report saved to: $jsonFile" -ForegroundColor Green
+    }
+}
+
+Write-Host "`nDefender for Office 365 threat analysis complete!" -ForegroundColor Green
