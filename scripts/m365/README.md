@@ -1,5 +1,8 @@
 # Microsoft 365 Management Scripts
 
+
+> **⚠️ IMPORTANT NOTICE**: The vast majority of scripts in this repository have not been thoroughly tested in production environments. Please test all scripts in a non-production environment first and validate the results before relying on this data for operational decisions.
+
 Enterprise-grade PowerShell scripts for comprehensive Microsoft 365 cloud service management.
 
 ## 📋 Overview

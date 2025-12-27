@@ -1,5 +1,7 @@
 # Intune Management Scripts
 
+> **⚠️ IMPORTANT NOTICE**: The vast majority of scripts in this repository have not been thoroughly tested in production environments. Please test all scripts in a non-production environment first and validate the results before relying on this data for operational decisions.
+
 A comprehensive PowerShell toolkit for managing and reporting on Microsoft Intune environments. These scripts help automate common Intune administration tasks, generate reports, and streamline device management.
 
 ## 📋 Table of Contents

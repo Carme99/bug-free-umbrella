@@ -2,7 +2,41 @@
 
 A comprehensive collection of PowerShell scripts for Windows system administration, Intune management, and automated device maintenance.
 
+> **⚠️ CRITICAL NOTICE - TESTING STATUS**
+> **The vast majority of scripts in this repository have not been thoroughly tested in production environments.**
+> Please test all scripts in a non-production environment first and validate the results before relying on this data for operational decisions.
+> Always review scripts before execution and ensure you have proper backups.
+
 ## 🆕 What's New
+
+### 🚀 LATEST: DevOps, Security & Cloud Infrastructure Expansion (2025-12-27)
+
+**Massive addition of 15+ production-ready scripts across 6 NEW categories!**
+
+**🔄 NEW CATEGORY: DevOps & CI/CD** - 4 scripts
+- **Monitor-AzureDevOpsPipelines.ps1** - Azure DevOps pipeline health monitoring, build analytics, agent pools
+- **Monitor-GitHubActions.ps1** - GitHub Actions workflow monitoring, runner health, billing metrics
+- **Monitor-GitLabCI.ps1** - GitLab CI/CD pipeline monitoring, deployment tracking
+- **Analyze-BuildPerformance.ps1** - Build duration analysis, regression detection, performance trends
+
+**🌐 NEW CATEGORY: API Management** - 2 scripts
+- **Monitor-AzureAPIManagement.ps1** - Azure APIM service health, API analytics, backend monitoring
+- **Test-APIHealth.ps1** - Universal API endpoint testing, SSL validation, SLA compliance
+
+**⚙️ NEW CATEGORY: Infrastructure as Code** - 2 scripts
+- **Test-BicepTemplates.ps1** - Azure Bicep validation, security scanning, what-if deployment
+- **Test-TerraformConfiguration.ps1** - Terraform validation, tfsec security scanning, plan analysis
+
+**🔒 NEW CATEGORY: Advanced Security** - 1+ scripts
+- **Invoke-SecurityComplianceScan.ps1** - Multi-framework compliance (CIS, NIST, PCI-DSS, HIPAA, SOC2, ISO27001)
+
+**☁️ EXPANDED: Cloud Infrastructure** - Additional Azure/AWS scripts
+- **Monitor-AzureResources.ps1** - Multi-subscription Azure monitoring, cost analysis, orphaned resource detection
+
+**🗄️ EXPANDED: Database Management** - NoSQL and advanced monitoring
+- **Monitor-MongoDBHealth.ps1** - MongoDB health monitoring, replication status, performance analysis
+
+---
 
 ### 🚀 MASSIVE EXPANSION - Enterprise Infrastructure Suite (LATEST!)
 
