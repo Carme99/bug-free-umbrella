@@ -9,7 +9,7 @@ A comprehensive collection of PowerShell scripts for Windows system administrati
 
 ## 🆕 What's New
 
-### 🚀 LATEST: DevOps, Security & Cloud Infrastructure Expansion (2025-12-27)
+### 🚀 LATEST: DevOps, Security & Cloud Infrastructure Expansion
 
 **Massive addition of 15+ production-ready scripts across 6 NEW categories!**
 
@@ -695,3 +695,4 @@ Get-Help .\ScriptName.ps1 -Full
 ## License
 
 Licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
+
