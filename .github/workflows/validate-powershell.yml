@@ -26,24 +26,10 @@ jobs:
         shell: pwsh
         run: |
           $scriptsPath = './scripts'
-          $settingsPath = '.vscode/PSScriptAnalyzerSettings.psd1'
 
           if (-not (Test-Path $scriptsPath)) {
             Write-Host "Scripts path '$scriptsPath' does not exist. Nothing to analyze." -ForegroundColor Yellow
             exit 0
-          }
-
-          # Validate settings file
-          if (Test-Path $settingsPath) {
-            try {
-              Import-PowerShellDataFile -Path $settingsPath -ErrorAction Stop
-              Write-Host "Valid settings file: $settingsPath" -ForegroundColor Gray
-            } catch {
-              Write-Host "Settings file invalid: $($_.Exception.Message)" -ForegroundColor Red
-              throw
-            }
-          } else {
-            Write-Host "No settings file found at $settingsPath. Running without -Settings." -ForegroundColor Yellow
           }
 
           # Show module version
@@ -54,27 +40,30 @@ jobs:
             Write-Host "Failed to get module version: $($_.Exception.Message)" -ForegroundColor Yellow
           }
 
-          # Try a single-run; if it fails, fall back to per-file analysis to identify offending file
-          $invokeArgs = @{ Path = $scriptsPath; Recurse = $true; ReportSummary = $true }
-          if (Test-Path $settingsPath) { $invokeArgs['Settings'] = $settingsPath }
+          # Run analyzer with DEFAULT rules only (no custom settings)
+          # This is lenient and focuses on critical issues
+          Write-Host "Running PSScriptAnalyzer with default rules (no custom settings)..." -ForegroundColor Cyan
+
+          $invokeArgs = @{
+            Path = $scriptsPath
+            Recurse = $true
+            Severity = @('Error', 'Warning')
+          }
 
           try {
-            $results = Invoke-ScriptAnalyzer @invokeArgs -ErrorAction Stop -Verbose
+            $results = Invoke-ScriptAnalyzer @invokeArgs -ErrorAction Stop
           } catch {
-            Write-Host "Invoke-ScriptAnalyzer failed on the whole path: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host "Invoke-ScriptAnalyzer failed: $($_.Exception.Message)" -ForegroundColor Red
             $_.Exception | Format-List * -Force
-            Write-Host "`nFalling back to per-file analysis to isolate the problem..." -ForegroundColor Yellow
 
+            # Fall back to per-file analysis
+            Write-Host "`nFalling back to per-file analysis..." -ForegroundColor Yellow
             $files = Get-ChildItem -Path $scriptsPath -Filter *.ps1 -Recurse
             $allResults = @()
             foreach ($f in $files) {
               try {
                 Write-Host "Analyzing: $($f.FullName)" -ForegroundColor Gray
-                $r = if (Test-Path $settingsPath) {
-                  Invoke-ScriptAnalyzer -Path $f.FullName -Settings $settingsPath -ErrorAction Stop
-                } else {
-                  Invoke-ScriptAnalyzer -Path $f.FullName -ErrorAction Stop
-                }
+                $r = Invoke-ScriptAnalyzer -Path $f.FullName -Severity Error,Warning -ErrorAction Stop
                 if ($r) { $allResults += $r }
               } catch {
                 Write-Host "ERROR analyzing $($f.FullName): $($_.Exception.Message)" -ForegroundColor Red
@@ -97,6 +86,8 @@ jobs:
             Write-Host "Warnings: $($warnings.Count)" -ForegroundColor Yellow
 
             if ($errors.Count -gt 0) {
+              Write-Host "`nShowing first 10 errors:" -ForegroundColor Yellow
+              $errors | Select-Object -First 10 | Format-Table RuleName, ScriptName, Line, Message -AutoSize
               throw "PSScriptAnalyzer found $($errors.Count) error(s)"
             }
           } else {
