@@ -173,7 +173,40 @@ OneDrive for Business usage and storage analysis.
 
 ---
 
-### Azure AD / Entra ID (2 scripts)
+### Azure AD / Entra ID (3 scripts)
+
+#### Set-UserLanguageSettings.ps1
+Audits and configures M365 user language and region settings.
+
+**Features:**
+- Display language configuration (en-GB)
+- Preferred language settings
+- Regional format configuration
+- Time zone settings (GMT Standard Time)
+- Audit mode for compliance checking
+- Bulk user remediation
+- Single user or all users support
+
+**Usage:**
+```powershell
+# Audit current user settings
+.\Set-UserLanguageSettings.ps1 -AuditOnly
+
+# Apply settings to current user
+.\Set-UserLanguageSettings.ps1 -Apply
+
+# Audit specific user
+.\Set-UserLanguageSettings.ps1 -UserPrincipalName john.doe@company.com -AuditOnly
+
+# Apply to specific user
+.\Set-UserLanguageSettings.ps1 -UserPrincipalName john.doe@company.com -Apply
+
+# Audit all users with HTML report
+.\Set-UserLanguageSettings.ps1 -AllUsers -AuditOnly -ExportHTML
+
+# Apply settings to all users (bulk remediation)
+.\Set-UserLanguageSettings.ps1 -AllUsers -Apply
+```
 
 #### Get-AzureADGuestAudit.ps1
 Guest user security and compliance audit.
@@ -236,6 +269,7 @@ cd ..\sharepoint-onedrive
 cd ..\azure-ad
 .\Get-AzureADGuestAudit.ps1 -CheckPrivilegedGuests -ExportHTML
 .\Get-AzureADLicenseReport.ps1 -IdentifyUnassigned -ExportHTML
+.\Set-UserLanguageSettings.ps1 -AllUsers -AuditOnly -ExportHTML
 ```
 
 ### Security Compliance Check
@@ -422,6 +456,6 @@ Planned additions:
 
 ---
 
-**Version**: 1.0
+**Version**: 1.1
 **Last Updated**: 2025
-**Total Scripts**: 6
+**Total Scripts**: 7
