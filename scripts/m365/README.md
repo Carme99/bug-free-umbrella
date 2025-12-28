@@ -24,7 +24,27 @@ m365/
 
 ## 🔧 Scripts by Category
 
-### 🆕 Power Platform (1 script)
+### 🆕 Power Platform (2 scripts)
+
+#### Set-PowerPlatformRegionalSettings.ps1
+Power Platform environment regional settings management.
+
+**Features:**
+- Environment base language configuration
+- Currency format settings
+- Multi-environment support
+- Regional settings audit
+
+**Usage:**
+```powershell
+# Audit specific environment
+.\Set-PowerPlatformRegionalSettings.ps1 -EnvironmentName "Default-xxxxx" -AuditOnly
+
+# Audit all environments
+.\Set-PowerPlatformRegionalSettings.ps1 -AllEnvironments -AuditOnly -ExportHTML
+```
+
+**Note:** Power Platform regional settings are set at environment creation time and cannot be changed post-creation without recreating the environment.
 
 #### Get-PowerPlatformGovernance.ps1
 Comprehensive Power Platform governance and compliance reporting.
@@ -81,7 +101,33 @@ Connect-IPPSSession
 
 ---
 
-### Exchange Online (2 scripts)
+### Exchange Online (3 scripts)
+
+#### Set-MailboxRegionalSettings.ps1
+Exchange Online mailbox regional and calendar settings management.
+
+**Features:**
+- Mailbox time zone configuration
+- Date/time format settings
+- Work week and work hours
+- Language for Outlook Web App
+- Calendar preferences
+- Bulk remediation support
+
+**Usage:**
+```powershell
+# Audit current user
+.\Set-MailboxRegionalSettings.ps1 -AuditOnly
+
+# Apply settings to specific user
+.\Set-MailboxRegionalSettings.ps1 -UserPrincipalName john.doe@company.com -Apply
+
+# Audit all mailboxes with HTML report
+.\Set-MailboxRegionalSettings.ps1 -AllMailboxes -AuditOnly -ExportHTML
+
+# Apply to all mailboxes
+.\Set-MailboxRegionalSettings.ps1 -AllMailboxes -Apply
+```
 
 #### Get-MailboxHealth.ps1
 Comprehensive Exchange Online mailbox health and usage analysis.
@@ -126,7 +172,23 @@ Shared mailbox audit for usage, permissions, and compliance.
 
 ---
 
-### Microsoft Teams (1 script)
+### Microsoft Teams (2 scripts)
+
+#### Set-TeamsRegionalSettings.ps1
+Microsoft Teams regional settings configuration guide.
+
+**Features:**
+- Teams inherits settings from M365 user and Exchange mailbox
+- Guidance on configuring Teams regional preferences
+- References to related configuration scripts
+
+**Usage:**
+```powershell
+# View Teams regional settings guidance
+.\Set-TeamsRegionalSettings.ps1
+```
+
+**Note:** Teams primarily inherits regional settings from Exchange Online and M365 user settings. Use Set-MailboxRegionalSettings.ps1 and Set-UserLanguageSettings.ps1 for comprehensive control.
 
 #### Get-TeamsReport.ps1
 Microsoft Teams usage and compliance reporting.
@@ -150,7 +212,54 @@ Microsoft Teams usage and compliance reporting.
 
 ---
 
-### SharePoint / OneDrive (1 script)
+### SharePoint / OneDrive (3 scripts)
+
+#### Set-SiteRegionalSettings.ps1
+SharePoint site collection regional settings management.
+
+**Features:**
+- Site time zone configuration
+- Locale settings (affects date/number formatting)
+- Calendar type and format
+- Work week configuration
+- Bulk site remediation
+- HTML/CSV reporting
+
+**Usage:**
+```powershell
+# Audit specific site
+.\Set-SiteRegionalSettings.ps1 -SiteUrl "https://contoso.sharepoint.com/sites/TeamSite" -AuditOnly
+
+# Apply to specific site
+.\Set-SiteRegionalSettings.ps1 -SiteUrl "https://contoso.sharepoint.com/sites/TeamSite" -Apply
+
+# Audit all sites with report
+.\Set-SiteRegionalSettings.ps1 -AllSites -AuditOnly -ExportHTML
+
+# Apply to all sites
+.\Set-SiteRegionalSettings.ps1 -AllSites -Apply
+```
+
+#### Set-OneDriveRegionalSettings.ps1
+OneDrive for Business personal site regional settings.
+
+**Features:**
+- OneDrive time zone configuration
+- Locale settings for personal sites
+- User-specific OneDrive configuration
+- Bulk OneDrive remediation
+
+**Usage:**
+```powershell
+# Audit specific user's OneDrive
+.\Set-OneDriveRegionalSettings.ps1 -UserPrincipalName john.doe@company.com -AuditOnly
+
+# Apply to specific user
+.\Set-OneDriveRegionalSettings.ps1 -UserPrincipalName john.doe@company.com -Apply
+
+# Audit all OneDrive sites
+.\Set-OneDriveRegionalSettings.ps1 -AllOneDriveSites -AuditOnly
+```
 
 #### Get-OneDriveUsageReport.ps1
 OneDrive for Business usage and storage analysis.
@@ -173,7 +282,27 @@ OneDrive for Business usage and storage analysis.
 
 ---
 
-### Azure AD / Entra ID (3 scripts)
+### Azure AD / Entra ID (4 scripts)
+
+#### Set-OrganizationDefaults.ps1
+Organization-wide default settings for new M365 users.
+
+**Features:**
+- Tenant-wide default usage location
+- Default preferred language
+- Affects newly created users
+- Organization settings audit
+
+**Usage:**
+```powershell
+# Audit organization defaults
+.\Set-OrganizationDefaults.ps1 -AuditOnly
+
+# Apply organization defaults
+.\Set-OrganizationDefaults.ps1 -Apply
+```
+
+**Note:** This configures defaults for NEW users only. Existing users must be configured with Set-UserLanguageSettings.ps1
 
 #### Set-UserLanguageSettings.ps1
 Audits and configures M365 user language and region settings.
@@ -456,6 +585,6 @@ Planned additions:
 
 ---
 
-**Version**: 1.1
+**Version**: 2.0
 **Last Updated**: 2025
-**Total Scripts**: 7
+**Total Scripts**: 14

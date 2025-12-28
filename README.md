@@ -107,10 +107,11 @@ A comprehensive collection of PowerShell scripts for Windows system administrati
 - Get-ExchangeServerHealth.ps1 - Exchange Server health monitoring
 - Plus 3 more Exchange management scripts
 
-**☁️ Microsoft 365** (12 scripts)
+**☁️ Microsoft 365** (19 scripts)
 - Exchange Online, Teams, SharePoint, Azure AD management
 - Compliance Center, Power Platform, Defender for Office 365
-- User language and region settings management
+- Comprehensive regional settings management (user, mailbox, site, OneDrive)
+- Organization-wide configuration defaults
 
 **🔒 Security & Compliance** (12 scripts)
 - CIS Benchmark testing
@@ -153,7 +154,7 @@ bug-free-umbrella/
 │   │   ├── maintenance/               # Device cleanup and policy management
 │   │   └── deployment/                # Packaging and deployment tools
 │   ├── linux-server/                  # Linux server management
-│   ├── m365/                          # Microsoft 365 cloud services (12 scripts)
+│   ├── m365/                          # Microsoft 365 cloud services (19 scripts)
 │   │   ├── exchange-online/           # Exchange Online mailbox management
 │   │   ├── teams/                     # Microsoft Teams administration
 │   │   ├── sharepoint-onedrive/       # SharePoint and OneDrive
@@ -489,9 +490,9 @@ Get-Help .\ScriptName.ps1 -Full
 
 ## Script Statistics
 
-- **Total Scripts**: 246+
+- **Total Scripts**: 260+
 - **Script Categories**: 20
-- **Proactive Remediations**: 11 pairs
+- **Proactive Remediations**: 14 pairs
 - **Winget App Templates**: 40+
 - **Documentation Pages**: 5
 
