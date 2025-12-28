@@ -30,7 +30,7 @@ This documentation hub provides detailed information about all scripts and tools
 - **[Database Management](../scripts/database/)** - SQL Server, MySQL, PostgreSQL, MongoDB (4 scripts)
 
 **Microsoft 365 & Enterprise**
-- **[Microsoft 365 Cloud Services](../scripts/m365/)** - Exchange Online, Teams, SharePoint, Azure AD (11 scripts)
+- **[Microsoft 365 Cloud Services](../scripts/m365/)** - Exchange Online, Teams, SharePoint, Azure AD (12 scripts)
 - **[Intune Management](../scripts/intune/)** - Comprehensive Intune administration toolkit (18+ scripts)
 - **[Email Services](../scripts/email-services/)** - Exchange Server health and management (4 scripts)
 
@@ -158,7 +158,7 @@ bug-free-umbrella/
 │   │   ├── maintenance/               # Device cleanup and policy management
 │   │   └── deployment/                # Packaging and deployment tools
 │   ├── linux-server/                  # Linux server management
-│   ├── m365/                          # Microsoft 365 cloud services (11 scripts)
+│   ├── m365/                          # Microsoft 365 cloud services (12 scripts)
 │   │   ├── exchange-online/           # Exchange Online mailbox management
 │   │   ├── teams/                     # Microsoft Teams administration
 │   │   ├── sharepoint-onedrive/       # SharePoint and OneDrive
