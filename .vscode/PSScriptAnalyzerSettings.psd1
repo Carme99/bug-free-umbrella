@@ -3,9 +3,6 @@
     # subset of: Error, Warning and Information.
     Severity = @('Error', 'Warning', 'Information')
 
-    # Analyze **all** files in given path.
-    Recurse = $true
-
     # Include default rules. This is the default value.
     IncludeDefaultRules = $true
 
