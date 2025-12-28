@@ -71,6 +71,7 @@ obj/
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+!.vscode/PSScriptAnalyzerSettings.psd1
 *.code-workspace
 
 # JetBrains IDEs
