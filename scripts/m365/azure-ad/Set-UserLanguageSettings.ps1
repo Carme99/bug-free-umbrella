@@ -215,7 +215,116 @@ $nonCompliantCount = 0
 $errorCount = 0
 
 $i = 0
-foreach ($user in $usersToProcess) {
+$totalUsers = $usersToProcess.Count
+
+# Performance optimization: Use parallel processing for large user sets
+if ($totalUsers -gt 50 -and $PSVersionTable.PSVersion.Major -ge 7) {
+    Write-Host "[*] Processing $totalUsers users in parallel (PowerShell 7+)..." -ForegroundColor Cyan
+
+    $results = $usersToProcess | ForEach-Object -Parallel {
+        $user = $_
+        $requiredSettings = $using:requiredSettings
+        $Apply = $using:Apply
+
+        try {
+            # Get current mailbox settings
+            $mailboxSettings = Get-MgUserMailboxSetting -UserId $user.Id -ErrorAction Stop
+            $userSettings = Get-MgUser -UserId $user.Id -Property PreferredLanguage -ErrorAction Stop
+
+            # Extract current settings
+            $currentDisplayLanguage = $mailboxSettings.Language.Locale
+            $currentTimeZone = $mailboxSettings.TimeZone
+            $currentPreferredLanguage = $userSettings.PreferredLanguage
+            $currentRegionalFormat = $mailboxSettings.Language.Locale
+
+            # Check compliance
+            $isCompliant = (
+                $currentDisplayLanguage -eq $requiredSettings.DisplayLanguage -and
+                $currentTimeZone -eq $requiredSettings.TimeZone -and
+                $currentRegionalFormat -eq $requiredSettings.RegionalFormat
+            )
+
+            $issues = @()
+            if ($currentDisplayLanguage -ne $requiredSettings.DisplayLanguage) {
+                $issues += "Display language mismatch"
+            }
+            if ($currentTimeZone -ne $requiredSettings.TimeZone) {
+                $issues += "Time zone mismatch"
+            }
+
+            $status = if ($isCompliant) { "Compliant" } else { "Non-Compliant" }
+            $actionTaken = "None"
+
+            # Apply settings if requested
+            if ($Apply -and -not $isCompliant) {
+                try {
+                    $languageSettings = @{
+                        Language = @{
+                            Locale = $requiredSettings.DisplayLanguage
+                            DisplayName = "English (United Kingdom)"
+                        }
+                        TimeZone = $requiredSettings.TimeZone
+                    }
+
+                    Update-MgUserMailboxSetting -UserId $user.Id -BodyParameter $languageSettings -ErrorAction Stop
+                    Update-MgUser -UserId $user.Id -PreferredLanguage $requiredSettings.DisplayLanguage -ErrorAction Stop
+
+                    $actionTaken = "Settings Applied"
+                    $status = "Remediated"
+                }
+                catch {
+                    $actionTaken = "Error: $($_.Exception.Message)"
+                    $status = "Error"
+                }
+            }
+
+            [PSCustomObject]@{
+                DisplayName = $user.DisplayName
+                UserPrincipalName = $user.UserPrincipalName
+                CurrentDisplayLanguage = $currentDisplayLanguage
+                RequiredDisplayLanguage = $requiredSettings.DisplayLanguage
+                CurrentTimeZone = $currentTimeZone
+                RequiredTimeZone = $requiredSettings.TimeZone
+                CurrentRegionalFormat = $currentRegionalFormat
+                RequiredRegionalFormat = $requiredSettings.RegionalFormat
+                PreferredLanguage = $currentPreferredLanguage
+                Status = $status
+                Issues = if ($issues.Count -gt 0) { $issues -join '; ' } else { 'None' }
+                ActionTaken = $actionTaken
+            }
+        }
+        catch {
+            [PSCustomObject]@{
+                DisplayName = $user.DisplayName
+                UserPrincipalName = $user.UserPrincipalName
+                CurrentDisplayLanguage = "Error"
+                RequiredDisplayLanguage = $requiredSettings.DisplayLanguage
+                CurrentTimeZone = "Error"
+                RequiredTimeZone = $requiredSettings.TimeZone
+                CurrentRegionalFormat = "Error"
+                RequiredRegionalFormat = $requiredSettings.RegionalFormat
+                PreferredLanguage = "Error"
+                Status = "Error"
+                Issues = $_.Exception.Message
+                ActionTaken = "N/A"
+            }
+        }
+    } -ThrottleLimit 10  # Process 10 users concurrently
+
+    # Count results
+    $compliantCount = ($results | Where-Object { $_.Status -eq 'Compliant' }).Count
+    $nonCompliantCount = ($results | Where-Object { $_.Status -eq 'Non-Compliant' }).Count
+    $errorCount = ($results | Where-Object { $_.Status -eq 'Error' }).Count
+
+} else {
+    # Sequential processing for smaller sets or PowerShell 5.1
+    if ($totalUsers -le 50) {
+        Write-Host "[*] Processing $totalUsers users sequentially..." -ForegroundColor Cyan
+    } else {
+        Write-Host "[*] Processing $totalUsers users sequentially (PowerShell 7+ recommended for parallel processing)..." -ForegroundColor Yellow
+    }
+
+    foreach ($user in $usersToProcess) {
     $i++
     Write-Progress -Activity "Processing Users" -Status "$i of $($usersToProcess.Count): $($user.DisplayName)" -PercentComplete (($i / $usersToProcess.Count) * 100)
 
@@ -340,6 +449,11 @@ foreach ($user in $usersToProcess) {
 
         $results += $result
     }
+
+    # Count results from sequential processing
+    $compliantCount = ($results | Where-Object { $_.Status -eq 'Compliant' }).Count
+    $nonCompliantCount = ($results | Where-Object { $_.Status -eq 'Non-Compliant' }).Count
+    $errorCount = ($results | Where-Object { $_.Status -eq 'Error' }).Count
 }
 
 Write-Progress -Activity "Processing Users" -Completed

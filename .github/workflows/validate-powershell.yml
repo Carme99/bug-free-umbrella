@@ -1,0 +1,186 @@
+name: Validate PowerShell Scripts
+
+on:
+  push:
+    branches: [ main, develop, claude/* ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    name: PSScriptAnalyzer
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck
+
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          $results = Invoke-ScriptAnalyzer -Path ./scripts -Settings .vscode/PSScriptAnalyzerSettings.psd1 -Recurse -ReportSummary
+
+          if ($results) {
+            $results | Format-Table -AutoSize
+            Write-Host "PSScriptAnalyzer found $($results.Count) issue(s)" -ForegroundColor Yellow
+
+            # Group by severity
+            $errors = $results | Where-Object Severity -eq 'Error'
+            $warnings = $results | Where-Object Severity -eq 'Warning'
+
+            Write-Host "`nErrors: $($errors.Count)" -ForegroundColor Red
+            Write-Host "Warnings: $($warnings.Count)" -ForegroundColor Yellow
+
+            # Fail on errors
+            if ($errors.Count -gt 0) {
+              throw "PSScriptAnalyzer found $($errors.Count) error(s)"
+            }
+          } else {
+            Write-Host "No issues found by PSScriptAnalyzer!" -ForegroundColor Green
+          }
+
+      - name: Upload Analysis Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pssa-results
+          path: |
+            *.sarif
+            *.xml
+
+  test:
+    name: Pester Tests
+    runs-on: windows-latest
+    needs: analyze
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Required Modules
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module -Name Pester -MinimumVersion 5.5.0 -Force -SkipPublisherCheck
+
+          # Install modules needed for mocking
+          Install-Module -Name Microsoft.Graph.Authentication -Force -SkipPublisherCheck -ErrorAction SilentlyContinue
+          Install-Module -Name Microsoft.Graph.Users -Force -SkipPublisherCheck -ErrorAction SilentlyContinue
+
+      - name: Run Pester Tests
+        shell: pwsh
+        run: |
+          # Import Pester
+          Import-Module Pester -MinimumVersion 5.5.0
+
+          # Load configuration
+          $config = Import-PowerShellDataFile -Path ./Tests/Pester.Config.psd1
+          $pesterConfig = New-PesterConfiguration -Hashtable $config
+
+          # Run tests
+          $result = Invoke-Pester -Configuration $pesterConfig
+
+          # Display results
+          Write-Host "`nTest Results:" -ForegroundColor Cyan
+          Write-Host "Total: $($result.TotalCount)" -ForegroundColor White
+          Write-Host "Passed: $($result.PassedCount)" -ForegroundColor Green
+          Write-Host "Failed: $($result.FailedCount)" -ForegroundColor $(if ($result.FailedCount -gt 0) { 'Red' } else { 'Green' })
+          Write-Host "Skipped: $($result.SkippedCount)" -ForegroundColor Yellow
+
+          # Fail if tests failed
+          if ($result.FailedCount -gt 0) {
+            throw "$($result.FailedCount) test(s) failed"
+          }
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: Tests/*.xml
+
+      - name: Upload Code Coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: code-coverage
+          path: Tests/CodeCoverage.xml
+
+      - name: Comment Test Results on PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const testResults = fs.existsSync('Tests/TestResults.xml')
+              ? fs.readFileSync('Tests/TestResults.xml', 'utf8')
+              : 'Test results not found';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '## Test Results\n\nPester tests completed. Check the workflow artifacts for detailed results.'
+            });
+
+  syntax-check:
+    name: PowerShell Syntax Validation
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate PowerShell Syntax
+        shell: pwsh
+        run: |
+          $errors = @()
+
+          Get-ChildItem -Path ./scripts -Filter *.ps1 -Recurse | ForEach-Object {
+            Write-Host "Checking: $($_.FullName)" -ForegroundColor Gray
+
+            try {
+              $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $_.FullName -Raw), [ref]$null)
+            }
+            catch {
+              $errors += "$($_.FullName): $($_.Exception.Message)"
+              Write-Host "  ERROR: $($_.Exception.Message)" -ForegroundColor Red
+            }
+          }
+
+          if ($errors.Count -gt 0) {
+            Write-Host "`nFound $($errors.Count) syntax error(s):" -ForegroundColor Red
+            $errors | ForEach-Object { Write-Host "  $_" }
+            throw "PowerShell syntax validation failed"
+          } else {
+            Write-Host "`nAll scripts have valid PowerShell syntax!" -ForegroundColor Green
+          }
+
+  summary:
+    name: Validation Summary
+    runs-on: ubuntu-latest
+    needs: [analyze, test, syntax-check]
+    if: always()
+
+    steps:
+      - name: Check job statuses
+        run: |
+          echo "PSScriptAnalyzer: ${{ needs.analyze.result }}"
+          echo "Pester Tests: ${{ needs.test.result }}"
+          echo "Syntax Check: ${{ needs.syntax-check.result }}"
+
+          if [[ "${{ needs.analyze.result }}" != "success" ]] || \
+             [[ "${{ needs.test.result }}" != "success" ]] || \
+             [[ "${{ needs.syntax-check.result }}" != "success" ]]; then
+            echo "One or more validation steps failed"
+            exit 1
+          fi
+
+          echo "All validation steps passed!"
