@@ -249,3 +249,7 @@ To add new remediations:
 
 **Version**: 1.0
 **Compatible**: Windows 10/11, Windows Server 2016+
+
+## 🤖 Development
+
+Scripts in this repository were created with the assistance of **[Claude Code](https://github.com/anthropics/claude-code)**, Anthropic's official CLI for Claude AI.

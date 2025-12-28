@@ -496,10 +496,14 @@ Get-Help .\ScriptName.ps1 -Full
 - **Winget App Templates**: 40+
 - **Documentation Pages**: 5
 
+## 🤖 Development
+
+Scripts in this repository were created with the assistance of **[Claude Code](https://github.com/anthropics/claude-code)**, Anthropic's official CLI for Claude AI.
+
 ## License
 
 Licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
 
 ---
 
-**Last Updated**: 2025-12-27
+**Last Updated**: 2025-12-28

@@ -588,3 +588,9 @@ Planned additions:
 **Version**: 2.0
 **Last Updated**: 2025
 **Total Scripts**: 14
+
+## 🤖 Development
+
+Scripts in this repository were created with the assistance of **[Claude Code](https://github.com/anthropics/claude-code)**, Anthropic's official CLI for Claude AI.
+
+---
