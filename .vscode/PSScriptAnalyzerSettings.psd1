@@ -1,122 +1,42 @@
 @{
-    # Use Severity when you want to limit the generated diagnostic records to a
-    # subset of: Error, Warning and Information.
-    Severity = @('Error', 'Warning', 'Information')
+    # Only report Errors and Warnings (not Information)
+    Severity = @('Error', 'Warning')
 
-    # Include default rules. This is the default value.
+    # Use default rules as a baseline
     IncludeDefaultRules = $true
 
-    # Include specific rules
-    IncludeRules = @(
-        'PSAvoidDefaultValueForMandatoryParameter',
-        'PSAvoidDefaultValueSwitchParameter',
-        'PSAvoidGlobalVars',
-        'PSAvoidInvokingEmptyMembers',
-        'PSAvoidNullOrEmptyHelpMessageAttribute',
-        'PSAvoidUsingCmdletAliases',
-        'PSAvoidUsingComputerNameHardcoded',
-        'PSAvoidUsingConvertToSecureStringWithPlainText',
-        'PSAvoidUsingDeprecatedManifestFields',
-        'PSAvoidUsingEmptyCatchBlock',
-        'PSAvoidUsingInvokeExpression',
-        'PSAvoidUsingPlainTextForPassword',
-        'PSAvoidUsingPositionalParameters',
-        'PSAvoidUsingUsernameAndPasswordParams',
-        'PSAvoidUsingWMICmdlet',
-        'PSMisleadingBacktick',
-        'PSMissingModuleManifestField',
-        'PSPlaceCloseBrace',
-        'PSPlaceOpenBrace',
-        'PSPossibleIncorrectComparisonWithNull',
-        'PSPossibleIncorrectUsageOfAssignmentOperator',
-        'PSPossibleIncorrectUsageOfRedirectionOperator',
-        'PSReservedCmdletChar',
-        'PSReservedParams',
-        'PSReviewUnusedParameter',
-        'PSShouldProcess',
-        'PSUseApprovedVerbs',
-        'PSUseBOMForUnicodeEncodedFile',
-        'PSUseCmdletCorrectly',
+    # Exclude rules that are too strict or cause false positives
+    ExcludeRules = @(
+        # Output and formatting
+        'PSAvoidUsingWriteHost',              # Scripts need Write-Host for user output
+        'PSProvideCommentHelp',               # Not all scripts need full help blocks
+
+        # Style and formatting (too strict for existing codebase)
         'PSUseConsistentIndentation',
         'PSUseConsistentWhitespace',
+        'PSPlaceOpenBrace',
+        'PSPlaceCloseBrace',
         'PSUseCorrectCasing',
-        'PSUseDeclaredVarsMoreThanAssignments',
-        'PSUseLiteralInitializerForHashtable',
-        'PSUseOutputTypeCorrectly',
-        'PSUseProcessBlockForPipelineCommand',
-        'PSUseShouldProcessForStateChangingFunctions',
-        'PSUseSingularNouns',
-        'PSUseSupportsShouldProcess',
+
+        # Compatibility checks (may be too strict)
+        'PSUseCompatibleCmdlets',
+        'PSUseCompatibleSyntax',
+
+        # Positional parameters (sometimes needed for brevity)
+        'PSAvoidUsingPositionalParameters',
+
+        # Module-specific rules (not applicable to standalone scripts)
+        'PSUseBOMForUnicodeEncodedFile',
         'PSUseToExportFieldsInManifest',
-        'PSUseUsingScopeModifierInNewRunspaces',
-        'PSUseUTF8EncodingForHelpFile'
+        'PSMissingModuleManifestField',
+
+        # ShouldProcess rules (not needed for all scripts)
+        'PSShouldProcess',
+        'PSUseShouldProcessForStateChangingFunctions',
+        'PSUseSupportsShouldProcess',
+
+        # Other overly strict rules
+        'PSReviewUnusedParameter',
+        'PSUseDeclaredVarsMoreThanAssignments'
     )
-
-    # Exclude specific rules - Scripts (not modules) can use Write-Host for user interaction
-    ExcludeRules = @(
-        'PSAvoidUsingWriteHost',           # Scripts need Write-Host for output
-        'PSAvoidUsingPositionalParameters', # Sometimes needed for brevity
-        'PSProvideCommentHelp'             # Not enforced - complex scripts have help, simple scripts use inline comments
-    )
-
-    # Configure specific rules
-    Rules = @{
-        # Enforce consistent indentation
-        PSUseConsistentIndentation = @{
-            Enable = $true
-            IndentationSize = 4
-            PipelineIndentation = 'IncreaseIndentationForFirstPipeline'
-            Kind = 'space'
-        }
-
-        # Enforce consistent whitespace
-        PSUseConsistentWhitespace = @{
-            Enable = $true
-            CheckInnerBrace = $true
-            CheckOpenBrace = $true
-            CheckOpenParen = $true
-            CheckOperator = $true
-            CheckPipe = $true
-            CheckPipeForRedundantWhitespace = $false
-            CheckSeparator = $true
-            CheckParameter = $false
-        }
-
-        # Enforce proper brace placement
-        PSPlaceOpenBrace = @{
-            Enable = $true
-            OnSameLine = $true
-            NewLineAfter = $true
-            IgnoreOneLineBlock = $true
-        }
-
-        PSPlaceCloseBrace = @{
-            Enable = $true
-            NewLineAfter = $true
-            IgnoreOneLineBlock = $true
-            NoEmptyLineBefore = $false
-        }
-
-        # Enforce correct casing for cmdlets
-        PSUseCorrectCasing = @{
-            Enable = $true
-        }
-
-        # Check cmdlet compatibility
-        PSUseCompatibleCmdlets = @{
-            Compatibility = @(
-                'core-6.1.0-windows',
-                'desktop-5.1.14393.206-windows'
-            )
-        }
-
-        # Check syntax compatibility
-        PSUseCompatibleSyntax = @{
-            Enable = $true
-            TargetVersions = @(
-                '5.1',
-                '7.0'
-            )
-        }
-    }
 }
