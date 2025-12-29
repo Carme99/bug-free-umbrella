@@ -15,6 +15,7 @@ A comprehensive collection of PowerShell scripts for managing Windows Server 201
   - [Get Disk Report](#3-get-disk-report)
   - [Set English UK Regional Settings](#4-set-english-uk-regional-settings)
   - [Remove US Language Pack](#5-remove-us-language-pack)
+  - [New Weekly Reboot Schedule](#17-new-weekly-reboot-schedule)
 - [Usage Guidelines](#usage-guidelines)
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
@@ -984,6 +985,233 @@ Get-ChildItem *.ps1
 
 ---
 
+### 17. New Weekly Reboot Schedule
+
+**File**: `New-WeeklyRebootSchedule.ps1`
+
+Creates a scheduled task to automatically reboot Windows Server on a weekly basis.
+
+#### Features
+- Interactive day of week selection (Monday-Sunday)
+- 24-hour time format input with validation
+- Runs under NT AUTHORITY\SYSTEM account
+- Configurable reboot delay for graceful shutdown
+- Automatic detection and handling of existing tasks
+- Comprehensive input validation
+- Detailed logging and status reporting
+- Task verification after creation
+
+#### Usage
+
+**Interactive Mode** (Recommended):
+```powershell
+.\New-WeeklyRebootSchedule.ps1
+```
+The script will prompt you to:
+1. Select the day of week (1-7 for Monday-Sunday)
+2. Enter the time in 24-hour format (HH:mm)
+
+**Non-Interactive Mode**:
+```powershell
+# Schedule reboot for Sunday at 3:00 AM
+.\New-WeeklyRebootSchedule.ps1 -DayOfWeek Sunday -Time "03:00"
+
+# Schedule with custom reboot delay (2 minutes)
+.\New-WeeklyRebootSchedule.ps1 -DayOfWeek Saturday -Time "23:30" -RebootDelay 120
+
+# Force overwrite existing task
+.\New-WeeklyRebootSchedule.ps1 -DayOfWeek Monday -Time "02:00" -Force
+```
+
+**Custom Task Name**:
+```powershell
+.\New-WeeklyRebootSchedule.ps1 -DayOfWeek Wednesday -Time "04:00" -TaskName "Maintenance Reboot"
+```
+
+#### Parameters
+
+| Parameter | Description | Default | Example |
+|-----------|-------------|---------|---------|
+| `-DayOfWeek` | Day for weekly reboot (Monday-Sunday) | Interactive prompt | `Sunday` |
+| `-Time` | Time in 24-hour format (HH:mm) | Interactive prompt | `"03:00"` |
+| `-TaskName` | Custom name for scheduled task | Weekly Server Reboot | `"Maintenance Reboot"` |
+| `-RebootDelay` | Delay in seconds before reboot | 60 | `120` |
+| `-Force` | Overwrite existing task without prompting | False | `-Force` |
+
+#### Scheduled Task Configuration
+
+The script creates a scheduled task with the following settings:
+
+| Setting | Value | Purpose |
+|---------|-------|---------|
+| **User Account** | NT AUTHORITY\SYSTEM | Ensures task runs with highest privileges |
+| **Run Level** | Highest | Required for shutdown command |
+| **Trigger** | Weekly on selected day | Consistent reboot schedule |
+| **Action** | `shutdown.exe /r /f /t [delay]` | Forced reboot with delay |
+| **Settings** | Start if on batteries, Start when available | Ensures task runs reliably |
+| **Network** | Not required | Task runs regardless of network status |
+
+#### Reboot Delay Explanation
+
+The `-RebootDelay` parameter (default: 60 seconds) provides time for:
+- Users to save work (if logged in)
+- Services to shut down gracefully
+- Disk writes to complete
+- Network connections to close properly
+
+**Recommended Values**:
+- **30 seconds**: Minimal delay for automated environments
+- **60 seconds**: Standard delay (default)
+- **120-300 seconds**: Extended delay for servers with many services
+
+#### When to Use
+
+**Recommended Scenarios**:
+- Patch Tuesday maintenance (Tuesday or Wednesday early morning)
+- Weekly maintenance windows
+- Clearing memory leaks or resource buildup
+- Forcing Windows Update installation
+- Regular server hygiene
+
+**Best Practice Schedule Examples**:
+```powershell
+# Patch deployment schedule
+.\New-WeeklyRebootSchedule.ps1 -DayOfWeek Wednesday -Time "03:00"
+
+# End-of-week maintenance
+.\New-WeeklyRebootSchedule.ps1 -DayOfWeek Sunday -Time "02:00"
+
+# Mid-week maintenance (avoid Monday/Friday)
+.\New-WeeklyRebootSchedule.ps1 -DayOfWeek Wednesday -Time "23:30"
+```
+
+#### Output Example
+
+```
+========================================
+  Weekly Reboot Scheduler for Windows
+========================================
+Server: SERVER01
+OS: Microsoft Windows Server 2022 Datacenter
+Version: 10.0.20348
+========================================
+
+[2025-12-29 10:15:30] [INFO] Starting Weekly Reboot Scheduler configuration...
+
+Please select the day of week for the weekly reboot:
+  1. Monday
+  2. Tuesday
+  3. Wednesday
+  4. Thursday
+  5. Friday
+  6. Saturday
+  7. Sunday
+
+Enter selection (1-7): 7
+
+[2025-12-29 10:15:35] [INFO] Selected day: Sunday
+
+Please enter the time for the weekly reboot (24-hour format):
+  Examples: 02:00, 23:30, 18:45
+
+Enter time (HH:mm): 03:00
+
+[2025-12-29 10:15:40] [INFO] Selected time: 03:00
+
+========================================
+  Configuration Summary
+========================================
+Task Name:     Weekly Server Reboot
+Day:           Sunday
+Time:          03:00 (24-hour format)
+Reboot Delay:  60 seconds
+Run As:        NT AUTHORITY\SYSTEM
+========================================
+
+[2025-12-29 10:15:45] [SUCCESS] Scheduled task created successfully!
+
+========================================
+  Scheduled Task Created Successfully
+========================================
+Task Name:       Weekly Server Reboot
+Schedule:        Every Sunday at 03:00
+Reboot Delay:    60 seconds
+Run As:          NT AUTHORITY\SYSTEM
+State:           Ready
+Next Run:        Sunday, December 31, 2025 3:00:00 AM
+========================================
+```
+
+#### Managing the Scheduled Task
+
+**View Task Details**:
+```powershell
+Get-ScheduledTask -TaskName "Weekly Server Reboot"
+Get-ScheduledTaskInfo -TaskName "Weekly Server Reboot"
+```
+
+**Disable Task Temporarily**:
+```powershell
+Disable-ScheduledTask -TaskName "Weekly Server Reboot"
+```
+
+**Enable Task**:
+```powershell
+Enable-ScheduledTask -TaskName "Weekly Server Reboot"
+```
+
+**Test Reboot Immediately** (⚠️ Warning: Will reboot the server!):
+```powershell
+Start-ScheduledTask -TaskName "Weekly Server Reboot"
+```
+
+**Remove Task**:
+```powershell
+Unregister-ScheduledTask -TaskName "Weekly Server Reboot" -Confirm:$false
+```
+
+**Modify Schedule**:
+```powershell
+# Just run the script again with different parameters
+# Use -Force to overwrite without confirmation
+.\New-WeeklyRebootSchedule.ps1 -DayOfWeek Monday -Time "04:00" -Force
+```
+
+#### Important Notes
+
+1. **Administrator Rights Required**: Script must run with elevated privileges
+2. **System Account**: Task runs as NT AUTHORITY\SYSTEM for reliability
+3. **Forced Reboot**: The shutdown command uses `/f` flag to force applications to close
+4. **No User Intervention**: Task will execute automatically - ensure maintenance window is appropriate
+5. **Reboot Message**: Users will see: "Scheduled weekly server reboot - initiated by scheduled task"
+6. **Task Persistence**: Task survives reboots and will continue running on schedule
+7. **Overwrite Protection**: Script warns if task exists unless `-Force` is used
+
+#### Troubleshooting
+
+**Task Not Running**:
+- Check task status: `Get-ScheduledTask -TaskName "Weekly Server Reboot"`
+- Verify next run time: `Get-ScheduledTaskInfo -TaskName "Weekly Server Reboot"`
+- Check Task Scheduler event log: `Get-WinEvent -LogName "Microsoft-Windows-TaskScheduler/Operational" -MaxEvents 20`
+
+**Task Disabled After Reboot**:
+- Some group policies may disable scheduled tasks
+- Check GPO settings: `gpresult /h gpresult.html`
+- Ensure "Task Scheduler" service is running and set to Automatic
+
+**Permission Issues**:
+- Verify running as Administrator
+- Check if Task Scheduler service is running: `Get-Service -Name Schedule`
+- Ensure user has rights to create scheduled tasks
+
+**Reboot Not Occurring**:
+- Verify server was powered on at scheduled time
+- Check if task has "Start when available" enabled
+- Review Task Scheduler history for execution logs
+- Ensure system wasn't in use (some policies prevent reboot if users logged in)
+
+---
+
 ## Support and Contributions
 
 ### Getting Help
@@ -1055,9 +1283,10 @@ These scripts are provided as-is for system administration purposes. Use at your
 | System Integrity | Check-SystemIntegrity.ps1 | `.\Check-SystemIntegrity.ps1 -GenerateReport` |
 | Configure UK Settings | Set-EnglishUKRegion.ps1 | `.\Set-EnglishUKRegion.ps1 -ApplyToExistingUsers` |
 | Remove US Language | Remove-USLanguagePack.ps1 | `.\Remove-USLanguagePack.ps1 -BackupFirst` |
+| Weekly Reboot Schedule | New-WeeklyRebootSchedule.ps1 | `.\New-WeeklyRebootSchedule.ps1` |
 
 ---
 
 **Compatible**: Windows Server 2016, 2019, 2022
 **PowerShell**: 5.1+
-**Total Scripts**: 16
+**Total Scripts**: 17
