@@ -174,7 +174,7 @@ function Get-TimeInput {
             $timeParts = $timeInput -split ':'
             $hour = $timeParts[0].PadLeft(2, '0')
             $minute = $timeParts[1]
-            return "$hour:$minute"
+            return "${hour}:${minute}"
         } else {
             Write-Host "Invalid time format. Please use 24-hour format (HH:mm), e.g., 02:00 or 23:30" -ForegroundColor Red
         }
