@@ -232,16 +232,16 @@ function Get-SysprepBlockers {
         ($_.Name -notmatch $msSystemNameWhitelist)
     }
 
-    # Add explicit known offenders
-    foreach ($offender in $explicitOffenders) {
+    # Add explicit known offenders (collect first, then combine for performance)
+    $explicitPackages = foreach ($offender in $explicitOffenders) {
         $package = Get-AppxPackage -AllUsers -Name $offender -ErrorAction SilentlyContinue
         if ($package -and $blockers.Name -notcontains $package.Name) {
-            $blockers += $package
+            $package
         }
     }
 
-    # Remove duplicates
-    $blockers = $blockers | Sort-Object Name -Unique
+    # Combine and remove duplicates
+    $blockers = @($blockers) + @($explicitPackages) | Sort-Object Name -Unique
 
     Write-Log -Message "Detected $($blockers.Count) potential Sysprep blockers" -Level INFO
 

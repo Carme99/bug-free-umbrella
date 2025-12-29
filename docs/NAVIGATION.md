@@ -1,0 +1,497 @@
+# 📍 Bug-Free Umbrella - Documentation Navigation Guide
+
+> **Your roadmap to finding exactly what you need, fast!**
+
+---
+
+## 🚀 Quick Start - "I want to..."
+
+### For First-Time Users
+| What you want to do | Go here |
+|---------------------|---------|
+| **Understand what this repo is** | [Main README](../README.md) |
+| **See what's new** | [CHANGELOG](../CHANGELOG.md) - Check out our fun release names! 🌈 |
+| **Get started quickly** | [Quick Start Guide](#quick-start-paths) (below) |
+| **See example outputs** | [SCRIPT-EXAMPLES.md](SCRIPT-EXAMPLES.md) |
+
+### For Active Users
+| What you want to do | Go here |
+|---------------------|---------|
+| **Follow a complete workflow** | [WORKFLOWS.md](WORKFLOWS.md) |
+| **Troubleshoot a problem** | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
+| **Find a specific script** | [Script Index](#script-index-by-category) (below) |
+| **Contribute** | [CONTRIBUTING.md](../CONTRIBUTING.md) |
+| **Report security issue** | [SECURITY.md](../SECURITY.md) |
+
+---
+
+## 🎯 Quick Start Paths
+
+### Path 1: "I manage Microsoft 365 / Intune"
+```
+START HERE → Main README → M365 Scripts Section
+           ↓
+    Choose your focus:
+    • Intune device management     → scripts/intune/
+    • Exchange mailboxes           → scripts/m365/exchange-online/
+    • Teams & SharePoint           → scripts/m365/teams/ or sharepoint-onedrive/
+    • Regional settings            → scripts/m365/ (7 new scripts!)
+           ↓
+    See examples → SCRIPT-EXAMPLES.md
+           ↓
+    Follow workflow → WORKFLOWS.md
+```
+
+### Path 2: "I manage Windows Servers"
+```
+START HERE → Main README → Server Management Section
+           ↓
+    Choose your need:
+    • Health monitoring           → scripts/server/monitoring/
+    • Active Directory            → scripts/server/active-directory/
+    • Group Policy                → scripts/server/group-policy/
+    • Backup verification         → scripts/server/backup-recovery/
+           ↓
+    See examples → SCRIPT-EXAMPLES.md
+           ↓
+    Fix issues → TROUBLESHOOTING.md
+```
+
+### Path 3: "I do DevOps / Cloud Infrastructure"
+```
+START HERE → Main README → Cloud & DevOps Section
+           ↓
+    Choose your platform:
+    • Azure DevOps / GitHub       → scripts/devops-cicd/
+    • Azure infrastructure        → scripts/cloud-infrastructure/azure/
+    • AWS infrastructure          → scripts/cloud-infrastructure/aws/
+    • Kubernetes / Docker         → scripts/container-management/
+    • Terraform / Bicep           → scripts/infrastructure-as-code/
+           ↓
+    See examples → SCRIPT-EXAMPLES.md
+           ↓
+    Follow workflow → WORKFLOWS.md
+```
+
+### Path 4: "I want to auto-fix common PC problems"
+```
+START HERE → Main README → Proactive Remediations
+           ↓
+    scripts/device-management/proactive-remediations/
+           ↓
+    Choose what to fix:
+    • Low disk space              → Fix-DiskSpace/
+    • Stuck Windows Updates       → Fix-WindowsUpdateStuck/
+    • BitLocker not backed up     → Fix-BitLockerNotEscrowedKeys/
+    • Stale user profiles         → Fix-StaleProfiles/
+    • Teams cache issues          → Fix-TeamsCache/
+    • ...and 9 more!
+           ↓
+    Deploy workflow → WORKFLOWS.md (Automated Winget Updates section)
+```
+
+### Path 5: "I want to automate app updates"
+```
+START HERE → Main README → Winget Updates Section
+           ↓
+    scripts/device-management/winget-updates/
+           ↓
+    40+ app templates organized by category:
+    • browsers/                   → Chrome, Firefox, Edge
+    • communication/              → Teams, Zoom, Slack
+    • development/                → VS Code, Git, Python
+    • productivity/               → 7-Zip, Notepad++, Adobe Reader
+    • runtimes/                   → .NET, C++, Java
+           ↓
+    Follow setup guide → WORKFLOWS.md (Setting up Automated Winget Updates)
+```
+
+---
+
+## 📚 Complete Documentation Index
+
+### Core Documentation Files
+
+| Document | Purpose | When to Use |
+|----------|---------|-------------|
+| **[README.md](../README.md)** | Repository overview, quick start | First stop for new users |
+| **[CHANGELOG.md](../CHANGELOG.md)** | Version history with fun codenames! 🌂 | See what's new, understand changes |
+| **[docs/README.md](README.md)** | Complete documentation hub | Deep dive into all scripts |
+| **[SCRIPT-EXAMPLES.md](SCRIPT-EXAMPLES.md)** | Detailed examples with outputs | Learn how scripts work |
+| **[WORKFLOWS.md](WORKFLOWS.md)** | End-to-end step-by-step guides | Follow complete processes |
+| **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** | Common issues and solutions | When things don't work |
+| **[INTUNE-SYNC-README.md](INTUNE-SYNC-README.md)** | User group → device group sync | Specific Intune sync scenarios |
+| **[CONTRIBUTING.md](../CONTRIBUTING.md)** | How to contribute | Want to add scripts or fixes |
+| **[SECURITY.md](../SECURITY.md)** | Security policy | Report vulnerabilities |
+| **[SCRIPT_ANALYSIS_REPORT.md](../SCRIPT_ANALYSIS_REPORT.md)** | PowerShell code analysis | Understand code quality |
+
+---
+
+## 🗂️ Script Index by Category
+
+### ☁️ Cloud & Infrastructure (40+ scripts)
+
+#### API Management (2 scripts)
+**Location:** `scripts/api-management/`
+- Monitor-AzureAPIManagement.ps1 - Azure APIM health monitoring
+- Test-APIHealth.ps1 - Universal API endpoint testing
+
+#### Cloud Infrastructure (15+ scripts)
+**Location:** `scripts/cloud-infrastructure/`
+
+**Azure** (`azure/`)
+- Get-AzureResourceHealth.ps1 - Multi-subscription monitoring
+- Monitor-AzureResources.ps1 - Resource health & cost analysis
+- Monitor-AzureKeyVaults.ps1 - Key Vault monitoring
+- Get-VMSecurityConfig.ps1 - VM security audit
+- Get-VMBackupCompliance.ps1 - VM backup compliance
+- Optimize-AzureVMs.ps1 - VM optimization
+
+**AWS** (`aws/`)
+- Get-AWSResourceInventory.ps1 - Multi-region inventory
+
+#### Container Management (3 scripts)
+**Location:** `scripts/container-management/`
+- Get-DockerHealthCheck.ps1 - Docker environment health
+- Get-KubernetesHealthCheck.ps1 - K8s cluster monitoring
+- Optimize-DockerCleanup.ps1 - Docker resource cleanup
+
+#### Infrastructure as Code (2 scripts)
+**Location:** `scripts/infrastructure-as-code/`
+- Test-TerraformConfiguration.ps1 - Terraform validation & security
+- Test-BicepTemplates.ps1 - Azure Bicep validation
+
+---
+
+### 🔄 DevOps & Development (8 scripts)
+
+#### DevOps CI/CD (4 scripts)
+**Location:** `scripts/devops-cicd/`
+- Monitor-AzureDevOpsPipelines.ps1 - Azure DevOps monitoring
+- Monitor-GitHubActions.ps1 - GitHub Actions workflows
+- Monitor-GitLabCI.ps1 - GitLab CI/CD pipelines
+- Analyze-BuildPerformance.ps1 - Build performance analysis
+
+#### Database Management (4 scripts)
+**Location:** `scripts/database/`
+- Get-SQLServerHealth.ps1 - SQL Server comprehensive monitoring
+- Get-MySQLHealth.ps1 - MySQL server health
+- Get-PostgreSQLHealth.ps1 - PostgreSQL monitoring
+- Monitor-MongoDBHealth.ps1 - MongoDB health
+
+---
+
+### 💼 Microsoft 365 & Enterprise (45+ scripts)
+
+#### Microsoft 365 Cloud Services (19 scripts)
+**Location:** `scripts/m365/`
+
+**Exchange Online** (`exchange-online/`)
+- Get-MailboxHealth.ps1 - Mailbox health monitoring
+- Get-SharedMailboxAudit.ps1 - Shared mailbox audit
+- Set-MailboxRegionalSettings.ps1 - Regional configuration
+
+**Teams** (`teams/`)
+- Get-TeamsReport.ps1 - Teams usage reporting
+- Set-TeamsRegionalSettings.ps1 - Teams regional settings
+
+**SharePoint & OneDrive** (`sharepoint-onedrive/`)
+- Get-OneDriveUsageReport.ps1 - Storage analytics
+- Set-SiteRegionalSettings.ps1 - Site regional configuration
+- Set-OneDriveRegionalSettings.ps1 - OneDrive settings
+
+**Azure AD / Entra ID** (`azure-ad/`)
+- Get-AzureADGuestAudit.ps1 - Guest user audit
+- Get-AzureADLicenseReport.ps1 - License reporting
+- Set-UserLanguageSettings.ps1 - User language config
+- Set-OrganizationDefaults.ps1 - Tenant defaults
+
+**Compliance Center** (`compliance/`)
+- Compliance reporting scripts
+
+**Power Platform** (`power-platform/`)
+- Set-PowerPlatformRegionalSettings.ps1 - Environment settings
+
+**Defender for Office 365** (`defender/`)
+- Threat reporting and monitoring
+
+#### Intune Management (18+ scripts)
+**Location:** `scripts/intune/`
+
+**Reporting** (`reporting/`)
+- Get-DeviceComplianceReport.ps1 - Compliance status
+- Get-BitLockerStatus.ps1 - Encryption audit
+- Get-WindowsUpdateCompliance.ps1 - Update status
+
+**Maintenance** (`maintenance/`)
+- Find-StaleDevices.ps1 - Stale device detection
+- Device cleanup utilities
+
+**Deployment** (`deployment/`)
+- Packaging and deployment tools
+
+#### Email Services (4 scripts)
+**Location:** `scripts/email-services/`
+- Get-ExchangeServerHealth.ps1 - Exchange Server monitoring
+- Exchange management scripts
+
+---
+
+### 🔒 Security & Compliance (13 scripts)
+
+#### Advanced Security (1 script)
+**Location:** `scripts/advanced-security/`
+- Invoke-SecurityComplianceScan.ps1 - Multi-framework scanning (CIS, NIST, PCI-DSS, HIPAA, SOC2, ISO27001)
+
+#### Security & Compliance (12 scripts)
+**Location:** `scripts/security-compliance/`
+- Test-CISBenchmark.ps1 - CIS Benchmark testing
+- Get-SecurityBaseline.ps1 - Baseline verification
+- Get-LocalAdminAudit.ps1 - Local admin auditing
+- Certificate and security monitoring
+
+---
+
+### 🖥️ Server & Infrastructure (40+ scripts)
+
+#### Server Management (30+ scripts)
+**Location:** `scripts/server/`
+
+**Active Directory** (`active-directory/`)
+- Get-ADUserAudit.ps1 - User account auditing
+- Service account discovery
+
+**Backup & Recovery** (`backup-recovery/`)
+- Backup verification scripts
+
+**Group Policy** (`group-policy/`)
+- Backup-GroupPolicies.ps1 - GPO backup automation
+
+**Monitoring** (`monitoring/`)
+- Monitor-ServerHealth.ps1 - **NEW! 13 major features!** 🌈
+  - Interactive mode with menu
+  - Disk I/O, Windows Update status, Security monitoring
+  - Network connectivity, Certificate monitoring
+  - Scheduled tasks, Application monitoring
+  - JSON export, Email reporting
+
+**Storage** (`storage/`)
+- Disk space management
+
+**System** (`system/`)
+- Reset-WindowsUpdate.ps1 - Fix stuck updates
+- Check-SystemIntegrity.ps1 - SFC/DISM checks
+
+#### Web Services (4 scripts)
+**Location:** `scripts/web-services/`
+- Get-IISHealthCheck.ps1 - IIS health monitoring
+- Get-IISLogAnalyzer.ps1 - Log analysis + threat detection
+- Optimize-IISConfiguration.ps1 - Performance tuning
+- Backup-IISConfiguration.ps1 - Configuration backup
+
+#### Linux Server
+**Location:** `scripts/linux-server/`
+- Linux server administration scripts
+
+---
+
+### 🖱️ Device Management (60+ scripts)
+
+#### Proactive Remediations (14 pairs = 28 scripts)
+**Location:** `scripts/device-management/proactive-remediations/`
+
+Each has `detect.ps1` and `remediate.ps1`:
+- **Fix-DiskSpace** - Low disk space cleanup
+- **Fix-TempFiles** - Temporary file removal
+- **Fix-StaleProfiles** - Old profile cleanup
+- **Fix-WindowsUpdateStuck** - Windows Update reset
+- **Fix-BitLockerNotEscrowedKeys** - BitLocker key backup (**Enhanced! 🌈**)
+- **Fix-TeamsCache** - Teams cache cleanup
+- **Fix-PrintSpooler** - Print spooler repair
+- **Fix-DNSCache** - DNS cache flush
+- **Fix-WindowsSearch** - Search index rebuild
+- **Fix-BrokenShortcuts** - Shortcut cleanup
+- **Check-SecurityBaseline** - Security enforcement
+- **region-language-settings** - Windows regional settings
+- **keyboard-layout** - Keyboard layout enforcement
+- **language-pack-audit** - Language pack cleanup
+
+#### Winget Application Updates (40+ apps)
+**Location:** `scripts/device-management/winget-updates/`
+
+Organized by category:
+- `browsers/` - Chrome, Firefox, Edge
+- `communication/` - Teams, Zoom, Slack, Discord
+- `development/` - VS Code, Git, Python, Node.js, Azure CLI
+- `media/` - VLC, Spotify, iTunes
+- `productivity/` - 7-Zip, Notepad++, Adobe Reader
+- `remote-access/` - TeamViewer, AnyDesk, WinSCP
+- `runtimes/` - .NET, C++ Redistributables, Java
+- `utilities/` - Various system utilities
+
+#### Other Device Management
+**Location:** `scripts/device-management/`
+- `autopatch/` - Windows Update policy management (V1-V5)
+- `bitlocker-backup/` - BitLocker key backup scripts
+- `device-uptime/` - Uptime monitoring
+- `remove-sccm/` - SCCM client removal
+- `adobe-rum/` - Adobe Remote Update Manager
+- `l16-driver-block/` - Lenovo L16 driver management
+
+---
+
+### 🔧 Monitoring & Operations (10 scripts)
+
+#### Monitoring (6 scripts)
+**Location:** `scripts/monitoring/`
+- Monitor-ServerHealth.ps1 - **Massively expanded! 🌈**
+- Get-PerformanceTrends.ps1 - Performance trending
+- System health checks
+
+#### Network Management (3 scripts)
+**Location:** `scripts/network-management/`
+- Test-NetworkConnectivity.ps1 - Network diagnostics
+- Network troubleshooting tools
+
+#### Print Management (1 script)
+**Location:** `scripts/print-management/`
+- Print server monitoring
+
+---
+
+### 🛠️ Utilities & Other (10+ scripts)
+
+#### Utilities (3 scripts)
+**Location:** `scripts/utilities/`
+- System utility scripts
+
+#### Virtualization (3 scripts)
+**Location:** `scripts/virtualization/`
+- Hyper-V management
+- VMware vSphere/ESXi management
+
+#### Azure Virtual Desktop
+**Location:** `AzureVirtualDesktop/`
+- Remove-SysprepBlockers.ps1 - **Performance improved! 🌈**
+
+---
+
+## 🎓 Learning Paths
+
+### Beginner Path: "New to PowerShell automation"
+1. Start with [Main README](../README.md) - understand the repository
+2. Review [SCRIPT-EXAMPLES.md](SCRIPT-EXAMPLES.md) - see how scripts work
+3. Try a simple script like `Get-DeviceComplianceReport.ps1`
+4. Review [TROUBLESHOOTING.md](TROUBLESHOOTING.md) if issues arise
+5. Explore [Proactive Remediations](../scripts/device-management/proactive-remediations/) for auto-fix scripts
+
+### Intermediate Path: "I know PowerShell, want to deploy"
+1. Review [Main README](../README.md) prerequisites section
+2. Pick your focus area from [Script Index](#script-index-by-category)
+3. Follow a complete workflow from [WORKFLOWS.md](WORKFLOWS.md)
+4. Review [CHANGELOG.md](../CHANGELOG.md) for latest improvements
+5. Consider [contributing](../CONTRIBUTING.md) improvements
+
+### Advanced Path: "I want to customize and contribute"
+1. Read [CONTRIBUTING.md](../CONTRIBUTING.md) guidelines
+2. Review [SCRIPT_ANALYSIS_REPORT.md](../SCRIPT_ANALYSIS_REPORT.md) for code quality standards
+3. Check [CHANGELOG.md](../CHANGELOG.md) - see what's been improved (e.g., 🌈 Rainbow release)
+4. Fork, customize, and submit pull requests
+5. Help expand documentation and examples
+
+---
+
+## 📊 Repository Statistics
+
+| Metric | Count |
+|--------|-------|
+| **Total Scripts** | 260+ |
+| **Script Categories** | 20 |
+| **Proactive Remediations** | 14 pairs (28 scripts) |
+| **Winget App Templates** | 40+ |
+| **Documentation Files** | 10 |
+| **Latest Release** | 2.1.0 "Rainbow" 🌈 |
+
+---
+
+## 🌈 Latest Updates (v2.1.0 "Rainbow")
+
+**What's New:**
+- 🚀 Monitor-ServerHealth.ps1: 13 major new features including interactive mode!
+- ✅ Critical bug fixes: 2 syntax errors resolved
+- 📚 6 scripts with new comprehensive documentation
+- ⚡ Performance improvements in array operations
+- 🎨 Consistent formatting across 10 autopatch scripts
+
+**See full details:** [CHANGELOG.md](../CHANGELOG.md)
+
+---
+
+## 💡 Tips for Navigation
+
+### Finding Scripts
+1. **By Function**: Use the [Quick Start Paths](#quick-start-paths) above
+2. **By Category**: Browse the [Script Index](#script-index-by-category)
+3. **By Name**: Check the category folders in `scripts/`
+
+### Understanding Scripts
+1. **See Examples**: [SCRIPT-EXAMPLES.md](SCRIPT-EXAMPLES.md) has detailed usage
+2. **Get Help**: All major scripts support `Get-Help .\ScriptName.ps1 -Detailed`
+3. **Check Comments**: Every script has inline comments explaining logic
+
+### Following Processes
+1. **Complete Workflows**: [WORKFLOWS.md](WORKFLOWS.md) has end-to-end guides
+2. **Common Issues**: [TROUBLESHOOTING.md](TROUBLESHOOTING.md) has solutions
+3. **Specific Scenarios**: Check individual script documentation
+
+---
+
+## 🔗 External Links
+
+- **GitHub Repository**: [Carme99/bug-free-umbrella](https://github.com/Carme99/bug-free-umbrella)
+- **Issues & Feature Requests**: [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues)
+- **Changelog with Fun Codenames**: [CHANGELOG.md](../CHANGELOG.md) 🌂
+- **Claude Code**: [github.com/anthropics/claude-code](https://github.com/anthropics/claude-code)
+
+---
+
+## 🌟 Featured Scripts
+
+### 🆕 Recently Enhanced (v2.1.0 Rainbow 🌈)
+- **Monitor-ServerHealth.ps1** - Massively expanded! 541 → 1,928 lines
+  - Interactive mode with menu-driven operation
+  - 13 major new monitoring capabilities
+  - Email reporting, JSON export, progress indicators
+  - Location: `scripts/server/monitoring/`
+
+### 🔥 Most Popular
+- **Get-DeviceComplianceReport.ps1** - Intune compliance reporting
+- **Fix-WindowsUpdateStuck** - Fix stuck Windows Updates
+- **Set-UserLanguageSettings.ps1** - M365 user language management
+- **Get-AzureResourceHealth.ps1** - Azure resource monitoring
+
+### 🎯 Recommended for New Users
+- **Fix-DiskSpace** - Easy to understand detect/remediate pattern
+- **Get-BitLockerStatus** - Simple Intune reporting
+- **Test-APIHealth** - Universal API testing
+
+---
+
+## 📞 Need Help?
+
+| Question Type | Resource |
+|---------------|----------|
+| "How do I use this script?" | [SCRIPT-EXAMPLES.md](SCRIPT-EXAMPLES.md) |
+| "Something's not working" | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
+| "How do I deploy this?" | [WORKFLOWS.md](WORKFLOWS.md) |
+| "What's new?" | [CHANGELOG.md](../CHANGELOG.md) |
+| "I want to contribute" | [CONTRIBUTING.md](../CONTRIBUTING.md) |
+| "I found a security issue" | [SECURITY.md](../SECURITY.md) |
+| "General questions" | Check script comments or [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues) |
+
+---
+
+**Last Updated**: 2025-12-29 (v2.1.0 "Rainbow" 🌈)
+
+**Maintained by**: The Bug-Free Umbrella Team
+**Created with**: [Claude Code](https://github.com/anthropics/claude-code)

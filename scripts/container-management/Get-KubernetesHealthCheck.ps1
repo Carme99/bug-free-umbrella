@@ -181,7 +181,7 @@ if ($CheckEvents) {
                 Message = $event.message
             }
         }
-        Write-Host "[+] Collected $($ results.Events.Count) recent events" -ForegroundColor Green
+        Write-Host "[+] Collected $($results.Events.Count) recent events" -ForegroundColor Green
     } catch {
         Write-Host "[!] Error collecting events: $_" -ForegroundColor Yellow
     }

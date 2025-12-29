@@ -8,13 +8,17 @@ A comprehensive collection of PowerShell scripts for Windows system administrati
 
 This documentation hub provides detailed information about all scripts and tools in the bug-free-umbrella repository.
 
+> **🧭 NEW! [Navigation Guide](NAVIGATION.md)** - Lost? Use our comprehensive navigation guide to find exactly what you need!
+
 ### Quick Navigation
 
+- **[📍 Navigation Guide](NAVIGATION.md)** - **START HERE** for finding scripts and docs fast!
 - **[Main README](../README.md)** - Repository overview and quick start
 - **[Script Examples & Outputs](SCRIPT-EXAMPLES.md)** - Detailed examples with sample outputs
 - **[End-to-End Workflows](WORKFLOWS.md)** - Step-by-step guides for common scenarios
 - **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Common issues and solutions
 - **[Intune Sync Guide](INTUNE-SYNC-README.md)** - User group to device group synchronization
+- **[Changelog](../CHANGELOG.md)** - Version history with fun weather-themed codenames! 🌂
 
 ### Script Categories
 
