@@ -30,7 +30,7 @@ This documentation hub provides detailed information about all scripts and tools
 - **[Database Management](../scripts/database/)** - SQL Server, MySQL, PostgreSQL, MongoDB (4 scripts)
 
 **Microsoft 365 & Enterprise**
-- **[Microsoft 365 Cloud Services](../scripts/m365/)** - Exchange Online, Teams, SharePoint, Azure AD (11 scripts)
+- **[Microsoft 365 Cloud Services](../scripts/m365/)** - Exchange Online, Teams, SharePoint, Azure AD (19 scripts)
 - **[Intune Management](../scripts/intune/)** - Comprehensive Intune administration toolkit (18+ scripts)
 - **[Email Services](../scripts/email-services/)** - Exchange Server health and management (4 scripts)
 
@@ -158,7 +158,7 @@ bug-free-umbrella/
 │   │   ├── maintenance/               # Device cleanup and policy management
 │   │   └── deployment/                # Packaging and deployment tools
 │   ├── linux-server/                  # Linux server management
-│   ├── m365/                          # Microsoft 365 cloud services (11 scripts)
+│   ├── m365/                          # Microsoft 365 cloud services (19 scripts)
 │   │   ├── exchange-online/           # Exchange Online mailbox management
 │   │   ├── teams/                     # Microsoft Teams administration
 │   │   ├── sharepoint-onedrive/       # SharePoint and OneDrive
@@ -512,7 +512,7 @@ cd ..\..\security-compliance
 | **Email Services** | 4 | Exchange Server health monitoring and management |
 | **Infrastructure as Code** | 2 | Terraform & Bicep validation, security scanning |
 | **Intune Management** | 18+ | Compliance reporting, app deployment, device maintenance |
-| **Microsoft 365** | 11 | Exchange Online, Teams, SharePoint, Azure AD management |
+| **Microsoft 365** | 19 | Exchange Online, Teams, SharePoint, Azure AD, regional settings management |
 | **Monitoring** | 6 | System health, battery health, performance trending |
 | **Network Management** | 3 | Connectivity testing, diagnostics, network stack reset |
 | **Print Management** | 1 | Print server health monitoring |
@@ -520,7 +520,7 @@ cd ..\..\security-compliance
 | **Server Management** | 30+ | System maintenance, AD/GPO management, backup verification |
 | **Virtualization** | 3 | Hyper-V, VMware vSphere/ESXi management |
 | **Web Services** | 4 | IIS health monitoring, log analysis, security hardening |
-| **Proactive Remediations** | 11 pairs | Auto-fix disk space, temp files, Windows Update, security |
+| **Proactive Remediations** | 14 pairs | Auto-fix disk space, temp files, Windows Update, security, regional settings |
 | **Winget Updates** | 40+ apps | Application auto-updates via Intune remediations |
 | **Utilities** | 3 | System utilities and helper scripts |
 
@@ -560,6 +560,12 @@ When adding new scripts or documentation:
 
 ---
 
+## 🤖 Development
+
+Scripts in this repository were created with the assistance of **[Claude Code](https://github.com/anthropics/claude-code)**, Anthropic's official CLI for Claude AI.
+
+---
+
 ## License
 
 Licensed under the Apache License 2.0. See [LICENSE](../LICENSE) for details.
@@ -567,4 +573,4 @@ Licensed under the Apache License 2.0. See [LICENSE](../LICENSE) for details.
 ---
 
 **Documentation Version**: 3.0
-**Last Updated**: 2025-12-27
+**Last Updated**: 2025-12-28

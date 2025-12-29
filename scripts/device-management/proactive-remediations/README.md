@@ -7,10 +7,13 @@ A collection of ready-to-deploy Intune proactive remediation scripts for common 
 
 ## 📋 Overview
 
-This library provides 6 detect/remediate script pairs that automatically identify and fix common device issues:
+This library provides 9 detect/remediate script pairs that automatically identify and fix common device issues:
 
 | Remediation | Purpose | Detection Criteria | Remediation Action |
 |-------------|---------|-------------------|-------------------|
+| **region-language-settings** | UK regional settings | Culture, locale, time zone not en-GB/GMT | Set UK region, locale, and GMT time zone |
+| **keyboard-layout** | UK keyboard layout | Keyboard not UK English | Set UK keyboard as primary input method |
+| **language-pack-audit** | Unnecessary language packs | Non-UK language packs installed | Remove unnecessary language packs |
 | **Fix-DiskSpace** | Low disk space | <10% or <10GB free | Clean temp files, recycle bin, WU cache |
 | **Fix-TempFiles** | Excessive temp files | >1GB of old temp files | Delete files >7 days old |
 | **Fix-StaleProfiles** | Old user profiles | Profiles >90 days old | Remove profiles >120 days old |
@@ -34,12 +37,14 @@ This library provides 6 detect/remediate script pairs that automatically identif
 | Run script in 64-bit PowerShell | Yes |
 | Run this script using logged-on credentials | No (run as SYSTEM) |
 | Enforce script signature check | No (unless you sign the scripts) |
-| Run script in 64-bit PowerShell | Yes |
 
 ### Schedule Recommendations
 
 | Remediation | Frequency |
 |-------------|-----------|
+| region-language-settings | Once or Daily (until all devices compliant) |
+| keyboard-layout | Once or Daily (until all devices compliant) |
+| language-pack-audit | Weekly |
 | Fix-DiskSpace | Daily |
 | Fix-TempFiles | Daily |
 | Fix-StaleProfiles | Weekly |
@@ -244,3 +249,7 @@ To add new remediations:
 
 **Version**: 1.0
 **Compatible**: Windows 10/11, Windows Server 2016+
+
+## 🤖 Development
+
+Scripts in this repository were created with the assistance of **[Claude Code](https://github.com/anthropics/claude-code)**, Anthropic's official CLI for Claude AI.
