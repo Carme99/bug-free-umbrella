@@ -74,6 +74,78 @@ function Write-Log {
     Write-Host "[$timestamp] [$Type] $Message" -ForegroundColor $color
 }
 
+function Test-RegistryHiveLoaded {
+    param([string]$HiveName)
+    $loadedHives = & reg query HKU 2>&1 | Select-String -Pattern $HiveName
+    return ($null -ne $loadedHives)
+}
+
+function Load-RegistryHive {
+    param(
+        [string]$HiveName,
+        [string]$HivePath
+    )
+
+    if (-not (Test-Path $HivePath)) {
+        Write-Log "Registry hive file not found: $HivePath" "WARNING"
+        return $false
+    }
+
+    if (Test-RegistryHiveLoaded $HiveName) {
+        Write-Log "Registry hive '$HiveName' is already loaded" "INFO"
+        return $null  # Already loaded, return null to indicate we didn't load it
+    }
+
+    try {
+        $result = & reg load $HiveName $HivePath 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Log "Successfully loaded registry hive: $HiveName" "SUCCESS"
+            return $true  # We loaded it
+        } else {
+            Write-Log "Failed to load registry hive: $result" "ERROR"
+            return $false
+        }
+    }
+    catch {
+        Write-Log "Error loading registry hive: $($_.Exception.Message)" "ERROR"
+        return $false
+    }
+}
+
+function Unload-RegistryHive {
+    param(
+        [string]$HiveName,
+        [bool]$WeLoadedIt
+    )
+
+    if ($WeLoadedIt -eq $false) {
+        Write-Log "Skipping unload of '$HiveName' (load failed)" "INFO"
+        return
+    }
+
+    if ($null -eq $WeLoadedIt) {
+        Write-Log "Skipping unload of '$HiveName' (was already loaded)" "INFO"
+        return
+    }
+
+    try {
+        # Force garbage collection to release any handles
+        [System.GC]::Collect()
+        [System.GC]::WaitForPendingFinalizers()
+        Start-Sleep -Milliseconds 500
+
+        $result = & reg unload $HiveName 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Log "Successfully unloaded registry hive: $HiveName" "SUCCESS"
+        } else {
+            Write-Log "Warning: Could not unload registry hive: $result" "WARNING"
+        }
+    }
+    catch {
+        Write-Log "Error unloading registry hive: $($_.Exception.Message)" "WARNING"
+    }
+}
+
 Write-Log "=== Configuring English (UK) Regional Settings ===" "HEADER"
 Write-Log "Server: $env:COMPUTERNAME" "INFO"
 
@@ -188,21 +260,31 @@ Write-Log "Applying settings to system-wide defaults..." "INFO"
 try {
     # Copy settings to default user profile
     $defaultUserHive = "HKU\DEFAULT_USER"
-    $currentUserSettings = "HKCU:\Control Panel\International"
+    $defaultUserPath = "C:\Users\Default\NTUSER.DAT"
 
-    # Load default user registry hive
-    & reg load "HKU\DEFAULT_USER" "C:\Users\Default\NTUSER.DAT" 2>&1 | Out-Null
+    # Load default user registry hive (only if we can)
+    $hiveLoaded = Load-RegistryHive -HiveName $defaultUserHive -HivePath $defaultUserPath
 
-    # Copy international settings
-    & reg copy "HKCU\Control Panel\International" "HKU\DEFAULT_USER\Control Panel\International" /s /f 2>&1 | Out-Null
+    if ($hiveLoaded -ne $false) {
+        # Copy international settings
+        $copyResult = & reg copy "HKCU\Control Panel\International" "HKU\DEFAULT_USER\Control Panel\International" /s /f 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Log "Settings applied to default user profile" "SUCCESS"
+        } else {
+            Write-Log "Warning: Could not copy settings to default user profile: $copyResult" "WARNING"
+        }
 
-    # Unload default user hive
-    & reg unload "HKU\DEFAULT_USER" 2>&1 | Out-Null
+        # Unload default user hive (only if we loaded it)
+        Unload-RegistryHive -HiveName $defaultUserHive -WeLoadedIt $hiveLoaded
+    }
 
-    Write-Log "Settings applied to default user profile" "SUCCESS"
+    # Set system-wide language settings using PowerShell cmdlets instead of control.exe
+    Write-Log "Applying system-wide language settings..." "INFO"
 
-    # Set system-wide language settings
-    $xmlContent = @"
+    # Use CopyUserInternationalSettingsToSystem which is more reliable
+    try {
+        # This copies current user settings to system and default user
+        $xmlContent = @"
 <gs:GlobalizationServices xmlns:gs="urn:longhornGlobalizationUnattend">
     <gs:UserList>
         <gs:User UserID="Current" CopySettingsToDefaultUserAcct="true" CopySettingsToSystemAcct="true"/>
@@ -218,15 +300,25 @@ try {
 </gs:GlobalizationServices>
 "@
 
-    $xmlPath = "$env:TEMP\EnglishUK_Settings.xml"
-    $xmlContent | Out-File -FilePath $xmlPath -Encoding UTF8
+        $xmlPath = "$env:TEMP\EnglishUK_Settings.xml"
+        $xmlContent | Out-File -FilePath $xmlPath -Encoding UTF8 -Force
 
-    # Apply XML settings system-wide
-    & control intl.cpl,,/f:"$xmlPath" 2>&1 | Out-Null
+        # Use rundll32 to apply international settings (more reliable than control.exe)
+        # This applies the settings from the XML file
+        $process = Start-Process -FilePath "control.exe" -ArgumentList "intl.cpl,,/f:`"$xmlPath`"" -Wait -PassThru -WindowStyle Hidden -ErrorAction SilentlyContinue
 
-    Write-Log "System-wide settings applied" "SUCCESS"
+        if ($process.ExitCode -eq 0 -or $null -eq $process.ExitCode) {
+            Write-Log "System-wide settings applied via XML" "SUCCESS"
+        } else {
+            Write-Log "XML application completed with exit code: $($process.ExitCode)" "WARNING"
+        }
 
-    Remove-Item -Path $xmlPath -Force -ErrorAction SilentlyContinue
+        Remove-Item -Path $xmlPath -Force -ErrorAction SilentlyContinue
+    }
+    catch {
+        Write-Log "Could not apply XML settings: $($_.Exception.Message)" "WARNING"
+        Write-Log "Settings have been applied to current user and default profile" "INFO"
+    }
 }
 catch {
     Write-Log "Error applying system-wide settings: $($_.Exception.Message)" "WARNING"
@@ -246,19 +338,30 @@ if ($ApplyToExistingUsers) {
             Write-Log "  Configuring profile: $userName" "INFO"
 
             # Load user registry hive
-            $userHive = "HKU\$userName"
+            $userHive = "HKU\TEMP_$userName"
             $ntUserDat = "$profilePath\NTUSER.DAT"
 
             if (Test-Path $ntUserDat) {
-                & reg load $userHive $ntUserDat 2>&1 | Out-Null
+                # Try to load the hive
+                $userHiveLoaded = Load-RegistryHive -HiveName $userHive -HivePath $ntUserDat
 
-                # Copy settings
-                & reg copy "HKCU\Control Panel\International" "$userHive\Control Panel\International" /s /f 2>&1 | Out-Null
+                if ($userHiveLoaded -ne $false) {
+                    # Copy settings
+                    $copyResult = & reg copy "HKCU\Control Panel\International" "$userHive\Control Panel\International" /s /f 2>&1
 
-                # Unload hive
-                & reg unload $userHive 2>&1 | Out-Null
+                    if ($LASTEXITCODE -eq 0) {
+                        Write-Log "  Profile '$userName' updated" "SUCCESS"
+                    } else {
+                        Write-Log "  Could not copy settings to '$userName': $copyResult" "WARNING"
+                    }
 
-                Write-Log "  Profile '$userName' updated" "SUCCESS"
+                    # Unload hive
+                    Unload-RegistryHive -HiveName $userHive -WeLoadedIt $userHiveLoaded
+                } else {
+                    Write-Log "  Could not load registry for '$userName' (may be logged in)" "WARNING"
+                }
+            } else {
+                Write-Log "  NTUSER.DAT not found for '$userName'" "WARNING"
             }
         }
     }
@@ -273,9 +376,10 @@ try {
     $culture = Get-Culture
     $timezone = Get-TimeZone
     $location = Get-WinHomeLocation
+    $systemLocale = Get-WinSystemLocale
 
     Write-Log "Culture:              $($culture.Name) - $($culture.DisplayName)" "INFO"
-    Write-Log "System Locale:        $(Get-WinSystemLocale)" "INFO"
+    Write-Log "System Locale:        $($systemLocale.Name) - $($systemLocale.DisplayName)" "INFO"
     Write-Log "Timezone:             $($timezone.Id) ($($timezone.DisplayName))" "INFO"
     Write-Log "Home Location:        $($location.HomeLocation)" "INFO"
     Write-Log "Date Format:          $(Get-Date -Format 'dd/MM/yyyy HH:mm:ss')" "INFO"
