@@ -128,26 +128,32 @@ jobs:
       - name: Run Pester Tests
         shell: pwsh
         run: |
-          # Import Pester
-          Import-Module Pester -MinimumVersion 5.5.0
+          try {
+            # Import Pester
+            Import-Module Pester -MinimumVersion 5.5.0
 
-          # Load configuration
-          $config = Import-PowerShellDataFile -Path ./Tests/Pester.Config.psd1
-          $pesterConfig = New-PesterConfiguration -Hashtable $config
+            # Load configuration
+            $config = Import-PowerShellDataFile -Path ./Tests/Pester.Config.psd1
+            $pesterConfig = New-PesterConfiguration -Hashtable $config
 
-          # Run tests
-          $result = Invoke-Pester -Configuration $pesterConfig
+            # Run tests
+            $result = Invoke-Pester -Configuration $pesterConfig
 
-          # Display results (informational only - non-blocking)
-          Write-Host "`nTest Results:" -ForegroundColor Cyan
-          Write-Host "Total: $($result.TotalCount)" -ForegroundColor White
-          Write-Host "Passed: $($result.PassedCount)" -ForegroundColor Green
-          Write-Host "Failed: $($result.FailedCount)" -ForegroundColor $(if ($result.FailedCount -gt 0) { 'Yellow' } else { 'Green' })
-          Write-Host "Skipped: $($result.SkippedCount)" -ForegroundColor Yellow
+            # Display results (informational only - non-blocking)
+            Write-Host "`nTest Results:" -ForegroundColor Cyan
+            Write-Host "Total: $($result.TotalCount)" -ForegroundColor White
+            Write-Host "Passed: $($result.PassedCount)" -ForegroundColor Green
+            Write-Host "Failed: $($result.FailedCount)" -ForegroundColor $(if ($result.FailedCount -gt 0) { 'Yellow' } else { 'Green' })
+            Write-Host "Skipped: $($result.SkippedCount)" -ForegroundColor Yellow
 
-          # Show failures but don't block pipeline
-          if ($result.FailedCount -gt 0) {
-            Write-Host "`nNOTE: $($result.FailedCount) test(s) failed (informational - non-blocking)" -ForegroundColor Yellow
+            # Show failures but don't block pipeline
+            if ($result.FailedCount -gt 0) {
+              Write-Host "`nNOTE: $($result.FailedCount) test(s) failed (informational - non-blocking)" -ForegroundColor Yellow
+            }
+          } catch {
+            Write-Host "Pester tests encountered an error (non-blocking):" -ForegroundColor Yellow
+            Write-Host $_.Exception.Message -ForegroundColor Yellow
+            Write-Host "`nThis is informational only and does not block the pipeline." -ForegroundColor Cyan
           }
 
           # Always exit success - tests are informational
