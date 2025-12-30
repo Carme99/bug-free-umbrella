@@ -74,7 +74,7 @@ foreach ($Framework in $Frameworks) {
 Write-Host "`n[2/5] BitLocker compliance verification..." -ForegroundColor Green
 try {
     $BitLockerReport = Join-Path -Path $ExportPath -ChildPath "${Timestamp}_BitLocker_Status.csv"
-    & "$ScriptRoot\security\compliance\frameworks\Get-BitLockerStatus.ps1" `
+    & "$ScriptRoot\endpoints\intune\reporting\Get-BitLockerStatus.ps1" `
         -ExportCSV `
         -OutputPath $BitLockerReport
     $AuditResults += @{ Framework = "BitLocker"; Status = "Completed"; Report = $BitLockerReport }

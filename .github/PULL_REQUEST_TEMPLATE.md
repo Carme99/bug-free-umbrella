@@ -18,30 +18,31 @@
 - [ ] ✅ Test update
 - [ ] 🔧 Configuration change
 
-## Category
+## Domain/Category
 
-<!-- Which script category does this affect? -->
+<!-- Which script domain/category does this affect? -->
 
-- [ ] advanced-security
-- [ ] api-management
-- [ ] cloud-infrastructure
-- [ ] container-management
-- [ ] database
-- [ ] device-management
-- [ ] devops-cicd
-- [ ] email-services
-- [ ] infrastructure-as-code
-- [ ] intune
-- [ ] linux-server
-- [ ] m365
-- [ ] monitoring
-- [ ] network-management
-- [ ] print-management
-- [ ] security-compliance
-- [ ] server
+- [ ] cloud - Azure
+- [ ] cloud - AWS
+- [ ] cloud - Containers
+- [ ] endpoints - Intune
+- [ ] endpoints - Devices
+- [ ] infrastructure - Windows
+- [ ] infrastructure - Linux
+- [ ] infrastructure - Network
+- [ ] infrastructure - Virtualization
+- [ ] infrastructure - Web
+- [ ] infrastructure - Print
+- [ ] security - Compliance
+- [ ] security - Hardening
+- [ ] security - Monitoring
+- [ ] automation - CI/CD
+- [ ] automation - IaC
+- [ ] collaboration - Microsoft 365
+- [ ] collaboration - Email
+- [ ] data - Databases
+- [ ] data - API
 - [ ] utilities
-- [ ] virtualization
-- [ ] web-services
 - [ ] Documentation
 - [ ] Repository configuration
 - [ ] Other: _____________

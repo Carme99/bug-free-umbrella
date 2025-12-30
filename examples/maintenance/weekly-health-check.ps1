@@ -67,25 +67,34 @@ foreach ($Computer in $ComputerName) {
         Write-Warning "Health check failed: $_"
     }
 
-    # 2. Disk Space Check
+    # 2. Disk Space Check (using WMI/CIM directly)
     Write-Host "  [2/7] Disk space analysis..." -ForegroundColor Yellow
     try {
-        & "$ScriptRoot\infrastructure\windows\storage\Get-DiskSpaceReport.ps1" `
-            -ComputerName $Computer `
-            -WarningThreshold 20 `
-            -CriticalThreshold 10
+        $Disks = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=3" -ComputerName $Computer
+        foreach ($Disk in $Disks) {
+            $PercentFree = ($Disk.FreeSpace / $Disk.Size) * 100
+            if ($PercentFree -lt 20) {
+                Write-Warning "$($Disk.DeviceID) has only $([math]::Round($PercentFree,2))% free space"
+            }
+        }
         $Results += @{ Computer = $Computer; Check = "Disk Space"; Status = "Pass" }
     } catch {
         $Results += @{ Computer = $Computer; Check = "Disk Space"; Status = "Fail"; Error = $_ }
         Write-Warning "Disk space check failed: $_"
     }
 
-    # 3. Event Log Errors (Last 7 Days)
+    # 3. Event Log Errors (Last 7 Days - using Get-WinEvent directly)
     Write-Host "  [3/7] Event log analysis..." -ForegroundColor Yellow
     try {
-        & "$ScriptRoot\infrastructure\windows\system\Get-EventLogErrors.ps1" `
-            -ComputerName $Computer `
-            -Hours 168
+        $StartTime = (Get-Date).AddHours(-168)
+        $Errors = Get-WinEvent -FilterHashtable @{
+            LogName = 'System', 'Application'
+            Level = 1,2  # Critical and Error
+            StartTime = $StartTime
+        } -ComputerName $Computer -ErrorAction SilentlyContinue | Select-Object -First 10
+        if ($Errors.Count -gt 0) {
+            Write-Warning "Found $($Errors.Count) critical/error events in the last 7 days"
+        }
         $Results += @{ Computer = $Computer; Check = "Event Logs"; Status = "Pass" }
     } catch {
         $Results += @{ Computer = $Computer; Check = "Event Logs"; Status = "Fail"; Error = $_ }
@@ -107,7 +116,7 @@ foreach ($Computer in $ComputerName) {
     # 5. BitLocker Status
     Write-Host "  [5/7] BitLocker encryption check..." -ForegroundColor Yellow
     try {
-        & "$ScriptRoot\security\compliance\frameworks\Get-BitLockerStatus.ps1" `
+        & "$ScriptRoot\endpoints\intune\reporting\Get-BitLockerStatus.ps1" `
             -ComputerName $Computer
         $Results += @{ Computer = $Computer; Check = "BitLocker"; Status = "Pass" }
     } catch {

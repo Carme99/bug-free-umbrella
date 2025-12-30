@@ -57,7 +57,7 @@ try {
 # Step 3: BitLocker Encryption Check
 Write-Host "`n[3/6] Verifying BitLocker encryption..." -ForegroundColor Green
 try {
-    & "$ScriptRoot\security\compliance\frameworks\Get-BitLockerStatus.ps1"
+    & "$ScriptRoot\endpoints\intune\reporting\Get-BitLockerStatus.ps1"
     Write-Host "✓ BitLocker status verified" -ForegroundColor Green
 } catch {
     Write-Warning "BitLocker check failed: $_"
