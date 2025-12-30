@@ -58,7 +58,7 @@ foreach ($Framework in $Frameworks) {
     Write-Host "  - Scanning: $Framework" -ForegroundColor Yellow
     try {
         $ScanOutput = Join-Path -Path $ExportPath -ChildPath "${Timestamp}_${Framework}_Scan.html"
-        & "$ScriptRoot\security-compliance\Invoke-SecurityComplianceScan.ps1" `
+        & "$ScriptRoot\security\compliance\frameworks\Invoke-SecurityComplianceScan.ps1" `
             -Framework $Framework `
             -ExportHTML `
             -OutputPath $ScanOutput
@@ -74,7 +74,7 @@ foreach ($Framework in $Frameworks) {
 Write-Host "`n[2/5] BitLocker compliance verification..." -ForegroundColor Green
 try {
     $BitLockerReport = Join-Path -Path $ExportPath -ChildPath "${Timestamp}_BitLocker_Status.csv"
-    & "$ScriptRoot\security-compliance\Get-BitLockerStatus.ps1" `
+    & "$ScriptRoot\security\compliance\frameworks\Get-BitLockerStatus.ps1" `
         -ExportCSV `
         -OutputPath $BitLockerReport
     $AuditResults += @{ Framework = "BitLocker"; Status = "Completed"; Report = $BitLockerReport }
@@ -88,7 +88,7 @@ try {
 Write-Host "`n[3/5] Security posture assessment..." -ForegroundColor Green
 try {
     $SecurityReport = Join-Path -Path $ExportPath -ChildPath "${Timestamp}_Security_Posture.html"
-    & "$ScriptRoot\advanced-security\Test-SecurityPosture.ps1" `
+    & "$ScriptRoot\security\hardening\Test-SecurityPosture.ps1" `
         -Detailed `
         -IncludeRemediation `
         -ExportHTML `
@@ -104,7 +104,7 @@ try {
 Write-Host "`n[4/5] System health and security monitoring..." -ForegroundColor Green
 try {
     $HealthReport = Join-Path -Path $ExportPath -ChildPath "${Timestamp}_System_Health.html"
-    & "$ScriptRoot\monitoring\Monitor-ServerHealth.ps1" `
+    & "$ScriptRoot\infrastructure\windows\monitoring\Monitor-ServerHealth.ps1" `
         -SecurityAudit `
         -CheckCertificates `
         -DaysBeforeExpiration 60 `

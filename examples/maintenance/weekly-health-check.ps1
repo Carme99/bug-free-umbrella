@@ -57,7 +57,7 @@ foreach ($Computer in $ComputerName) {
     # 1. Comprehensive Health Check
     Write-Host "  [1/7] Server health monitoring..." -ForegroundColor Yellow
     try {
-        $HealthCheck = & "$ScriptRoot\monitoring\Monitor-ServerHealth.ps1" `
+        $HealthCheck = & "$ScriptRoot\infrastructure\windows\monitoring\Monitor-ServerHealth.ps1" `
             -ComputerName $Computer `
             -CheckAll `
             -Verbose:$false
@@ -70,7 +70,7 @@ foreach ($Computer in $ComputerName) {
     # 2. Disk Space Check
     Write-Host "  [2/7] Disk space analysis..." -ForegroundColor Yellow
     try {
-        & "$ScriptRoot\server\Get-DiskSpaceReport.ps1" `
+        & "$ScriptRoot\infrastructure\windows\storage\Get-DiskSpaceReport.ps1" `
             -ComputerName $Computer `
             -WarningThreshold 20 `
             -CriticalThreshold 10
@@ -83,7 +83,7 @@ foreach ($Computer in $ComputerName) {
     # 3. Event Log Errors (Last 7 Days)
     Write-Host "  [3/7] Event log analysis..." -ForegroundColor Yellow
     try {
-        & "$ScriptRoot\server\Get-EventLogErrors.ps1" `
+        & "$ScriptRoot\infrastructure\windows\system\Get-EventLogErrors.ps1" `
             -ComputerName $Computer `
             -Hours 168
         $Results += @{ Computer = $Computer; Check = "Event Logs"; Status = "Pass" }
@@ -95,7 +95,7 @@ foreach ($Computer in $ComputerName) {
     # 4. Security Compliance Scan
     Write-Host "  [4/7] Security compliance scan..." -ForegroundColor Yellow
     try {
-        & "$ScriptRoot\security-compliance\Invoke-SecurityComplianceScan.ps1" `
+        & "$ScriptRoot\security\compliance\frameworks\Invoke-SecurityComplianceScan.ps1" `
             -Framework CIS `
             -ComputerName $Computer
         $Results += @{ Computer = $Computer; Check = "Security"; Status = "Pass" }
@@ -107,7 +107,7 @@ foreach ($Computer in $ComputerName) {
     # 5. BitLocker Status
     Write-Host "  [5/7] BitLocker encryption check..." -ForegroundColor Yellow
     try {
-        & "$ScriptRoot\security-compliance\Get-BitLockerStatus.ps1" `
+        & "$ScriptRoot\security\compliance\frameworks\Get-BitLockerStatus.ps1" `
             -ComputerName $Computer
         $Results += @{ Computer = $Computer; Check = "BitLocker"; Status = "Pass" }
     } catch {
@@ -118,7 +118,7 @@ foreach ($Computer in $ComputerName) {
     # 6. Certificate Expiration (30 days)
     Write-Host "  [6/7] Certificate expiration check..." -ForegroundColor Yellow
     try {
-        & "$ScriptRoot\monitoring\Monitor-ServerHealth.ps1" `
+        & "$ScriptRoot\infrastructure\windows\monitoring\Monitor-ServerHealth.ps1" `
             -ComputerName $Computer `
             -CheckCertificates `
             -DaysBeforeExpiration 30
@@ -131,7 +131,7 @@ foreach ($Computer in $ComputerName) {
     # 7. Windows Update Status
     Write-Host "  [7/7] Windows Update status..." -ForegroundColor Yellow
     try {
-        & "$ScriptRoot\monitoring\Monitor-ServerHealth.ps1" `
+        & "$ScriptRoot\infrastructure\windows\monitoring\Monitor-ServerHealth.ps1" `
             -ComputerName $Computer `
             -CheckWindowsUpdate
         $Results += @{ Computer = $Computer; Check = "Updates"; Status = "Pass" }

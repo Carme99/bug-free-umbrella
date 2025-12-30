@@ -39,7 +39,7 @@ Write-Host ""
 # Step 1: Device Inventory and Health Check
 Write-Host "[1/6] Running device inventory and health check..." -ForegroundColor Green
 try {
-    & "$ScriptRoot\server\Monitor-ServerHealth.ps1" -QuickCheck
+    & "$ScriptRoot\infrastructure\windows\monitoring\Monitor-ServerHealth.ps1" -QuickCheck
     Write-Host "✓ Device health check completed" -ForegroundColor Green
 } catch {
     Write-Warning "Health check failed: $_"
@@ -48,7 +48,7 @@ try {
 # Step 2: Security Compliance Baseline
 Write-Host "`n[2/6] Applying security compliance baseline..." -ForegroundColor Green
 try {
-    & "$ScriptRoot\security-compliance\Invoke-SecurityComplianceScan.ps1" -Framework CIS
+    & "$ScriptRoot\security\compliance\frameworks\Invoke-SecurityComplianceScan.ps1" -Framework CIS
     Write-Host "✓ Security baseline scan completed" -ForegroundColor Green
 } catch {
     Write-Warning "Security scan failed: $_"
@@ -57,7 +57,7 @@ try {
 # Step 3: BitLocker Encryption Check
 Write-Host "`n[3/6] Verifying BitLocker encryption..." -ForegroundColor Green
 try {
-    & "$ScriptRoot\security-compliance\Get-BitLockerStatus.ps1"
+    & "$ScriptRoot\security\compliance\frameworks\Get-BitLockerStatus.ps1"
     Write-Host "✓ BitLocker status verified" -ForegroundColor Green
 } catch {
     Write-Warning "BitLocker check failed: $_"

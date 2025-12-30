@@ -5,8 +5,8 @@
   "description": "Compatibility matrix for bug-free-umbrella scripts across platforms, PowerShell versions, and dependencies",
 
   "compatibility": {
-    "monitoring/Monitor-ServerHealth.ps1": {
-      "category": "monitoring",
+    "infrastructure/windows/monitoring/Monitor-ServerHealth.ps1": {
+      "category": "infrastructure/windows/monitoring",
       "name": "Monitor-ServerHealth.ps1",
       "version": "2.0.0",
       "description": "Comprehensive server health monitoring with 13 check categories",
@@ -60,8 +60,8 @@
       }
     },
 
-    "intune/Get-IntuneDeviceCompliance.ps1": {
-      "category": "intune",
+    "endpoints/intune/reporting/Get-IntuneDeviceCompliance.ps1": {
+      "category": "endpoints/intune/reporting",
       "name": "Get-IntuneDeviceCompliance.ps1",
       "version": "1.0.0",
       "description": "Check Intune device compliance status",
@@ -118,8 +118,8 @@
       }
     },
 
-    "security-compliance/Invoke-SecurityComplianceScan.ps1": {
-      "category": "security-compliance",
+    "security/compliance/frameworks/Invoke-SecurityComplianceScan.ps1": {
+      "category": "security/compliance/frameworks",
       "name": "Invoke-SecurityComplianceScan.ps1",
       "version": "1.5.0",
       "description": "Multi-framework compliance scanning (CIS, NIST, PCI-DSS, HIPAA, SOC2, ISO27001)",
@@ -161,8 +161,8 @@
       }
     },
 
-    "cloud-infrastructure/Get-AzureResourceInventory.ps1": {
-      "category": "cloud-infrastructure",
+    "cloud/azure/core/Get-AzureResourceInventory.ps1": {
+      "category": "cloud/azure/core",
       "name": "Get-AzureResourceInventory.ps1",
       "version": "1.0.0",
       "description": "Inventory Azure resources across subscriptions",
@@ -213,8 +213,8 @@
       }
     },
 
-    "database/Test-DatabaseConnectivity.ps1": {
-      "category": "database",
+    "data/databases/Test-DatabaseConnectivity.ps1": {
+      "category": "data/databases",
       "name": "Test-DatabaseConnectivity.ps1",
       "version": "1.0.0",
       "description": "Test connectivity to SQL Server, MySQL, PostgreSQL, MongoDB",
@@ -282,8 +282,8 @@
       }
     },
 
-    "devops-cicd/Monitor-AzureDevOpsPipeline.ps1": {
-      "category": "devops-cicd",
+    "automation/cicd/azure-devops/Monitor-AzureDevOpsPipeline.ps1": {
+      "category": "automation/cicd/azure-devops",
       "name": "Monitor-AzureDevOpsPipeline.ps1",
       "version": "1.0.0",
       "description": "Monitor Azure DevOps pipeline status and health",
@@ -379,106 +379,52 @@
   },
 
   "categorySummary": {
-    "advanced-security": {
-      "scripts": 12,
-      "crossPlatform": false,
-      "primaryPlatform": "windows"
-    },
-    "api-management": {
-      "scripts": 8,
-      "crossPlatform": true,
-      "primaryPlatform": "any"
-    },
-    "cloud-infrastructure": {
-      "scripts": 25,
-      "crossPlatform": true,
-      "primaryPlatform": "any"
-    },
-    "container-management": {
-      "scripts": 10,
-      "crossPlatform": true,
-      "primaryPlatform": "linux"
-    },
-    "database": {
-      "scripts": 15,
-      "crossPlatform": true,
-      "primaryPlatform": "any"
-    },
-    "device-management": {
-      "scripts": 8,
-      "crossPlatform": false,
-      "primaryPlatform": "windows"
-    },
-    "devops-cicd": {
-      "scripts": 18,
-      "crossPlatform": true,
-      "primaryPlatform": "any"
-    },
-    "email-services": {
-      "scripts": 12,
-      "crossPlatform": true,
-      "primaryPlatform": "any"
-    },
-    "infrastructure-as-code": {
-      "scripts": 14,
-      "crossPlatform": true,
-      "primaryPlatform": "any"
-    },
-    "intune": {
-      "scripts": 18,
+    "cloud": {
+      "scripts": 35,
       "crossPlatform": true,
       "primaryPlatform": "any",
-      "notes": "Cloud-based, platform-independent with Graph API"
+      "notes": "Azure, AWS, and container management"
     },
-    "linux-server": {
-      "scripts": 20,
-      "crossPlatform": false,
-      "primaryPlatform": "linux"
-    },
-    "m365": {
-      "scripts": 19,
+    "endpoints": {
+      "scripts": 26,
       "crossPlatform": true,
-      "primaryPlatform": "any"
+      "primaryPlatform": "any",
+      "notes": "Intune and device management"
     },
-    "monitoring": {
-      "scripts": 22,
+    "infrastructure": {
+      "scripts": 95,
       "crossPlatform": false,
-      "primaryPlatform": "windows"
+      "primaryPlatform": "windows",
+      "notes": "Windows/Linux servers, network, virtualization, web, print"
     },
-    "network-management": {
-      "scripts": 16,
+    "security": {
+      "scripts": 48,
       "crossPlatform": false,
-      "primaryPlatform": "windows"
+      "primaryPlatform": "windows",
+      "notes": "Compliance frameworks, hardening, monitoring"
     },
-    "print-management": {
-      "scripts": 9,
-      "crossPlatform": false,
-      "primaryPlatform": "windows"
+    "automation": {
+      "scripts": 32,
+      "crossPlatform": true,
+      "primaryPlatform": "any",
+      "notes": "CI/CD and Infrastructure as Code"
     },
-    "security-compliance": {
-      "scripts": 14,
-      "crossPlatform": false,
-      "primaryPlatform": "windows"
+    "collaboration": {
+      "scripts": 31,
+      "crossPlatform": true,
+      "primaryPlatform": "any",
+      "notes": "Microsoft 365 and email services"
     },
-    "server": {
-      "scripts": 30,
-      "crossPlatform": false,
-      "primaryPlatform": "windows"
+    "data": {
+      "scripts": 23,
+      "crossPlatform": true,
+      "primaryPlatform": "any",
+      "notes": "Databases and API management"
     },
     "utilities": {
       "scripts": 10,
       "crossPlatform": true,
       "primaryPlatform": "any"
-    },
-    "virtualization": {
-      "scripts": 12,
-      "crossPlatform": false,
-      "primaryPlatform": "windows"
-    },
-    "web-services": {
-      "scripts": 8,
-      "crossPlatform": false,
-      "primaryPlatform": "windows"
     }
   },
 

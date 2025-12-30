@@ -27,29 +27,30 @@ body:
   - type: dropdown
     id: script-category
     attributes:
-      label: Script Category
-      description: Which category does this feature relate to?
+      label: Script Domain/Category
+      description: Which domain/category does this feature relate to?
       options:
-        - advanced-security
-        - api-management
-        - cloud-infrastructure
-        - container-management
-        - database
-        - device-management
-        - devops-cicd
-        - email-services
-        - infrastructure-as-code
-        - intune
-        - linux-server
-        - m365
-        - monitoring
-        - network-management
-        - print-management
-        - security-compliance
-        - server
+        - cloud - Azure
+        - cloud - AWS
+        - cloud - Containers
+        - endpoints - Intune
+        - endpoints - Devices
+        - infrastructure - Windows
+        - infrastructure - Linux
+        - infrastructure - Network
+        - infrastructure - Virtualization
+        - infrastructure - Web
+        - infrastructure - Print
+        - security - Compliance
+        - security - Hardening
+        - security - Monitoring
+        - automation - CI/CD
+        - automation - IaC
+        - collaboration - Microsoft 365
+        - collaboration - Email
+        - data - Databases
+        - data - API
         - utilities
-        - virtualization
-        - web-services
         - Repository-wide
         - Documentation
         - Other

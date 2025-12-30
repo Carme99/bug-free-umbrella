@@ -15,9 +15,9 @@ Welcome to Bug-Free Umbrella! This guide helps you quickly find the scripts you 
 ### 🎯 I manage Intune devices and endpoints
 
 **Start here:**
-- [`scripts/intune/`](scripts/intune/) - Microsoft Intune management (18+ scripts)
-- [`scripts/device-management/`](scripts/device-management/) - General device configuration
-- [`scripts/intune/ProactiveRemediations/`](scripts/intune/ProactiveRemediations/) - Auto-fix script pairs (14 pairs)
+- [`scripts/endpoints/intune/`](scripts/endpoints/intune/) - Microsoft Intune management (18+ scripts)
+- [`scripts/endpoints/devices/`](scripts/endpoints/devices/) - General device configuration
+- [`scripts/endpoints/devices/proactive-remediations/`](scripts/endpoints/devices/proactive-remediations/) - Auto-fix script pairs (14 pairs)
 
 **Top scripts to try:**
 - `Get-IntuneDeviceCompliance.ps1` - Check device compliance status
@@ -31,9 +31,9 @@ Welcome to Bug-Free Umbrella! This guide helps you quickly find the scripts you 
 ### 🖥️ I manage Windows Servers
 
 **Start here:**
-- [`scripts/server/`](scripts/server/) - Windows Server administration (30+ scripts)
-- [`scripts/monitoring/`](scripts/monitoring/) - Server health monitoring
-- [`scripts/web-services/`](scripts/web-services/) - IIS management
+- [`scripts/infrastructure/windows/`](scripts/infrastructure/windows/) - Windows Server administration (30+ scripts)
+- [`scripts/infrastructure/windows/monitoring/`](scripts/infrastructure/windows/monitoring/) - Server health monitoring
+- [`scripts/infrastructure/web/`](scripts/infrastructure/web/) - IIS management
 
 **Top scripts to try:**
 - `Monitor-ServerHealth.ps1` - Comprehensive server health check
@@ -47,9 +47,9 @@ Welcome to Bug-Free Umbrella! This guide helps you quickly find the scripts you 
 ### ☁️ I work with Azure/AWS Cloud
 
 **Start here:**
-- [`scripts/cloud-infrastructure/`](scripts/cloud-infrastructure/) - Multi-cloud management
-- [`scripts/AzureVirtualDesktop/`](AzureVirtualDesktop/) - AVD-specific tools
-- [`scripts/container-management/`](scripts/container-management/) - Docker/Kubernetes
+- [`scripts/cloud/`](scripts/cloud/) - Multi-cloud management
+- [`scripts/cloud/azure/avd/`](scripts/cloud/azure/avd/) - AVD-specific tools
+- [`scripts/cloud/containers/`](scripts/cloud/containers/) - Docker/Kubernetes
 
 **Top scripts to try:**
 - `Get-AzureResourceInventory.ps1` - Inventory Azure resources
@@ -63,9 +63,9 @@ Welcome to Bug-Free Umbrella! This guide helps you quickly find the scripts you 
 ### 🔄 I work with DevOps/CI-CD
 
 **Start here:**
-- [`scripts/devops-cicd/`](scripts/devops-cicd/) - Pipeline monitoring
-- [`scripts/infrastructure-as-code/`](scripts/infrastructure-as-code/) - Terraform, Bicep
-- [`scripts/container-management/`](scripts/container-management/) - Container automation
+- [`scripts/automation/cicd/`](scripts/automation/cicd/) - Pipeline monitoring
+- [`scripts/automation/iac/`](scripts/automation/iac/) - Terraform, Bicep
+- [`scripts/cloud/containers/`](scripts/cloud/containers/) - Container automation
 
 **Top scripts to try:**
 - `Monitor-AzureDevOpsPipeline.ps1` - Pipeline health monitoring
@@ -79,9 +79,9 @@ Welcome to Bug-Free Umbrella! This guide helps you quickly find the scripts you 
 ### 🔒 I focus on Security/Compliance
 
 **Start here:**
-- [`scripts/security-compliance/`](scripts/security-compliance/) - Multi-framework scanning
-- [`scripts/advanced-security/`](scripts/advanced-security/) - Security hardening
-- [`scripts/monitoring/`](scripts/monitoring/) - Security monitoring
+- [`scripts/security/compliance/frameworks/`](scripts/security/compliance/frameworks/) - Multi-framework scanning
+- [`scripts/security/hardening/`](scripts/security/hardening/) - Security hardening
+- [`scripts/security/monitoring/`](scripts/security/monitoring/) - Security monitoring
 
 **Top scripts to try:**
 - `Invoke-SecurityComplianceScan.ps1` - Multi-framework compliance scan
@@ -95,8 +95,8 @@ Welcome to Bug-Free Umbrella! This guide helps you quickly find the scripts you 
 ### 👥 I manage Microsoft 365/Exchange
 
 **Start here:**
-- [`scripts/m365/`](scripts/m365/) - Microsoft 365 services
-- [`scripts/email-services/`](scripts/email-services/) - Exchange management
+- [`scripts/collaboration/microsoft365/`](scripts/collaboration/microsoft365/) - Microsoft 365 services
+- [`scripts/collaboration/email/`](scripts/collaboration/email/) - Exchange management
 
 **Top scripts to try:**
 - `Get-M365LicenseReport.ps1` - License usage reporting
@@ -110,7 +110,7 @@ Welcome to Bug-Free Umbrella! This guide helps you quickly find the scripts you 
 ### 🗄️ I manage Databases
 
 **Start here:**
-- [`scripts/database/`](scripts/database/) - SQL Server, MySQL, PostgreSQL, MongoDB
+- [`scripts/data/databases/`](scripts/data/databases/) - SQL Server, MySQL, PostgreSQL, MongoDB
 
 **Top scripts to try:**
 - `Test-DatabaseConnectivity.ps1` - Connection testing
@@ -127,16 +127,16 @@ Welcome to Bug-Free Umbrella! This guide helps you quickly find the scripts you 
 
 | Task | Script Location | Documentation |
 |------|----------------|---------------|
-| **Check server health** | `scripts/monitoring/Monitor-ServerHealth.ps1` | [Server Monitoring](../../wiki/Server-Monitoring) |
-| **Deploy applications via Intune** | `scripts/intune/Deploy-IntuneApplication.ps1` | [Intune Guide](../../wiki/Intune-Management) |
-| **Run compliance scan** | `scripts/security-compliance/Invoke-SecurityComplianceScan.ps1` | [Compliance Scanning](../../wiki/Compliance-Scanning) |
-| **Monitor Azure resources** | `scripts/cloud-infrastructure/Monitor-AzureResources.ps1` | [Azure Monitoring](../../wiki/Cloud-Infrastructure) |
-| **Check BitLocker status** | `scripts/security-compliance/Get-BitLockerStatus.ps1` | [BitLocker Management](../../wiki/Security) |
-| **Install applications via Winget** | `scripts/intune/WingetUpdates/` | [Winget Guide](../../wiki/Winget-Management) |
-| **Test network connectivity** | `scripts/network-management/Test-NetworkConnectivity.ps1` | [Network Diagnostics](../../wiki/Network-Management) |
-| **Monitor IIS websites** | `scripts/web-services/Monitor-IISSites.ps1` | [Web Services](../../wiki/Web-Services) |
-| **Backup databases** | `scripts/database/Backup-Database.ps1` | [Database Management](../../wiki/Database-Management) |
-| **Check disk space** | `scripts/server/Get-DiskSpaceReport.ps1` | [Server Maintenance](../../wiki/Server-Infrastructure) |
+| **Check server health** | `scripts/infrastructure/windows/monitoring/Monitor-ServerHealth.ps1` | [Server Monitoring](../../wiki/Server-Monitoring) |
+| **Deploy applications via Intune** | `scripts/endpoints/intune/deployment/Deploy-IntuneApplication.ps1` | [Intune Guide](../../wiki/Intune-Management) |
+| **Run compliance scan** | `scripts/security/compliance/frameworks/Invoke-SecurityComplianceScan.ps1` | [Compliance Scanning](../../wiki/Compliance-Scanning) |
+| **Monitor Azure resources** | `scripts/cloud/azure/core/Monitor-AzureResources.ps1` | [Azure Monitoring](../../wiki/Cloud-Infrastructure) |
+| **Check BitLocker status** | `scripts/security/compliance/frameworks/Get-BitLockerStatus.ps1` | [BitLocker Management](../../wiki/Security) |
+| **Install applications via Winget** | `scripts/endpoints/devices/winget/` | [Winget Guide](../../wiki/Winget-Management) |
+| **Test network connectivity** | `scripts/infrastructure/network/Test-NetworkConnectivity.ps1` | [Network Diagnostics](../../wiki/Network-Management) |
+| **Monitor IIS websites** | `scripts/infrastructure/web/iis/Monitor-IISSites.ps1` | [Web Services](../../wiki/Web-Services) |
+| **Backup databases** | `scripts/data/databases/Backup-Database.ps1` | [Database Management](../../wiki/Database-Management) |
+| **Check disk space** | `scripts/infrastructure/windows/storage/Get-DiskSpaceReport.ps1` | [Server Maintenance](../../wiki/Server-Infrastructure) |
 
 ---
 
@@ -204,61 +204,61 @@ Welcome to Bug-Free Umbrella! This guide helps you quickly find the scripts you 
 
 ```powershell
 # Morning health check routine
-.\scripts\monitoring\Monitor-ServerHealth.ps1
-.\scripts\server\Get-DiskSpaceReport.ps1 -WarningThreshold 20
-.\scripts\server\Get-EventLogErrors.ps1 -Hours 24
+.\scripts\infrastructure\windows\monitoring\Monitor-ServerHealth.ps1
+.\scripts\infrastructure\windows\storage\Get-DiskSpaceReport.ps1 -WarningThreshold 20
+.\scripts\infrastructure\windows\system\Get-EventLogErrors.ps1 -Hours 24
 ```
 
 ### 2. Intune Device Management
 
 ```powershell
 # Check device compliance
-.\scripts\intune\Get-IntuneDeviceCompliance.ps1 -ExportCSV
+.\scripts\endpoints\intune\reporting\Get-IntuneDeviceCompliance.ps1 -ExportCSV
 
 # Force sync non-compliant devices
-.\scripts\intune\Sync-IntuneDevice.ps1 -DeviceFilter "NonCompliant"
+.\scripts\endpoints\intune\maintenance\Sync-IntuneDevice.ps1 -DeviceFilter "NonCompliant"
 
 # Check application deployment status
-.\scripts\intune\Get-IntuneApplicationStatus.ps1 -ApplicationName "Microsoft 365"
+.\scripts\endpoints\intune\deployment\Get-IntuneApplicationStatus.ps1 -ApplicationName "Microsoft 365"
 ```
 
 ### 3. Security Compliance Audit
 
 ```powershell
 # Run comprehensive compliance scan
-.\scripts\security-compliance\Invoke-SecurityComplianceScan.ps1 -Framework CIS,NIST
+.\scripts\security\compliance\frameworks\Invoke-SecurityComplianceScan.ps1 -Framework CIS,NIST
 
 # Check BitLocker compliance
-.\scripts\security-compliance\Get-BitLockerStatus.ps1
+.\scripts\security\compliance\frameworks\Get-BitLockerStatus.ps1
 
 # Audit security settings
-.\scripts\advanced-security\Test-SecurityPosture.ps1
+.\scripts\security\hardening\Test-SecurityPosture.ps1
 ```
 
 ### 4. Azure Resource Management
 
 ```powershell
 # Inventory Azure resources
-.\scripts\cloud-infrastructure\Get-AzureResourceInventory.ps1 -SubscriptionId "xxx"
+.\scripts\cloud\azure\core\Get-AzureResourceInventory.ps1 -SubscriptionId "xxx"
 
 # Monitor VM performance
-.\scripts\cloud-infrastructure\Monitor-AzureVMPerformance.ps1 -ResourceGroup "Production"
+.\scripts\cloud\azure\compute\Monitor-AzureVMPerformance.ps1 -ResourceGroup "Production"
 
 # Check cost management
-.\scripts\cloud-infrastructure\Get-AzureCostReport.ps1 -Days 30
+.\scripts\cloud\azure\core\Get-AzureCostReport.ps1 -Days 30
 ```
 
 ### 5. Database Maintenance
 
 ```powershell
 # Check database backups
-.\scripts\database\Get-DatabaseBackupStatus.ps1 -Server "SQL-PROD-01"
+.\scripts\data\databases\Get-DatabaseBackupStatus.ps1 -Server "SQL-PROD-01"
 
 # Test connectivity
-.\scripts\database\Test-DatabaseConnectivity.ps1
+.\scripts\data\databases\Test-DatabaseConnectivity.ps1
 
 # Monitor performance
-.\scripts\database\Monitor-SQLServerPerformance.ps1
+.\scripts\data\databases\sqlserver\Monitor-SQLServerPerformance.ps1
 ```
 
 ---
