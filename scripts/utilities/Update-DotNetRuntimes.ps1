@@ -325,11 +325,12 @@ function Write-Box {
 function Get-ActionStats {
     param([object[]]$Actions)
     $stats = @{
-        Updated       = 0
-        'EOL-Removed' = 0
-        Current       = 0
-        Skipped       = 0
-        Cleanup       = 0
+        Updated        = 0
+        'EOL-Removed'  = 0
+        'EOL-Upgraded' = 0
+        Current        = 0
+        Skipped        = 0
+        Cleanup        = 0
     }
     foreach ($a in $Actions) {
         if ($stats.ContainsKey($a.Type)) { $stats[$a.Type]++ }
@@ -346,6 +347,7 @@ function Write-ActionSummary {
     $lines = @(
         ("Updated        : {0}" -f $stats.Updated),
         ("EOL removed    : {0}" -f $stats.'EOL-Removed'),
+        ("EOL upgraded   : {0}" -f $stats.'EOL-Upgraded'),
         ("Already current: {0}" -f $stats.Current),
         ("Skipped        : {0}" -f $stats.Skipped),
         ("Cleanup runs   : {0}" -f $stats.Cleanup),
@@ -551,6 +553,21 @@ function Get-LatestWindowsDesktopVersion {
     } else {
         $null
     }
+}
+
+function Get-ReplacementLtsChannel {
+    param([object]$IndexData)
+
+    # Get all active LTS channels (not EOL)
+    $ltsChannels = $IndexData.'releases-index' | Where-Object {
+        $_.'release-type' -eq 'lts' -and $_.'support-phase' -ne 'eol'
+    } | Sort-Object { [version]$_.'channel-version' }
+
+    if ($ltsChannels -and $ltsChannels.Count -gt 0) {
+        # Return the oldest active LTS (most stable)
+        return $ltsChannels[0]
+    }
+    return $null
 }
 
 #------------------------- Helpers Download Install -----------------#
@@ -1198,10 +1215,36 @@ try {
             $eolDate = $channel.'eol-date'
             Write-Host "EOL channel detected: $majorMinor | End of support: $eolDate | Installed: $($versions -join ', ')" -ForegroundColor Red
 
+            # Suggest LTS replacement
+            $replacementChannel = Get-ReplacementLtsChannel -IndexData $index
+            if ($replacementChannel) {
+                $replacementVersion = $replacementChannel.'channel-version'
+                $replacementEol = $replacementChannel.'eol-date'
+                Write-Host "  → Recommended replacement: .NET $replacementVersion LTS (supported until $replacementEol)" -ForegroundColor Cyan
+            }
+
             $doRemove = $Approve -and $RemoveEol
+            $doInstallReplacement = $false
+
             if (-not $Approve) {
                 $resp = Read-Host "Remove ASP.NET Core $majorMinor $archLabel now? (Y/N)"
-                if ($resp -in @('Y','y')) { $doRemove = $true }
+                if ($resp -in @('Y','y')) {
+                    $doRemove = $true
+
+                    # Ask if user wants to install replacement
+                    if ($replacementChannel) {
+                        $replResp = Read-Host "Install .NET $replacementVersion LTS as replacement? (Y/N)"
+                        if ($replResp -in @('Y','y')) {
+                            $doInstallReplacement = $true
+                        }
+                    }
+                }
+            } else {
+                # In auto-approve mode, offer to install replacement
+                if ($replacementChannel -and $RemoveEol) {
+                    $doInstallReplacement = $true
+                    Write-Host "  → Will install .NET $replacementVersion LTS after removal" -ForegroundColor Green
+                }
             }
 
             if ($doRemove) {
@@ -1211,6 +1254,63 @@ try {
                         Remove-BaseRuntimeChannel -MajorMinor $majorMinor
                         Write-Host "Removal complete for EOL channel $majorMinor $archLabel" -ForegroundColor Green
                         Add-Action -Type 'EOL-Removed' -Channel $majorMinor -Arch $archLabel -Detail "Removed ASP.NET Core + base runtime"
+
+                        # Install replacement if requested
+                        if ($doInstallReplacement -and $replacementChannel) {
+                            $replacementVersion = $replacementChannel.'channel-version'
+                            Write-Host "Installing replacement: .NET $replacementVersion LTS $archLabel..." -ForegroundColor Cyan
+
+                            try {
+                                $replacementReleasesUrl = $replacementChannel.'releases.json'
+                                $replacementReleaseData = Get-OrAddReleaseData -ReleasesJsonUrl $replacementReleasesUrl
+
+                                $latestRepl = Get-LatestAspNetCoreVersion -ReleaseData $replacementReleaseData
+                                if ($latestRepl) {
+                                    $latestReplVersion = $latestRepl.Version
+                                    $aspFile = Get-AspNetCoreDownload -Release $latestRepl.Release -Arch $archLabel
+                                    $rtFile = Get-DotNetRuntimeDownload -Release $latestRepl.Release -Arch $archLabel
+
+                                    if ($aspFile) {
+                                        $temp = Join-Path $env:TEMP ("dotnet-updater-" + [Guid]::NewGuid().ToString('N'))
+                                        New-Item -ItemType Directory -Path $temp -Force | Out-Null
+
+                                        try {
+                                            $aspPath = Join-Path $temp ("aspnetcore-$($latestReplVersion.ToString())-$archLabel.exe")
+                                            Write-Host "Downloading ASP.NET Core Runtime $archLabel..." -ForegroundColor Cyan
+                                            Save-FileWithRetry -Url $aspFile.url -Destination $aspPath
+                                            Test-FileHashIfAvailable -FilePath $aspPath -Sha512 $aspFile.sha512 | Out-Null
+
+                                            $rtPath = $null
+                                            if ($rtFile) {
+                                                $rtPath = Join-Path $temp ("dotnet-runtime-$($latestReplVersion.ToString())-$archLabel.exe")
+                                                Write-Host "Downloading .NET Runtime $archLabel..." -ForegroundColor Cyan
+                                                Save-FileWithRetry -Url $rtFile.url -Destination $rtPath
+                                                Test-FileHashIfAvailable -FilePath $rtPath -Sha512 $rtFile.sha512 | Out-Null
+                                            }
+
+                                            if ($rtPath) {
+                                                Write-Host "Installing .NET Runtime $($latestReplVersion.ToString()) $archLabel..." -ForegroundColor Cyan
+                                                Install-Exe -Path $rtPath
+                                            }
+
+                                            Write-Host "Installing ASP.NET Core Runtime $($latestReplVersion.ToString()) $archLabel..." -ForegroundColor Cyan
+                                            Install-Exe -Path $aspPath
+
+                                            Write-Host "Successfully installed .NET $replacementVersion LTS ($latestReplVersion) $archLabel" -ForegroundColor Green
+                                            Add-Action -Type 'EOL-Upgraded' -Channel $replacementVersion -Arch $archLabel -Detail "Installed $latestReplVersion as replacement for EOL $majorMinor"
+                                        } finally {
+                                            try { Remove-Item -Path $temp -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+                                        }
+                                    } else {
+                                        Write-Warning "Could not find ASP.NET Core installer for .NET $replacementVersion $archLabel"
+                                    }
+                                } else {
+                                    Write-Warning "Could not determine latest version for .NET $replacementVersion"
+                                }
+                            } catch {
+                                Write-Warning "Failed to install replacement .NET $replacementVersion : $($_.Exception.Message)"
+                            }
+                        }
                     }
                 } catch {
                     $overallFailed = $true
