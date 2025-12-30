@@ -1,24 +1,28 @@
 # Contributing to Bug-Free Umbrella
 
-Thank you for your interest in contributing to Bug-Free Umbrella! This document provides guidelines for contributing to the repository.
+Thanks for your interest in this project! Bug-Free Umbrella is a solo project maintained by one developer using [Claude Code](https://github.com/anthropics/claude-code). While this is primarily a personal toolkit, contributions and suggestions are welcome.
 
-## 🤖 Development Tools
+## 🤖 Development Approach
 
-This repository uses **[Claude Code](https://github.com/anthropics/claude-code)**, Anthropic's official CLI for Claude AI, to assist with script development and maintenance.
+All scripts are developed with assistance from **[Claude Code](https://github.com/anthropics/claude-code)**, Anthropic's official CLI for Claude AI.
 
 ## 📋 Table of Contents
 
-- [Code of Conduct](#code-of-conduct)
-- [How Can I Contribute?](#how-can-i-contribute)
+- [How You Can Help](#how-you-can-help)
 - [Development Setup](#development-setup)
 - [Coding Standards](#coding-standards)
 - [Testing Requirements](#testing-requirements)
 - [Pull Request Process](#pull-request-process)
 - [Style Guide](#style-guide)
 
-## Code of Conduct
+## How You Can Help
 
-This project adheres to a Code of Conduct. By participating, you are expected to uphold this code. Please report unacceptable behavior to the repository maintainers.
+Since this is a solo project, the most helpful contributions are:
+
+- **Bug Reports** - Found an issue? Let me know!
+- **Script Suggestions** - Need a specific automation? Open an issue
+- **Documentation Improvements** - Spotted a typo or unclear instruction? PRs welcome
+- **Script Enhancements** - Improvements to existing scripts are appreciated
 
 ## How Can I Contribute?
 
@@ -48,11 +52,11 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 
 1. **Fork the repository**
 2. **Create a feature branch** (`git checkout -b feature/AmazingFeature`)
-3. **Make your changes**
-4. **Test thoroughly**
-5. **Commit your changes** (`git commit -m 'Add some AmazingFeature'`)
-6. **Push to the branch** (`git push origin feature/AmazingFeature`)
-7. **Open a Pull Request**
+3. **Make your changes** (follow the coding standards below)
+4. **Test your changes**
+5. **Open a Pull Request** with a clear description
+
+Note: As a solo maintainer, PR reviews may take some time. Patience is appreciated!
 
 ## Development Setup
 
@@ -224,84 +228,36 @@ Invoke-Pester -Configuration $pesterConfig
 Invoke-Pester -Path ./Tests/YourScript.Tests.ps1
 ```
 
-### Test Coverage Requirements
+### Test Coverage Guidelines
 
-- **Minimum 70% code coverage** for new scripts
-- **100% coverage** for critical functions
-- Include tests for:
-  - Parameter validation
-  - Error handling
-  - Edge cases
-  - Success scenarios
+While formal test coverage isn't strictly enforced for this project, good tests are appreciated:
+- Parameter validation tests
+- Error handling tests
+- Basic functionality tests
+
+Pester tests are welcome but not required for contributions.
 
 ## Pull Request Process
 
 ### Before Submitting
 
-1. **Run PSScriptAnalyzer**
+1. **Run PSScriptAnalyzer** - Ensure no major errors
    ```powershell
-   Invoke-ScriptAnalyzer -Path . -Recurse -Settings .vscode/PSScriptAnalyzerSettings.psd1
+   Invoke-ScriptAnalyzer -Path ./YourScript.ps1
    ```
 
-2. **Run Tests**
-   ```powershell
-   Invoke-Pester -Configuration (New-PesterConfiguration -Hashtable (Import-PowerShellDataFile ./Tests/Pester.Config.psd1))
-   ```
+2. **Test Your Changes** - Verify the script works as expected
 
-3. **Update Documentation**
-   - Update relevant README files
-   - Add examples to documentation
-   - Update CHANGELOG.md
+3. **Update Documentation** - Add examples or update README if needed
 
-4. **Test Manually**
-   - Test in PowerShell 5.1 and 7+
-   - Test on Windows 10/11 and Server 2019/2022
-   - Verify expected behavior
+### PR Guidelines
 
-### PR Checklist
+- Clear title and description
+- Explain what the change does and why
+- Include usage examples if adding new functionality
+- Note any breaking changes
 
-- [ ] Code passes PSScriptAnalyzer with no errors
-- [ ] All Pester tests pass
-- [ ] New functionality has tests
-- [ ] Comment-based help is complete
-- [ ] README.md updated (if needed)
-- [ ] CHANGELOG.md updated
-- [ ] Examples tested and working
-- [ ] No breaking changes (or documented)
-
-### PR Title Format
-
-Use conventional commit format:
-
-- `feat: Add new feature`
-- `fix: Fix bug in script`
-- `docs: Update documentation`
-- `test: Add tests for feature`
-- `refactor: Refactor script structure`
-- `perf: Improve performance`
-- `chore: Update build process`
-
-### PR Description Template
-
-```markdown
-## Description
-Brief description of changes
-
-## Type of Change
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
-
-## Testing
-Describe testing performed
-
-## Checklist
-- [ ] Code passes PSScriptAnalyzer
-- [ ] Tests pass
-- [ ] Documentation updated
-- [ ] CHANGELOG.md updated
-```
+As a solo project, PR reviews may take time. I'll do my best to respond within a week or two.
 
 ## Style Guide
 
@@ -424,15 +380,12 @@ feat: Add parallel processing to user settings script
 ## Questions?
 
 Feel free to open an issue for:
-- Questions about contributing
-- Clarification on guidelines
-- Discussion of proposed changes
+- Questions about the scripts
+- Suggestions for improvements
+- Bug reports or feature requests
 
 ## Recognition
 
-Contributors will be recognized in:
-- Repository README
-- Release notes
-- Contributor list
+All contributors will be acknowledged in the release notes and README.
 
-Thank you for contributing to Bug-Free Umbrella! 🎉
+Thanks for helping improve Bug-Free Umbrella! 🎉

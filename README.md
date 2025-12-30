@@ -172,7 +172,7 @@ bug-free-umbrella/
 
 ## 🤝 Contributing
 
-We welcome contributions! See our [Contributing Guide](CONTRIBUTING.md) for details.
+Contributions are welcome! This is a solo project maintained with Claude Code. See the [Contributing Guide](CONTRIBUTING.md) if you'd like to suggest improvements or report issues.
 
 ---
 
@@ -194,7 +194,7 @@ Found a security vulnerability? Please review our [Security Policy](SECURITY.md)
 
 ## 🤖 About
 
-Bug-Free Umbrella is created and maintained with the assistance of [Claude Code](https://github.com/anthropics/claude-code), Anthropic's official CLI for Claude AI.
+Bug-Free Umbrella is a solo project created and maintained by one developer using [Claude Code](https://github.com/anthropics/claude-code), Anthropic's official CLI for Claude AI. These scripts are personal automation tools shared publicly to help other IT professionals.
 
 **License:** Apache License 2.0
 

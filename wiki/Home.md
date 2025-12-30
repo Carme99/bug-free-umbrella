@@ -222,11 +222,11 @@ Quick links to accomplish specific tasks:
 
 ## 🤖 About This Project
 
-Bug-Free Umbrella is a comprehensive collection of PowerShell scripts for enterprise IT management, created with the assistance of [Claude Code](https://github.com/anthropics/claude-code).
+Bug-Free Umbrella is a comprehensive collection of PowerShell scripts for enterprise IT management, created and maintained by a solo developer using [Claude Code](https://github.com/anthropics/claude-code).
 
 **Licensed under:** Apache License 2.0
 
-**Maintained by:** The Bug-Free Umbrella Team
+**Maintained by:** Solo developer with Claude Code
 
 **Created with:** [Claude Code](https://github.com/anthropics/claude-code) - Anthropic's official CLI for Claude AI
 
