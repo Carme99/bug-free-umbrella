@@ -20,6 +20,8 @@
 
 ### ☁️ Cloud & Infrastructure
 - [Cloud Infrastructure](Cloud-Infrastructure)
+- [Azure Virtual Desktop](Azure-Virtual-Desktop)
+  - [🚀 ACG Image Builder](Azure-Compute-Gallery-Image-Builder)
 - [Container Management](Container-Management)
 - [API Management](API-Management)
 - [Infrastructure as Code](Infrastructure-as-Code)

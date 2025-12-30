@@ -1,0 +1,27 @@
+{
+  "TenantId": "00000000-0000-0000-0000-000000000000",
+  "SubscriptionId": "00000000-0000-0000-0000-000000000000",
+  "Location": "East US",
+  "SourceVM": {
+    "Name": "WIN11-GOLD",
+    "ResourceGroup": "rg-golden-images"
+  },
+  "Gallery": {
+    "ResourceGroup": "rg-shared-images",
+    "Name": "MyComputeGallery",
+    "ImageDefinitionName": "Windows11-Enterprise"
+  },
+  "Network": {
+    "VNetName": "vnet-production",
+    "VNetResourceGroup": "rg-networking",
+    "SubnetName": "snet-image-builders"
+  },
+  "TempVM": {
+    "Size": "Standard_D2s_v3"
+  },
+  "Options": {
+    "VersioningStrategy": "Major",
+    "SkipAgentCheck": false,
+    "SkipCleanup": false
+  }
+}
