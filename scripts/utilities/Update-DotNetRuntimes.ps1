@@ -218,14 +218,16 @@ function Convert-ToSafeVersion {
 
 function Write-Banner {
     Write-Host ""
-    Write-Host "   _   _      _        ___            _         " -ForegroundColor Cyan
-    Write-Host "  | \ | | ___| |_ _ __|_ _|_ __   ___| |_ _   _ " -ForegroundColor Cyan
-    Write-Host "  |  \| |/ _ \ __| '__|| || '_ \ / __| __| | | |" -ForegroundColor Cyan
-    Write-Host "  | |\  |  __/ |_| |   | || | | | (__| |_| |_| |" -ForegroundColor Cyan
-    Write-Host "  |_| \_|\___|\__|_|  |___|_| |_|\___|\__|\__, |" -ForegroundColor Cyan
-    Write-Host "                                          |___/ " -ForegroundColor Cyan
+    Write-Host "    ██████╗  ██████╗ ████████╗███╗   ██╗███████╗████████╗" -ForegroundColor Cyan
+    Write-Host "    ██╔══██╗██╔═══██╗╚══██╔══╝████╗  ██║██╔════╝╚══██╔══╝" -ForegroundColor Cyan
+    Write-Host "    ██║  ██║██║   ██║   ██║   ██╔██╗ ██║█████╗     ██║   " -ForegroundColor Cyan
+    Write-Host "    ██║  ██║██║   ██║   ██║   ██║╚██╗██║██╔══╝     ██║   " -ForegroundColor Cyan
+    Write-Host "    ██████╔╝╚██████╔╝   ██║   ██║ ╚████║███████╗   ██║   " -ForegroundColor Cyan
+    Write-Host "    ╚═════╝  ╚═════╝    ╚═╝   ╚═╝  ╚═══╝╚══════╝   ╚═╝   " -ForegroundColor Cyan
     Write-Host ""
-    Write-Host "ASP.NET Core Runtime Maintainer" -ForegroundColor Magenta
+    Write-Host "        Runtime Maintenance & EOL Cleanup Tool" -ForegroundColor Magenta
+    Write-Host "            ASP.NET Core • WindowsDesktop • Base Runtime" -ForegroundColor DarkCyan
+    Write-Host ""
 }
 
 function Write-Status {
@@ -641,14 +643,20 @@ function Install-Exe {
     $psi.UseShellExecute = $false
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
+    $psi.CreateNoWindow = $true
 
     $proc = [System.Diagnostics.Process]::Start($psi)
     $proc.WaitForExit()
 
-    if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 3010) { # 3010 = reboot required
-        throw "Installer exited with code $($proc.ExitCode) for $Path"
+    $exitCode = $proc.ExitCode
+    Write-Verbose "Installer exited with code: $exitCode"
+
+    if ($exitCode -ne 0 -and $exitCode -ne 3010) { # 3010 = reboot required
+        throw "Installer exited with code $exitCode for $Path"
     }
-    return $proc.ExitCode
+
+    # Don't return the exit code to prevent it from being displayed
+    # Just succeed silently or throw on error
 }
 
 #------------------------- Helpers Uninstall Tool -------------------#
@@ -970,14 +978,60 @@ function Invoke-PostPatchCleanup {
         if ($PSCmdlet.ShouldProcess($label,"Remove lower patches")) {
             $p = Start-Process -FilePath $tool -ArgumentList $args -Wait -PassThru -NoNewWindow
             $results += [PSCustomObject]@{ Label=$label; ExitCode=$p.ExitCode; Arg=$t.Arg }
-            if ($p.ExitCode -ne 0) {
-                Write-Warning "$label cleanup returned exit code $($p.ExitCode)"
-            } else {
+
+            # Exit code interpretation:
+            # 0 = success
+            # 1 = no matching items found (not an error, just nothing to clean)
+            # Other = actual error
+            if ($p.ExitCode -eq 0) {
                 Write-Host "Cleanup complete for $label" -ForegroundColor Green
+            } elseif ($p.ExitCode -eq 1) {
+                Write-Verbose "$label cleanup: No lower patches found to remove"
+                Write-Host "No lower patches found for $label" -ForegroundColor DarkGray
+            } else {
+                Write-Warning "$label cleanup returned exit code $($p.ExitCode)"
             }
         }
     }
     return $results
+}
+
+function Remove-FolderWithRetry {
+    param(
+        [string]$Path,
+        [int]$MaxAttempts = 3
+    )
+
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        try {
+            # Try to unlock files that might be in use
+            if ($attempt -gt 1) {
+                Write-Verbose "Retry attempt $attempt for: $Path"
+                Start-Sleep -Seconds 2
+            }
+
+            # First, try to remove read-only attributes
+            Get-ChildItem -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue | ForEach-Object {
+                try {
+                    $_.Attributes = 'Normal'
+                } catch {
+                    Write-Verbose "Could not normalize attributes for: $($_.FullName)"
+                }
+            }
+
+            # Now try to remove the folder
+            Remove-Item -LiteralPath $Path -Recurse -Force -ErrorAction Stop
+            Write-Verbose "Successfully removed: $Path"
+            return $true
+        } catch {
+            if ($attempt -eq $MaxAttempts) {
+                Write-Warning "Failed to remove $Path after $MaxAttempts attempts: $($_.Exception.Message)"
+                Write-Host "  → Some files may be in use by running processes. Consider closing .NET applications and rerunning." -ForegroundColor DarkYellow
+                return $false
+            }
+        }
+    }
+    return $false
 }
 
 function Remove-LowerPatchFolders {
@@ -989,6 +1043,9 @@ function Remove-LowerPatchFolders {
     $filtered = $Entries | Where-Object { $_.Product -in $ProductsToClean }
     $groups = $filtered | Group-Object { "$($_.Root)|$($_.Product)|$($_.MajorMinor)" }
 
+    $failedRemovals = 0
+    $successfulRemovals = 0
+
     foreach ($g in $groups) {
         $items = $g.Group | Sort-Object Patch -Descending
         $keep = $items | Select-Object -First 1
@@ -997,16 +1054,23 @@ function Remove-LowerPatchFolders {
         foreach ($r in $remove) {
             $target = $r.Path
             $label = "$($r.Product) $($r.MajorMinor) patch $($r.Version)"
-            Write-Host "Removing lower patch folder: $label at $target" -ForegroundColor Yellow
+            Write-Host "Removing lower patch folder: $label" -ForegroundColor Yellow
             if ($PSCmdlet.ShouldProcess($target,"Remove folder")) {
-                try {
-                    Remove-Item -LiteralPath $target -Recurse -Force -ErrorAction Stop
-                    Write-Verbose "Successfully removed: $target"
-                } catch {
-                    Write-Warning "Failed to remove $target : $($_.Exception.Message)"
+                $success = Remove-FolderWithRetry -Path $target -MaxAttempts 3
+                if ($success) {
+                    $successfulRemovals++
+                } else {
+                    $failedRemovals++
                 }
             }
         }
+    }
+
+    if ($successfulRemovals -gt 0) {
+        Write-Host "Successfully removed $successfulRemovals lower patch folder(s)" -ForegroundColor Green
+    }
+    if ($failedRemovals -gt 0) {
+        Write-Host "Failed to remove $failedRemovals lower patch folder(s) - files may be in use" -ForegroundColor Yellow
     }
 }
 
@@ -1379,9 +1443,12 @@ try {
             $cleanupResults += Invoke-PostPatchCleanup -ArchToClean 'x64'
             $cleanupResults += Invoke-PostPatchCleanup -ArchToClean 'x86'
         }
-        $toolCleanupFailed = $cleanupResults | Where-Object { $_.ExitCode -ne 0 }
+        # Exit code 1 means "no items found" which is not a failure
+        # Only consider exit codes > 1 as failures
+        $toolCleanupFailed = $cleanupResults | Where-Object { $_.ExitCode -gt 1 }
         foreach ($c in $cleanupResults) {
-            Add-Action -Type 'Cleanup' -Channel $c.Arg -Arch $Arch -Detail "$($c.Label) exit $($c.ExitCode)"
+            $status = if ($c.ExitCode -eq 0) { "completed" } elseif ($c.ExitCode -eq 1) { "no items" } else { "failed" }
+            Add-Action -Type 'Cleanup' -Channel $c.Arg -Arch $Arch -Detail "$($c.Label) - $status"
         }
     } else {
         Write-Warning "Uninstall tool not available. Using filesystem cleanup of lower patches."
