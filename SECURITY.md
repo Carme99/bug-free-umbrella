@@ -12,16 +12,16 @@ We release patches for security vulnerabilities for the following versions:
 
 ## Reporting a Vulnerability
 
-The Bug-Free Umbrella team takes security bugs seriously. We appreciate your efforts to responsibly disclose your findings.
+Security issues are taken seriously. Please report responsibly.
 
 ### How to Report
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via email to the repository maintainers:
+Instead, please use one of these methods:
 
-1. **Email**: [Create a private security advisory](https://github.com/Carme99/bug-free-umbrella/security/advisories/new)
-2. **Alternatively**: Open a private issue with the `security` label
+1. **Preferred**: [Create a private security advisory](https://github.com/Carme99/bug-free-umbrella/security/advisories/new)
+2. **Alternative**: Open an issue marked as `security` (will be made private immediately)
 
 ### What to Include
 
@@ -36,13 +36,13 @@ When reporting a vulnerability, please include:
 
 ### Response Timeline
 
-- **Initial Response**: Within 48 hours
-- **Status Update**: Within 7 days
-- **Fix Timeline**: Depends on severity
-  - Critical: 1-7 days
-  - High: 7-30 days
-  - Medium: 30-90 days
-  - Low: 90+ days or next release
+As a solo-maintained project, response times may vary:
+- **Initial Response**: Usually within a few days
+- **Fix Timeline**: Depends on severity and complexity
+  - Critical issues will be prioritized
+  - Lower severity issues may take longer
+
+I'll do my best to address security issues quickly, but please understand this is a solo effort.
 
 ## Security Best Practices
 
@@ -75,10 +75,10 @@ When reporting a vulnerability, please include:
 
 ### For Development
 
-1. **Code Review**
-   - All code changes require review
-   - Security-sensitive changes require security review
-   - Use PSScriptAnalyzer for static analysis
+1. **Code Quality**
+   - All scripts are reviewed before release
+   - PSScriptAnalyzer is used for static analysis
+   - Security-sensitive changes get extra scrutiny
 
 2. **Dependencies**
    - Keep PowerShell modules updated
@@ -252,12 +252,13 @@ Security updates will be:
 
 ## Contact
 
-For security concerns:
-- GitHub Security Advisories (preferred)
-- Repository maintainer email (via GitHub profile)
-- Private GitHub issue with `security` label
+For security concerns, please use:
+- **GitHub Security Advisories** (preferred method)
+- **Private GitHub issue** with `security` label
 
-**Do not disclose security issues publicly until a fix is available.**
+As the sole maintainer, I'll respond as quickly as possible.
+
+**Please do not disclose security issues publicly until a fix is available.**
 
 ---
 
