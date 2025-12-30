@@ -133,69 +133,117 @@ cd scripts/cloud-infrastructure/azure
 
 ## 📂 Repository Structure
 
+> **🌪️ v3.0.0 "Hurricane"**: Technology-based hierarchy for better navigation
+
 ```
 bug-free-umbrella/
-├── 📂 scripts/                        # All PowerShell scripts organized by category (20 total)
+├── 📂 scripts/                        # All PowerShell scripts in tech-based hierarchy
 │   │
-│   ├── 📂 advanced-security/          # Security hardening and configuration scripts
-│   ├── 📂 api-management/             # API health checks and monitoring
-│   ├── 📂 cloud-infrastructure/       # Azure & AWS resource management
-│   ├── 📂 container-management/       # Docker & Kubernetes tools
-│   ├── 📂 database/                   # SQL Server, MySQL, PostgreSQL, MongoDB
-│   ├── 📂 device-management/          # General device configuration & inventory
-│   ├── 📂 devops-cicd/                # Pipeline monitoring (Azure DevOps, GitHub Actions, GitLab)
-│   ├── 📂 email-services/             # Exchange Online & email system management
-│   ├── 📂 infrastructure-as-code/     # Terraform, Bicep, ARM templates
-│   ├── 📂 intune/                     # Microsoft Intune endpoint management (18+ scripts)
-│   │   ├── 📂 deployment/            # Application deployment scripts
-│   │   ├── 📂 maintenance/           # Device maintenance and cleanup
-│   │   ├── 📂 reporting/             # Compliance and status reporting
-│   │   ├── 📂 ProactiveRemediations/ # Auto-detect and fix scripts (14 pairs)
-│   │   └── 📂 WingetUpdates/         # Application auto-update templates (40+)
-│   ├── 📂 linux-server/               # Linux system administration
-│   ├── 📂 m365/                       # Microsoft 365 services (Teams, SharePoint, OneDrive)
-│   ├── 📂 monitoring/                 # System monitoring and health checks
-│   ├── 📂 network-management/         # Network diagnostics and configuration
-│   ├── 📂 print-management/           # Print server administration
-│   ├── 📂 security-compliance/        # Multi-framework compliance (CIS, NIST, PCI-DSS, HIPAA, SOC2, ISO27001)
-│   ├── 📂 server/                     # Windows Server administration (30+ scripts)
-│   ├── 📂 utilities/                  # Helper scripts and tools
-│   ├── 📂 virtualization/             # Hyper-V & VMware management
-│   └── 📂 web-services/               # IIS web server management
+│   ├── 📂 cloud/                      # ☁️ Cloud Platforms & Services
+│   │   ├── 📂 azure/                 # Azure resource management
+│   │   │   ├── 📂 avd/              # Azure Virtual Desktop
+│   │   │   ├── 📂 compute/          # Virtual machines
+│   │   │   ├── 📂 keyvault/         # Key Vault management
+│   │   │   └── 📂 core/             # General Azure resources
+│   │   ├── 📂 aws/                   # AWS resource management
+│   │   │   └── 📂 core/             # AWS core services
+│   │   └── 📂 containers/            # Docker & Kubernetes
+│   │
+│   ├── 📂 endpoints/                  # 📱 Endpoint & Device Management
+│   │   ├── 📂 intune/                # Microsoft Intune (18+ scripts)
+│   │   │   ├── 📂 deployment/       # App deployment
+│   │   │   ├── 📂 maintenance/      # Device maintenance
+│   │   │   └── 📂 reporting/        # Compliance reporting
+│   │   └── 📂 devices/               # Device management
+│   │       ├── 📂 proactive-remediations/  # Auto-fix scripts (14 pairs)
+│   │       ├── 📂 winget/           # Windows Package Manager (40+ apps)
+│   │       ├── 📂 autopatch/        # Windows Update automation
+│   │       ├── 📂 bitlocker/        # BitLocker management
+│   │       └── 📂 drivers/          # Driver management
+│   │
+│   ├── 📂 infrastructure/             # 🖥️ On-Premises & Hybrid
+│   │   ├── 📂 windows/               # Windows Server (30+ scripts)
+│   │   │   ├── 📂 active-directory/ # AD management
+│   │   │   ├── 📂 group-policy/     # GPO configuration
+│   │   │   ├── 📂 monitoring/       # Server monitoring
+│   │   │   └── 📂 ...               # 6 more categories
+│   │   ├── 📂 linux/                 # Linux administration
+│   │   ├── 📂 network/               # Network management
+│   │   ├── 📂 virtualization/        # Hyper-V & VMware
+│   │   ├── 📂 web/                   # IIS web servers
+│   │   └── 📂 print/                 # Print servers
+│   │
+│   ├── 📂 security/                   # 🔒 Security & Compliance
+│   │   ├── 📂 compliance/            # Multi-framework compliance
+│   │   │   └── 📂 frameworks/       # CIS, NIST, PCI-DSS, HIPAA, SOC2, ISO27001
+│   │   ├── 📂 hardening/             # Security hardening
+│   │   └── 📂 monitoring/            # Security monitoring
+│   │
+│   ├── 📂 automation/                 # ⚙️ DevOps & Automation
+│   │   ├── 📂 cicd/                  # CI/CD pipelines
+│   │   └── 📂 iac/                   # Infrastructure as Code
+│   │
+│   ├── 📂 collaboration/              # 👥 Microsoft 365 & Communication
+│   │   ├── 📂 microsoft365/          # M365 services
+│   │   │   ├── 📂 azure-ad/         # Azure AD/Entra ID
+│   │   │   ├── 📂 exchange-online/  # Exchange Online
+│   │   │   ├── 📂 teams/            # Microsoft Teams
+│   │   │   └── 📂 ...               # SharePoint, Power Platform
+│   │   └── 📂 email/                 # Exchange Server
+│   │
+│   ├── 📂 data/                       # 🗄️ Data Management
+│   │   ├── 📂 databases/             # SQL, MySQL, PostgreSQL, MongoDB
+│   │   └── 📂 api/                   # API management
+│   │
+│   ├── 📂 utilities/                  # 🔧 General Utilities
+│   └── 📂 .catalog/                   # 📋 Metadata & Compatibility
 │
-├── 📂 examples/                       # ✨ NEW: Practical workflow examples
-│   ├── 📂 onboarding/                # New employee/device setup workflows
-│   ├── 📂 maintenance/               # Daily, weekly, monthly maintenance routines
-│   ├── 📂 incident-response/         # Troubleshooting and security scenarios
-│   ├── 📂 compliance/                # Compliance audit workflows
-│   └── 📂 automation/                # Scheduled task and CI/CD examples
+├── 📂 examples/                       # 💡 Practical Workflow Examples
+│   ├── 📂 onboarding/                # New employee/device setup
+│   ├── 📂 maintenance/               # Maintenance routines
+│   ├── 📂 compliance/                # Compliance audits
+│   └── 📂 ...                        # More examples
 │
-├── 📂 AzureVirtualDesktop/            # Azure Virtual Desktop specific scripts
-├── 📂 Tests/                          # Test files and validation scripts
-├── 📂 templates/                      # Script templates for new development
-├── 📂 wiki/                           # Wiki documentation (deployed separately)
-├── 📂 docs/                           # ⚠️ Legacy documentation (see wiki for latest)
+├── 📂 Tests/                          # Test files and validation
+├── 📂 templates/                      # Script templates
+├── 📂 wiki/                           # Wiki documentation
+├── 📂 docs/                           # ⚠️ Legacy docs (see wiki)
 │
 ├── 📂 .github/                        # GitHub configuration
-│   └── 📂 workflows/                 # CI/CD automation workflows
+│   ├── 📂 workflows/                 # CI/CD automation
+│   └── 📂 ISSUE_TEMPLATE/            # Issue templates
 │
-├── 📄 README.md                       # This file - repository overview
-├── 📄 QUICK_START.md                  # ✨ NEW: Role-based quick start guide
-├── 📄 CHANGELOG.md                    # Detailed version history with weather-themed releases
+├── 📄 README.md                       # This file
+├── 📄 QUICK_START.md                  # Role-based quick start
+├── 📄 CHANGELOG.md                    # Version history (v3.0.0!)
 ├── 📄 CONTRIBUTING.md                 # Contribution guidelines
-├── 📄 SECURITY.md                     # Security policy and vulnerability reporting
-├── 📄 SCRIPT_ANALYSIS_REPORT.md       # Script quality analysis
+├── 📄 SECURITY.md                     # Security policy
 └── 📄 LICENSE                         # Apache License 2.0
 ```
 
-### Quick Navigation
+### Quick Navigation by Domain
 
+| Domain | Description | Top Categories |
+|--------|-------------|----------------|
+| **[☁️ Cloud](scripts/cloud/)** | Cloud platforms & services | Azure, AWS, Containers |
+| **[📱 Endpoints](scripts/endpoints/)** | Device & endpoint management | Intune, Devices, Winget |
+| **[🖥️ Infrastructure](scripts/infrastructure/)** | On-premises systems | Windows, Linux, Network |
+| **[🔒 Security](scripts/security/)** | Security & compliance | Compliance, Hardening |
+| **[⚙️ Automation](scripts/automation/)** | DevOps & automation | CI/CD, IaC |
+| **[👥 Collaboration](scripts/collaboration/)** | M365 & communication | Microsoft 365, Email |
+| **[🗄️ Data](scripts/data/)** | Data management | Databases, APIs |
+| **[🔧 Utilities](scripts/utilities/)** | General utilities | Helper scripts |
+
+### Migration Notes
+
+> **Breaking Change (v3.0.0)**: Scripts reorganized from 20 flat categories into 7 technology domains.
+> See [CHANGELOG.md](CHANGELOG.md#300) for complete migration guide.
+
+**Quick Links:**
 - **[🚀 QUICK_START.md](QUICK_START.md)** - Find scripts by role or task
 - **[📚 Wiki](../../wiki)** - Comprehensive documentation
 - **[💡 Examples](examples/)** - Real-world workflow examples
-- **[📋 Script Catalog](../../wiki/Script-Catalog)** - All 260+ scripts indexed
-
-**[See Full Repository Structure →](../../wiki/Script-Catalog)**
+- **[📋 Compatibility Matrix](scripts/.catalog/COMPATIBILITY.md)** - Platform compatibility
 
 ---
 
@@ -222,10 +270,11 @@ Contributions are welcome! This is a solo project maintained with Claude Code. S
 ## 📊 Stats
 
 - **260+** PowerShell scripts
-- **20** categories
+- **7** technology domains (formerly 20 flat categories)
 - **14** proactive remediation pairs
 - **40+** winget application templates
 - **Comprehensive** wiki documentation
+- **v3.0.0** - Complete restructure with technology-based hierarchy
 
 ---
 

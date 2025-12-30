@@ -27,7 +27,125 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 - Phase 2 PowerShell best practices (Set-StrictMode implementation)
 - Parameter validation enhancements
 - Additional Pester test coverage
-- Repository restructuring (v3.0.0 planning)
+
+---
+
+## [3.0.0] - 2025-12-30 🌪️ **"Hurricane"** - Repository Restructure
+
+> **BREAKING CHANGE**: Complete repository reorganization with technology-based hierarchy
+
+### Restructuring Overview
+
+Reorganized 260+ scripts from 20 flat categories into 7 technology-based domains for improved navigation and discoverability.
+
+### New Structure
+
+**7 Technology Domains:**
+- **cloud/** - Cloud platforms (Azure, AWS, Containers)
+- **endpoints/** - Endpoint management (Intune, Devices)
+- **infrastructure/** - On-premises systems (Windows, Linux, Network, Virtualization, Web, Print)
+- **security/** - Security & compliance (Compliance, Hardening, Monitoring)
+- **automation/** - DevOps & automation (CI/CD, IaC)
+- **collaboration/** - M365 & communication (Microsoft 365, Email)
+- **data/** - Data management (Databases, APIs)
+
+### Migration Mapping
+
+| Old Location | New Location |
+|--------------|--------------|
+| `scripts/intune/` | `scripts/endpoints/intune/` |
+| `scripts/device-management/` | `scripts/endpoints/devices/` |
+| `scripts/server/` | `scripts/infrastructure/windows/` |
+| `scripts/linux-server/` | `scripts/infrastructure/linux/` |
+| `scripts/network-management/` | `scripts/infrastructure/network/` |
+| `scripts/virtualization/` | `scripts/infrastructure/virtualization/` |
+| `scripts/web-services/` | `scripts/infrastructure/web/` |
+| `scripts/print-management/` | `scripts/infrastructure/print/` |
+| `scripts/security-compliance/` | `scripts/security/compliance/frameworks/` |
+| `scripts/advanced-security/` | `scripts/security/hardening/` |
+| `scripts/monitoring/` | `scripts/security/monitoring/` |
+| `scripts/devops-cicd/` | `scripts/automation/cicd/` |
+| `scripts/infrastructure-as-code/` | `scripts/automation/iac/` |
+| `scripts/m365/` | `scripts/collaboration/microsoft365/` |
+| `scripts/email-services/` | `scripts/collaboration/email/` |
+| `scripts/database/` | `scripts/data/databases/` |
+| `scripts/api-management/` | `scripts/data/api/` |
+| `scripts/cloud-infrastructure/` | `scripts/cloud/` |
+| `scripts/container-management/` | `scripts/cloud/containers/` |
+| `AzureVirtualDesktop/` | `scripts/cloud/azure/avd/` |
+
+### Added
+
+#### Domain Documentation
+- **cloud/README.md** - Cloud platforms overview and quick start
+- **endpoints/README.md** - Endpoint management guide
+- **infrastructure/README.md** - Infrastructure administration guide
+- **security/README.md** - Security & compliance overview
+- **automation/README.md** - DevOps automation guide
+- **collaboration/README.md** - M365 & collaboration guide
+- **data/README.md** - Data management overview
+
+### Changed
+
+#### Repository Structure
+- Reorganized all 260+ scripts into hierarchical technology domains
+- All git history preserved via `git mv` commands
+- Updated README.md with new structure and navigation
+- Updated QUICK_START.md with new script paths
+- Updated example scripts with corrected paths
+- Updated compatibility matrix with new path references
+- Enhanced repository stats (7 domains vs 20 categories)
+
+#### Documentation Updates
+- Updated all script path references in documentation
+- Added domain-level navigation tables
+- Created migration guide in CHANGELOG
+- Added breaking change notices in README
+
+### Migration Guide for Users
+
+**Finding Scripts:**
+1. Identify your use case (cloud, endpoints, infrastructure, security, etc.)
+2. Navigate to the appropriate domain folder
+3. Browse categories within that domain
+
+**Updating Your Scripts:**
+If you reference scripts from this repository:
+```powershell
+# Old path
+.\scripts\intune\Get-IntuneDeviceCompliance.ps1
+
+# New path
+.\scripts\endpoints\intune\Get-IntuneDeviceCompliance.ps1
+```
+
+**Quick Reference:**
+- Intune → `endpoints/intune/`
+- Devices → `endpoints/devices/`
+- Windows Server → `infrastructure/windows/`
+- Linux → `infrastructure/linux/`
+- Security/Compliance → `security/compliance/frameworks/`
+- Azure → `cloud/azure/`
+- M365 → `collaboration/microsoft365/`
+- Databases → `data/databases/`
+
+### Breaking Changes
+
+**All script paths have changed.** External references to scripts must be updated:
+- Documentation referencing old paths
+- Automation scripts calling these scripts
+- Wiki pages with script links
+- Scheduled tasks with script paths
+
+**No symlinks created.** This is a clean break to avoid confusion.
+
+### Statistics
+
+- **Scripts moved:** 260+
+- **Directories restructured:** 20 categories → 7 domains
+- **Git history:** Preserved for all files
+- **Documentation updates:** 30+ files updated
+- **New READMEs:** 7 domain-level guides created
 
 ---
 
