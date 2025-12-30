@@ -177,33 +177,88 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'  # Suppress default progress bars
-
 # ==========================
 # ASCII Art & Branding
 # ==========================
 function Show-Banner {
-    $banner = @"
-
-    ╔═══════════════════════════════════════════════════════════════════════════╗
-    ║                                                                           ║
-    ║      :::     ::::::::: ::::::::   :::::::::::                             ║
-    ║     :+: :+:       :+: :+:    :+:      :+:                                 ║
-    ║    +:+   +:+     +:+  +:+           +:+                                   ║
-    ║   +#++:++#++:   +#+   :#:          +#+                                    ║
-    ║   +#+     +#+  +#+    +#+   +#+#  +#+                                     ║
-    ║   #+#     #+# #+#     #+#    #+# #+#                                      ║
-    ║   ###     ### ######### ########  ###                                     ║
-    ║                                                                           ║
-    ║            Azure Compute Gallery Image Builder v3.0                       ║
-    ║                                                                           ║
-    ║       🚀 Automated VM Cloning & Image Publishing Pipeline 🚀              ║
-    ║                                                                           ║
-    ╚═══════════════════════════════════════════════════════════════════════════╝
-
+    $border = @"
+    ╔══════════════════════════════════════════════════════════════════════════════╗
+    ║  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄  ║
+    ║  █┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼█  ║
+    ║  █┼                                                                      ┼█  ║
 "@
-    Write-Host $banner -ForegroundColor Cyan
-}
 
+    $azureText = @"
+    ║  █┼    █████╗ ███████╗██╗   ██╗██████╗ ███████╗                          ┼█  ║
+    ║  █┼   ██╔══██╗╚══███╔╝██║   ██║██╔══██╗██╔════╝                          ┼█  ║
+    ║  █┼   ███████║  ███╔╝ ██║   ██║██████╔╝█████╗                            ┼█  ║
+    ║  █┼   ██╔══██║ ███╔╝  ██║   ██║██╔══██╗██╔══╝                            ┼█  ║
+    ║  █┼   ██║  ██║███████╗╚██████╔╝██║  ██║███████╗                          ┼█  ║
+    ║  █┼   ╚═╝  ╚═╝╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝                          ┼█  ║
+"@
+
+    $divider = @"
+    ║  █┼                                                                      ┼█  ║
+    ║  █┼   ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀            ┼█  ║
+"@
+
+    $computeText = @"
+    ║  █┼    ██████╗ ██████╗ ███╗   ███╗██████╗ ██╗   ██╗████████╗███████╗     ┼█  ║
+    ║  █┼   ██╔════╝██╔═══██╗████╗ ████║██╔══██╗██║   ██║╚══██╔══╝██╔════╝     ┼█  ║
+    ║  █┼   ██║     ██║   ██║██╔████╔██║██████╔╝██║   ██║   ██║   █████╗       ┼█  ║
+    ║  █┼   ██║     ██║   ██║██║╚██╔╝██║██╔═══╝ ██║   ██║   ██║   ██╔══╝       ┼█  ║
+    ║  █┼   ╚██████╗╚██████╔╝██║ ╚═╝ ██║██║     ╚██████╔╝   ██║   ███████╗     ┼█  ║
+    ║  █┼    ╚═════╝ ╚═════╝ ╚═╝     ╚═╝╚═╝      ╚═════╝    ╚═╝   ╚══════╝     ┼█  ║
+"@
+
+    $titleBox = @"
+    ║  █┼                                                                      ┼█  ║
+    ║  █┼   ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓  ┼█  ║
+"@
+
+    $titleText = @"
+    ║  █┼   ┃   « GALLERY IMAGE BUILDER v3.0 »    ░▒▓█ PIPELINE █▓▒░        ┃  ┼█  ║
+"@
+
+    $titleBoxClose = @"
+    ║  █┼   ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛  ┼█  ║
+    ║  █┼                                                                      ┼█  ║
+"@
+
+    $pipeline = @"
+    ║  █┼     [VM]═════►[SYSPREP]═════►[CAPTURE]═════►[PUBLISH]                ┼█  ║
+"@
+
+    $pipelineProgress = @"
+    ║  █┼      ░░          ▒▒▒           ▓▓▓▓           ████                   ┼█  ║
+"@
+
+    $author = @"
+    ║  █┼                                                                      ┼█  ║
+    ║  █┼        Crafted with ♥ and mass quantities of caffeine by:            ┼█  ║
+    ║  █┼                          ★ Jack Lee ★                                ┼█  ║
+"@
+
+    $footer = @"
+    ║  █┼                                                                      ┼█  ║
+    ║  █┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼┼█  ║
+    ║  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀  ║
+    ╚══════════════════════════════════════════════════════════════════════════════╝
+"@
+
+    # Display with colours
+    Write-Host $border -ForegroundColor DarkCyan
+    Write-Host $azureText -ForegroundColor Cyan
+    Write-Host $divider -ForegroundColor DarkCyan
+    Write-Host $computeText -ForegroundColor Blue
+    Write-Host $titleBox -ForegroundColor DarkCyan
+    Write-Host $titleText -ForegroundColor Yellow
+    Write-Host $titleBoxClose -ForegroundColor DarkCyan
+    Write-Host $pipeline -ForegroundColor Green
+    Write-Host $pipelineProgress -ForegroundColor Magenta
+    Write-Host $author -ForegroundColor White
+    Write-Host $footer -ForegroundColor DarkCyan
+}
 # ==========================
 # Enhanced Console Output Functions
 # ==========================
@@ -967,3 +1022,4 @@ Write-Host "  • Deploy VMs from the gallery image" -ForegroundColor Gray
 Write-Host "  • Configure your host pools to use version: $nextVersion" -ForegroundColor Gray
 Write-Host ""
 Write-Success "Script completed successfully!"
+
