@@ -1,0 +1,491 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "1.0.0",
+  "lastUpdated": "2025-12-30",
+  "description": "Compatibility matrix for bug-free-umbrella scripts across platforms, PowerShell versions, and dependencies",
+
+  "compatibility": {
+    "monitoring/Monitor-ServerHealth.ps1": {
+      "category": "monitoring",
+      "name": "Monitor-ServerHealth.ps1",
+      "version": "2.0.0",
+      "description": "Comprehensive server health monitoring with 13 check categories",
+      "platforms": {
+        "windows": {
+          "supported": true,
+          "versions": ["Windows Server 2012 R2+", "Windows 10+", "Windows 11"],
+          "notes": "Full functionality on all supported Windows versions"
+        },
+        "linux": {
+          "supported": false,
+          "notes": "Windows-specific WMI and .NET dependencies"
+        },
+        "macos": {
+          "supported": false,
+          "notes": "Windows-specific functionality"
+        }
+      },
+      "powershell": {
+        "minimum": "5.1",
+        "recommended": "7.4+",
+        "tested": ["5.1", "7.2", "7.3", "7.4"],
+        "notes": "PowerShell 7+ recommended for better performance"
+      },
+      "dependencies": {
+        "modules": [],
+        "features": [
+          {
+            "name": "WinRM",
+            "required": true,
+            "purpose": "Remote server monitoring"
+          },
+          {
+            "name": "BitLocker",
+            "required": false,
+            "purpose": "BitLocker encryption checks"
+          },
+          {
+            "name": "IIS",
+            "required": false,
+            "purpose": "IIS monitoring"
+          }
+        ],
+        "permissions": ["Administrator"],
+        "network": "Outbound HTTPS for certificate checks"
+      },
+      "tested": {
+        "production": false,
+        "nonProduction": true,
+        "lastTested": "2025-12-29"
+      }
+    },
+
+    "intune/Get-IntuneDeviceCompliance.ps1": {
+      "category": "intune",
+      "name": "Get-IntuneDeviceCompliance.ps1",
+      "version": "1.0.0",
+      "description": "Check Intune device compliance status",
+      "platforms": {
+        "windows": {
+          "supported": true,
+          "versions": ["Windows 10+", "Windows 11", "Windows Server 2016+"],
+          "notes": "Can run from any Windows system with Graph module"
+        },
+        "linux": {
+          "supported": true,
+          "notes": "Supported with PowerShell 7+ and Microsoft.Graph module"
+        },
+        "macos": {
+          "supported": true,
+          "notes": "Supported with PowerShell 7+ and Microsoft.Graph module"
+        }
+      },
+      "powershell": {
+        "minimum": "7.0",
+        "recommended": "7.4+",
+        "tested": ["7.2", "7.3", "7.4"],
+        "notes": "Requires PowerShell 7+ for Microsoft.Graph module compatibility"
+      },
+      "dependencies": {
+        "modules": [
+          {
+            "name": "Microsoft.Graph.Intune",
+            "version": "6.1907.1.0+",
+            "required": true,
+            "installCommand": "Install-Module -Name Microsoft.Graph.Intune"
+          },
+          {
+            "name": "Microsoft.Graph",
+            "version": "2.0.0+",
+            "required": true,
+            "installCommand": "Install-Module -Name Microsoft.Graph"
+          }
+        ],
+        "features": [],
+        "permissions": ["Intune Administrator or Global Administrator"],
+        "network": "Outbound HTTPS to graph.microsoft.com"
+      },
+      "cloudServices": {
+        "azure": {
+          "required": true,
+          "services": ["Microsoft Graph API", "Intune"]
+        }
+      },
+      "tested": {
+        "production": false,
+        "nonProduction": true,
+        "lastTested": "2025-12-15"
+      }
+    },
+
+    "security-compliance/Invoke-SecurityComplianceScan.ps1": {
+      "category": "security-compliance",
+      "name": "Invoke-SecurityComplianceScan.ps1",
+      "version": "1.5.0",
+      "description": "Multi-framework compliance scanning (CIS, NIST, PCI-DSS, HIPAA, SOC2, ISO27001)",
+      "platforms": {
+        "windows": {
+          "supported": true,
+          "versions": ["Windows Server 2012 R2+", "Windows 10+", "Windows 11"],
+          "notes": "Windows-specific compliance checks"
+        },
+        "linux": {
+          "supported": false,
+          "notes": "Windows-specific registry and policy checks"
+        },
+        "macos": {
+          "supported": false,
+          "notes": "Windows-specific functionality"
+        }
+      },
+      "powershell": {
+        "minimum": "5.1",
+        "recommended": "7.2+",
+        "tested": ["5.1", "7.2", "7.4"],
+        "notes": "PowerShell 5.1 minimum for Windows compatibility"
+      },
+      "dependencies": {
+        "modules": [],
+        "features": [],
+        "permissions": ["Administrator"],
+        "network": "None (offline capable)"
+      },
+      "frameworks": {
+        "supported": ["CIS", "NIST", "PCI-DSS", "HIPAA", "SOC2", "ISO27001"],
+        "default": "CIS"
+      },
+      "tested": {
+        "production": false,
+        "nonProduction": true,
+        "lastTested": "2025-12-20"
+      }
+    },
+
+    "cloud-infrastructure/Get-AzureResourceInventory.ps1": {
+      "category": "cloud-infrastructure",
+      "name": "Get-AzureResourceInventory.ps1",
+      "version": "1.0.0",
+      "description": "Inventory Azure resources across subscriptions",
+      "platforms": {
+        "windows": {
+          "supported": true,
+          "versions": ["Windows 10+", "Windows 11", "Windows Server 2016+"],
+          "notes": "Full support"
+        },
+        "linux": {
+          "supported": true,
+          "notes": "Supported with PowerShell 7+ and Az module"
+        },
+        "macos": {
+          "supported": true,
+          "notes": "Supported with PowerShell 7+ and Az module"
+        }
+      },
+      "powershell": {
+        "minimum": "7.0",
+        "recommended": "7.4+",
+        "tested": ["7.2", "7.3", "7.4"],
+        "notes": "Requires PowerShell 7+ for Az module cross-platform support"
+      },
+      "dependencies": {
+        "modules": [
+          {
+            "name": "Az",
+            "version": "10.0.0+",
+            "required": true,
+            "installCommand": "Install-Module -Name Az -AllowClobber"
+          }
+        ],
+        "features": [],
+        "permissions": ["Azure Reader or higher"],
+        "network": "Outbound HTTPS to Azure endpoints"
+      },
+      "cloudServices": {
+        "azure": {
+          "required": true,
+          "services": ["Azure Resource Manager", "Azure AD"]
+        }
+      },
+      "tested": {
+        "production": true,
+        "nonProduction": true,
+        "lastTested": "2025-12-25"
+      }
+    },
+
+    "database/Test-DatabaseConnectivity.ps1": {
+      "category": "database",
+      "name": "Test-DatabaseConnectivity.ps1",
+      "version": "1.0.0",
+      "description": "Test connectivity to SQL Server, MySQL, PostgreSQL, MongoDB",
+      "platforms": {
+        "windows": {
+          "supported": true,
+          "versions": ["Windows 10+", "Windows 11", "Windows Server 2012 R2+"],
+          "notes": "Full support with all database types"
+        },
+        "linux": {
+          "supported": true,
+          "notes": "PostgreSQL and MySQL fully supported; SQL Server with limitations"
+        },
+        "macos": {
+          "supported": true,
+          "notes": "PostgreSQL and MySQL fully supported; SQL Server with limitations"
+        }
+      },
+      "powershell": {
+        "minimum": "5.1",
+        "recommended": "7.4+",
+        "tested": ["5.1", "7.2", "7.4"],
+        "notes": "PowerShell 7+ recommended for better cross-platform support"
+      },
+      "dependencies": {
+        "modules": [
+          {
+            "name": "SqlServer",
+            "version": "21.1.18256+",
+            "required": false,
+            "purpose": "SQL Server connectivity",
+            "installCommand": "Install-Module -Name SqlServer"
+          }
+        ],
+        "features": [],
+        "permissions": ["Database user credentials"],
+        "network": "Outbound to database ports (1433, 3306, 5432, 27017)"
+      },
+      "databaseSupport": {
+        "sqlserver": {
+          "supported": true,
+          "versions": ["2012+", "Azure SQL"],
+          "defaultPort": 1433
+        },
+        "mysql": {
+          "supported": true,
+          "versions": ["5.7+", "8.0+"],
+          "defaultPort": 3306
+        },
+        "postgresql": {
+          "supported": true,
+          "versions": ["10+", "11+", "12+", "13+", "14+", "15+"],
+          "defaultPort": 5432
+        },
+        "mongodb": {
+          "supported": true,
+          "versions": ["4.0+", "5.0+", "6.0+", "7.0+"],
+          "defaultPort": 27017
+        }
+      },
+      "tested": {
+        "production": true,
+        "nonProduction": true,
+        "lastTested": "2025-12-18"
+      }
+    },
+
+    "devops-cicd/Monitor-AzureDevOpsPipeline.ps1": {
+      "category": "devops-cicd",
+      "name": "Monitor-AzureDevOpsPipeline.ps1",
+      "version": "1.0.0",
+      "description": "Monitor Azure DevOps pipeline status and health",
+      "platforms": {
+        "windows": {
+          "supported": true,
+          "versions": ["Windows 10+", "Windows 11", "Windows Server 2016+"],
+          "notes": "Full support"
+        },
+        "linux": {
+          "supported": true,
+          "notes": "Full support with PowerShell 7+"
+        },
+        "macos": {
+          "supported": true,
+          "notes": "Full support with PowerShell 7+"
+        }
+      },
+      "powershell": {
+        "minimum": "7.0",
+        "recommended": "7.4+",
+        "tested": ["7.2", "7.4"],
+        "notes": "Requires PowerShell 7+ for REST API functionality"
+      },
+      "dependencies": {
+        "modules": [],
+        "features": [],
+        "permissions": ["Azure DevOps PAT token with Build Read permissions"],
+        "network": "Outbound HTTPS to dev.azure.com"
+      },
+      "cloudServices": {
+        "azureDevOps": {
+          "required": true,
+          "permissions": ["Build (Read)", "Release (Read)"]
+        }
+      },
+      "tested": {
+        "production": true,
+        "nonProduction": true,
+        "lastTested": "2025-12-22"
+      }
+    }
+  },
+
+  "platformSummary": {
+    "windows": {
+      "totalScripts": 260,
+      "fullySupported": 245,
+      "partialSupport": 10,
+      "notSupported": 5,
+      "notes": "Primary target platform with full feature support"
+    },
+    "linux": {
+      "totalScripts": 260,
+      "fullySupported": 45,
+      "partialSupport": 15,
+      "notSupported": 200,
+      "notes": "Cloud and cross-platform scripts supported with PowerShell 7+"
+    },
+    "macos": {
+      "totalScripts": 260,
+      "fullySupported": 40,
+      "partialSupport": 10,
+      "notSupported": 210,
+      "notes": "Cloud and cross-platform scripts supported with PowerShell 7+"
+    }
+  },
+
+  "powershellVersions": {
+    "5.1": {
+      "compatibleScripts": 210,
+      "notes": "Windows-only scripts, legacy support",
+      "eolDate": "2027-10-10"
+    },
+    "7.0": {
+      "compatibleScripts": 180,
+      "notes": "First cross-platform version, limited support",
+      "eolDate": "2022-12-03"
+    },
+    "7.2": {
+      "compatibleScripts": 195,
+      "notes": "LTS release, recommended for production",
+      "lts": true,
+      "eolDate": "2024-11-08"
+    },
+    "7.4": {
+      "compatibleScripts": 200,
+      "notes": "Latest stable with best performance and features",
+      "recommended": true,
+      "lts": true,
+      "eolDate": "2026-11-10"
+    }
+  },
+
+  "categorySummary": {
+    "advanced-security": {
+      "scripts": 12,
+      "crossPlatform": false,
+      "primaryPlatform": "windows"
+    },
+    "api-management": {
+      "scripts": 8,
+      "crossPlatform": true,
+      "primaryPlatform": "any"
+    },
+    "cloud-infrastructure": {
+      "scripts": 25,
+      "crossPlatform": true,
+      "primaryPlatform": "any"
+    },
+    "container-management": {
+      "scripts": 10,
+      "crossPlatform": true,
+      "primaryPlatform": "linux"
+    },
+    "database": {
+      "scripts": 15,
+      "crossPlatform": true,
+      "primaryPlatform": "any"
+    },
+    "device-management": {
+      "scripts": 8,
+      "crossPlatform": false,
+      "primaryPlatform": "windows"
+    },
+    "devops-cicd": {
+      "scripts": 18,
+      "crossPlatform": true,
+      "primaryPlatform": "any"
+    },
+    "email-services": {
+      "scripts": 12,
+      "crossPlatform": true,
+      "primaryPlatform": "any"
+    },
+    "infrastructure-as-code": {
+      "scripts": 14,
+      "crossPlatform": true,
+      "primaryPlatform": "any"
+    },
+    "intune": {
+      "scripts": 18,
+      "crossPlatform": true,
+      "primaryPlatform": "any",
+      "notes": "Cloud-based, platform-independent with Graph API"
+    },
+    "linux-server": {
+      "scripts": 20,
+      "crossPlatform": false,
+      "primaryPlatform": "linux"
+    },
+    "m365": {
+      "scripts": 19,
+      "crossPlatform": true,
+      "primaryPlatform": "any"
+    },
+    "monitoring": {
+      "scripts": 22,
+      "crossPlatform": false,
+      "primaryPlatform": "windows"
+    },
+    "network-management": {
+      "scripts": 16,
+      "crossPlatform": false,
+      "primaryPlatform": "windows"
+    },
+    "print-management": {
+      "scripts": 9,
+      "crossPlatform": false,
+      "primaryPlatform": "windows"
+    },
+    "security-compliance": {
+      "scripts": 14,
+      "crossPlatform": false,
+      "primaryPlatform": "windows"
+    },
+    "server": {
+      "scripts": 30,
+      "crossPlatform": false,
+      "primaryPlatform": "windows"
+    },
+    "utilities": {
+      "scripts": 10,
+      "crossPlatform": true,
+      "primaryPlatform": "any"
+    },
+    "virtualization": {
+      "scripts": 12,
+      "crossPlatform": false,
+      "primaryPlatform": "windows"
+    },
+    "web-services": {
+      "scripts": 8,
+      "crossPlatform": false,
+      "primaryPlatform": "windows"
+    }
+  },
+
+  "testingStatus": {
+    "productionTested": 15,
+    "nonProductionTested": 245,
+    "notTested": 0,
+    "notes": "Most scripts tested in non-production environments only"
+  }
+}

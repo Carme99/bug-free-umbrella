@@ -135,22 +135,65 @@ cd scripts/cloud-infrastructure/azure
 
 ```
 bug-free-umbrella/
-├── scripts/              # All PowerShell scripts organized by category
-│   ├── intune/          # Intune management (18+ scripts)
-│   ├── server/          # Windows Server (30+ scripts)
-│   ├── m365/            # Microsoft 365 cloud services (19 scripts)
-│   ├── devops-cicd/     # CI/CD pipeline monitoring
-│   ├── cloud-infrastructure/  # Azure & AWS
-│   ├── advanced-security/     # Multi-framework compliance
-│   ├── device-management/
-│   │   ├── proactive-remediations/  # 14 auto-fix pairs
-│   │   └── winget-updates/          # 40+ app templates
-│   └── ... 13 more categories
+├── 📂 scripts/                        # All PowerShell scripts organized by category (20 total)
+│   │
+│   ├── 📂 advanced-security/          # Security hardening and configuration scripts
+│   ├── 📂 api-management/             # API health checks and monitoring
+│   ├── 📂 cloud-infrastructure/       # Azure & AWS resource management
+│   ├── 📂 container-management/       # Docker & Kubernetes tools
+│   ├── 📂 database/                   # SQL Server, MySQL, PostgreSQL, MongoDB
+│   ├── 📂 device-management/          # General device configuration & inventory
+│   ├── 📂 devops-cicd/                # Pipeline monitoring (Azure DevOps, GitHub Actions, GitLab)
+│   ├── 📂 email-services/             # Exchange Online & email system management
+│   ├── 📂 infrastructure-as-code/     # Terraform, Bicep, ARM templates
+│   ├── 📂 intune/                     # Microsoft Intune endpoint management (18+ scripts)
+│   │   ├── 📂 deployment/            # Application deployment scripts
+│   │   ├── 📂 maintenance/           # Device maintenance and cleanup
+│   │   ├── 📂 reporting/             # Compliance and status reporting
+│   │   ├── 📂 ProactiveRemediations/ # Auto-detect and fix scripts (14 pairs)
+│   │   └── 📂 WingetUpdates/         # Application auto-update templates (40+)
+│   ├── 📂 linux-server/               # Linux system administration
+│   ├── 📂 m365/                       # Microsoft 365 services (Teams, SharePoint, OneDrive)
+│   ├── 📂 monitoring/                 # System monitoring and health checks
+│   ├── 📂 network-management/         # Network diagnostics and configuration
+│   ├── 📂 print-management/           # Print server administration
+│   ├── 📂 security-compliance/        # Multi-framework compliance (CIS, NIST, PCI-DSS, HIPAA, SOC2, ISO27001)
+│   ├── 📂 server/                     # Windows Server administration (30+ scripts)
+│   ├── 📂 utilities/                  # Helper scripts and tools
+│   ├── 📂 virtualization/             # Hyper-V & VMware management
+│   └── 📂 web-services/               # IIS web server management
 │
-├── wiki/                # Wiki content (deployed separately)
-├── docs/                # Legacy documentation
-└── CHANGELOG.md         # Version history
+├── 📂 examples/                       # ✨ NEW: Practical workflow examples
+│   ├── 📂 onboarding/                # New employee/device setup workflows
+│   ├── 📂 maintenance/               # Daily, weekly, monthly maintenance routines
+│   ├── 📂 incident-response/         # Troubleshooting and security scenarios
+│   ├── 📂 compliance/                # Compliance audit workflows
+│   └── 📂 automation/                # Scheduled task and CI/CD examples
+│
+├── 📂 AzureVirtualDesktop/            # Azure Virtual Desktop specific scripts
+├── 📂 Tests/                          # Test files and validation scripts
+├── 📂 templates/                      # Script templates for new development
+├── 📂 wiki/                           # Wiki documentation (deployed separately)
+├── 📂 docs/                           # ⚠️ Legacy documentation (see wiki for latest)
+│
+├── 📂 .github/                        # GitHub configuration
+│   └── 📂 workflows/                 # CI/CD automation workflows
+│
+├── 📄 README.md                       # This file - repository overview
+├── 📄 QUICK_START.md                  # ✨ NEW: Role-based quick start guide
+├── 📄 CHANGELOG.md                    # Detailed version history with weather-themed releases
+├── 📄 CONTRIBUTING.md                 # Contribution guidelines
+├── 📄 SECURITY.md                     # Security policy and vulnerability reporting
+├── 📄 SCRIPT_ANALYSIS_REPORT.md       # Script quality analysis
+└── 📄 LICENSE                         # Apache License 2.0
 ```
+
+### Quick Navigation
+
+- **[🚀 QUICK_START.md](QUICK_START.md)** - Find scripts by role or task
+- **[📚 Wiki](../../wiki)** - Comprehensive documentation
+- **[💡 Examples](examples/)** - Real-world workflow examples
+- **[📋 Script Catalog](../../wiki/Script-Catalog)** - All 260+ scripts indexed
 
 **[See Full Repository Structure →](../../wiki/Script-Catalog)**
 

@@ -27,6 +27,91 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 - Phase 2 PowerShell best practices (Set-StrictMode implementation)
 - Parameter validation enhancements
 - Additional Pester test coverage
+- Repository restructuring (v3.0.0 planning)
+
+---
+
+## [2.2.0] - 2025-12-30 🌧️ **"Shower"** - Navigation & Usability Release
+
+> **Focus**: Improved repository navigation, discoverability, and user experience
+
+### Added
+
+#### New Documentation & Navigation
+- **QUICK_START.md**: Comprehensive role-based quick start guide
+  - 7 role-specific entry points (Intune admins, server admins, DevOps, security, M365, database, general IT)
+  - "I need to..." task-based navigation tables
+  - Common workflow examples by role
+  - First-time setup instructions with module installation guides
+  - Prerequisites checklist and testing guidelines
+
+#### Practical Examples Collection
+- **examples/**: New directory with real-world workflow examples
+  - **onboarding/**: New employee and device setup workflows
+    - `new-employee-setup.ps1` - Complete onboarding automation
+  - **maintenance/**: Regular operational procedures
+    - `weekly-health-check.ps1` - Comprehensive weekly health audit
+  - **compliance/**: Compliance audit workflows
+    - `monthly-compliance-audit.ps1` - Multi-framework compliance reporting
+  - **incident-response/**: Troubleshooting scenarios (planned)
+  - **automation/**: CI/CD and scheduled task examples (planned)
+  - Each example includes detailed comments, parameter descriptions, and usage notes
+
+#### Enhanced Issue Templates
+- **Bug Report Template** (YAML format)
+  - Structured fields for script category, name, reproduction steps
+  - Environment details (PowerShell version, OS, modules)
+  - Testing checklist for thorough reporting
+- **Feature Request Template** (YAML format)
+  - Feature type classification (enhancement, parameter, performance, etc.)
+  - Use case and priority fields
+  - Contribution willingness checkboxes
+- **Script Request Template** (YAML format)
+  - Detailed script specification fields
+  - Target platform selection
+  - Prerequisites and expected outputs
+  - Urgency level classification
+- **Issue Template Config**: Disabled blank issues, added help links
+- **Pull Request Template**: Comprehensive PR checklist
+  - Change type classification
+  - Testing requirements
+  - Documentation update checklist
+  - Code quality standards verification
+
+#### Category Documentation
+- **device-management/README.md**: Added missing category README
+  - Overview, prerequisites, and quick start examples
+  - Completes README coverage across all 20 script categories
+
+### Changed
+
+#### Repository Structure Documentation
+- **README.md**: Enhanced repository structure section
+  - Complete visual folder tree with emoji icons
+  - All 20 script categories with descriptions
+  - Subdirectory details (ProactiveRemediations, WingetUpdates, etc.)
+  - New examples/ folder structure
+  - Quick navigation links section
+  - References to new QUICK_START.md
+
+#### Documentation Deprecation
+- **docs/README.md**: Enhanced deprecation notice
+  - Prominent warning about deprecated status
+  - Clear migration paths to Wiki, QUICK_START.md, and examples/
+  - Updated file status table with current locations
+  - Improved visual indicators (⚠️ ⛔ symbols)
+  - Last updated timestamp changed to 2025-12-30
+
+### Repository Stats (Updated)
+- **Quick wins implemented**: 8 major improvements
+- **New files created**: 12 (1 guide + 3 examples + 4 issue templates + 1 PR template + 1 category README + 2 configs)
+- **Enhanced files**: 2 (README.md, docs/README.md)
+- **Documentation quality**: Significantly improved discoverability and onboarding experience
+
+### Migration Notes
+- Existing users: New `QUICK_START.md` provides faster navigation to relevant scripts
+- Contributors: Use new issue templates for better bug reports and feature requests
+- New users: Start with `QUICK_START.md` for role-based guidance
 
 ---
 

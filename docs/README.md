@@ -1,16 +1,26 @@
-# 📚 Documentation Has Moved to the Wiki!
+# ⚠️ DEPRECATED - Documentation Has Moved!
 
-> **The comprehensive documentation for Bug-Free Umbrella is now in the [GitHub Wiki](../../wiki)!**
+> **🚨 This folder is deprecated and maintained for legacy compatibility only.**
+>
+> **All documentation has moved to:**
+> - **[📚 GitHub Wiki](../../wiki)** - Comprehensive, searchable documentation
+> - **[🚀 QUICK_START.md](../QUICK_START.md)** - Role-based quick start guide
+> - **[💡 examples/](../examples/)** - Real-world workflow examples
 
 ---
 
-## 🚀 **[→ Open the Wiki](../../wiki)**
+## 🎯 Quick Navigation
 
-The wiki provides:
+### **For Current Documentation:**
+- **[📚 Open the Wiki](../../wiki)** ← Primary documentation
+- **[🚀 Quick Start Guide](../QUICK_START.md)** ← Find scripts by role
+- **[💡 Practical Examples](../examples/)** ← Ready-to-use workflows
+
+### **What You'll Find There:**
+- ✅ **Up-to-date content** - Always current
 - ✅ **Searchable** - Find anything instantly
 - ✅ **Better navigation** - Sidebar and cross-links
-- ✅ **More comprehensive** - Expanded content
-- ✅ **Easier to update** - Community contributions welcome
+- ✅ **Practical examples** - Real-world workflows
 - ✅ **Better organized** - Categorized and indexed
 
 ---
@@ -40,19 +50,20 @@ The wiki provides:
 
 ---
 
-## 📂 Files in This Folder
+## 📂 Files in This Folder (Legacy)
 
-The following files remain in this folder for reference and legacy compatibility:
+⚠️ **WARNING: These files are outdated and maintained for reference only.**
 
-| File | Status | Wiki Equivalent |
-|------|--------|-----------------|
-| **NAVIGATION.md** | Legacy | [Script Catalog](../../wiki/Script-Catalog) |
-| **SCRIPT-EXAMPLES.md** | Legacy | [Script Examples](../../wiki/Script-Examples) |
-| **WORKFLOWS.md** | Legacy | [Workflows](../../wiki/Workflows) |
-| **TROUBLESHOOTING.md** | Legacy | [Troubleshooting](../../wiki/Troubleshooting) |
-| **INTUNE-SYNC-README.md** | Legacy | [Intune Sync Guide](../../wiki/Intune-Sync-Guide) |
+| File | Status | Current Location |
+|------|--------|------------------|
+| **NAVIGATION.md** | ⛔ DEPRECATED | → [QUICK_START.md](../QUICK_START.md) + [Script Catalog](../../wiki/Script-Catalog) |
+| **SCRIPT-EXAMPLES.md** | ⛔ DEPRECATED | → [examples/](../examples/) + [Wiki Examples](../../wiki/Script-Examples) |
+| **WORKFLOWS.md** | ⛔ DEPRECATED | → [examples/](../examples/) + [Wiki Workflows](../../wiki/Workflows) |
+| **TROUBLESHOOTING.md** | ⛔ DEPRECATED | → [Wiki Troubleshooting](../../wiki/Troubleshooting) |
+| **INTUNE-SYNC-README.md** | ⛔ DEPRECATED | → [Wiki Intune Guide](../../wiki/Intune-Sync-Guide) |
 
-> **Note:** These files may not be as up-to-date as the wiki. Please use the wiki for the latest documentation.
+> **⚠️ IMPORTANT:** These files are **NOT maintained** and may contain outdated information.
+> Please use the Wiki and examples folder for current, accurate documentation.
 
 ---
 
@@ -101,6 +112,6 @@ The GitHub Wiki offers several advantages:
 
 ---
 
-**Last Updated:** 2025-12-29
-**Wiki Version:** 1.0.0
-**Corresponds to:** v2.1.0 "Rainbow" 🌈
+**Last Updated:** 2025-12-30
+**Status:** ⛔ DEPRECATED - See [Wiki](../../wiki), [QUICK_START.md](../QUICK_START.md), and [examples/](../examples/)
+**Corresponds to:** v2.1.0 "Rainbow" 🌈 and later
