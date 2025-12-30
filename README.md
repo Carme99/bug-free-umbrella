@@ -99,15 +99,15 @@ See the [Getting Started Guide](../../wiki/Getting-Started) for detailed setup i
 
 ```powershell
 # Example: Check Intune device compliance
-cd scripts/intune
+cd scripts/endpoints/intune/reporting
 .\Get-DeviceComplianceReport.ps1
 
 # Example: Monitor server health
-cd scripts/monitoring
+cd scripts/infrastructure/windows/monitoring
 .\Monitor-ServerHealth.ps1
 
 # Example: Check Azure resources
-cd scripts/cloud-infrastructure/azure
+cd scripts/cloud/azure/core
 .\Monitor-AzureResources.ps1
 ```
 

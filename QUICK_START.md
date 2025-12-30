@@ -85,7 +85,7 @@ Welcome to Bug-Free Umbrella! This guide helps you quickly find the scripts you 
 
 **Top scripts to try:**
 - `Invoke-SecurityComplianceScan.ps1` - Multi-framework compliance scan
-- `Test-SecurityPosture.ps1` - Security posture assessment
+- `Get-SecurityBaseline.ps1` - Security baseline verification
 - `Get-BitLockerStatus.ps1` - BitLocker compliance check
 
 **Documentation:** [Wiki → Security](../../wiki/Security)
@@ -229,10 +229,10 @@ Welcome to Bug-Free Umbrella! This guide helps you quickly find the scripts you 
 .\scripts\security\compliance\frameworks\Invoke-SecurityComplianceScan.ps1 -Framework CIS,NIST
 
 # Check BitLocker compliance
-.\scripts\security\compliance\frameworks\Get-BitLockerStatus.ps1
+.\scripts\endpoints\intune\reporting\Get-BitLockerStatus.ps1
 
-# Audit security settings
-.\scripts\security\hardening\Test-SecurityPosture.ps1
+# Check security baseline
+.\scripts\security\compliance\frameworks\Get-SecurityBaseline.ps1
 ```
 
 ### 4. Azure Resource Management

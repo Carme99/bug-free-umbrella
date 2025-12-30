@@ -84,20 +84,18 @@ try {
     Write-Warning "  ✗ BitLocker check failed: $_"
 }
 
-# 3. Security Posture Assessment
-Write-Host "`n[3/5] Security posture assessment..." -ForegroundColor Green
+# 3. Security Baseline Check
+Write-Host "`n[3/5] Security baseline verification..." -ForegroundColor Green
 try {
-    $SecurityReport = Join-Path -Path $ExportPath -ChildPath "${Timestamp}_Security_Posture.html"
-    & "$ScriptRoot\security\hardening\Test-SecurityPosture.ps1" `
-        -Detailed `
-        -IncludeRemediation `
+    $SecurityReport = Join-Path -Path $ExportPath -ChildPath "${Timestamp}_Security_Baseline.html"
+    & "$ScriptRoot\security\compliance\frameworks\Get-SecurityBaseline.ps1" `
         -ExportHTML `
         -OutputPath $SecurityReport
-    $AuditResults += @{ Framework = "Security Posture"; Status = "Completed"; Report = $SecurityReport }
-    Write-Host "  ✓ Security assessment completed" -ForegroundColor Green
+    $AuditResults += @{ Framework = "Security Baseline"; Status = "Completed"; Report = $SecurityReport }
+    Write-Host "  ✓ Security baseline check completed" -ForegroundColor Green
 } catch {
-    $AuditResults += @{ Framework = "Security Posture"; Status = "Failed"; Error = $_ }
-    Write-Warning "  ✗ Security assessment failed: $_"
+    $AuditResults += @{ Framework = "Security Baseline"; Status = "Failed"; Error = $_ }
+    Write-Warning "  ✗ Security baseline check failed: $_"
 }
 
 # 4. System Health and Security Monitoring
