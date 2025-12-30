@@ -15,6 +15,7 @@ This advanced script manages ASP.NET Core and Windows Desktop runtimes across yo
 - ✅ **Architecture Aware** - Handles both x64 and x86 runtimes independently
 - ✅ **Automatic Updates** - Downloads and installs latest patches per channel
 - ✅ **EOL Detection** - Identifies and removes end-of-life runtime versions
+- ✅ **Smart EOL Replacement** - Automatically suggests and installs LTS replacements for EOL versions
 - ✅ **Patch Cleanup** - Removes lower patch versions automatically
 - ✅ **Disk Usage Reporting** - Before/after reports with reclaimed space
 - ✅ **LTS Filtering** - Option to only update Long Term Support channels
@@ -103,7 +104,9 @@ This advanced script manages ASP.NET Core and Windows Desktop runtimes across yo
 
 2. **EOL Handling**
    - Detects channels that have reached End of Life
+   - Suggests active LTS replacement versions
    - Optionally removes EOL runtimes (with approval)
+   - Can automatically install recommended LTS replacement
    - Cleans up associated base runtimes
 
 3. **Update Phase**
@@ -126,11 +129,22 @@ This advanced script manages ASP.NET Core and Windows Desktop runtimes across yo
 #### Output Example
 
 ```
-=== ASP.NET Core Channel 8.0 x64 ===
-Update available: 8.0.8 → 8.0.11 (x64)
+=== ASP.NET Core Channel 6.0 x64 ===
+EOL channel detected: 6.0 | End of support: 2024-11-12 | Installed: 6.0.14
+  → Recommended replacement: .NET 8.0 LTS (supported until 2026-11-10)
+  → Will install .NET 8.0 LTS after removal
+Using uninstall tool to remove ASP.NET Core 6.0
+Removal complete for EOL channel 6.0 x64
+Installing replacement: .NET 8.0 LTS x64...
 Downloading ASP.NET Core Runtime x64...
-Installing ASP.NET Core Runtime 8.0.11 x64...
-Update complete for 8.0 x64 to 8.0.11
+Installing ASP.NET Core Runtime 8.0.22 x64...
+Successfully installed .NET 8.0 LTS (8.0.22) x64
+
+=== ASP.NET Core Channel 9.0 x64 ===
+Update available: 9.0.8 → 9.0.11 (x64)
+Downloading ASP.NET Core Runtime x64...
+Installing ASP.NET Core Runtime 9.0.11 x64...
+Update complete for 9.0 x64 to 9.0.11
 
 === Post install patch cleanup ===
 Removing lower patches (tool or filesystem fallback)
@@ -139,8 +153,9 @@ Cleanup complete for ASP.NET Core Runtime x64
 
 ╔═══════════════════════════════════════════════════╗
 ║ Runtime Maintenance Summary                      ║
-║ Updated        : 3                                ║
+║ Updated        : 1                                ║
 ║ EOL removed    : 1                                ║
+║ EOL upgraded   : 1                                ║
 ║ Already current: 2                                ║
 ║ Skipped        : 0                                ║
 ║ Cleanup runs   : 2                                ║
