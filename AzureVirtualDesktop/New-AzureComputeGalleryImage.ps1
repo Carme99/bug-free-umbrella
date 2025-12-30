@@ -114,8 +114,8 @@
       - Source VM must have Azure Windows Guest Agent installed
 
     Author: Jack Lee
-    Version: 3.0
-    Last Updated: 2025-01-15
+    Version: 3.1
+    Last Updated: 30/12/2025
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'Interactive')]
@@ -1022,4 +1022,5 @@ Write-Host "  • Deploy VMs from the gallery image" -ForegroundColor Gray
 Write-Host "  • Configure your host pools to use version: $nextVersion" -ForegroundColor Gray
 Write-Host ""
 Write-Success "Script completed successfully!"
+
 
