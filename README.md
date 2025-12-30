@@ -7,18 +7,31 @@ A comprehensive collection of PowerShell scripts for Windows system administrati
 > Please test all scripts in a non-production environment first and validate the results before relying on this data for operational decisions.
 > Always review scripts before execution and ensure you have proper backups.
 
-## 📖 Quick Links
+## 📖 Documentation
 
-### 🧭 Navigation
-- **[📍 Navigation Guide](docs/NAVIGATION.md)** - **START HERE!** Find exactly what you need, fast
-- **[🌂 Changelog](CHANGELOG.md)** - What's new? Check out our fun weather-themed releases! (Latest: v2.1.0 "Rainbow" 🌈)
+> ### 📚 **[FULL DOCUMENTATION WIKI](../../wiki)** ← **START HERE!**
+>
+> **Comprehensive, searchable documentation with:**
+> - 🚀 Quick start guides for every role
+> - 📍 Complete script catalog (260+ scripts)
+> - 💡 Detailed examples and workflows
+> - 🔍 Easy search and navigation
+> - 🆘 Troubleshooting and FAQ
+>
+> **[→ Open the Wiki](../../wiki)**
 
-### Documentation
-- **[Full Documentation](docs/README.md)** - Complete guide to all scripts and usage
-- **[Script Examples & Expected Outputs](docs/SCRIPT-EXAMPLES.md)** - Detailed examples with sample outputs
-- **[End-to-End Workflows](docs/WORKFLOWS.md)** - Step-by-step guides for common scenarios
-- **[Troubleshooting Guide](docs/TROUBLESHOOTING.md)** - Common issues and solutions
-- **[Intune Sync Guide](docs/INTUNE-SYNC-README.md)** - User group to device group synchronization
+### Quick Links
+
+**Essential Docs:**
+- **[🌂 Changelog](CHANGELOG.md)** - What's new? Fun weather-themed releases! (Latest: v2.1.0 "Rainbow" 🌈)
+- **[🤝 Contributing](CONTRIBUTING.md)** - How to contribute to the project
+- **[🔒 Security Policy](SECURITY.md)** - Report security vulnerabilities
+
+**Legacy Docs** (see wiki for latest):
+- [Navigation Guide](docs/NAVIGATION.md) - Find scripts by category
+- [Script Examples](docs/SCRIPT-EXAMPLES.md) - Usage examples
+- [Workflows](docs/WORKFLOWS.md)- Step-by-step guides
+- [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues
 
 ### Script Categories
 
