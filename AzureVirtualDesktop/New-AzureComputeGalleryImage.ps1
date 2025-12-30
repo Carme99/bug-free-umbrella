@@ -498,13 +498,14 @@ function Wait-ForVMAgent {
         [int]$TimeoutMinutes = 15
     )
 
-    $deadline = (Get-Date).AddMinutes($TimeoutMinutes)
+    $startTime = Get-Date
+    $deadline = $startTime.AddMinutes($TimeoutMinutes)
     $iteration = 0
 
     while ((Get-Date) -lt $deadline) {
         $iteration++
-        $elapsed = [int]((Get-Date) - $deadline.AddMinutes($TimeoutMinutes)).TotalSeconds
-        $percent = [math]::Min(100, ($elapsed / ($TimeoutMinutes * 60)) * 100)
+        $elapsed = [int]((Get-Date) - $startTime).TotalSeconds
+        $percent = [math]::Min(100, [math]::Max(0, ($elapsed / ($TimeoutMinutes * 60)) * 100))
 
         try {
             $status = Get-GuestAgentStatus -ResourceGroupName $ResourceGroupName -Name $Name
