@@ -1,0 +1,180 @@
+name: 📜 New Script Request
+description: Request a completely new script to be added to the repository
+title: "[Script Request]: "
+labels: ["new-script", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new script! Please provide detailed information about what you need.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Proposed Domain/Category
+      description: Which domain/category should this script belong to?
+      options:
+        - cloud - Azure
+        - cloud - AWS
+        - cloud - Containers
+        - endpoints - Intune
+        - endpoints - Devices
+        - infrastructure - Windows
+        - infrastructure - Linux
+        - infrastructure - Network
+        - infrastructure - Virtualization
+        - infrastructure - Web
+        - infrastructure - Print
+        - security - Compliance
+        - security - Hardening
+        - security - Monitoring
+        - automation - CI/CD
+        - automation - IaC
+        - collaboration - Microsoft 365
+        - collaboration - Email
+        - data - Databases
+        - data - API
+        - utilities
+        - New category needed
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: script-name
+    attributes:
+      label: Proposed Script Name
+      description: What should this script be called?
+      placeholder: "Monitor-DatabasePerformance.ps1"
+    validations:
+      required: true
+
+  - type: textarea
+    id: purpose
+    attributes:
+      label: Script Purpose
+      description: What should this script do? Be as specific as possible.
+      placeholder: "This script should monitor database performance metrics including..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: functionality
+    attributes:
+      label: Detailed Functionality
+      description: Describe the specific features and capabilities you need
+      placeholder: |
+        - Check CPU usage
+        - Monitor query execution times
+        - Alert on slow queries
+        - Export metrics to CSV
+    validations:
+      required: true
+
+  - type: textarea
+    id: inputs
+    attributes:
+      label: Expected Parameters/Inputs
+      description: What parameters should the script accept?
+      placeholder: |
+        -ServerName (mandatory)
+        -DatabaseName (optional)
+        -ThresholdCPU (default: 80)
+        -ExportPath (optional)
+
+  - type: textarea
+    id: outputs
+    attributes:
+      label: Expected Outputs
+      description: What should the script output or return?
+      placeholder: |
+        - Console output with metrics
+        - CSV export of results
+        - Exit code 0 for success, 1 for warnings, 2 for critical
+
+  - type: dropdown
+    id: target-platform
+    attributes:
+      label: Target Platform
+      description: What platform should this script support?
+      options:
+        - Windows Server
+        - Windows Client (10/11)
+        - Linux
+        - Azure
+        - AWS
+        - Multiple platforms
+        - Other
+      multiple: true
+    validations:
+      required: true
+
+  - type: textarea
+    id: prerequisites
+    attributes:
+      label: Prerequisites
+      description: What prerequisites are needed? (modules, permissions, etc.)
+      placeholder: |
+        - PowerShell 7+
+        - SQL Server module
+        - Database admin permissions
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case / Problem Statement
+      description: Why do you need this script? What problem does it solve?
+      placeholder: "We need this because..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: frequency
+    attributes:
+      label: Usage Frequency
+      description: How often would you run this script?
+      placeholder: "Daily via scheduled task / Ad-hoc when issues arise / etc."
+
+  - type: textarea
+    id: similar-tools
+    attributes:
+      label: Similar Tools or Scripts
+      description: Are there similar tools or scripts that do something like this?
+      placeholder: "There's a script at... that does X, but I need Y"
+
+  - type: textarea
+    id: example-output
+    attributes:
+      label: Example Output
+      description: Show what the output should look like
+      placeholder: |
+        Server: SQL-PROD-01
+        Database: CustomerDB
+        CPU: 45%
+        Avg Query Time: 125ms
+        Status: Healthy
+      render: text
+
+  - type: dropdown
+    id: urgency
+    attributes:
+      label: Urgency
+      description: How urgently do you need this script?
+      options:
+        - Critical - Need ASAP for production issue
+        - High - Would help solve current problem
+        - Medium - Planning for future need
+        - Low - Nice to have
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Would you be interested in contributing?
+      options:
+        - label: I can provide sample code or pseudocode
+        - label: I can help test the script
+        - label: I have access to the environment needed for testing
+        - label: I would be willing to collaborate on development

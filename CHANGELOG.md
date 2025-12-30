@@ -30,6 +30,237 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ---
 
+## [3.0.0] - 2025-12-30 🌪️ **"Hurricane"** - Repository Restructure
+
+> **BREAKING CHANGE**: Complete repository reorganization with technology-based hierarchy
+
+### Restructuring Overview
+
+Reorganized 260+ scripts from 20 flat categories into 7 technology-based domains for improved navigation and discoverability.
+
+### New Structure
+
+**7 Technology Domains:**
+- **cloud/** - Cloud platforms (Azure, AWS, Containers)
+- **endpoints/** - Endpoint management (Intune, Devices)
+- **infrastructure/** - On-premises systems (Windows, Linux, Network, Virtualization, Web, Print)
+- **security/** - Security & compliance (Compliance, Hardening, Monitoring)
+- **automation/** - DevOps & automation (CI/CD, IaC)
+- **collaboration/** - M365 & communication (Microsoft 365, Email)
+- **data/** - Data management (Databases, APIs)
+
+### Migration Mapping
+
+| Old Location | New Location |
+|--------------|--------------|
+| `scripts/intune/` | `scripts/endpoints/intune/` |
+| `scripts/device-management/` | `scripts/endpoints/devices/` |
+| `scripts/server/` | `scripts/infrastructure/windows/` |
+| `scripts/linux-server/` | `scripts/infrastructure/linux/` |
+| `scripts/network-management/` | `scripts/infrastructure/network/` |
+| `scripts/virtualization/` | `scripts/infrastructure/virtualization/` |
+| `scripts/web-services/` | `scripts/infrastructure/web/` |
+| `scripts/print-management/` | `scripts/infrastructure/print/` |
+| `scripts/security-compliance/` | `scripts/security/compliance/frameworks/` |
+| `scripts/advanced-security/` | `scripts/security/hardening/` |
+| `scripts/monitoring/` | `scripts/security/monitoring/` |
+| `scripts/devops-cicd/` | `scripts/automation/cicd/` |
+| `scripts/infrastructure-as-code/` | `scripts/automation/iac/` |
+| `scripts/m365/` | `scripts/collaboration/microsoft365/` |
+| `scripts/email-services/` | `scripts/collaboration/email/` |
+| `scripts/database/` | `scripts/data/databases/` |
+| `scripts/api-management/` | `scripts/data/api/` |
+| `scripts/cloud-infrastructure/` | `scripts/cloud/` |
+| `scripts/container-management/` | `scripts/cloud/containers/` |
+| `AzureVirtualDesktop/` | `scripts/cloud/azure/avd/` |
+
+### Added
+
+#### Domain Documentation
+- **cloud/README.md** - Cloud platforms overview and quick start
+- **endpoints/README.md** - Endpoint management guide
+- **infrastructure/README.md** - Infrastructure administration guide
+- **security/README.md** - Security & compliance overview
+- **automation/README.md** - DevOps automation guide
+- **collaboration/README.md** - M365 & collaboration guide
+- **data/README.md** - Data management overview
+
+### Changed
+
+#### Repository Structure
+- Reorganized all 260+ scripts into hierarchical technology domains
+- All git history preserved via `git mv` commands
+- Updated README.md with new structure and navigation
+- Updated QUICK_START.md with new script paths
+- Updated example scripts with corrected paths
+- Updated compatibility matrix with new path references
+- Enhanced repository stats (7 domains vs 20 categories)
+
+#### Documentation Updates
+- Updated all script path references in documentation
+- Added domain-level navigation tables
+- Created migration guide in CHANGELOG
+- Added breaking change notices in README
+
+### Migration Guide for Users
+
+**Finding Scripts:**
+1. Identify your use case (cloud, endpoints, infrastructure, security, etc.)
+2. Navigate to the appropriate domain folder
+3. Browse categories within that domain
+
+**Updating Your Scripts:**
+If you reference scripts from this repository:
+```powershell
+# Old path
+.\scripts\intune\Get-IntuneDeviceCompliance.ps1
+
+# New path
+.\scripts\endpoints\intune\Get-IntuneDeviceCompliance.ps1
+```
+
+**Quick Reference:**
+- Intune → `endpoints/intune/`
+- Devices → `endpoints/devices/`
+- Windows Server → `infrastructure/windows/`
+- Linux → `infrastructure/linux/`
+- Security/Compliance → `security/compliance/frameworks/`
+- Azure → `cloud/azure/`
+- M365 → `collaboration/microsoft365/`
+- Databases → `data/databases/`
+
+### Breaking Changes
+
+**All script paths have changed.** External references to scripts must be updated:
+- Documentation referencing old paths
+- Automation scripts calling these scripts
+- Wiki pages with script links
+- Scheduled tasks with script paths
+
+**No symlinks created.** This is a clean break to avoid confusion.
+
+### Statistics
+
+- **Scripts moved:** 260+
+- **Directories restructured:** 20 categories → 7 domains
+- **Git history:** Preserved for all files
+- **Documentation updates:** 30+ files updated
+- **New READMEs:** 7 domain-level guides created
+
+### Post-Migration Testing
+
+**Validation Performed:**
+- ✅ All git moves completed successfully (verified with `git log --follow`)
+- ✅ Directory structure verified for all 7 domains
+- ✅ Sample scripts tested in new locations:
+  - `scripts/infrastructure/windows/monitoring/Monitor-ServerHealth.ps1` - Executes successfully
+  - `scripts/endpoints/intune/reporting/Get-BitLockerStatus.ps1` - Path verified
+  - `scripts/security/compliance/frameworks/` - Scripts accessible
+- ✅ Example workflow scripts updated and paths corrected:
+  - Fixed BitLocker script references to `endpoints/intune/reporting/`
+  - Updated disk space and event log checks to use built-in cmdlets
+  - All three example scripts (onboarding, maintenance, compliance) validated
+- ✅ Documentation links checked:
+  - QUICK_START.md paths verified
+  - README.md structure section validated
+  - Issue templates updated with new categories
+- ✅ No broken symlinks or orphaned files
+- ✅ Compatibility matrix synchronized with new structure
+
+**Known Limitations:**
+- Wiki pages (if present) may need manual updates
+- External documentation referencing old paths requires updating
+- Some example scripts call non-existent utilities and have been updated to use PowerShell built-in cmdlets instead
+
+**Recommendation:**
+Test any automation or scheduled tasks that reference repository scripts before deploying to production.
+
+---
+
+## [2.2.0] - 2025-12-30 🌧️ **"Shower"** - Navigation & Usability Release
+
+> **Focus**: Improved repository navigation, discoverability, and user experience
+
+### Added
+
+#### New Documentation & Navigation
+- **QUICK_START.md**: Comprehensive role-based quick start guide
+  - 7 role-specific entry points (Intune admins, server admins, DevOps, security, M365, database, general IT)
+  - "I need to..." task-based navigation tables
+  - Common workflow examples by role
+  - First-time setup instructions with module installation guides
+  - Prerequisites checklist and testing guidelines
+
+#### Practical Examples Collection
+- **examples/**: New directory with real-world workflow examples
+  - **onboarding/**: New employee and device setup workflows
+    - `new-employee-setup.ps1` - Complete onboarding automation
+  - **maintenance/**: Regular operational procedures
+    - `weekly-health-check.ps1` - Comprehensive weekly health audit
+  - **compliance/**: Compliance audit workflows
+    - `monthly-compliance-audit.ps1` - Multi-framework compliance reporting
+  - **incident-response/**: Troubleshooting scenarios (planned)
+  - **automation/**: CI/CD and scheduled task examples (planned)
+  - Each example includes detailed comments, parameter descriptions, and usage notes
+
+#### Enhanced Issue Templates
+- **Bug Report Template** (YAML format)
+  - Structured fields for script category, name, reproduction steps
+  - Environment details (PowerShell version, OS, modules)
+  - Testing checklist for thorough reporting
+- **Feature Request Template** (YAML format)
+  - Feature type classification (enhancement, parameter, performance, etc.)
+  - Use case and priority fields
+  - Contribution willingness checkboxes
+- **Script Request Template** (YAML format)
+  - Detailed script specification fields
+  - Target platform selection
+  - Prerequisites and expected outputs
+  - Urgency level classification
+- **Issue Template Config**: Disabled blank issues, added help links
+- **Pull Request Template**: Comprehensive PR checklist
+  - Change type classification
+  - Testing requirements
+  - Documentation update checklist
+  - Code quality standards verification
+
+#### Category Documentation
+- **device-management/README.md**: Added missing category README
+  - Overview, prerequisites, and quick start examples
+  - Completes README coverage across all 20 script categories
+
+### Changed
+
+#### Repository Structure Documentation
+- **README.md**: Enhanced repository structure section
+  - Complete visual folder tree with emoji icons
+  - All 20 script categories with descriptions
+  - Subdirectory details (ProactiveRemediations, WingetUpdates, etc.)
+  - New examples/ folder structure
+  - Quick navigation links section
+  - References to new QUICK_START.md
+
+#### Documentation Deprecation
+- **docs/README.md**: Enhanced deprecation notice
+  - Prominent warning about deprecated status
+  - Clear migration paths to Wiki, QUICK_START.md, and examples/
+  - Updated file status table with current locations
+  - Improved visual indicators (⚠️ ⛔ symbols)
+  - Last updated timestamp changed to 2025-12-30
+
+### Repository Stats (Updated)
+- **Quick wins implemented**: 8 major improvements
+- **New files created**: 12 (1 guide + 3 examples + 4 issue templates + 1 PR template + 1 category README + 2 configs)
+- **Enhanced files**: 2 (README.md, docs/README.md)
+- **Documentation quality**: Significantly improved discoverability and onboarding experience
+
+### Migration Notes
+- Existing users: New `QUICK_START.md` provides faster navigation to relevant scripts
+- Contributors: Use new issue templates for better bug reports and feature requests
+- New users: Start with `QUICK_START.md` for role-based guidance
+
+---
+
 ## [2.1.0] - 2025-12-29 🌈 **"Rainbow"** - Quality & Reliability Release
 
 > **Focus**: Code quality, reliability improvements, and bug fixes across the repository

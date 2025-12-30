@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentation & Wiki
+    url: https://github.com/Carme99/bug-free-umbrella/wiki
+    about: Browse the comprehensive documentation and script catalog
+  - name: 🔒 Security Vulnerability
+    url: https://github.com/Carme99/bug-free-umbrella/security/advisories/new
+    about: Report a security vulnerability (private disclosure)
+  - name: 💬 Discussions
+    url: https://github.com/Carme99/bug-free-umbrella/discussions
+    about: Ask questions, share ideas, or discuss with the community

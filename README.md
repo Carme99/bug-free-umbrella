@@ -99,15 +99,15 @@ See the [Getting Started Guide](../../wiki/Getting-Started) for detailed setup i
 
 ```powershell
 # Example: Check Intune device compliance
-cd scripts/intune
+cd scripts/endpoints/intune/reporting
 .\Get-DeviceComplianceReport.ps1
 
 # Example: Monitor server health
-cd scripts/monitoring
+cd scripts/infrastructure/windows/monitoring
 .\Monitor-ServerHealth.ps1
 
 # Example: Check Azure resources
-cd scripts/cloud-infrastructure/azure
+cd scripts/cloud/azure/core
 .\Monitor-AzureResources.ps1
 ```
 
@@ -133,26 +133,117 @@ cd scripts/cloud-infrastructure/azure
 
 ## 📂 Repository Structure
 
+> **🌪️ v3.0.0 "Hurricane"**: Technology-based hierarchy for better navigation
+
 ```
 bug-free-umbrella/
-├── scripts/              # All PowerShell scripts organized by category
-│   ├── intune/          # Intune management (18+ scripts)
-│   ├── server/          # Windows Server (30+ scripts)
-│   ├── m365/            # Microsoft 365 cloud services (19 scripts)
-│   ├── devops-cicd/     # CI/CD pipeline monitoring
-│   ├── cloud-infrastructure/  # Azure & AWS
-│   ├── advanced-security/     # Multi-framework compliance
-│   ├── device-management/
-│   │   ├── proactive-remediations/  # 14 auto-fix pairs
-│   │   └── winget-updates/          # 40+ app templates
-│   └── ... 13 more categories
+├── 📂 scripts/                        # All PowerShell scripts in tech-based hierarchy
+│   │
+│   ├── 📂 cloud/                      # ☁️ Cloud Platforms & Services
+│   │   ├── 📂 azure/                 # Azure resource management
+│   │   │   ├── 📂 avd/              # Azure Virtual Desktop
+│   │   │   ├── 📂 compute/          # Virtual machines
+│   │   │   ├── 📂 keyvault/         # Key Vault management
+│   │   │   └── 📂 core/             # General Azure resources
+│   │   ├── 📂 aws/                   # AWS resource management
+│   │   │   └── 📂 core/             # AWS core services
+│   │   └── 📂 containers/            # Docker & Kubernetes
+│   │
+│   ├── 📂 endpoints/                  # 📱 Endpoint & Device Management
+│   │   ├── 📂 intune/                # Microsoft Intune (18+ scripts)
+│   │   │   ├── 📂 deployment/       # App deployment
+│   │   │   ├── 📂 maintenance/      # Device maintenance
+│   │   │   └── 📂 reporting/        # Compliance reporting
+│   │   └── 📂 devices/               # Device management
+│   │       ├── 📂 proactive-remediations/  # Auto-fix scripts (14 pairs)
+│   │       ├── 📂 winget/           # Windows Package Manager (40+ apps)
+│   │       ├── 📂 autopatch/        # Windows Update automation
+│   │       ├── 📂 bitlocker/        # BitLocker management
+│   │       └── 📂 drivers/          # Driver management
+│   │
+│   ├── 📂 infrastructure/             # 🖥️ On-Premises & Hybrid
+│   │   ├── 📂 windows/               # Windows Server (30+ scripts)
+│   │   │   ├── 📂 active-directory/ # AD management
+│   │   │   ├── 📂 group-policy/     # GPO configuration
+│   │   │   ├── 📂 monitoring/       # Server monitoring
+│   │   │   └── 📂 ...               # 6 more categories
+│   │   ├── 📂 linux/                 # Linux administration
+│   │   ├── 📂 network/               # Network management
+│   │   ├── 📂 virtualization/        # Hyper-V & VMware
+│   │   ├── 📂 web/                   # IIS web servers
+│   │   └── 📂 print/                 # Print servers
+│   │
+│   ├── 📂 security/                   # 🔒 Security & Compliance
+│   │   ├── 📂 compliance/            # Multi-framework compliance
+│   │   │   └── 📂 frameworks/       # CIS, NIST, PCI-DSS, HIPAA, SOC2, ISO27001
+│   │   ├── 📂 hardening/             # Security hardening
+│   │   └── 📂 monitoring/            # Security monitoring
+│   │
+│   ├── 📂 automation/                 # ⚙️ DevOps & Automation
+│   │   ├── 📂 cicd/                  # CI/CD pipelines
+│   │   └── 📂 iac/                   # Infrastructure as Code
+│   │
+│   ├── 📂 collaboration/              # 👥 Microsoft 365 & Communication
+│   │   ├── 📂 microsoft365/          # M365 services
+│   │   │   ├── 📂 azure-ad/         # Azure AD/Entra ID
+│   │   │   ├── 📂 exchange-online/  # Exchange Online
+│   │   │   ├── 📂 teams/            # Microsoft Teams
+│   │   │   └── 📂 ...               # SharePoint, Power Platform
+│   │   └── 📂 email/                 # Exchange Server
+│   │
+│   ├── 📂 data/                       # 🗄️ Data Management
+│   │   ├── 📂 databases/             # SQL, MySQL, PostgreSQL, MongoDB
+│   │   └── 📂 api/                   # API management
+│   │
+│   ├── 📂 utilities/                  # 🔧 General Utilities
+│   └── 📂 .catalog/                   # 📋 Metadata & Compatibility
 │
-├── wiki/                # Wiki content (deployed separately)
-├── docs/                # Legacy documentation
-└── CHANGELOG.md         # Version history
+├── 📂 examples/                       # 💡 Practical Workflow Examples
+│   ├── 📂 onboarding/                # New employee/device setup
+│   ├── 📂 maintenance/               # Maintenance routines
+│   ├── 📂 compliance/                # Compliance audits
+│   └── 📂 ...                        # More examples
+│
+├── 📂 Tests/                          # Test files and validation
+├── 📂 templates/                      # Script templates
+├── 📂 wiki/                           # Wiki documentation
+├── 📂 docs/                           # ⚠️ Legacy docs (see wiki)
+│
+├── 📂 .github/                        # GitHub configuration
+│   ├── 📂 workflows/                 # CI/CD automation
+│   └── 📂 ISSUE_TEMPLATE/            # Issue templates
+│
+├── 📄 README.md                       # This file
+├── 📄 QUICK_START.md                  # Role-based quick start
+├── 📄 CHANGELOG.md                    # Version history (v3.0.0!)
+├── 📄 CONTRIBUTING.md                 # Contribution guidelines
+├── 📄 SECURITY.md                     # Security policy
+└── 📄 LICENSE                         # Apache License 2.0
 ```
 
-**[See Full Repository Structure →](../../wiki/Script-Catalog)**
+### Quick Navigation by Domain
+
+| Domain | Description | Top Categories |
+|--------|-------------|----------------|
+| **[☁️ Cloud](scripts/cloud/)** | Cloud platforms & services | Azure, AWS, Containers |
+| **[📱 Endpoints](scripts/endpoints/)** | Device & endpoint management | Intune, Devices, Winget |
+| **[🖥️ Infrastructure](scripts/infrastructure/)** | On-premises systems | Windows, Linux, Network |
+| **[🔒 Security](scripts/security/)** | Security & compliance | Compliance, Hardening |
+| **[⚙️ Automation](scripts/automation/)** | DevOps & automation | CI/CD, IaC |
+| **[👥 Collaboration](scripts/collaboration/)** | M365 & communication | Microsoft 365, Email |
+| **[🗄️ Data](scripts/data/)** | Data management | Databases, APIs |
+| **[🔧 Utilities](scripts/utilities/)** | General utilities | Helper scripts |
+
+### Migration Notes
+
+> **Breaking Change (v3.0.0)**: Scripts reorganized from 20 flat categories into 7 technology domains.
+> See [CHANGELOG.md](CHANGELOG.md#300) for complete migration guide.
+
+**Quick Links:**
+- **[🚀 QUICK_START.md](QUICK_START.md)** - Find scripts by role or task
+- **[📚 Wiki](../../wiki)** - Comprehensive documentation
+- **[💡 Examples](examples/)** - Real-world workflow examples
+- **[📋 Compatibility Matrix](scripts/.catalog/COMPATIBILITY.md)** - Platform compatibility
 
 ---
 
@@ -179,10 +270,11 @@ Contributions are welcome! This is a solo project maintained with Claude Code. S
 ## 📊 Stats
 
 - **260+** PowerShell scripts
-- **20** categories
+- **7** technology domains (formerly 20 flat categories)
 - **14** proactive remediation pairs
 - **40+** winget application templates
 - **Comprehensive** wiki documentation
+- **v3.0.0** - Complete restructure with technology-based hierarchy
 
 ---
 

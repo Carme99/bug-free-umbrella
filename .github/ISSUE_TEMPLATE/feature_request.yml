@@ -1,0 +1,129 @@
+name: 💡 Feature Request
+description: Suggest an enhancement or new feature for an existing script
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please provide as much detail as possible.
+
+  - type: dropdown
+    id: feature-type
+    attributes:
+      label: Feature Type
+      description: What type of feature are you requesting?
+      options:
+        - Enhancement to existing script
+        - New parameter for existing script
+        - Performance improvement
+        - Better error handling
+        - Additional output format
+        - Documentation improvement
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: script-category
+    attributes:
+      label: Script Domain/Category
+      description: Which domain/category does this feature relate to?
+      options:
+        - cloud - Azure
+        - cloud - AWS
+        - cloud - Containers
+        - endpoints - Intune
+        - endpoints - Devices
+        - infrastructure - Windows
+        - infrastructure - Linux
+        - infrastructure - Network
+        - infrastructure - Virtualization
+        - infrastructure - Web
+        - infrastructure - Print
+        - security - Compliance
+        - security - Hardening
+        - security - Monitoring
+        - automation - CI/CD
+        - automation - IaC
+        - collaboration - Microsoft 365
+        - collaboration - Email
+        - data - Databases
+        - data - API
+        - utilities
+        - Repository-wide
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: script-name
+    attributes:
+      label: Script Name (if applicable)
+      description: Which script would this feature enhance?
+      placeholder: "Monitor-ServerHealth.ps1"
+
+  - type: textarea
+    id: feature-description
+    attributes:
+      label: Feature Description
+      description: A clear and concise description of the feature you'd like to see
+      placeholder: "I would like the script to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case
+      description: Describe the use case or problem this feature would solve
+      placeholder: "This would be useful when..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: If you have ideas on how this could be implemented, describe them here
+      placeholder: "This could be implemented by..."
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions or workarounds?
+      placeholder: "I've tried... but..."
+
+  - type: textarea
+    id: examples
+    attributes:
+      label: Example Usage
+      description: Show how you'd use this feature (pseudocode is fine)
+      placeholder: |
+        .\Script.ps1 -NewParameter "value"
+      render: powershell
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Critical - Blocking my workflow
+        - High - Would significantly improve my workflow
+        - Medium - Nice to have
+        - Low - Minor improvement
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      description: Would you be interested in contributing?
+      options:
+        - label: I would be willing to implement this feature myself with guidance
+        - label: I can help test this feature once implemented
+        - label: I can provide feedback during development
