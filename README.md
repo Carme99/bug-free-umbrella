@@ -9,6 +9,10 @@ A comprehensive collection of PowerShell scripts for Windows system administrati
 
 ## 📖 Quick Links
 
+### 🧭 Navigation
+- **[📍 Navigation Guide](docs/NAVIGATION.md)** - **START HERE!** Find exactly what you need, fast
+- **[🌂 Changelog](CHANGELOG.md)** - What's new? Check out our fun weather-themed releases! (Latest: v2.1.0 "Rainbow" 🌈)
+
 ### Documentation
 - **[Full Documentation](docs/README.md)** - Complete guide to all scripts and usage
 - **[Script Examples & Expected Outputs](docs/SCRIPT-EXAMPLES.md)** - Detailed examples with sample outputs
