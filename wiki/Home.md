@@ -11,29 +11,45 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 ## 🚀 Quick Start
 
 **New here?** Start with these pages:
-- 📖 **[Getting Started](Getting-Started)** ✅ - Prerequisites, installation, first steps
-- 📍 **[Script Catalog](Script-Catalog)** ✅ - Browse all 260+ scripts by category
-- 💡 **[Script Examples](Script-Examples)** ✅ - See detailed usage examples
+- 🔧 **[Prerequisites](Prerequisites)** - Install required tools and modules
+- 📖 **[Getting Started](Getting-Started)** - Your first steps with the scripts
+- 📍 **[Script Catalog](Script-Catalog)** - Browse all 260+ scripts by category
+- 🎯 **[Common Use Cases](Common-Use-Cases)** - Find scripts by what you need to do
+- 💡 **[Script Examples](Script-Examples)** - See detailed usage examples
+- ❓ **[FAQ](FAQ)** - Frequently asked questions
 
 **Looking for something specific?**
 - 🔍 Use the **search bar** above to find scripts and topics
-- 📑 Check the **sidebar** for quick navigation to available pages
+- 📑 Check the **sidebar** for quick navigation between categories
 - 🗺️ Browse the **[Script Catalog](Script-Catalog)** or **[repository folders](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts)**
 
 ---
 
 ## 🌟 Available Documentation
 
-| Page | Description | Status |
-|------|-------------|--------|
-| **[Getting Started](Getting-Started)** | Prerequisites, installation, first steps | ✅ |
-| **[Script Catalog](Script-Catalog)** | Browse all 260+ scripts by directory | ✅ |
-| **[Script Examples](Script-Examples)** | Detailed usage examples | ✅ |
-| **[Workflows](Workflows)** | Step-by-step guides for complete processes | ✅ |
-| **[Troubleshooting](Troubleshooting)** | Common issues and solutions | ✅ |
-| **[Azure Virtual Desktop](Azure-Virtual-Desktop)** | AVD deployment and image building | ✅ |
-| **[Azure Compute Gallery Image Builder](Azure-Compute-Gallery-Image-Builder)** | Interactive ACG workflow | ✅ |
-| **[Intune Sync Guide](Intune-Sync-Guide)** | Sync status troubleshooting | ✅ |
+| Page | Description |
+|------|-------------|
+| **[Prerequisites](Prerequisites)** | Required tools, modules, permissions, and setup |
+| **[Getting Started](Getting-Started)** | Quick start guide for your first scripts |
+| **[Common Use Cases](Common-Use-Cases)** | Find scripts by task or scenario |
+| **[FAQ](FAQ)** | Frequently asked questions and answers |
+| **[Script Catalog](Script-Catalog)** | Complete index of all 260+ scripts |
+| **[Script Examples](Script-Examples)** | Detailed usage examples and code samples |
+| **[Workflows](Workflows)** | End-to-end process guides |
+| **[Troubleshooting](Troubleshooting)** | Common issues and solutions |
+
+### Category Pages
+| Category | Description |
+|----------|-------------|
+| **[Security & Compliance](Security-Compliance)** | 17 scripts for CIS benchmarks, auditing, and compliance |
+| **[Server Management](Server-Management)** | 31 scripts for Windows Server administration |
+| **[Intune Management](Intune-Management)** | 18 scripts for Endpoint Manager and device management |
+| **[Microsoft 365 Services](Microsoft-365-Cloud-Services)** | 17 scripts for M365, Exchange, Teams, SharePoint |
+| **[Proactive Remediations](Proactive-Remediations)** | 15 auto-fix script pairs for common device issues |
+| **[Winget Updates](Winget-Updates)** | 40+ application auto-update templates |
+| **[Azure Virtual Desktop](Azure-Virtual-Desktop)** | AVD deployment and image building guides |
+| **[Azure Compute Gallery Image Builder](Azure-Compute-Gallery-Image-Builder)** | Interactive ACG workflow |
+| **[Intune Sync Guide](Intune-Sync-Guide)** | Sync status troubleshooting |
 
 ---
 
@@ -52,68 +68,77 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 
 ## 🗂️ Browse by Category
 
-> 📍 **Currently Available:** [Script Catalog](Script-Catalog) - Browse all 260+ scripts organized by directory structure
->
-> 🚧 **Detailed category pages coming soon!** For now, explore scripts via the catalog or repository folders.
+### ☁️ Cloud & Infrastructure
+- **[Azure Virtual Desktop](Azure-Virtual-Desktop)** - AVD deployment and image building
+  - **[Azure Compute Gallery Image Builder](Azure-Compute-Gallery-Image-Builder)** - Interactive ACG workflow
+- Cloud Infrastructure (Azure/AWS) - Coming soon
+- Container Management - Coming soon
+- API Management - Coming soon
+- Infrastructure as Code - Coming soon
 
-### ☁️ Cloud & Infrastructure 🚧
-- **Cloud Infrastructure (Azure/AWS)** - 15+ scripts for Azure and AWS management
-- **[Azure Virtual Desktop](Azure-Virtual-Desktop)** ✅ - AVD deployment and image building
-  - **[Azure Compute Gallery Image Builder](Azure-Compute-Gallery-Image-Builder)** ✅ - Interactive ACG workflow
-- **Container Management** - Docker & Kubernetes health checks
-- **API Management** - Azure APIM and API health monitoring
-- **Infrastructure as Code** - Terraform & Bicep validation
-- **Virtualization** - Hyper-V & VMware management
+### 🔄 DevOps & Development
+- DevOps & CI/CD - Coming soon
+- Database Management - Coming soon
 
-### 🔄 DevOps & Development 🚧
-- **DevOps & CI/CD** - Pipeline monitoring (Azure DevOps, GitHub, GitLab)
-- **Database Management** - SQL Server, MySQL, PostgreSQL, MongoDB
+### 💼 Microsoft 365 & Enterprise
+- **[Microsoft 365 Cloud Services](Microsoft-365-Cloud-Services)** - 17 scripts for M365 management
+- **[Intune Management](Intune-Management)** - Comprehensive Intune toolkit (18 scripts)
+  - **[Intune Sync Guide](Intune-Sync-Guide)** - Sync status troubleshooting
+- Email Services - Covered in Microsoft 365 Services page
 
-### 💼 Microsoft 365 & Enterprise 🚧
-- **Microsoft 365 Cloud Services** - 19 scripts for M365 management
-- **Intune Management** - Comprehensive Intune toolkit (18+ scripts)
-  - **[Intune Sync Guide](Intune-Sync-Guide)** ✅ - Sync status troubleshooting
-- **Email Services** - Exchange Server health and management
+### 🔒 Security & Compliance
+- **[Security & Compliance](Security-Compliance)** - 17 scripts for security auditing and CIS benchmarks
 
-### 🔒 Security & Compliance 🚧
-- **Advanced Security** - Multi-framework compliance scanning
-- **Security & Compliance** - 12 scripts for security auditing (includes Test-CISBenchmark.ps1)
+### 🖥️ Server & Infrastructure
+- **[Server Management](Server-Management)** - 31 Windows Server administration scripts
+- Web Services - Coming soon
+- Linux Server - Coming soon
 
-### 🖥️ Server & Infrastructure 🚧
-- **Server Management** - 30+ Windows Server administration scripts
-- **Web Services** - IIS health monitoring and optimization
-- **Linux Server** - Linux server management
+### 🔧 Monitoring & Operations
+- Monitoring - Covered in Server Management page
+- Network Management - Covered in Server Management page
+- Print Management - Covered in Server Management page
 
-### 🔧 Monitoring & Operations 🚧
-- **Monitoring** - System health checks and performance
-- **Network Management** - Network diagnostics and troubleshooting
-- **Print Management** - Print server monitoring
-
-### 🖱️ Device Management 🚧
-- **Proactive Remediations** - 14 pairs of auto-fix scripts
-- **Winget Updates** - 40+ application auto-update templates
-- **Device Management Tools** - Autopatch, BitLocker, SCCM removal
+### 🖱️ Device Management
+- **[Proactive Remediations](Proactive-Remediations)** - 15 pairs of auto-fix scripts
+- **[Winget Updates](Winget-Updates)** - 40+ application auto-update templates
+- Device Management Tools - Covered in Proactive Remediations page
 
 ---
 
 ## 📚 Documentation Sections
 
-### ✅ Available Now
-- **[Getting Started](Getting-Started)** - Quick start guide for your first scripts
-- **[Script Catalog](Script-Catalog)** - Complete index of all 260+ scripts
+### Getting Started
+- **[Prerequisites](Prerequisites)** - What you need before starting
+- **[Getting Started](Getting-Started)** - Quick start guide
+- **[Common Use Cases](Common-Use-Cases)** - Find scripts by task
+- **[FAQ](FAQ)** - Frequently asked questions
+
+### Script Reference
+- **[Script Catalog](Script-Catalog)** - Complete index of all scripts
 - **[Script Examples](Script-Examples)** - Detailed usage examples
+
+### Category Guides
+- **[Security & Compliance](Security-Compliance)** - CIS benchmarks, auditing, compliance
+- **[Server Management](Server-Management)** - Windows Server administration
+- **[Intune Management](Intune-Management)** - Endpoint Manager and devices
+- **[Microsoft 365 Services](Microsoft-365-Cloud-Services)** - M365, Exchange, Teams, SharePoint
+- **[Proactive Remediations](Proactive-Remediations)** - Auto-fix scripts
+- **[Winget Updates](Winget-Updates)** - Application auto-updates
+- **[Azure Virtual Desktop](Azure-Virtual-Desktop)** - AVD deployment
+- **[Azure Compute Gallery Image Builder](Azure-Compute-Gallery-Image-Builder)** - ACG workflow
+
+### Workflows & Support
 - **[Workflows](Workflows)** - End-to-end process guides
 - **[Troubleshooting](Troubleshooting)** - Common issues and solutions
-- **[Azure Virtual Desktop](Azure-Virtual-Desktop)** - AVD deployment documentation
-- **[Azure Compute Gallery Image Builder](Azure-Compute-Gallery-Image-Builder)** - Interactive ACG workflow
-- **[Intune Sync Guide](Intune-Sync-Guide)** - Sync status troubleshooting
+- **[Intune Sync Guide](Intune-Sync-Guide)** - Sync troubleshooting
 
-### 🚧 Coming Soon
-Additional documentation pages are planned for future releases:
-- Installation guides and prerequisites
-- Category-specific pages (M365, Security, DevOps, etc.)
-- Advanced workflow guides
-- FAQ and performance tips
+### Coming Soon
+Additional pages planned:
+- Cloud Infrastructure (Azure/AWS)
+- DevOps & CI/CD
+- Container Management
+- Database Management
 - Best practices and architecture guides
 
 ### 📋 Project Information

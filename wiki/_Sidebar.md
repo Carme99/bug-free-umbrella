@@ -5,26 +5,44 @@
 ---
 
 ### 🚀 Getting Started
+- [Prerequisites](Prerequisites)
 - [Quick Start Guide](Getting-Started)
+- [Common Use Cases](Common-Use-Cases)
+- [FAQ](FAQ)
 
 ### 📖 Script Reference
 - [📍 Script Catalog](Script-Catalog)
 - [Script Examples](Script-Examples)
 
-### 📚 Workflows
-- [All Workflows](Workflows)
-
-### 🆘 Help & Support
-- [Troubleshooting](Troubleshooting)
-
 ---
 
-### ☁️ Azure Features
+### ☁️ Cloud & Infrastructure
 - [Azure Virtual Desktop](Azure-Virtual-Desktop)
   - [ACG Image Builder](Azure-Compute-Gallery-Image-Builder)
 
-### 💼 M365 & Intune
-- [Intune Sync Guide](Intune-Sync-Guide)
+### 🔄 DevOps & Development
+Coming soon
+
+### 💼 Microsoft 365 & Enterprise
+- [Microsoft 365 Services](Microsoft-365-Cloud-Services)
+- [Intune Management](Intune-Management)
+  - [Intune Sync Guide](Intune-Sync-Guide)
+
+### 🔒 Security & Compliance
+- [Security & Compliance](Security-Compliance)
+
+### 🖥️ Server & Infrastructure
+- [Server Management](Server-Management)
+
+### 🖱️ Device Management
+- [Proactive Remediations](Proactive-Remediations)
+- [Winget Updates](Winget-Updates)
+
+---
+
+### 📚 Workflows & Guides
+- [All Workflows](Workflows)
+- [Troubleshooting](Troubleshooting)
 
 ---
 
@@ -33,24 +51,6 @@
 - [GitHub Repo](https://github.com/Carme99/bug-free-umbrella)
 - [Contributing](../CONTRIBUTING.md)
 - [Security](../SECURITY.md)
-
----
-
-### 📝 Documentation Status
-
-**✅ Available Pages:**
-- Home
-- Getting Started
-- Script Catalog
-- Script Examples
-- Workflows
-- Troubleshooting
-- Azure Virtual Desktop
-- ACG Image Builder
-- Intune Sync Guide
-
-**🚧 Coming Soon:**
-Additional category pages, tutorials, and detailed guides are planned for future releases
 
 ---
 
