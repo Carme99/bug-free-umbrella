@@ -2,7 +2,9 @@
 
 Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection of 260+ PowerShell scripts for enterprise IT management!
 
-> **Latest Release:** [v2.1.0 "Rainbow" 🌈](Release-Notes-v2.1.0) - Quality & Reliability improvements!
+> **Latest Release:** [v3.0.1 "Drizzle" ☔](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release) - Critical bug fixes for Test-CISBenchmark.ps1!
+>
+> 📋 **[View Full Changelog →](../CHANGELOG.md)** | 📦 **[GitHub Releases](https://github.com/Carme99/bug-free-umbrella/releases)**
 
 ---
 
@@ -43,7 +45,7 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 | **Categories** | 20 |
 | **Proactive Remediations** | 14 pairs (28 scripts) |
 | **Winget App Templates** | 40+ applications |
-| **Latest Release** | v2.1.0 "Rainbow" 🌈 |
+| **Latest Release** | v3.0.1 "Drizzle" ☔ |
 | **Documentation Pages** | Comprehensive wiki! |
 
 ---
@@ -122,9 +124,11 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 
 ### Project Information
 - **[Release Notes](Release-Notes)** - Version history and changes
-  - [v2.1.0 "Rainbow" 🌈](Release-Notes-v2.1.0) - Latest release
-  - [v2.0.0 "Thunderstorm" ⛈️](Release-Notes-v2.0.0)
-  - [v1.0.0 "Thunderstorm" ⛈️](Release-Notes-v1.0.0)
+  - **[📋 Full Changelog (CHANGELOG.md)](../CHANGELOG.md)** - Complete version history
+  - [v3.0.1 "Drizzle" ☔](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release) - Latest release
+  - [v3.0.0 "Hurricane" 🌪️](../CHANGELOG.md#300---2025-12-30--hurricane---repository-restructure)
+  - [v2.2.0 "Shower" 🌧️](../CHANGELOG.md#220---2025-12-28--shower---navigation--usability-improvements)
+  - [v2.1.0 "Rainbow" 🌈](Release-Notes-v2.1.0)
 - **[Weather-Themed Releases](Weather-Themed-Releases)** - About our fun codenames
 - **[Contributing](Contributing)** - How to contribute
 - **[Security Policy](Security-Policy)** - Reporting vulnerabilities
@@ -132,18 +136,26 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 
 ---
 
-## 🌈 What's New in v2.1.0 "Rainbow"
+## ☔ What's New in v3.0.1 "Drizzle"
 
-The latest release focuses on **quality and reliability**:
+The latest release focuses on **critical bug fixes** following the v3.0.0 restructure:
 
 ✨ **Highlights:**
-- 🐛 **2 Critical Bug Fixes** - Syntax errors resolved
-- 📚 **19 Scripts Enhanced** - PowerShell best practices applied
-- 📖 **New Navigation Guide** - Find scripts instantly
-- 🔒 **Better Error Handling** - BitLocker scripts improved
-- ⚡ **Performance Boost** - Array operations optimized
+- 🔧 **CRITICAL FIX:** Test-CISBenchmark.ps1 v2.0.0 - Completely rewritten
+  - Replaced broken `Get-LocalGroupPolicy` cmdlet with working `secedit.exe`
+  - Expanded from 3 to 15+ CIS controls tested
+  - Added password policies, account lockout, and audit policies
+  - Enhanced HTML reporting with detailed control results
+- 📚 **Enhanced Testing:** Now supports Level 1/Level 2 CIS benchmarks
+- 🛡️ **Better Compliance:** Production-ready security compliance testing
+- 📖 **Documentation Updates:** CHANGELOG.md and Script-Catalog.md updated
 
-**[Read Full Release Notes →](Release-Notes-v2.1.0)**
+**[Read Full Changelog →](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release)**
+
+### Recent Major Releases
+- ☔ **[v3.0.1 "Drizzle"](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release)** (2025-12-31) - Bug fixes
+- 🌪️ **[v3.0.0 "Hurricane"](../CHANGELOG.md#300---2025-12-30--hurricane---repository-restructure)** (2025-12-30) - Repository restructure
+- 🌧️ **[v2.2.0 "Shower"](../CHANGELOG.md#220---2025-12-28--shower---navigation--usability-improvements)** (2025-12-28) - Navigation improvements
 
 ---
 
@@ -203,7 +215,7 @@ Quick links to accomplish specific tasks:
 | "How do I use this script?" | [Script Examples](Script-Examples) |
 | "Something's not working" | [Troubleshooting](Troubleshooting) |
 | "How do I set this up?" | [Getting Started](Getting-Started) |
-| "What's new?" | [Release Notes](Release-Notes) |
+| "What's new?" | [📋 Changelog](../CHANGELOG.md) / [Release Notes](Release-Notes) |
 | "I found a bug" | [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues) |
 | "I want to contribute" | [Contributing](Contributing) |
 | "Security issue" | [Security Policy](Security-Policy) |
@@ -232,8 +244,10 @@ Bug-Free Umbrella is a comprehensive collection of PowerShell scripts for enterp
 
 ---
 
-**Last Updated:** 2025-12-29
+**Last Updated:** 2025-12-31
 
-**Wiki Version:** 1.0.0
+**Wiki Version:** 1.1.0
 
-**Corresponds to Release:** v2.1.0 "Rainbow" 🌈
+**Corresponds to Release:** v3.0.1 "Drizzle" ☔
+
+**[📋 View Full Changelog →](../CHANGELOG.md)**
