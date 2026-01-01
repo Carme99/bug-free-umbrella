@@ -240,12 +240,18 @@ START HERE → Main README → Winget Updates Section
 ### 🔒 Security & Compliance (13 scripts)
 
 #### Advanced Security (1 script)
-**Location:** `scripts/advanced-security/`
+**Location:** `scripts/security/hardening/`
 - Invoke-SecurityComplianceScan.ps1 - Multi-framework scanning (CIS, NIST, PCI-DSS, HIPAA, SOC2, ISO27001)
 
 #### Security & Compliance (12 scripts)
-**Location:** `scripts/security-compliance/`
-- Test-CISBenchmark.ps1 - CIS Benchmark testing
+**Location:** `scripts/security/compliance/frameworks/`
+- Test-CISBenchmark.ps1 - **NEW v2.0.0! 15+ CIS controls** 🔧 *(Fixed in v3.0.1)*
+  - Password policies (6 controls: history, age, length, complexity)
+  - Account lockout policies (3 controls: duration, threshold, reset)
+  - Audit policies (6+ controls: credential validation, logon, process creation)
+  - Level 1 & Level 2 benchmark support
+  - HTML compliance reports with recommendations
+  - Requires Administrator privileges
 - Get-SecurityBaseline.ps1 - Baseline verification
 - Get-LocalAdminAudit.ps1 - Local admin auditing
 - Certificate and security monitoring

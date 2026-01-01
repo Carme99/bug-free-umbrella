@@ -2,36 +2,54 @@
 
 Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection of 260+ PowerShell scripts for enterprise IT management!
 
-> **Latest Release:** [v2.1.0 "Rainbow" 🌈](Release-Notes-v2.1.0) - Quality & Reliability improvements!
+> **Latest Release:** [v3.0.1 "Drizzle" ☔](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release) - Critical bug fixes for Test-CISBenchmark.ps1!
+>
+> 📋 **[View Full Changelog →](../CHANGELOG.md)** | 📦 **[GitHub Releases](https://github.com/Carme99/bug-free-umbrella/releases)**
 
 ---
 
 ## 🚀 Quick Start
 
 **New here?** Start with these pages:
-- 📖 **[Getting Started](Getting-Started)** - Prerequisites, installation, first steps
+- 🔧 **[Prerequisites](Prerequisites)** - Install required tools and modules
+- 📖 **[Getting Started](Getting-Started)** - Your first steps with the scripts
 - 📍 **[Script Catalog](Script-Catalog)** - Browse all 260+ scripts by category
 - 🎯 **[Common Use Cases](Common-Use-Cases)** - Find scripts by what you need to do
 - 💡 **[Script Examples](Script-Examples)** - See detailed usage examples
+- ❓ **[FAQ](FAQ)** - Frequently asked questions
 
 **Looking for something specific?**
 - 🔍 Use the **search bar** above to find scripts and topics
-- 📑 Check the **sidebar** for quick navigation
-- 🗺️ Browse **[by category](#browse-by-category)** below
+- 📑 Check the **sidebar** for quick navigation between categories
+- 🗺️ Browse the **[Script Catalog](Script-Catalog)** or **[repository folders](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts)**
 
 ---
 
-## 🌟 Popular Pages
+## 🌟 Available Documentation
 
 | Page | Description |
 |------|-------------|
-| **[Microsoft 365 & Intune](Microsoft-365-Intune)** | M365, Exchange, Teams, SharePoint, Intune management |
-| **[Server Management](Server-Management)** | Windows Server administration and monitoring |
-| **[Proactive Remediations](Proactive-Remediations)** | Auto-fix scripts for common device issues |
-| **[DevOps & CI/CD](DevOps-CICD)** | Azure DevOps, GitHub Actions, GitLab CI monitoring |
-| **[Security & Compliance](Security-Compliance)** | Multi-framework compliance and security auditing |
+| **[Prerequisites](Prerequisites)** | Required tools, modules, permissions, and setup |
+| **[Getting Started](Getting-Started)** | Quick start guide for your first scripts |
+| **[Common Use Cases](Common-Use-Cases)** | Find scripts by task or scenario |
+| **[FAQ](FAQ)** | Frequently asked questions and answers |
+| **[Script Catalog](Script-Catalog)** | Complete index of all 260+ scripts |
+| **[Script Examples](Script-Examples)** | Detailed usage examples and code samples |
+| **[Workflows](Workflows)** | End-to-end process guides |
 | **[Troubleshooting](Troubleshooting)** | Common issues and solutions |
-| **[Workflows](Workflows)** | Step-by-step guides for complete processes |
+
+### Category Pages
+| Category | Description |
+|----------|-------------|
+| **[Security & Compliance](Security-Compliance)** | 17 scripts for CIS benchmarks, auditing, and compliance |
+| **[Server Management](Server-Management)** | 31 scripts for Windows Server administration |
+| **[Intune Management](Intune-Management)** | 18 scripts for Endpoint Manager and device management |
+| **[Microsoft 365 Services](Microsoft-365-Cloud-Services)** | 17 scripts for M365, Exchange, Teams, SharePoint |
+| **[Proactive Remediations](Proactive-Remediations)** | 15 auto-fix script pairs for common device issues |
+| **[Winget Updates](Winget-Updates)** | 40+ application auto-update templates |
+| **[Azure Virtual Desktop](Azure-Virtual-Desktop)** | AVD deployment and image building guides |
+| **[Azure Compute Gallery Image Builder](Azure-Compute-Gallery-Image-Builder)** | Interactive ACG workflow |
+| **[Intune Sync Guide](Intune-Sync-Guide)** | Sync status troubleshooting |
 
 ---
 
@@ -43,7 +61,7 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 | **Categories** | 20 |
 | **Proactive Remediations** | 14 pairs (28 scripts) |
 | **Winget App Templates** | 40+ applications |
-| **Latest Release** | v2.1.0 "Rainbow" 🌈 |
+| **Latest Release** | v3.0.1 "Drizzle" ☔ |
 | **Documentation Pages** | Comprehensive wiki! |
 
 ---
@@ -51,39 +69,40 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 ## 🗂️ Browse by Category
 
 ### ☁️ Cloud & Infrastructure
-- **[Cloud Infrastructure (Azure/AWS)](Cloud-Infrastructure)** - 15+ scripts for Azure and AWS management
-- **[Container Management](Container-Management)** - Docker & Kubernetes health checks
-- **[API Management](API-Management)** - Azure APIM and API health monitoring
-- **[Infrastructure as Code](Infrastructure-as-Code)** - Terraform & Bicep validation
-- **[Virtualization](Virtualization)** - Hyper-V & VMware management
+- **[Azure Virtual Desktop](Azure-Virtual-Desktop)** - AVD deployment and image building
+  - **[Azure Compute Gallery Image Builder](Azure-Compute-Gallery-Image-Builder)** - Interactive ACG workflow
+- Cloud Infrastructure (Azure/AWS) - Coming soon
+- Container Management - Coming soon
+- API Management - Coming soon
+- Infrastructure as Code - Coming soon
 
 ### 🔄 DevOps & Development
-- **[DevOps & CI/CD](DevOps-CICD)** - Pipeline monitoring (Azure DevOps, GitHub, GitLab)
-- **[Database Management](Database-Management)** - SQL Server, MySQL, PostgreSQL, MongoDB
+- DevOps & CI/CD - Coming soon
+- Database Management - Coming soon
 
 ### 💼 Microsoft 365 & Enterprise
-- **[Microsoft 365 Cloud Services](Microsoft-365-Cloud-Services)** - 19 scripts for M365 management
-- **[Intune Management](Intune-Management)** - Comprehensive Intune toolkit (18+ scripts)
-- **[Email Services](Email-Services)** - Exchange Server health and management
+- **[Microsoft 365 Cloud Services](Microsoft-365-Cloud-Services)** - 17 scripts for M365 management
+- **[Intune Management](Intune-Management)** - Comprehensive Intune toolkit (18 scripts)
+  - **[Intune Sync Guide](Intune-Sync-Guide)** - Sync status troubleshooting
+- Email Services - Covered in Microsoft 365 Services page
 
 ### 🔒 Security & Compliance
-- **[Advanced Security](Advanced-Security)** - Multi-framework compliance scanning
-- **[Security & Compliance](Security-Compliance)** - 12 scripts for security auditing
+- **[Security & Compliance](Security-Compliance)** - 17 scripts for security auditing and CIS benchmarks
 
 ### 🖥️ Server & Infrastructure
-- **[Server Management](Server-Management)** - 30+ Windows Server administration scripts
-- **[Web Services](Web-Services)** - IIS health monitoring and optimization
-- **[Linux Server](Linux-Server)** - Linux server management
+- **[Server Management](Server-Management)** - 31 Windows Server administration scripts
+- Web Services - Coming soon
+- Linux Server - Coming soon
 
 ### 🔧 Monitoring & Operations
-- **[Monitoring](Monitoring)** - System health checks and performance
-- **[Network Management](Network-Management)** - Network diagnostics and troubleshooting
-- **[Print Management](Print-Management)** - Print server monitoring
+- Monitoring - Covered in Server Management page
+- Network Management - Covered in Server Management page
+- Print Management - Covered in Server Management page
 
 ### 🖱️ Device Management
-- **[Proactive Remediations](Proactive-Remediations)** - 14 pairs of auto-fix scripts
+- **[Proactive Remediations](Proactive-Remediations)** - 15 pairs of auto-fix scripts
 - **[Winget Updates](Winget-Updates)** - 40+ application auto-update templates
-- **[Device Management Tools](Device-Management-Tools)** - Autopatch, BitLocker, SCCM removal
+- Device Management Tools - Covered in Proactive Remediations page
 
 ---
 
@@ -91,59 +110,68 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 
 ### Getting Started
 - **[Prerequisites](Prerequisites)** - What you need before starting
-- **[Installation Guide](Installation-Guide)** - Setting up your environment
-- **[Quick Start Guide](Getting-Started)** - Your first scripts
-- **[PowerShell Basics](PowerShell-Basics)** - Essential PowerShell knowledge
+- **[Getting Started](Getting-Started)** - Quick start guide
+- **[Common Use Cases](Common-Use-Cases)** - Find scripts by task
+- **[FAQ](FAQ)** - Frequently asked questions
 
 ### Script Reference
 - **[Script Catalog](Script-Catalog)** - Complete index of all scripts
 - **[Script Examples](Script-Examples)** - Detailed usage examples
-- **[Common Use Cases](Common-Use-Cases)** - Find scripts by task
-- **[Script Parameters](Script-Parameters)** - Parameter reference guide
 
-### Workflows & Guides
-- **[Complete Workflows](Workflows)** - End-to-end process guides
-- **[Monthly Compliance Audit](Workflow-Monthly-Compliance-Audit)** - Complete audit process
-- **[Automated Winget Updates](Workflow-Automated-Winget-Updates)** - App update deployment
-- **[BitLocker Deployment](Workflow-BitLocker-Deployment)** - Encryption rollout
-- **[Server Setup](Workflow-New-Server-Setup)** - New server configuration
+### Category Guides
+- **[Security & Compliance](Security-Compliance)** - CIS benchmarks, auditing, compliance
+- **[Server Management](Server-Management)** - Windows Server administration
+- **[Intune Management](Intune-Management)** - Endpoint Manager and devices
+- **[Microsoft 365 Services](Microsoft-365-Cloud-Services)** - M365, Exchange, Teams, SharePoint
+- **[Proactive Remediations](Proactive-Remediations)** - Auto-fix scripts
+- **[Winget Updates](Winget-Updates)** - Application auto-updates
+- **[Azure Virtual Desktop](Azure-Virtual-Desktop)** - AVD deployment
+- **[Azure Compute Gallery Image Builder](Azure-Compute-Gallery-Image-Builder)** - ACG workflow
 
-### Troubleshooting & Support
-- **[Troubleshooting Guide](Troubleshooting)** - Common issues and solutions
-- **[FAQ](FAQ)** - Frequently asked questions
-- **[Error Messages](Error-Messages)** - Understanding error codes
-- **[Performance Tips](Performance-Tips)** - Optimization guidance
+### Workflows & Support
+- **[Workflows](Workflows)** - End-to-end process guides
+- **[Troubleshooting](Troubleshooting)** - Common issues and solutions
+- **[Intune Sync Guide](Intune-Sync-Guide)** - Sync troubleshooting
 
-### Advanced Topics
-- **[Best Practices](Best-Practices)** - PowerShell and deployment tips
-- **[Architecture](Architecture)** - How scripts are organized
-- **[Custom Development](Custom-Development)** - Building your own scripts
-- **[Integration Guide](Integration-Guide)** - Connecting with other tools
+### Coming Soon
+Additional pages planned:
+- Cloud Infrastructure (Azure/AWS)
+- DevOps & CI/CD
+- Container Management
+- Database Management
+- Best practices and architecture guides
 
-### Project Information
-- **[Release Notes](Release-Notes)** - Version history and changes
-  - [v2.1.0 "Rainbow" 🌈](Release-Notes-v2.1.0) - Latest release
-  - [v2.0.0 "Thunderstorm" ⛈️](Release-Notes-v2.0.0)
-  - [v1.0.0 "Thunderstorm" ⛈️](Release-Notes-v1.0.0)
-- **[Weather-Themed Releases](Weather-Themed-Releases)** - About our fun codenames
-- **[Contributing](Contributing)** - How to contribute
-- **[Security Policy](Security-Policy)** - Reporting vulnerabilities
-- **[Roadmap](Roadmap)** - Planned features
+### 📋 Project Information
+- **[📋 Full Changelog (CHANGELOG.md)](../CHANGELOG.md)** - Complete version history
+  - [v3.0.1 "Drizzle" ☔](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release) - Latest release
+  - [v3.0.0 "Hurricane" 🌪️](../CHANGELOG.md#300---2025-12-30--hurricane---repository-restructure)
+  - [v2.2.0 "Shower" 🌧️](../CHANGELOG.md#220---2025-12-28--shower---navigation--usability-improvements)
+- **[Contributing](../CONTRIBUTING.md)** - How to contribute to the project
+- **[Security Policy](../SECURITY.md)** - Reporting security vulnerabilities
+- **[GitHub Repository](https://github.com/Carme99/bug-free-umbrella)** - Source code and issues
 
 ---
 
-## 🌈 What's New in v2.1.0 "Rainbow"
+## ☔ What's New in v3.0.1 "Drizzle"
 
-The latest release focuses on **quality and reliability**:
+The latest release focuses on **critical bug fixes** following the v3.0.0 restructure:
 
 ✨ **Highlights:**
-- 🐛 **2 Critical Bug Fixes** - Syntax errors resolved
-- 📚 **19 Scripts Enhanced** - PowerShell best practices applied
-- 📖 **New Navigation Guide** - Find scripts instantly
-- 🔒 **Better Error Handling** - BitLocker scripts improved
-- ⚡ **Performance Boost** - Array operations optimized
+- 🔧 **CRITICAL FIX:** Test-CISBenchmark.ps1 v2.0.0 - Completely rewritten
+  - Replaced broken `Get-LocalGroupPolicy` cmdlet with working `secedit.exe`
+  - Expanded from 3 to 15+ CIS controls tested
+  - Added password policies, account lockout, and audit policies
+  - Enhanced HTML reporting with detailed control results
+- 📚 **Enhanced Testing:** Now supports Level 1/Level 2 CIS benchmarks
+- 🛡️ **Better Compliance:** Production-ready security compliance testing
+- 📖 **Documentation Updates:** CHANGELOG.md and Script-Catalog.md updated
 
-**[Read Full Release Notes →](Release-Notes-v2.1.0)**
+**[Read Full Changelog →](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release)**
+
+### Recent Major Releases
+- ☔ **[v3.0.1 "Drizzle"](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release)** (2025-12-31) - Bug fixes
+- 🌪️ **[v3.0.0 "Hurricane"](../CHANGELOG.md#300---2025-12-30--hurricane---repository-restructure)** (2025-12-30) - Repository restructure
+- 🌧️ **[v2.2.0 "Shower"](../CHANGELOG.md#220---2025-12-28--shower---navigation--usability-improvements)** (2025-12-28) - Navigation improvements
 
 ---
 
@@ -151,48 +179,47 @@ The latest release focuses on **quality and reliability**:
 
 Quick links to accomplish specific tasks:
 
-| Task | Script | Documentation |
-|------|--------|---------------|
-| **Monitor Azure DevOps pipelines** | [Monitor-AzureDevOpsPipelines](Script-Monitor-AzureDevOpsPipelines) | [DevOps Guide](DevOps-CICD) |
-| **Check Intune device compliance** | [Get-DeviceComplianceReport](Script-Get-DeviceComplianceReport) | [Intune Guide](Intune-Management) |
-| **Fix low disk space** | [Fix-DiskSpace](Script-Fix-DiskSpace) | [Proactive Remediations](Proactive-Remediations) |
-| **Monitor server health** | [Monitor-ServerHealth](Script-Monitor-ServerHealth) | [Server Monitoring](Server-Management#monitoring) |
-| **Auto-update applications** | [Winget Templates](Winget-Updates) | [Winget Workflow](Workflow-Automated-Winget-Updates) |
-| **Run compliance scans** | [Invoke-SecurityComplianceScan](Script-Invoke-SecurityComplianceScan) | [Security Guide](Security-Compliance) |
-| **Manage M365 regional settings** | [Regional Settings Suite](Microsoft-365-Regional-Settings) | [M365 Guide](Microsoft-365-Cloud-Services) |
-
-**[See All Common Use Cases →](Common-Use-Cases)**
+| Task | Where to Find It |
+|------|------------------|
+| **Find a specific script** | Browse the **[Script Catalog](Script-Catalog)** or search the **[repository](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts)** |
+| **See script examples** | Check **[Script Examples](Script-Examples)** page |
+| **Learn basic usage** | Start with **[Getting Started](Getting-Started)** |
+| **Follow a complete workflow** | Visit **[Workflows](Workflows)** page |
+| **Fix an issue** | Check **[Troubleshooting](Troubleshooting)** |
+| **Deploy Azure Virtual Desktop** | See **[Azure Virtual Desktop](Azure-Virtual-Desktop)** guide |
+| **Build ACG images** | Follow **[ACG Image Builder](Azure-Compute-Gallery-Image-Builder)** workflow |
+| **Check what's new** | Read the **[Changelog](../CHANGELOG.md)** |
 
 ---
 
 ## 💡 Tips for Using This Wiki
 
 ### Navigation
-- 📑 **Use the sidebar** (left) for quick navigation between major sections
+- 📑 **Use the sidebar** for quick access to available documentation pages
 - 🔍 **Use search** (top) to find specific scripts, topics, or keywords
-- 🔗 **Follow links** - Pages are heavily cross-linked for easy navigation
+- 📍 **Browse the catalog** - The [Script Catalog](Script-Catalog) is your main navigation tool
 - 🏠 **Return here** anytime by clicking "Home" in the sidebar
 
 ### Finding Scripts
-1. **By Category** - Browse [Script Catalog](Script-Catalog) organized by type
-2. **By Task** - Check [Common Use Cases](Common-Use-Cases) for "I want to..."
-3. **By Search** - Use the search bar to find by name or keyword
+1. **[Script Catalog](Script-Catalog)** - Browse all 260+ scripts organized by directory structure
+2. **[Repository Folders](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts)** - Navigate the actual script directories
+3. **Search** - Use GitHub's search or the wiki search to find by name or keyword
 
 ### Learning Path
 **Beginner?** Follow this path:
-1. [Getting Started](Getting-Started) - Set up your environment
-2. [Script Examples](Script-Examples) - See how scripts work
-3. [Workflows](Workflows) - Follow complete processes
+1. **[Getting Started](Getting-Started)** - Set up your environment and learn basics
+2. **[Script Examples](Script-Examples)** - See how scripts work in practice
+3. **[Workflows](Workflows)** - Follow complete end-to-end processes
 
 **Intermediate?** Try this:
-1. [Script Catalog](Script-Catalog) - Browse all scripts
-2. [Workflows](Workflows) - Deploy complex scenarios
-3. [Best Practices](Best-Practices) - Optimize your usage
+1. **[Script Catalog](Script-Catalog)** - Browse all available scripts
+2. **[Workflows](Workflows)** - Deploy complex scenarios
+3. **[Azure Virtual Desktop](Azure-Virtual-Desktop)** - Advanced deployment guides
 
 **Advanced?** Check out:
-1. [Architecture](Architecture) - Understand the design
-2. [Custom Development](Custom-Development) - Build your own
-3. [Contributing](Contributing) - Help improve the repo
+1. **[Changelog](../CHANGELOG.md)** - Stay current with latest changes
+2. **[Contributing](../CONTRIBUTING.md)** - Help improve the repository
+3. **Repository code** - Explore the scripts directly
 
 ---
 
@@ -200,13 +227,13 @@ Quick links to accomplish specific tasks:
 
 | Question Type | Where to Go |
 |---------------|-------------|
-| "How do I use this script?" | [Script Examples](Script-Examples) |
-| "Something's not working" | [Troubleshooting](Troubleshooting) |
-| "How do I set this up?" | [Getting Started](Getting-Started) |
-| "What's new?" | [Release Notes](Release-Notes) |
+| "How do I use this script?" | [Script Examples](Script-Examples) ✅ |
+| "Something's not working" | [Troubleshooting](Troubleshooting) ✅ |
+| "How do I set this up?" | [Getting Started](Getting-Started) ✅ |
+| "What's new?" | [📋 Changelog](../CHANGELOG.md) ✅ |
 | "I found a bug" | [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues) |
-| "I want to contribute" | [Contributing](Contributing) |
-| "Security issue" | [Security Policy](Security-Policy) |
+| "I want to contribute" | [Contributing Guide](../CONTRIBUTING.md) |
+| "Security issue" | [Security Policy](../SECURITY.md) |
 
 ---
 
@@ -232,8 +259,10 @@ Bug-Free Umbrella is a comprehensive collection of PowerShell scripts for enterp
 
 ---
 
-**Last Updated:** 2025-12-29
+**Last Updated:** 2025-12-31
 
-**Wiki Version:** 1.0.0
+**Wiki Version:** 1.1.0
 
-**Corresponds to Release:** v2.1.0 "Rainbow" 🌈
+**Corresponds to Release:** v3.0.1 "Drizzle" ☔
+
+**[📋 View Full Changelog →](../CHANGELOG.md)**

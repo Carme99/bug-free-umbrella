@@ -30,6 +30,73 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ---
 
+## [3.0.1] - 2025-12-31 ☔ **"Drizzle"** - Bug Fix Release
+
+> **Focus**: Critical bug fixes and code quality improvements
+
+### Fixed
+
+#### Security & Compliance Scripts
+
+**Test-CISBenchmark.ps1 v2.0.0** - Complete rewrite to fix broken functionality
+- **CRITICAL**: Replaced non-existent `Get-LocalGroupPolicy` cmdlet with working alternatives
+- **NEW**: Implemented `Get-SecurityPolicy` helper function using `secedit.exe`
+  - Exports security policies to temporary file
+  - Parses INI-format output into PowerShell object
+  - Proper cleanup of temporary files
+  - Comprehensive error handling
+- **NEW**: Implemented `Test-CISControl` helper function for consistent test execution
+  - Level 1/Level 2 filtering support
+  - Status tracking (Pass/Fail/Error)
+  - Detailed recommendations for failures
+  - Error handling with graceful degradation
+
+**Expanded Test Coverage** (3 → 15+ CIS controls):
+- **Password Policies (6 controls)**:
+  - 1.1.1: Enforce password history (≥24 passwords)
+  - 1.1.2: Maximum password age (≤365 days, not 0)
+  - 1.1.3: Minimum password age (≥1 day)
+  - 1.1.4: Minimum password length (≥14 characters)
+  - 1.1.5: Password complexity requirements (enabled)
+  - 1.1.6: Reversible encryption (disabled)
+
+- **Account Lockout Policies (3 controls)**:
+  - 1.2.1: Account lockout duration (≥15 minutes)
+  - 1.2.2: Account lockout threshold (≤5 attempts, not 0)
+  - 1.2.3: Reset lockout counter (≥15 minutes)
+
+- **Audit Policies (6+ controls)**:
+  - 17.1.1: Audit Credential Validation
+  - 17.2.1: Audit Application Group Management (Level 2)
+  - 17.3.1: Audit Process Creation
+  - 17.5.1: Audit Account Lockout
+  - 17.5.2: Audit Logoff
+  - 17.5.3: Audit Logon
+  - 17.6.1: Audit Sensitive Privilege Use (Level 2)
+  - 17.9.1: Audit Security System Extension
+
+**Enhanced Features**:
+- Added `#Requires -Version 5.1` directive
+- Added `#Requires -RunAsAdministrator` directive
+- Added comprehensive comment-based help with multiple examples
+- Added `-OutputPath` parameter for custom report locations
+- Enhanced HTML report with detailed control results and statistics
+- Improved console output formatting with color-coded results
+- Better error messages and logging
+- Proper exit codes (0 for success, 1 for failures)
+- Increased from 61 lines to 481 lines of production-ready code
+
+**Impact**: Script is now fully functional and can perform actual CIS Benchmark compliance testing on Windows systems. Previous version would fail immediately due to non-existent cmdlets.
+
+### Statistics
+
+**Files Modified**: 1
+**Lines Changed**: +461, -40
+**Version Bump**: Test-CISBenchmark.ps1 v1.0 → v2.0.0
+**CIS Controls Added**: 12 new controls tested
+
+---
+
 ## [3.0.0] - 2025-12-30 🌪️ **"Hurricane"** - Repository Restructure
 
 > **BREAKING CHANGE**: Complete repository reorganization with technology-based hierarchy
@@ -645,6 +712,9 @@ Comprehensive documentation suite:
 
 | Version | Date | Codename | Type | Major Changes |
 |---------|------|----------|------|---------------|
+| **3.0.1** | 2025-12-31 | ☔ Drizzle | Patch | Test-CISBenchmark.ps1 v2.0.0 - Fixed broken cmdlets |
+| **3.0.0** | 2025-12-30 | 🌪️ Hurricane | Breaking | Complete repository restructure (20 categories → 7 domains) |
+| **2.2.0** | 2025-12-30 | 🌧️ Shower | Minor | Navigation & usability improvements |
 | **2.1.0** | 2025-12-29 | 🌈 Rainbow | Quality | PowerShell best practices, critical bug fixes, Monitor-ServerHealth expansion |
 | **2.0.0** | 2025-12-28 | ⛈️ Thunderstorm | Major | Regional settings suite (14 scripts), M365 expansion |
 | **1.0.0** | 2025-12-27 | ⛈️ Thunderstorm | Major | Initial production release (245+ scripts) |
@@ -653,6 +723,33 @@ Comprehensive documentation suite:
 ---
 
 ## Upgrade Notes
+
+### Upgrading to 3.0.1 (Drizzle)
+- ✅ **No breaking changes** - fully backward compatible
+- ✅ **No action required** for most users
+- 🔧 **Test-CISBenchmark.ps1 users**: The script now actually works!
+  - Previous version had broken cmdlets and would fail immediately
+  - New version performs real CIS Benchmark compliance testing
+  - Tests 15+ controls vs previous 3 controls
+  - Requires Administrator privileges (enforced via `#Requires`)
+  - Run with `-ExportHTML` to generate detailed compliance reports
+- 📊 **Improved compliance testing**:
+  - Password policies, account lockout, and audit policies
+  - Level 1 and Level 2 CIS Benchmark support
+  - HTML reports with compliance percentage and recommendations
+
+### Upgrading to 3.0.0 (Hurricane)
+- ⚠️ **BREAKING CHANGES** - All script paths have changed
+- 📂 Scripts reorganized: 20 flat categories → 7 technology domains
+- 🔄 **Action required**: Update any references to script paths
+- 📖 See [Migration Guide](#migration-guide-for-users) below for path mappings
+- ✅ Git history preserved for all files
+
+### Upgrading to 2.2.0 (Shower)
+- ✅ **No breaking changes** - fully backward compatible
+- ✨ New QUICK_START.md provides role-based navigation
+- 📂 New examples/ directory with workflow templates
+- 🎯 Enhanced issue templates for better bug reporting
 
 ### Upgrading to 2.1.0 (Rainbow)
 - ✅ **No breaking changes** - fully backward compatible
@@ -726,4 +823,4 @@ Scripts in this repository were created with the assistance of **[Claude Code](h
 
 For detailed commit history, see [Git Log](https://github.com/Carme99/bug-free-umbrella/commits/main).
 
-**Last Updated**: 2025-12-29
+**Last Updated**: 2025-12-31
