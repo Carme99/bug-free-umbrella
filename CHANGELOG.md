@@ -670,11 +670,11 @@ Multi-platform database monitoring:
 ### Documentation
 Comprehensive documentation suite:
 - **README.md**: Repository overview with quick start guide
-- **docs/README.md**: Complete documentation index
-- **docs/SCRIPT-EXAMPLES.md**: Detailed usage examples with expected outputs
-- **docs/WORKFLOWS.md**: End-to-end workflow guides for common scenarios
-- **docs/TROUBLESHOOTING.md**: Common issues and solutions
-- **docs/INTUNE-SYNC-README.md**: User group to device group synchronization guide
+- **wiki/Home.md**: Complete documentation index
+- **wiki/Script-Examples.md**: Detailed usage examples with expected outputs
+- **wiki/Workflows.md**: End-to-end workflow guides for common scenarios
+- **wiki/Troubleshooting.md**: Common issues and solutions
+- **wiki/Intune-Sync-Guide.md**: User group to device group synchronization guide
 - **CONTRIBUTING.md**: Development guidelines and contribution process
 - **SECURITY.md**: Security policy and vulnerability reporting
 - **CODE_OF_CONDUCT.md**: Community guidelines
