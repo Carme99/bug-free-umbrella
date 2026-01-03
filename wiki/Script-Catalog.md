@@ -497,7 +497,7 @@ Organized by category:
 
 ---
 
-**Last Updated**: 2025-12-29 (v2.1.0 "Rainbow" 🌈)
+**Last Updated**: 2026-01-03 (v3.0.2 "Drizzle" ☔)
 
 **Maintained by**: The Bug-Free Umbrella Team
 **Created with**: [Claude Code](https://github.com/anthropics/claude-code)

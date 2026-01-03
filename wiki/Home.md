@@ -2,7 +2,7 @@
 
 Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection of 260+ PowerShell scripts for enterprise IT management!
 
-> **Latest Release:** [v3.0.1 "Drizzle" ☔](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release) - Critical bug fixes for Test-CISBenchmark.ps1!
+> **Latest Release:** [v3.0.2 "Drizzle" ☔](../CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup) - Documentation cleanup and broken link fixes!
 >
 > 📋 **[View Full Changelog →](../CHANGELOG.md)** | 📦 **[GitHub Releases](https://github.com/Carme99/bug-free-umbrella/releases)**
 
@@ -61,7 +61,7 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 | **Categories** | 20 |
 | **Proactive Remediations** | 14 pairs (28 scripts) |
 | **Winget App Templates** | 40+ applications |
-| **Latest Release** | v3.0.1 "Drizzle" ☔ |
+| **Latest Release** | v3.0.2 "Drizzle" ☔ |
 | **Documentation Pages** | Comprehensive wiki! |
 
 ---
@@ -143,7 +143,8 @@ Additional pages planned:
 
 ### 📋 Project Information
 - **[📋 Full Changelog (CHANGELOG.md)](../CHANGELOG.md)** - Complete version history
-  - [v3.0.1 "Drizzle" ☔](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release) - Latest release
+  - [v3.0.2 "Drizzle" ☔](../CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup) - Latest release
+  - [v3.0.1 "Drizzle" ☔](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release)
   - [v3.0.0 "Hurricane" 🌪️](../CHANGELOG.md#300---2025-12-30--hurricane---repository-restructure)
   - [v2.2.0 "Shower" 🌧️](../CHANGELOG.md#220---2025-12-28--shower---navigation--usability-improvements)
 - **[Contributing](../CONTRIBUTING.md)** - How to contribute to the project
@@ -152,23 +153,24 @@ Additional pages planned:
 
 ---
 
-## ☔ What's New in v3.0.1 "Drizzle"
+## ☔ What's New in v3.0.2 "Drizzle"
 
-The latest release focuses on **critical bug fixes** following the v3.0.0 restructure:
+The latest release focuses on **documentation cleanup** and removing technical debt:
 
 ✨ **Highlights:**
-- 🔧 **CRITICAL FIX:** Test-CISBenchmark.ps1 v2.0.0 - Completely rewritten
-  - Replaced broken `Get-LocalGroupPolicy` cmdlet with working `secedit.exe`
-  - Expanded from 3 to 15+ CIS controls tested
-  - Added password policies, account lockout, and audit policies
-  - Enhanced HTML reporting with detailed control results
-- 📚 **Enhanced Testing:** Now supports Level 1/Level 2 CIS benchmarks
-- 🛡️ **Better Compliance:** Production-ready security compliance testing
-- 📖 **Documentation Updates:** CHANGELOG.md and Script-Catalog.md updated
+- 🗑️ **Removed 5 Deprecated Files:** Deleted ~3,988 lines of outdated documentation
+  - All content successfully migrated to wiki (Script-Catalog, Script-Examples, Workflows, Troubleshooting, Intune-Sync-Guide)
+- 🔗 **Fixed 44 Broken Links:** All documentation references now work correctly
+  - 28 critical broken wiki links fixed
+  - 14 outdated references updated (CHANGELOG, WIKI-SETUP)
+  - 2 script READMEs updated to point to wiki
+- 📚 **Cleaner Documentation:** Simplified docs folder, consistent wiki link format
+- ✨ **Better UX:** All internal wiki links now use proper wiki-style navigation
 
-**[Read Full Changelog →](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release)**
+**[Read Full Changelog →](../CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup)**
 
 ### Recent Major Releases
+- ☔ **[v3.0.2 "Drizzle"](../CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup)** (2026-01-03) - Documentation cleanup
 - ☔ **[v3.0.1 "Drizzle"](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release)** (2025-12-31) - Bug fixes
 - 🌪️ **[v3.0.0 "Hurricane"](../CHANGELOG.md#300---2025-12-30--hurricane---repository-restructure)** (2025-12-30) - Repository restructure
 - 🌧️ **[v2.2.0 "Shower"](../CHANGELOG.md#220---2025-12-28--shower---navigation--usability-improvements)** (2025-12-28) - Navigation improvements
@@ -259,10 +261,10 @@ Bug-Free Umbrella is a comprehensive collection of PowerShell scripts for enterp
 
 ---
 
-**Last Updated:** 2025-12-31
+**Last Updated:** 2026-01-03
 
 **Wiki Version:** 1.1.0
 
-**Corresponds to Release:** v3.0.1 "Drizzle" ☔
+**Corresponds to Release:** v3.0.2 "Drizzle" ☔
 
 **[📋 View Full Changelog →](../CHANGELOG.md)**

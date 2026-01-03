@@ -30,6 +30,39 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ---
 
+## [3.0.2] - 2026-01-03 ☔ **"Drizzle"** - Documentation Cleanup
+
+> **Focus**: Remove deprecated documentation and fix all broken links
+
+### Removed
+- **5 Deprecated Documentation Files** (~3,988 lines removed)
+  - `docs/NAVIGATION.md` - Migrated to `wiki/Script-Catalog.md`
+  - `docs/SCRIPT-EXAMPLES.md` - Migrated to `wiki/Script-Examples.md`
+  - `docs/WORKFLOWS.md` - Migrated to `wiki/Workflows.md`
+  - `docs/TROUBLESHOOTING.md` - Migrated to `wiki/Troubleshooting.md`
+  - `docs/INTUNE-SYNC-README.md` - Migrated to `wiki/Intune-Sync-Guide.md`
+
+### Fixed
+- **44 Broken or Outdated Documentation References**
+  - **28 Critical Broken Wiki Links**: Fixed all references in `wiki/Script-Catalog.md` (24), `wiki/Workflows.md` (3), `wiki/Script-Examples.md` (1) to use proper wiki-style links
+  - **14 Outdated References**: Updated `CHANGELOG.md` v1.0.0 references and `wiki/WIKI-SETUP.md` to reflect current file locations
+  - **2 Script READMEs**: Updated `scripts/security/monitoring/README.md` and `scripts/infrastructure/network/README.md` to point to wiki URLs
+  - Simplified `docs/README.md` by removing table of deleted files
+
+### Improved
+- All wiki internal links now use consistent wiki-style format: `[Display](Page-Name)`
+- All documentation references point to correct locations (wiki instead of deleted docs)
+- Cleaner docs folder with just deprecation notice
+
+### Statistics
+- **Files Deleted**: 5
+- **Files Modified**: 10
+- **Lines Removed**: 3,988
+- **Broken Links Fixed**: 44
+- **Net Change**: ~4,000 lines of technical debt removed
+
+---
+
 ## [3.0.1] - 2025-12-31 ☔ **"Drizzle"** - Bug Fix Release
 
 > **Focus**: Critical bug fixes and code quality improvements
