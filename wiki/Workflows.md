@@ -1374,9 +1374,9 @@ These workflows demonstrate end-to-end processes for:
 4. Share feedback for workflow improvements
 
 **Additional Resources**:
-- [Script Examples](SCRIPT-EXAMPLES.md) - Detailed script outputs
-- [Troubleshooting Guide](TROUBLESHOOTING.md) - Common issues
-- [Main Documentation](README.md) - Complete reference
+- [Script Examples](Script-Examples) - Detailed script outputs
+- [Troubleshooting Guide](Troubleshooting) - Common issues
+- [Script Catalog](Script-Catalog) - Complete reference
 
 ---
 

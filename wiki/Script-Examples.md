@@ -1209,7 +1209,7 @@ If script outputs don't match these examples:
 2. Verify module versions
 3. Check execution context (User vs SYSTEM)
 4. Review prerequisites section
-5. Check troubleshooting guide: [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+5. Check troubleshooting guide: [Troubleshooting](Troubleshooting)
 
 ---
 

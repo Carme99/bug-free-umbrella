@@ -284,6 +284,7 @@ git pull origin main
 
 ### How often are scripts updated?
 Check the **[Changelog](../CHANGELOG.md)** for release history. Recent updates:
+- **v3.0.2 "Drizzle"** (2026-01-03) - Documentation cleanup
 - **v3.0.1 "Drizzle"** (2025-12-31) - Bug fixes
 - **v3.0.0 "Hurricane"** (2025-12-30) - Repository restructure
 - **v2.2.0 "Shower"** (2025-12-28) - Navigation improvements
