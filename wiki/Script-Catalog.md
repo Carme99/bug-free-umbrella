@@ -416,18 +416,17 @@ Organized by category:
 | **Proactive Remediations** | 14 pairs (28 scripts) |
 | **Winget App Templates** | 40+ |
 | **Documentation Files** | 10 |
-| **Latest Release** | 2.1.0 "Rainbow" 🌈 |
+| **Latest Release** | 3.0.2 "Drizzle" ☔ |
 
 ---
 
-## 🌈 Latest Updates (v2.1.0 "Rainbow")
+## ☔ Latest Updates (v3.0.2 "Drizzle")
 
 **What's New:**
-- 🚀 Monitor-ServerHealth.ps1: 13 major new features including interactive mode!
-- ✅ Critical bug fixes: 2 syntax errors resolved
-- 📚 6 scripts with new comprehensive documentation
-- ⚡ Performance improvements in array operations
-- 🎨 Consistent formatting across 10 autopatch scripts
+- 🗑️ **Removed 5 Deprecated Files:** Deleted ~3,988 lines of outdated documentation
+- 🔗 **Fixed 44 Broken Links:** All documentation references now work correctly
+- 📚 **Cleaner Documentation:** Simplified docs folder, consistent wiki link format
+- ✨ **Better UX:** All internal wiki links now use proper wiki-style navigation
 
 **See full details:** [CHANGELOG.md](../CHANGELOG.md)
 
@@ -463,12 +462,12 @@ Organized by category:
 
 ## 🌟 Featured Scripts
 
-### 🆕 Recently Enhanced (v2.1.0 Rainbow 🌈)
-- **Monitor-ServerHealth.ps1** - Massively expanded! 541 → 1,928 lines
-  - Interactive mode with menu-driven operation
-  - 13 major new monitoring capabilities
-  - Email reporting, JSON export, progress indicators
-  - Location: `scripts/server/monitoring/`
+### 🆕 Recently Enhanced (v3.0.2 Drizzle ☔)
+- **Documentation Cleanup** - Removed technical debt
+  - 5 deprecated documentation files removed (~3,988 lines)
+  - 44 broken links fixed across all wiki pages
+  - Consistent wiki-style link format throughout
+  - All content successfully migrated to comprehensive wiki
 
 ### 🔥 Most Popular
 - **Get-DeviceComplianceReport.ps1** - Intune compliance reporting

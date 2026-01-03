@@ -313,6 +313,7 @@ No pull request needed! (But changes are tracked in Git history)
 ---
 
 **Created:** 2025-12-29
-**Wiki Version:** 1.0.0
-**Corresponds to:** v2.1.0 "Rainbow" 🌈
+**Last Updated:** 2026-01-04
+**Wiki Version:** 1.1.0
+**Corresponds to:** v3.0.2 "Drizzle" ☔
 **Created by:** [Claude Code](https://github.com/anthropics/claude-code)
