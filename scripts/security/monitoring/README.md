@@ -213,4 +213,4 @@ Planned additions to this category:
 For issues or feature requests related to monitoring scripts, please check:
 1. Script help: `Get-Help .\ScriptName.ps1 -Detailed`
 2. Main documentation: [Full Documentation](../../docs/README.md)
-3. Troubleshooting guide: [Troubleshooting](../../docs/TROUBLESHOOTING.md)
+3. Troubleshooting guide: [Troubleshooting](../../wiki/Troubleshooting)
