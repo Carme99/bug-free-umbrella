@@ -2,7 +2,7 @@
 
 Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection of 260+ PowerShell scripts for enterprise IT management!
 
-> **Latest Release:** [v3.0.2 "Drizzle" ☔](../CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup) - Documentation cleanup and broken link fixes!
+> **Latest Release:** [v3.0.3 "Drizzle" ☔](../CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix) - Wiki version reference fixes!
 >
 > 📋 **[View Full Changelog →](../CHANGELOG.md)** | 📦 **[GitHub Releases](https://github.com/Carme99/bug-free-umbrella/releases)**
 
@@ -61,7 +61,7 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 | **Categories** | 20 |
 | **Proactive Remediations** | 14 pairs (28 scripts) |
 | **Winget App Templates** | 40+ applications |
-| **Latest Release** | v3.0.2 "Drizzle" ☔ |
+| **Latest Release** | v3.0.3 "Drizzle" ☔ |
 | **Documentation Pages** | Comprehensive wiki! |
 
 ---
@@ -154,21 +154,21 @@ Additional pages planned:
 
 ---
 
-## ☔ What's New in v3.0.2 "Drizzle"
+## ☔ What's New in v3.0.3 "Drizzle"
 
-The latest release focuses on **documentation cleanup** and removing technical debt:
+The latest release focuses on **wiki version reference fixes**:
 
 ✨ **Highlights:**
-- 🗑️ **Removed 5 Deprecated Files:** Deleted ~3,988 lines of outdated documentation
-  - All content successfully migrated to wiki (Script-Catalog, Script-Examples, Workflows, Troubleshooting, Intune-Sync-Guide)
-- 🔗 **Fixed 44 Broken Links:** All documentation references now work correctly
-  - 28 critical broken wiki links fixed
-  - 14 outdated references updated (CHANGELOG, WIKI-SETUP)
-  - 2 script READMEs updated to point to wiki
-- 📚 **Cleaner Documentation:** Simplified docs folder, consistent wiki link format
-- ✨ **Better UX:** All internal wiki links now use proper wiki-style navigation
+- 📝 **Wiki Version References Updated:** Corrected outdated v2.1.0 "Rainbow" 🌈 references to v3.0.2 "Drizzle" ☔
+  - Updated wiki/Home.md with all version references
+  - Fixed wiki/Script-Catalog.md version references
+  - Corrected wiki/WIKI-SETUP.md and wiki/Getting-Started.md footer metadata
+- 🔢 **Wiki Version Incremented:** 1.0.0 → 1.1.0 to track documentation updates
+- ✨ **Better Consistency:** All wiki pages now reference the correct current release
 
-**[Read Full Changelog →](../CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup)**
+**Previous Release:** [v3.0.2 "Drizzle" ☔](../CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup) - Documentation cleanup and broken link fixes
+
+**[Read Full Changelog →](../CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix)**
 
 ### Recent Major Releases
 - ☔ **[v3.0.3 "Drizzle"](../CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix)** (2026-01-04) - Wiki version reference fix
@@ -267,6 +267,6 @@ Bug-Free Umbrella is a comprehensive collection of PowerShell scripts for enterp
 
 **Wiki Version:** 1.1.0
 
-**Corresponds to Release:** v3.0.2 "Drizzle" ☔
+**Corresponds to Release:** v3.0.3 "Drizzle" ☔
 
 **[📋 View Full Changelog →](../CHANGELOG.md)**
