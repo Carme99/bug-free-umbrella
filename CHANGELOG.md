@@ -30,6 +30,52 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ---
 
+## [3.0.3] - 2026-01-04 ☔ **"Drizzle"** - Wiki Version Reference Fix
+
+> **Focus**: Correct outdated version references in wiki documentation
+
+### Fixed
+- **Wiki Version References** - Updated outdated v2.1.0 "Rainbow" 🌈 references to correct v3.0.2 "Drizzle" ☔
+  - **wiki/Home.md**: Updated all version references to v3.0.2
+    - Latest Release banner: v2.1.0 → v3.0.2
+    - Repository Statistics table: v2.1.0 → v3.0.2
+    - "What's New" section: Updated to reflect v3.0.2 changes
+    - Recent Major Releases section: Corrected version ordering
+    - Project Information section: Updated changelog links
+    - Footer metadata: Now correctly shows v3.0.2
+  - **wiki/Script-Catalog.md**: Updated 3 version references to v3.0.2
+    - Repository Statistics table: Latest Release v2.1.0 → v3.0.2
+    - Latest Updates section: Changed from Rainbow to Drizzle with v3.0.2 release notes
+    - Featured Scripts section: Updated to reflect v3.0.2 changes
+  - **wiki/WIKI-SETUP.md**: Updated footer metadata to v3.0.2
+    - Wiki Version bumped to 1.1.0
+    - Corresponds to version: v2.1.0 → v3.0.2
+    - Added "Last Updated" timestamp (2026-01-04)
+  - **wiki/Getting-Started.md**: Updated footer metadata to v3.0.2
+    - Last Updated timestamp: 2026-01-04
+    - Corresponds to version: v2.1.0 → v3.0.2
+
+### Changed
+- **Wiki Version**: Incremented from 1.0.0 to 1.1.0 to track documentation updates
+- **CHANGELOG.md**: Added this release entry documenting the wiki reference corrections
+
+### Improved
+- All wiki pages now consistently reference the correct current release (v3.0.2 "Drizzle" ☔)
+- Eliminated confusion from outdated v2.1.0 "Rainbow" references that were still present in wiki
+- Better alignment between wiki documentation and actual repository state
+
+### Statistics
+- **Files Modified**: 5 (CHANGELOG.md + 4 wiki documentation files)
+- **Version References Updated**: 11+ references corrected across all wiki files
+- **Wiki Version**: 1.0.0 → 1.1.0
+
+### Notes
+- This is a documentation-only patch release
+- No code or functionality changes
+- Wiki now correctly reflects v3.0.2 as the current release (released 2026-01-03)
+
+---
+
 ## [3.0.2] - 2026-01-03 ☔ **"Drizzle"** - Documentation Cleanup
 
 > **Focus**: Remove deprecated documentation and fix all broken links

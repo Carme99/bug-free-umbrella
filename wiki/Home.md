@@ -143,6 +143,7 @@ Additional pages planned:
 
 ### 📋 Project Information
 - **[📋 Full Changelog (CHANGELOG.md)](../CHANGELOG.md)** - Complete version history
+  - [v3.0.3 "Drizzle" ☔](../CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix) - Latest patch (wiki fix)
   - [v3.0.2 "Drizzle" ☔](../CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup) - Latest release
   - [v3.0.1 "Drizzle" ☔](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release)
   - [v3.0.0 "Hurricane" 🌪️](../CHANGELOG.md#300---2025-12-30--hurricane---repository-restructure)
@@ -170,6 +171,7 @@ The latest release focuses on **documentation cleanup** and removing technical d
 **[Read Full Changelog →](../CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup)**
 
 ### Recent Major Releases
+- ☔ **[v3.0.3 "Drizzle"](../CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix)** (2026-01-04) - Wiki version reference fix
 - ☔ **[v3.0.2 "Drizzle"](../CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup)** (2026-01-03) - Documentation cleanup
 - ☔ **[v3.0.1 "Drizzle"](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release)** (2025-12-31) - Bug fixes
 - 🌪️ **[v3.0.0 "Hurricane"](../CHANGELOG.md#300---2025-12-30--hurricane---repository-restructure)** (2025-12-30) - Repository restructure
@@ -261,7 +263,7 @@ Bug-Free Umbrella is a comprehensive collection of PowerShell scripts for enterp
 
 ---
 
-**Last Updated:** 2026-01-03
+**Last Updated:** 2026-01-04
 
 **Wiki Version:** 1.1.0
 

@@ -373,5 +373,5 @@ You're ready to start using Bug-Free Umbrella scripts!
 
 ---
 
-**Last Updated:** 2025-12-29  
-**Corresponds to:** v2.1.0 "Rainbow" 🌈
+**Last Updated:** 2026-01-04
+**Corresponds to:** v3.0.2 "Drizzle" ☔
