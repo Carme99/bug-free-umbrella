@@ -18,9 +18,9 @@ A comprehensive PowerShell toolkit for managing and reporting on Microsoft Intun
 
 ## Overview
 
-This toolkit provides 19 PowerShell scripts for comprehensive Intune management:
+This toolkit provides **24 PowerShell scripts** for comprehensive Intune management:
 
-### 📊 Reporting Scripts
+### 📊 Reporting Scripts (11 scripts)
 - **Device Compliance Report** - Export non-compliant devices with reasons
 - **BitLocker Encryption Status** - Audit encryption across your estate
 - **Windows Update Compliance** - Track update status (AutoPatch compatible)
@@ -28,15 +28,20 @@ This toolkit provides 19 PowerShell scripts for comprehensive Intune management:
 - **App Install Error Report** - Detailed app failure analysis with error codes
 - **Autopilot Deployment Report** - Track Autopilot success/failures
 - **Winget Update Compliance** - Report on winget-managed app versions
+- **Policy Assignment Report** 🆕 - Comprehensive policy assignments with conflict detection
+- **Device Health Score** 🆕 - Aggregated health score based on multiple metrics
+- **User Device Affinity** 🆕 - User-device relationships for license management
+- **Device Group Membership** - Show device-to-group mappings
 
-### 🧹 Maintenance Scripts
+### 🧹 Maintenance Scripts (6 scripts)
 - **Stale Device Finder** - Identify and remove inactive devices
 - **Policy Conflict Detector** - Find conflicting configuration policies
-- **Group Membership Audit** - Show device-to-group mappings
 - **Device Bulk Actions** - Bulk sync, restart, retire, wipe, collect diagnostics
 - **Export Intune Configuration** - Backup all policies, apps, and configs
+- **Test Intune Connectivity** 🆕 - Validate connectivity to all Intune endpoints
+- **Compare Configuration Drift** 🆕 - Track configuration changes over time
 
-### 🚀 Deployment & Packaging
+### 🚀 Deployment & Packaging (6 scripts)
 - **Winget Remediation Generator** - Auto-create proactive remediation scripts
 - **Bulk Winget Updater** - Universal winget package updater for ANY app
 - **Winget Source Config** - Configure custom enterprise winget sources
@@ -674,6 +679,35 @@ All scripts use the helper module for authentication:
 # 3. Upload to Intune and configure using template files
 ```
 
+### Scenario 5: Device Health Assessment 🆕
+
+```powershell
+# 1. Generate comprehensive health scores
+.\Get-DeviceHealthScore.ps1 -MinHealthScore 70 -Format HTML
+
+# 2. Identify devices with connectivity issues
+.\Test-IntuneConnectivity.ps1 -Detailed -ExportResults
+
+# 3. Check policy assignments and conflicts
+.\Get-PolicyAssignmentReport.ps1 -Format HTML
+
+# 4. Review user-device relationships
+.\Get-UserDeviceAffinity.ps1 -ShowMultiDeviceUsers
+```
+
+### Scenario 6: Configuration Management & Drift Detection 🆕
+
+```powershell
+# 1. Create baseline snapshot
+.\Compare-ConfigurationDrift.ps1 -CreateBaseline
+
+# 2. Later, compare against baseline
+.\Compare-ConfigurationDrift.ps1 -BaselinePath ".\intune-baseline-20260101.json"
+
+# 3. Analyze policy assignments
+.\Get-PolicyAssignmentReport.ps1 -Format CSV
+```
+
 ### Scenario 5: Tenant Cleanup
 
 ```powershell
@@ -811,10 +845,26 @@ Start-Process "$env:USERPROFILE\Desktop"
 
 ## Version History
 
+**Version 3.0** - Enhanced Reporting & Daily Operations (January 2026)
+- Added 5 new Intune management scripts:
+  - Get-PolicyAssignmentReport.ps1 - Policy assignment analysis with conflict detection
+  - Get-DeviceHealthScore.ps1 - Comprehensive device health scoring
+  - Get-UserDeviceAffinity.ps1 - User-device relationship reporting
+  - Test-IntuneConnectivity.ps1 - Endpoint connectivity validation
+  - Compare-ConfigurationDrift.ps1 - Configuration change tracking
+- Expanded proactive remediation library from 14 to 32 scripts
+- Added 18 new daily operations remediations:
+  - Security: DefenderHealth, TPMStatus, LocalAdmin, PowerShell policy
+  - System: TimeSync, NetworkPowerMgmt, EventLogs, DiskHealth
+  - Apps: OneDrive KFM, EdgeCache, WindowsStore, StartMenu
+  - Network: SMBv1, SharedFolders
+  - Licensing: CertificateExpiry, WindowsActivation
+- Total toolkit: 24 Intune scripts + 32 proactive remediations
+
 **Version 2.0** - Winget & Advanced Management
 - Added 4 winget enhancement scripts (bulk updater, compliance, inventory, source config)
 - Added 4 device management scripts (bulk actions, Autopilot reporting, config export, app errors)
-- Created proactive remediation library (6 detect/remediate pairs)
+- Created proactive remediation library (14 detect/remediate pairs)
 - Expanded from 11 to 19 scripts
 - Enhanced enterprise winget capabilities
 
@@ -837,11 +887,18 @@ These scripts are provided as-is for system administration purposes.
 
 | Task | Script | Command |
 |------|--------|---------|
+| **Reporting** |
 | Compliance Report | Get-DeviceComplianceReport.ps1 | `.\Get-DeviceComplianceReport.ps1` |
-| Find Stale Devices | Find-StaleDevices.ps1 | `.\Find-StaleDevices.ps1 -DaysInactive 90` |
+| Device Health Score 🆕 | Get-DeviceHealthScore.ps1 | `.\Get-DeviceHealthScore.ps1 -MinHealthScore 75` |
+| Policy Assignments 🆕 | Get-PolicyAssignmentReport.ps1 | `.\Get-PolicyAssignmentReport.ps1 -Format HTML` |
+| User-Device Affinity 🆕 | Get-UserDeviceAffinity.ps1 | `.\Get-UserDeviceAffinity.ps1` |
 | App Install Status | Get-AppInstallationStatus.ps1 | `.\Get-AppInstallationStatus.ps1 -AppName "Chrome"` |
 | App Install Errors | Get-AppInstallErrorReport.ps1 | `.\Get-AppInstallErrorReport.ps1 -Days 7` |
 | BitLocker Audit | Get-BitLockerStatus.ps1 | `.\Get-BitLockerStatus.ps1` |
+| **Maintenance** |
+| Find Stale Devices | Find-StaleDevices.ps1 | `.\Find-StaleDevices.ps1 -DaysInactive 90` |
+| Test Connectivity 🆕 | Test-IntuneConnectivity.ps1 | `.\Test-IntuneConnectivity.ps1 -Detailed` |
+| Configuration Drift 🆕 | Compare-ConfigurationDrift.ps1 | `.\Compare-ConfigurationDrift.ps1 -CreateBaseline` |
 | Update Compliance | Get-WindowsUpdateCompliance.ps1 | `.\Get-WindowsUpdateCompliance.ps1` |
 | Winget Remediation | New-WingetRemediationScript.ps1 | `.\New-WingetRemediationScript.ps1 -PackageId "Google.Chrome"` |
 | Bulk Winget Update | New-BulkWingetUpdater.ps1 | `.\New-BulkWingetUpdater.ps1 -AppName "Chrome" -WingetID "Google.Chrome"` |
