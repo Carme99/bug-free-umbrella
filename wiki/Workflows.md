@@ -1377,6 +1377,8 @@ These workflows demonstrate end-to-end processes for:
 - [Script Examples](Script-Examples) - Detailed script outputs
 - [Troubleshooting Guide](Troubleshooting) - Common issues
 - [Script Catalog](Script-Catalog) - Complete reference
+- [Support Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md) - Response times and support channels
+- [Governance](https://github.com/Carme99/bug-free-umbrella/blob/main/GOVERNANCE.md) - Project governance and solo maintainer model
 
 ---
 

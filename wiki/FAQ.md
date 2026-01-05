@@ -262,9 +262,33 @@ Yes! **[Create an issue](https://github.com/Carme99/bug-free-umbrella/issues/new
 - Any specific requirements
 
 ### How do I get support?
+- **[Support Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md)** - Response times and support channels (START HERE!)
 - **[Troubleshooting Guide](Troubleshooting)** - Common issues
-- **[GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues)** - Bug reports & questions
-- **[Discussions](https://github.com/Carme99/bug-free-umbrella/discussions)** - General questions & ideas
+- **[GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues)** - Bug reports & questions (auto-labeled)
+
+**Note:** GitHub Discussions are not enabled for this repository. Please use Issues for all questions.
+
+### How quickly will I get a response?
+This is a hobby project maintained in spare time. See the **[Support Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md)** for detailed response time expectations:
+
+| Issue Type | Typical Response Time |
+|------------|----------------------|
+| 🔴 Security vulnerabilities | 1-3 days |
+| 🐛 Critical bugs | 3-7 days |
+| ✨ Feature requests | 1-2 weeks |
+| ❓ Questions | 1-2 weeks |
+| 📝 Documentation | 2-4 weeks |
+
+**Important:** These are estimates, not guarantees. Responses may take longer depending on availability.
+
+### What is expected when contributing?
+Please review our **[Code of Conduct](https://github.com/Carme99/bug-free-umbrella/blob/main/CODE_OF_CONDUCT.md)** to understand community standards and expectations. All contributors must:
+- Be respectful and professional
+- Follow contribution guidelines in **[CONTRIBUTING.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)**
+- Understand this is a hobby project with no SLAs
+
+### Will my issue be closed automatically?
+Yes. Inactive issues are automatically closed after 60 days of inactivity (PRs after 30 days) with a 7-day warning. This helps keep the repository organized. Issues can be reopened if needed.
 
 ---
 

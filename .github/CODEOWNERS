@@ -1,0 +1,41 @@
+# CODEOWNERS - Defines code ownership for automatic PR review requests
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo
+# Any PR will automatically request review from @Carme99
+* @Carme99
+
+# Documentation - Maintained with Claude Code assistance
+*.md @Carme99
+/wiki/ @Carme99
+/docs/ @Carme99
+
+# GitHub Configuration - Critical infrastructure
+/.github/ @Carme99
+/.github/workflows/ @Carme99
+
+# PowerShell Scripts - All script changes require review
+/scripts/ @Carme99
+
+# Tests - Ensure test quality
+/Tests/ @Carme99
+*.Tests.ps1 @Carme99
+
+# Security & Compliance - Extra scrutiny needed
+/scripts/security/ @Carme99
+SECURITY.md @Carme99
+
+# Configuration files - Important for repo consistency
+.editorconfig @Carme99
+.gitignore @Carme99
+*.config.* @Carme99
+*.settings.* @Carme99
+
+# Community health files - Governance and contribution
+CODE_OF_CONDUCT.md @Carme99
+CONTRIBUTING.md @Carme99
+GOVERNANCE.md @Carme99
+SUPPORT.md @Carme99
+
+# Build and CI/CD configurations
+/.vscode/ @Carme99
