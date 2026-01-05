@@ -389,7 +389,7 @@ Organized by category:
 2. Review [Script Examples](Script-Examples) - see how scripts work
 3. Try a simple script like `Get-DeviceComplianceReport.ps1`
 4. Review [Troubleshooting](Troubleshooting) if issues arise
-5. Explore [Proactive Remediations](../scripts/device-management/proactive-remediations/) for auto-fix scripts
+5. Explore [Proactive Remediations](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations) for auto-fix scripts
 
 ### Intermediate Path: "I know PowerShell, want to deploy"
 1. Review [Main README](../README.md) prerequisites section

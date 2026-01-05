@@ -732,7 +732,7 @@ Connect-AzAccount -Environment AzureUSGovernment
 - [Azure Compute Gallery Documentation](https://docs.microsoft.com/azure/virtual-machines/shared-image-galleries)
 - [Sysprep Overview](https://docs.microsoft.com/windows-hardware/manufacture/desktop/sysprep--generalize--a-windows-installation)
 - [Azure VM Guest Agent](https://docs.microsoft.com/azure/virtual-machines/extensions/agent-windows)
-- [Remove-SysprepBlockers.ps1 Documentation](Remove-SysprepBlockers.ps1)
+- [Remove-SysprepBlockers.ps1 Script](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/cloud/azure/avd/Remove-SysprepBlockers.ps1)
 
 ## Support
 

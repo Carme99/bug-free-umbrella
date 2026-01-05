@@ -135,7 +135,7 @@ Find the right script for your task quickly. This page organizes scripts by comm
 - **`scripts/cloud/azure/Azure-VirtualMachines/Get-VMBackupCompliance.ps1`** - Check VM backups
 - **`scripts/cloud/azure/Azure-VirtualMachines/Get-VMSecurityConfig.ps1`** - Audit VM security
 
-**Documentation:** [Cloud Infrastructure](Cloud-Infrastructure)
+**Documentation:** [Script Catalog](Script-Catalog) (Cloud Infrastructure category page coming soon)
 
 ### I want to... optimize cloud costs
 
@@ -145,7 +145,7 @@ Find the right script for your task quickly. This page organizes scripts by comm
 - **`scripts/cloud/azure/Azure-VirtualMachines/Optimize-AzureVMs.ps1`** - Optimize Azure VMs
 - **`scripts/cloud/aws/core/Get-AWSResourceInventory.ps1`** - Inventory AWS resources
 
-**Documentation:** [Cloud Infrastructure](Cloud-Infrastructure)
+**Documentation:** [Script Catalog](Script-Catalog) (Cloud Infrastructure category page coming soon)
 
 ---
 
@@ -223,7 +223,7 @@ Find the right script for your task quickly. This page organizes scripts by comm
 - **`scripts/infrastructure/web/iis/Optimize-IISConfiguration.ps1`** - Optimize IIS settings
 - **`scripts/infrastructure/web/iis/Get-IISLogAnalyzer.ps1`** - Analyze IIS logs
 
-**Documentation:** [Web Services](Web-Services)
+**Documentation:** [Script Catalog](Script-Catalog) (Web Services category page coming soon)
 
 ---
 
@@ -261,7 +261,7 @@ Find the right script for your task quickly. This page organizes scripts by comm
 - **`scripts/data/databases/Get-PostgreSQLHealth.ps1`** - PostgreSQL health check
 - **`scripts/data/databases/Monitor-MongoDBHealth.ps1`** - MongoDB monitoring
 
-**Documentation:** [Database Management](Database-Management)
+**Documentation:** [Script Catalog](Script-Catalog) (Database Management category page coming soon)
 
 ---
 
@@ -277,7 +277,7 @@ Find the right script for your task quickly. This page organizes scripts by comm
 - **`scripts/automation/cicd/Monitor-GitLabCI.ps1`** - Monitor GitLab CI
 - **`scripts/automation/cicd/Analyze-BuildPerformance.ps1`** - Analyze build performance
 
-**Documentation:** [DevOps & CI/CD](DevOps-CICD)
+**Documentation:** [Script Catalog](Script-Catalog) (DevOps & CI/CD category page coming soon)
 
 ### I want to... validate infrastructure as code
 
@@ -287,7 +287,7 @@ Find the right script for your task quickly. This page organizes scripts by comm
 - **`scripts/automation/iac/Test-TerraformConfiguration.ps1`** - Validate Terraform
 - **`scripts/automation/iac/Test-BicepTemplates.ps1`** - Validate Bicep templates
 
-**Documentation:** [Infrastructure as Code](Infrastructure-as-Code)
+**Documentation:** [Script Catalog](Script-Catalog) (Infrastructure as Code category page coming soon)
 
 ### I want to... monitor container health
 
@@ -298,7 +298,7 @@ Find the right script for your task quickly. This page organizes scripts by comm
 - **`scripts/cloud/containers/Get-KubernetesHealthCheck.ps1`** - Kubernetes health check
 - **`scripts/cloud/containers/Optimize-DockerCleanup.ps1`** - Clean up Docker
 
-**Documentation:** [Container Management](Container-Management)
+**Documentation:** [Script Catalog](Script-Catalog) (Container Management category page coming soon)
 
 ---
 
@@ -323,5 +323,5 @@ Try these resources:
 
 ---
 
-**Last Updated:** 2025-12-31
-**Version:** 1.0.0
+**Last Updated:** 2026-01-05
+**Version:** 1.1.0

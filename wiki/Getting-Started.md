@@ -86,7 +86,7 @@ Try: Get-DeviceComplianceReport.ps1
     ↓
 See: [Intune Management](Intune-Management) guide
     ↓
-Follow: [Monthly Compliance Audit Workflow](Workflow-Monthly-Compliance-Audit)
+Follow: [Monthly Compliance Audit Workflow](Workflows#monthly-compliance-audit-workflow)
 ```
 
 **[Start with Intune Management →](Intune-Management)**
@@ -101,7 +101,7 @@ Try: Monitor-ServerHealth.ps1
     ↓
 See: [Server Management](Server-Management) guide
     ↓
-Follow: [New Server Setup Workflow](Workflow-New-Server-Setup)
+Follow: [New Server Setup Workflow](Workflows#new-windows-server-setup)
 ```
 
 **[Start with Server Management →](Server-Management)**
@@ -114,12 +114,12 @@ Install Az or AWS.Tools modules
     ↓
 Try: Monitor-AzureDevOpsPipelines.ps1
     ↓
-See: [DevOps & CI/CD](DevOps-CICD) guide
+See: DevOps & CI/CD scripts (Coming soon)
     ↓
-Explore: [Cloud Infrastructure](Cloud-Infrastructure)
+Explore: Cloud Infrastructure scripts (Coming soon)
 ```
 
-**[Start with DevOps & CI/CD →](DevOps-CICD)**
+**Start with DevOps & CI/CD** (Category pages coming soon - see [Script Catalog](Script-Catalog) for now)
 
 ### Path 4: IT Support / Help Desk
 ```
@@ -129,7 +129,7 @@ Review [Proactive Remediations](Proactive-Remediations)
     ↓
 Try: Fix-DiskSpace (detect.ps1 first!)
     ↓
-Follow: [Automated Winget Updates Workflow](Workflow-Automated-Winget-Updates)
+Follow: [Automated Winget Updates Workflow](Workflows#setting-up-automated-winget-updates)
     ↓
 Explore: All 14 remediation pairs
 ```
@@ -276,7 +276,7 @@ Most scripts generate:
 - **0** = Success / No issues found / Compliant
 - **1** = Issues detected / Remediation needed / Non-compliant
 
-See [Script Parameters](Script-Parameters) for detailed exit code documentation.
+See individual script documentation for detailed exit code information.
 
 ---
 
@@ -291,14 +291,14 @@ See [Script Parameters](Script-Parameters) for detailed exit code documentation.
 ### Intermediate Path
 1. ✅ You're ready for production!
 2. 📋 Follow [Complete Workflows](Workflows)
-3. 🔧 Set up [Automated Winget Updates](Workflow-Automated-Winget-Updates)
-4. 📊 Implement [Monthly Compliance Audit](Workflow-Monthly-Compliance-Audit)
+3. 🔧 Set up [Automated Winget Updates](Workflows#setting-up-automated-winget-updates)
+4. 📊 Implement [Monthly Compliance Audit](Workflows#monthly-compliance-audit-workflow)
 
 ### Advanced Path
 1. ✅ You're a power user!
-2. 🏗️ Review [Architecture](Architecture) to understand design
-3. 🔨 Check [Custom Development](Custom-Development) to build your own
-4. 🤝 Read [Contributing](Contributing) to help improve the repo
+2. 🏗️ Review the codebase to understand design patterns
+3. 🔨 Customize scripts for your environment
+4. 🤝 Read [Contributing](../CONTRIBUTING.md) to help improve the repo
 
 ---
 
@@ -329,8 +329,8 @@ Get-Help .\ScriptName.ps1 -Full
 | Script not working | [Troubleshooting Guide](Troubleshooting) |
 | Don't understand usage | [Script Examples](Script-Examples) |
 | Found a bug | [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues) |
-| Want to contribute | [Contributing Guide](Contributing) |
-| Security concern | [Security Policy](Security-Policy) |
+| Want to contribute | [Contributing Guide](../CONTRIBUTING.md) |
+| Security concern | [Security Policy](../SECURITY.md) |
 
 ---
 
