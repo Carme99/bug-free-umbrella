@@ -70,12 +70,12 @@ jobs:
             // ========== ISSUE TYPE (Secondary Categories) ==========
 
             // Bug or error
-            if (combined.match(/\b(bug|error|issue|problem|broken|fail|crash|exception)\b/)) {
+            if (combined.match(/\b(bug|error|problem|broken|fail|crash|exception)\b/)) {
               labels.push('bug');
             }
 
             // Feature request or enhancement
-            if (combined.match(/\b(feature|enhancement|improvement|add|new|request|suggestion)\b/)) {
+            if (combined.match(/\b(feature request|enhancement|improvement|suggestion|would like|could you add|can you add|please add)\b/)) {
               labels.push('enhancement');
             }
 
@@ -152,3 +152,5 @@ jobs:
                 body: `👋 Thanks for opening this issue! No automatic labels were detected. Please add appropriate labels to help with organization.\n\n**Available categories:** Azure, AWS, Intune, Winget, Microsoft 365, Security, DevOps, and more.`
               });
             }
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
