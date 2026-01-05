@@ -20,7 +20,9 @@ All scripts are located in: `/scripts/endpoints/devices/proactive-remediations/`
 
 ## Available Remediations
 
-**Total: 32 detect/remediate script pairs** across 7 categories
+**Total: 42 detect/remediate script pairs** across 7 categories
+
+> **🆕 Version 3.0 Update**: Added 10 advanced system maintenance remediations for performance monitoring, reliability, and hardware diagnostics.
 
 ### 🔒 Security & Compliance (6 remediations)
 
@@ -33,7 +35,7 @@ All scripts are located in: `/scripts/endpoints/devices/proactive-remediations/`
 | **Check-LocalAdminAccounts** 🆕 | Unauthorized local administrator accounts | Disable built-in admin account, log unauthorized admins | High |
 | **Fix-PowerShellExecutionPolicy** 🆕 | PowerShell execution policy not RemoteSigned | Set execution policy to RemoteSigned | Medium |
 
-### 💾 Storage & Performance (7 remediations)
+### 💾 Storage & Performance (9 remediations)
 
 | Remediation | Issue Detected | Remediation Action | Priority |
 |-------------|----------------|-------------------|----------|
@@ -44,8 +46,10 @@ All scripts are located in: `/scripts/endpoints/devices/proactive-remediations/`
 | **Fix-EdgeCacheSize** 🆕 | Edge browser cache excessive (>500MB) | Clear Edge cache | Low |
 | **Check-DiskHealth** 🆕 | SMART errors, disk issues detected | Schedule disk check, optimize volumes | High |
 | **Fix-StartMenuLayout** 🆕 | Start Menu corrupted or not opening | Rebuild tile database, clear cache | Medium |
+| **Check-PageFileConfiguration** 🆕 | Page file disabled or misconfigured | Enable system-managed page file | High |
+| **Check-MemoryDiagnostics** 🆕 | RAM errors detected in event logs | Schedule Windows Memory Diagnostic on reboot | High |
 
-### 🔄 System Services (8 remediations)
+### 🔄 System Services (13 remediations)
 
 | Remediation | Issue Detected | Remediation Action | Priority |
 |-------------|----------------|-------------------|----------|
@@ -57,6 +61,11 @@ All scripts are located in: `/scripts/endpoints/devices/proactive-remediations/`
 | **Fix-DNSCache** | DNS cache corruption or issues | Flush DNS cache, re-register DNS | Medium |
 | **Fix-WindowsStoreLicensing** 🆕 | ClipSVC not running, Store licensing issues | Reset Store license cache, restart ClipSVC | Medium |
 | **Fix-OutdatedDrivers** 🆕 | Critical driver updates available | Install driver updates from Windows Update | Medium |
+| **Fix-WindowsPerformanceRecorder** 🆕 | Stuck WPR/ETW tracing sessions | Stop orphaned performance recorder sessions | Medium |
+| **Fix-TaskSchedulerCorruption** 🆕 | Task Scheduler service issues | Restart Task Scheduler service | Medium |
+| **Check-MicrosoftStoreAppsHealth** 🆕 | AppX packages in error state | Re-register Store apps | Medium |
+| **Fix-SystemFileCorruption** 🆕 | System file corruption detected | Run DISM RestoreHealth and SFC scan | High |
+| **Fix-WindowsUpdateRebootPending** 🆕 | Stuck reboot pending flags (>7 days) | Clear false positive reboot pending keys | Medium |
 
 ### 🌐 Network & Connectivity (3 remediations)
 
@@ -66,7 +75,7 @@ All scripts are located in: `/scripts/endpoints/devices/proactive-remediations/`
 | **Fix-SMBv1Protocol** 🆕 | Insecure SMBv1 protocol enabled | Disable SMBv1 (security risk) | Critical |
 | **Check-SharedFolders** 🆕 | Unauthorized network shares present | Remove unauthorized shares | High |
 
-### 📱 Apps & Licensing (4 remediations)
+### 📱 Apps & Licensing (6 remediations)
 
 | Remediation | Issue Detected | Remediation Action | Priority |
 |-------------|----------------|-------------------|----------|
@@ -74,6 +83,8 @@ All scripts are located in: `/scripts/endpoints/devices/proactive-remediations/`
 | **Fix-CredentialManager** 🆕 | Stale or orphaned credentials | Remove problematic credentials | Low |
 | **Fix-WindowsLicenseActivation** 🆕 | Windows not activated | Trigger online activation | High |
 | **Fix-BrokenShortcuts** | Broken desktop shortcuts | Remove invalid shortcuts | Low |
+| **Check-WindowsActivationGracePeriod** 🆕 | Activation grace period <30 days | Trigger activation before expiry | High |
+| **Check-BatteryHealth** 🆕 | Battery capacity degraded (<70% of design) | Report battery health for replacement tracking | Medium |
 
 ### 🌍 Regional & Localization (3 remediations)
 

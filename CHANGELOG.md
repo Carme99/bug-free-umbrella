@@ -30,6 +30,86 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ---
 
+## [3.1.0] - 2026-01-05 🌧️ **"Shower"** - Expanded Intune Operations
+
+> **Focus**: Comprehensive expansion of Intune management and proactive remediation capabilities
+
+### Added
+
+#### 🆕 Proactive Remediations (+10 scripts, 20 PowerShell files)
+
+**Performance & Reliability** (5 remediations)
+- **Fix-WindowsPerformanceRecorder** - Stop stuck WPR/ETW tracing sessions causing high CPU
+- **Fix-TaskSchedulerCorruption** - Repair Task Scheduler service and database issues
+- **Check-MicrosoftStoreAppsHealth** - Detect and fix AppX package registration errors
+- **Fix-SystemFileCorruption** - Run DISM RestoreHealth and SFC to repair corrupted system files
+- **Fix-WindowsUpdateRebootPending** - Clear stuck reboot pending flags (>7 days old)
+
+**Hardware & Diagnostics** (3 remediations)
+- **Check-PageFileConfiguration** - Verify page file is enabled and properly sized
+- **Check-MemoryDiagnostics** - Detect RAM errors and schedule Windows Memory Diagnostic
+- **Check-BatteryHealth** - Monitor laptop battery degradation (<70% capacity threshold)
+
+**Licensing & Activation** (2 remediations)
+- **Check-WindowsActivationGracePeriod** - Alert when activation expiring within 30 days
+- Trigger online activation before grace period expires
+
+### Changed
+
+**Proactive Remediation Library**
+- Total remediations: 32 → 42 (+31%)
+- Storage & Performance category: 7 → 9 scripts
+- System Services category: 8 → 13 scripts
+- Apps & Licensing category: 4 → 6 scripts
+- Enhanced hardware monitoring and diagnostics coverage
+- Added proactive activation monitoring
+
+**Documentation Updates**
+- Updated all READMEs to reflect 42 total remediations
+- Expanded deployment schedules and priority levels
+- Added detailed descriptions for advanced maintenance scripts
+- Updated wiki with comprehensive remediation catalog
+
+### Improved
+
+**System Reliability**
+- Enhanced detection of system file corruption
+- Improved Task Scheduler health monitoring
+- Better page file misconfiguration detection
+- Memory error tracking and diagnostics
+
+**Performance Monitoring**
+- Detection of orphaned WPR/ETW sessions
+- Store apps health and registration validation
+- Stuck reboot state identification
+
+**Hardware Health**
+- Battery capacity degradation tracking (laptops)
+- Memory diagnostic scheduling for RAM errors
+- Page file optimal configuration validation
+
+**Activation Management**
+- Grace period expiration warnings (30-day threshold)
+- Proactive activation before expiry
+
+### Statistics
+
+**New Scripts**: 10 proactive remediations (20 PowerShell files)
+**Total Remediations**: 42 detect/remediate pairs (84 PowerShell files)
+**Lines of Code Added**: ~1,800
+**Documentation Updated**: 4 files (2 READMEs, 1 wiki, 1 CHANGELOG)
+**Categories Enhanced**: 3 (Storage & Performance, System Services, Apps & Licensing)
+
+### Notes
+
+- All new scripts follow Intune proactive remediation best practices
+- Scripts run in SYSTEM context for full administrative access
+- Exit codes: 0 = compliant/success, 1 = issue detected/remediation needed
+- Comprehensive error handling and descriptive logging
+- Configurable thresholds in detect scripts (days, percentages, MB)
+
+---
+
 ## [3.0.3] - 2026-01-04 ☔ **"Drizzle"** - Wiki Version Reference Fix
 
 > **Focus**: Correct outdated version references in wiki documentation

@@ -852,14 +852,18 @@ Start-Process "$env:USERPROFILE\Desktop"
   - Get-UserDeviceAffinity.ps1 - User-device relationship reporting
   - Test-IntuneConnectivity.ps1 - Endpoint connectivity validation
   - Compare-ConfigurationDrift.ps1 - Configuration change tracking
-- Expanded proactive remediation library from 14 to 32 scripts
-- Added 18 new daily operations remediations:
-  - Security: DefenderHealth, TPMStatus, LocalAdmin, PowerShell policy
-  - System: TimeSync, NetworkPowerMgmt, EventLogs, DiskHealth
-  - Apps: OneDrive KFM, EdgeCache, WindowsStore, StartMenu
+- Expanded proactive remediation library from 14 to 42 scripts (+28 total)
+- Added 18 initial daily operations remediations:
+  - Security: DefenderHealth, TPMStatus, LocalAdmin, PowerShell policy, CertificateExpiry
+  - System: TimeSync, NetworkPowerMgmt, EventLogs, DiskHealth, StartMenu, WindowsStore
+  - Apps: OneDrive KFM, EdgeCache, CredentialManager, WindowsActivation
   - Network: SMBv1, SharedFolders
-  - Licensing: CertificateExpiry, WindowsActivation
-- Total toolkit: 24 Intune scripts + 32 proactive remediations
+- Added 10 advanced system maintenance remediations:
+  - Performance: WPR/ETW sessions, Task Scheduler, Store Apps health
+  - Reliability: System file corruption (SFC/DISM), Page file configuration
+  - Monitoring: Battery health, Memory diagnostics, Activation grace period
+  - Updates: Reboot pending state fixes
+- Total toolkit: 24 Intune scripts + 42 proactive remediations
 
 **Version 2.0** - Winget & Advanced Management
 - Added 4 winget enhancement scripts (bulk updater, compliance, inventory, source config)
