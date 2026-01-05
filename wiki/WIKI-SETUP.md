@@ -183,8 +183,8 @@ Your content here...
 
 ## See Also
 
-- [Related Page 1](Related-Page-1)
-- [Related Page 2](Related-Page-2)
+- [Related Page 1](Home) (example link)
+- [Related Page 2](Script-Catalog) (example link)
 
 ---
 
