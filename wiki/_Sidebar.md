@@ -47,10 +47,10 @@ Coming soon
 ---
 
 ### 📋 Project Info
-- [📋 Changelog](../CHANGELOG.md)
+- [📋 Changelog](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)
 - [GitHub Repo](https://github.com/Carme99/bug-free-umbrella)
-- [Contributing](../CONTRIBUTING.md)
-- [Security](../SECURITY.md)
+- [Contributing](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)
+- [Security](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md)
 
 ---
 

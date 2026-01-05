@@ -2,9 +2,9 @@
 
 Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection of 260+ PowerShell scripts for enterprise IT management!
 
-> **Latest Release:** [v3.0.3 "Drizzle" ☔](../CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix) - Wiki version reference fixes!
+> **Latest Release:** [v3.0.3 "Drizzle" ☔](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix) - Wiki version reference fixes!
 >
-> 📋 **[View Full Changelog →](../CHANGELOG.md)** | 📦 **[GitHub Releases](https://github.com/Carme99/bug-free-umbrella/releases)**
+> 📋 **[View Full Changelog →](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)** | 📦 **[GitHub Releases](https://github.com/Carme99/bug-free-umbrella/releases)**
 
 ---
 
@@ -142,14 +142,14 @@ Additional pages planned:
 - Best practices and architecture guides
 
 ### 📋 Project Information
-- **[📋 Full Changelog (CHANGELOG.md)](../CHANGELOG.md)** - Complete version history
-  - [v3.0.3 "Drizzle" ☔](../CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix) - Latest patch (wiki fix)
-  - [v3.0.2 "Drizzle" ☔](../CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup) - Latest release
-  - [v3.0.1 "Drizzle" ☔](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release)
-  - [v3.0.0 "Hurricane" 🌪️](../CHANGELOG.md#300---2025-12-30--hurricane---repository-restructure)
-  - [v2.2.0 "Shower" 🌧️](../CHANGELOG.md#220---2025-12-28--shower---navigation--usability-improvements)
-- **[Contributing](../CONTRIBUTING.md)** - How to contribute to the project
-- **[Security Policy](../SECURITY.md)** - Reporting security vulnerabilities
+- **[📋 Full Changelog (CHANGELOG.md)](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)** - Complete version history
+  - [v3.0.3 "Drizzle" ☔](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix) - Latest patch (wiki fix)
+  - [v3.0.2 "Drizzle" ☔](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup) - Latest release
+  - [v3.0.1 "Drizzle" ☔](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release)
+  - [v3.0.0 "Hurricane" 🌪️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#300---2025-12-30--hurricane---repository-restructure)
+  - [v2.2.0 "Shower" 🌧️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#220---2025-12-28--shower---navigation--usability-improvements)
+- **[Contributing](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)** - How to contribute to the project
+- **[Security Policy](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md)** - Reporting security vulnerabilities
 - **[GitHub Repository](https://github.com/Carme99/bug-free-umbrella)** - Source code and issues
 
 ---
@@ -166,16 +166,16 @@ The latest release focuses on **wiki version reference fixes**:
 - 🔢 **Wiki Version Incremented:** 1.0.0 → 1.1.0 to track documentation updates
 - ✨ **Better Consistency:** All wiki pages now reference the correct current release
 
-**Previous Release:** [v3.0.2 "Drizzle" ☔](../CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup) - Documentation cleanup and broken link fixes
+**Previous Release:** [v3.0.2 "Drizzle" ☔](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup) - Documentation cleanup and broken link fixes
 
-**[Read Full Changelog →](../CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix)**
+**[Read Full Changelog →](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix)**
 
 ### Recent Major Releases
-- ☔ **[v3.0.3 "Drizzle"](../CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix)** (2026-01-04) - Wiki version reference fix
-- ☔ **[v3.0.2 "Drizzle"](../CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup)** (2026-01-03) - Documentation cleanup
-- ☔ **[v3.0.1 "Drizzle"](../CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release)** (2025-12-31) - Bug fixes
-- 🌪️ **[v3.0.0 "Hurricane"](../CHANGELOG.md#300---2025-12-30--hurricane---repository-restructure)** (2025-12-30) - Repository restructure
-- 🌧️ **[v2.2.0 "Shower"](../CHANGELOG.md#220---2025-12-28--shower---navigation--usability-improvements)** (2025-12-28) - Navigation improvements
+- ☔ **[v3.0.3 "Drizzle"](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix)** (2026-01-04) - Wiki version reference fix
+- ☔ **[v3.0.2 "Drizzle"](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup)** (2026-01-03) - Documentation cleanup
+- ☔ **[v3.0.1 "Drizzle"](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release)** (2025-12-31) - Bug fixes
+- 🌪️ **[v3.0.0 "Hurricane"](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#300---2025-12-30--hurricane---repository-restructure)** (2025-12-30) - Repository restructure
+- 🌧️ **[v2.2.0 "Shower"](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#220---2025-12-28--shower---navigation--usability-improvements)** (2025-12-28) - Navigation improvements
 
 ---
 
@@ -192,7 +192,7 @@ Quick links to accomplish specific tasks:
 | **Fix an issue** | Check **[Troubleshooting](Troubleshooting)** |
 | **Deploy Azure Virtual Desktop** | See **[Azure Virtual Desktop](Azure-Virtual-Desktop)** guide |
 | **Build ACG images** | Follow **[ACG Image Builder](Azure-Compute-Gallery-Image-Builder)** workflow |
-| **Check what's new** | Read the **[Changelog](../CHANGELOG.md)** |
+| **Check what's new** | Read the **[Changelog](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)** |
 
 ---
 
@@ -221,8 +221,8 @@ Quick links to accomplish specific tasks:
 3. **[Azure Virtual Desktop](Azure-Virtual-Desktop)** - Advanced deployment guides
 
 **Advanced?** Check out:
-1. **[Changelog](../CHANGELOG.md)** - Stay current with latest changes
-2. **[Contributing](../CONTRIBUTING.md)** - Help improve the repository
+1. **[Changelog](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)** - Stay current with latest changes
+2. **[Contributing](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)** - Help improve the repository
 3. **Repository code** - Explore the scripts directly
 
 ---
@@ -234,10 +234,10 @@ Quick links to accomplish specific tasks:
 | "How do I use this script?" | [Script Examples](Script-Examples) ✅ |
 | "Something's not working" | [Troubleshooting](Troubleshooting) ✅ |
 | "How do I set this up?" | [Getting Started](Getting-Started) ✅ |
-| "What's new?" | [📋 Changelog](../CHANGELOG.md) ✅ |
+| "What's new?" | [📋 Changelog](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md) ✅ |
 | "I found a bug" | [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues) |
-| "I want to contribute" | [Contributing Guide](../CONTRIBUTING.md) |
-| "Security issue" | [Security Policy](../SECURITY.md) |
+| "I want to contribute" | [Contributing Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md) |
+| "Security issue" | [Security Policy](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md) |
 
 ---
 
@@ -269,4 +269,4 @@ Bug-Free Umbrella is a comprehensive collection of PowerShell scripts for enterp
 
 **Corresponds to Release:** v3.0.3 "Drizzle" ☔
 
-**[📋 View Full Changelog →](../CHANGELOG.md)**
+**[📋 View Full Changelog →](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)**

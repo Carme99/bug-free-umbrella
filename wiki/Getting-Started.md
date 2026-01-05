@@ -298,7 +298,7 @@ See individual script documentation for detailed exit code information.
 1. ✅ You're a power user!
 2. 🏗️ Review the codebase to understand design patterns
 3. 🔨 Customize scripts for your environment
-4. 🤝 Read [Contributing](../CONTRIBUTING.md) to help improve the repo
+4. 🤝 Read [Contributing](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md) to help improve the repo
 
 ---
 
@@ -329,8 +329,8 @@ Get-Help .\ScriptName.ps1 -Full
 | Script not working | [Troubleshooting Guide](Troubleshooting) |
 | Don't understand usage | [Script Examples](Script-Examples) |
 | Found a bug | [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues) |
-| Want to contribute | [Contributing Guide](../CONTRIBUTING.md) |
-| Security concern | [Security Policy](../SECURITY.md) |
+| Want to contribute | [Contributing Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md) |
+| Security concern | [Security Policy](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md) |
 
 ---
 
