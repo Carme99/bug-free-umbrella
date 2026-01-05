@@ -93,7 +93,7 @@ Absolutely! The scripts are open source. You can:
 - Modify them for your environment
 - Add features
 - Fix bugs
-- Share improvements back (see **[Contributing](../CONTRIBUTING.md)**)
+- Share improvements back (see **[Contributing](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)**)
 
 ---
 
@@ -121,7 +121,7 @@ The scripts are designed to be safe, but you should always:
 3. **Understand what it does**
 4. **Have backups**
 
-Report security concerns to our **[Security Policy](../SECURITY.md)**.
+Report security concerns to our **[Security Policy](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md)**.
 
 ---
 
@@ -240,7 +240,7 @@ See **[Troubleshooting](Troubleshooting)** for more help.
 ## Contributing & Support
 
 ### How can I contribute?
-See **[Contributing Guide](../CONTRIBUTING.md)** for:
+See **[Contributing Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)** for:
 - Bug reports
 - Feature requests
 - Pull requests
@@ -283,7 +283,7 @@ git pull origin main
 - Extract and replace old files
 
 ### How often are scripts updated?
-Check the **[Changelog](../CHANGELOG.md)** for release history. Recent updates:
+Check the **[Changelog](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)** for release history. Recent updates:
 - **v3.0.2 "Drizzle"** (2026-01-03) - Documentation cleanup
 - **v3.0.1 "Drizzle"** (2025-12-31) - Bug fixes
 - **v3.0.0 "Hurricane"** (2025-12-30) - Repository restructure

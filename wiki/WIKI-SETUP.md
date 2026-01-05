@@ -308,7 +308,7 @@ No pull request needed! (But changes are tracked in Git history)
 **Main Repository:**
 - [Main Repo](https://github.com/Carme99/bug-free-umbrella)
 - [Latest Release](https://github.com/Carme99/bug-free-umbrella/releases/latest)
-- [Changelog](../CHANGELOG.md)
+- [Changelog](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)
 
 ---
 

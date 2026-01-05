@@ -9,8 +9,8 @@
 ### For First-Time Users
 | What you want to do | Go here |
 |---------------------|---------|
-| **Understand what this repo is** | [Main README](../README.md) |
-| **See what's new** | [CHANGELOG](../CHANGELOG.md) - Check out our fun release names! 🌈 |
+| **Understand what this repo is** | [Main README](https://github.com/Carme99/bug-free-umbrella/blob/main/README.md) |
+| **See what's new** | [CHANGELOG](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md) - Check out our fun release names! 🌈 |
 | **Get started quickly** | [Quick Start Guide](#quick-start-paths) (below) |
 | **See example outputs** | [Script Examples](Script-Examples) |
 
@@ -20,8 +20,8 @@
 | **Follow a complete workflow** | [Workflows](Workflows) |
 | **Troubleshoot a problem** | [Troubleshooting](Troubleshooting) |
 | **Find a specific script** | [Script Index](#script-index-by-category) (below) |
-| **Contribute** | [CONTRIBUTING.md](../CONTRIBUTING.md) |
-| **Report security issue** | [SECURITY.md](../SECURITY.md) |
+| **Contribute** | [CONTRIBUTING.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md) |
+| **Report security issue** | [SECURITY.md](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md) |
 
 ---
 
@@ -114,16 +114,16 @@ START HERE → Main README → Winget Updates Section
 
 | Document | Purpose | When to Use |
 |----------|---------|-------------|
-| **[README.md](../README.md)** | Repository overview, quick start | First stop for new users |
-| **[CHANGELOG.md](../CHANGELOG.md)** | Version history with fun codenames! 🌂 | See what's new, understand changes |
+| **[README.md](https://github.com/Carme99/bug-free-umbrella/blob/main/README.md)** | Repository overview, quick start | First stop for new users |
+| **[CHANGELOG.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)** | Version history with fun codenames! 🌂 | See what's new, understand changes |
 | **[Wiki Home](Home)** | Complete documentation hub | Deep dive into all scripts |
 | **[Script Examples](Script-Examples)** | Detailed examples with outputs | Learn how scripts work |
 | **[Workflows](Workflows)** | End-to-end step-by-step guides | Follow complete processes |
 | **[Troubleshooting](Troubleshooting)** | Common issues and solutions | When things don't work |
 | **[Intune Sync Guide](Intune-Sync-Guide)** | User group → device group sync | Specific Intune sync scenarios |
-| **[CONTRIBUTING.md](../CONTRIBUTING.md)** | How to contribute | Want to add scripts or fixes |
-| **[SECURITY.md](../SECURITY.md)** | Security policy | Report vulnerabilities |
-| **[SCRIPT_ANALYSIS_REPORT.md](../SCRIPT_ANALYSIS_REPORT.md)** | PowerShell code analysis | Understand code quality |
+| **[CONTRIBUTING.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)** | How to contribute | Want to add scripts or fixes |
+| **[SECURITY.md](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md)** | Security policy | Report vulnerabilities |
+| **[SCRIPT_ANALYSIS_REPORT.md](https://github.com/Carme99/bug-free-umbrella/blob/main/SCRIPT_ANALYSIS_REPORT.md)** | PowerShell code analysis | Understand code quality |
 
 ---
 
@@ -385,23 +385,23 @@ Organized by category:
 ## 🎓 Learning Paths
 
 ### Beginner Path: "New to PowerShell automation"
-1. Start with [Main README](../README.md) - understand the repository
+1. Start with [Main README](https://github.com/Carme99/bug-free-umbrella/blob/main/README.md) - understand the repository
 2. Review [Script Examples](Script-Examples) - see how scripts work
 3. Try a simple script like `Get-DeviceComplianceReport.ps1`
 4. Review [Troubleshooting](Troubleshooting) if issues arise
 5. Explore [Proactive Remediations](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations) for auto-fix scripts
 
 ### Intermediate Path: "I know PowerShell, want to deploy"
-1. Review [Main README](../README.md) prerequisites section
+1. Review [Main README](https://github.com/Carme99/bug-free-umbrella/blob/main/README.md) prerequisites section
 2. Pick your focus area from [Script Index](#script-index-by-category)
 3. Follow a complete workflow from [Workflows](Workflows)
-4. Review [CHANGELOG.md](../CHANGELOG.md) for latest improvements
-5. Consider [contributing](../CONTRIBUTING.md) improvements
+4. Review [CHANGELOG.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md) for latest improvements
+5. Consider [contributing](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md) improvements
 
 ### Advanced Path: "I want to customize and contribute"
-1. Read [CONTRIBUTING.md](../CONTRIBUTING.md) guidelines
-2. Review [SCRIPT_ANALYSIS_REPORT.md](../SCRIPT_ANALYSIS_REPORT.md) for code quality standards
-3. Check [CHANGELOG.md](../CHANGELOG.md) - see what's been improved (e.g., 🌈 Rainbow release)
+1. Read [CONTRIBUTING.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md) guidelines
+2. Review [SCRIPT_ANALYSIS_REPORT.md](https://github.com/Carme99/bug-free-umbrella/blob/main/SCRIPT_ANALYSIS_REPORT.md) for code quality standards
+3. Check [CHANGELOG.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md) - see what's been improved (e.g., 🌈 Rainbow release)
 4. Fork, customize, and submit pull requests
 5. Help expand documentation and examples
 
@@ -428,7 +428,7 @@ Organized by category:
 - 📚 **Cleaner Documentation:** Simplified docs folder, consistent wiki link format
 - ✨ **Better UX:** All internal wiki links now use proper wiki-style navigation
 
-**See full details:** [CHANGELOG.md](../CHANGELOG.md)
+**See full details:** [CHANGELOG.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)
 
 ---
 
@@ -455,7 +455,7 @@ Organized by category:
 
 - **GitHub Repository**: [Carme99/bug-free-umbrella](https://github.com/Carme99/bug-free-umbrella)
 - **Issues & Feature Requests**: [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues)
-- **Changelog with Fun Codenames**: [CHANGELOG.md](../CHANGELOG.md) 🌂
+- **Changelog with Fun Codenames**: [CHANGELOG.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md) 🌂
 - **Claude Code**: [github.com/anthropics/claude-code](https://github.com/anthropics/claude-code)
 
 ---
@@ -489,9 +489,9 @@ Organized by category:
 | "How do I use this script?" | [Script Examples](Script-Examples) |
 | "Something's not working" | [Troubleshooting](Troubleshooting) |
 | "How do I deploy this?" | [Workflows](Workflows) |
-| "What's new?" | [CHANGELOG.md](../CHANGELOG.md) |
-| "I want to contribute" | [CONTRIBUTING.md](../CONTRIBUTING.md) |
-| "I found a security issue" | [SECURITY.md](../SECURITY.md) |
+| "What's new?" | [CHANGELOG.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md) |
+| "I want to contribute" | [CONTRIBUTING.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md) |
+| "I found a security issue" | [SECURITY.md](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md) |
 | "General questions" | Check script comments or [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues) |
 
 ---
