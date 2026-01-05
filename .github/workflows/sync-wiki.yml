@@ -22,7 +22,7 @@ jobs:
         with:
           repository: ${{ github.repository }}.wiki
           path: wiki-repo
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.WIKI_TOKEN }}
 
       - name: Sync wiki files
         run: |
