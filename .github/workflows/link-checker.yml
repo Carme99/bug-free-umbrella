@@ -1,0 +1,117 @@
+name: Check Documentation Links
+
+on:
+  push:
+    branches: [ main, develop, claude/* ]
+    paths:
+      - '**.md'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - '**.md'
+  schedule:
+    # Run weekly on Sundays at midnight UTC
+    - cron: '0 0 * * 0'
+  workflow_dispatch:  # Allow manual triggering
+
+permissions:
+  contents: read
+  issues: write  # For creating issues on broken links
+
+jobs:
+  linkChecker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Restore lychee cache
+        uses: actions/cache@v4
+        with:
+          path: .lycheecache
+          key: cache-lychee-${{ github.sha }}
+          restore-keys: cache-lychee-
+
+      - name: Link Checker
+        uses: lycheeverse/lychee-action@v1
+        with:
+          args: |
+            --verbose
+            --no-progress
+            --cache
+            --max-cache-age 1d
+            --exclude-path ./docs
+            --exclude-path ./CHANGELOG.md
+            --exclude 'linkedin.com'
+            --exclude 'twitter.com'
+            --exclude 'facebook.com'
+            --accept 200,204,429
+            --timeout 20
+            --retry-wait-time 10
+            --max-retries 3
+            '**/*.md'
+          fail: true
+          jobSummary: true
+          format: markdown
+
+      - name: Create Issue on Failure
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '🔗 Broken links detected in documentation';
+            const body = `## Broken Links Found
+
+            The automated link checker has detected broken links in the documentation.
+
+            **Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.sha }}
+
+            Please review the workflow logs for details on which links are broken.
+
+            ### Common Causes
+            - External website temporarily down
+            - URL changed or moved
+            - Typo in the link
+            - Relative link path incorrect
+
+            ---
+            *This issue was automatically created by the Link Checker workflow.*`;
+
+            // Check if issue already exists
+            const existingIssues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'broken-links',
+              per_page: 100
+            });
+
+            if (existingIssues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['documentation', 'broken-links', 'automated']
+              });
+              console.log('Created new issue for broken links');
+            } else {
+              console.log('Issue for broken links already exists');
+              // Add comment to existing issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssues.data[0].number,
+                body: `🔄 Broken links still detected in workflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`
+              });
+            }
+
+      - name: Upload Link Check Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lychee-results
+          path: lychee/out.md
+          retention-days: 30

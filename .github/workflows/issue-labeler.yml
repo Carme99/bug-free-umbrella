@@ -1,0 +1,153 @@
+name: Auto-Label Issues
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  issues: write
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto-Label Based on Content
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const title = issue.title.toLowerCase();
+            const body = issue.body?.toLowerCase() || '';
+            const combined = title + ' ' + body;
+
+            const labels = [];
+
+            // ========== TECHNOLOGY DOMAINS (Primary Categories) ==========
+
+            // Cloud & Infrastructure
+            if (combined.match(/\b(azure|az-|microsoft azure)\b/)) labels.push('azure');
+            if (combined.match(/\b(aws|amazon web services)\b/)) labels.push('aws');
+            if (combined.match(/\b(docker|container|kubernetes|k8s)\b/)) labels.push('containers');
+
+            // Endpoints & Devices
+            if (combined.match(/\b(intune|mem|endpoint manager)\b/)) labels.push('intune');
+            if (combined.match(/\b(winget|windows package manager)\b/)) labels.push('winget');
+            if (combined.match(/\b(proactive remediation|remediation script)\b/)) labels.push('proactive-remediations');
+            if (combined.match(/\b(autopatch|windows update)\b/)) labels.push('windows-update');
+            if (combined.match(/\b(bitlocker|encryption)\b/)) labels.push('bitlocker');
+
+            // Infrastructure
+            if (combined.match(/\b(windows server|server 2019|server 2022)\b/)) labels.push('windows-server');
+            if (combined.match(/\b(active directory|ad |domain controller)\b/)) labels.push('active-directory');
+            if (combined.match(/\b(group policy|gpo)\b/)) labels.push('group-policy');
+            if (combined.match(/\b(hyper-v|vmware|virtualization)\b/)) labels.push('virtualization');
+            if (combined.match(/\b(iis|web server)\b/)) labels.push('iis');
+            if (combined.match(/\b(linux|ubuntu|centos|rhel)\b/)) labels.push('linux');
+            if (combined.match(/\b(network|dns|dhcp|routing)\b/)) labels.push('networking');
+
+            // Security & Compliance
+            if (combined.match(/\b(security|compliance|audit)\b/)) labels.push('security');
+            if (combined.match(/\b(cis|nist|pci-dss|hipaa|soc2|iso27001)\b/)) labels.push('compliance');
+            if (combined.match(/\b(hardening|baseline|security baseline)\b/)) labels.push('hardening');
+
+            // Automation & DevOps
+            if (combined.match(/\b(ci\/cd|pipeline|azure devops|github actions|gitlab)\b/)) labels.push('devops');
+            if (combined.match(/\b(terraform|bicep|infrastructure as code|iac)\b/)) labels.push('iac');
+
+            // Microsoft 365 & Collaboration
+            if (combined.match(/\b(microsoft 365|m365|office 365|o365)\b/)) labels.push('microsoft-365');
+            if (combined.match(/\b(exchange online|exchange server)\b/)) labels.push('exchange');
+            if (combined.match(/\b(teams|microsoft teams)\b/)) labels.push('teams');
+            if (combined.match(/\b(sharepoint|onedrive)\b/)) labels.push('sharepoint');
+            if (combined.match(/\b(azure ad|entra id|aad)\b/)) labels.push('azure-ad');
+            if (combined.match(/\b(defender|microsoft defender)\b/)) labels.push('defender');
+
+            // Data & Databases
+            if (combined.match(/\b(sql server|mysql|postgresql|mongodb|database)\b/)) labels.push('database');
+            if (combined.match(/\b(api|rest api|graph api)\b/)) labels.push('api');
+
+            // ========== ISSUE TYPE (Secondary Categories) ==========
+
+            // Bug or error
+            if (combined.match(/\b(bug|error|issue|problem|broken|fail|crash|exception)\b/)) {
+              labels.push('bug');
+            }
+
+            // Feature request or enhancement
+            if (combined.match(/\b(feature|enhancement|improvement|add|new|request|suggestion)\b/)) {
+              labels.push('enhancement');
+            }
+
+            // Documentation
+            if (combined.match(/\b(documentation|docs|readme|wiki|guide|tutorial|example)\b/)) {
+              labels.push('documentation');
+            }
+
+            // Question or help
+            if (combined.match(/\b(question|help|how to|how do|support)\b/) || title.includes('?')) {
+              labels.push('question');
+            }
+
+            // Performance
+            if (combined.match(/\b(performance|slow|optimization|speed|timeout)\b/)) {
+              labels.push('performance');
+            }
+
+            // Testing
+            if (combined.match(/\b(test|testing|pester|unit test|validation)\b/)) {
+              labels.push('testing');
+            }
+
+            // ========== PRIORITY INDICATORS ==========
+
+            // Critical/High Priority
+            if (combined.match(/\b(critical|urgent|emergency|security vulnerability|broken)\b/)) {
+              labels.push('priority:high');
+            }
+
+            // Good first issue (for contributors)
+            if (combined.match(/\b(good first issue|beginner|easy|simple)\b/)) {
+              labels.push('good-first-issue');
+            }
+
+            // ========== APPLY LABELS ==========
+
+            if (labels.length > 0) {
+              // Remove duplicates
+              const uniqueLabels = [...new Set(labels)];
+
+              console.log(`Adding labels to issue #${issue.number}: ${uniqueLabels.join(', ')}`);
+
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: uniqueLabels
+              });
+
+              // Add comment if multiple categories detected
+              if (uniqueLabels.length >= 3) {
+                const categoryLabels = uniqueLabels.filter(l =>
+                  !['bug', 'enhancement', 'documentation', 'question', 'performance', 'testing', 'priority:high', 'good-first-issue'].includes(l)
+                );
+
+                if (categoryLabels.length > 1) {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    body: `🏷️ Auto-labeled with: **${uniqueLabels.join('**, **')}**\n\nDetected multiple technology domains. Please update labels if needed!`
+                  });
+                }
+              }
+            } else {
+              console.log(`No matching labels found for issue #${issue.number}`);
+
+              // Add a comment suggesting manual labeling
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: `👋 Thanks for opening this issue! No automatic labels were detected. Please add appropriate labels to help with organization.\n\n**Available categories:** Azure, AWS, Intune, Winget, Microsoft 365, Security, DevOps, and more.`
+              });
+            }
