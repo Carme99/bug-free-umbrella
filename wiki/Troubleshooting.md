@@ -638,14 +638,24 @@ If you encounter issues not covered in this guide:
    - Review Intune device logs
 
 4. **Report the Issue:**
-   - Create a GitHub issue with detailed information
+   - See **[Support Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md)** for response time expectations
+   - Review **[Code of Conduct](https://github.com/Carme99/bug-free-umbrella/blob/main/CODE_OF_CONDUCT.md)** before reporting
+   - Create a GitHub issue with detailed information (will be auto-labeled)
    - Include sanitized error messages (remove sensitive data)
    - Provide steps to reproduce
+
+**Note:** Issues are automatically labeled by technology and type. Inactive issues are closed after 60 days with a 7-day warning.
 
 ---
 
 ## Useful Resources
 
+### Project Resources
+- **[Support Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md)** - Response times and support channels
+- **[Code of Conduct](https://github.com/Carme99/bug-free-umbrella/blob/main/CODE_OF_CONDUCT.md)** - Community standards
+- **[Governance](https://github.com/Carme99/bug-free-umbrella/blob/main/GOVERNANCE.md)** - Project governance and solo maintainer model
+
+### Microsoft Documentation
 - [Microsoft Graph PowerShell SDK Documentation](https://learn.microsoft.com/en-us/powershell/microsoftgraph/)
 - [Microsoft Intune Documentation](https://learn.microsoft.com/en-us/mem/intune/)
 - [PowerShell Documentation](https://learn.microsoft.com/en-us/powershell/)

@@ -47,6 +47,9 @@ Coming soon
 ---
 
 ### 📋 Project Info
+- [💬 Support Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md)
+- [📜 Code of Conduct](https://github.com/Carme99/bug-free-umbrella/blob/main/CODE_OF_CONDUCT.md)
+- [🏛️ Governance](https://github.com/Carme99/bug-free-umbrella/blob/main/GOVERNANCE.md)
 - [📋 Changelog](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)
 - [GitHub Repo](https://github.com/Carme99/bug-free-umbrella)
 - [Contributing](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)

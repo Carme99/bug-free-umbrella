@@ -141,37 +141,40 @@ foreach ($label in $labels) {
     }
 
     try {
-        # Try to create the label
-        $result = gh label create $name --color $color --description $description 2>&1
+        # Check if label already exists
+        $existingLabel = gh label list --json name --jq ".[] | select(.name == `"$name`")" 2>&1
 
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "✅ Created: " -NoNewline -ForegroundColor Green
-            Write-Host "$name " -NoNewline -ForegroundColor White
-            Write-Host "($description)" -ForegroundColor Gray
-            $created++
+        if ($LASTEXITCODE -eq 0 -and $existingLabel) {
+            # Label exists, update it
+            $updateResult = gh label edit $name --color $color --description $description 2>&1
+
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "🔄 Updated: " -NoNewline -ForegroundColor Yellow
+                Write-Host "$name " -NoNewline -ForegroundColor White
+                Write-Host "($description)" -ForegroundColor Gray
+                $updated++
+            } else {
+                Write-Host "⏭️  Skipped: " -NoNewline -ForegroundColor Cyan
+                Write-Host "$name " -NoNewline -ForegroundColor White
+                Write-Host "(already exists, couldn't update)" -ForegroundColor Gray
+                $skipped++
+            }
         } else {
-            # Label might already exist, try to update it
-            if ($result -match "already exists") {
-                $updateResult = gh label edit $name --color $color --description $description 2>&1
+            # Label doesn't exist, create it
+            $result = gh label create $name --color $color --description $description 2>&1
 
-                if ($LASTEXITCODE -eq 0) {
-                    Write-Host "🔄 Updated: " -NoNewline -ForegroundColor Yellow
-                    Write-Host "$name " -NoNewline -ForegroundColor White
-                    Write-Host "($description)" -ForegroundColor Gray
-                    $updated++
-                } else {
-                    Write-Host "⏭️  Skipped: " -NoNewline -ForegroundColor Cyan
-                    Write-Host "$name " -NoNewline -ForegroundColor White
-                    Write-Host "(already exists, no changes needed)" -ForegroundColor Gray
-                    $skipped++
-                }
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "✅ Created: " -NoNewline -ForegroundColor Green
+                Write-Host "$name " -NoNewline -ForegroundColor White
+                Write-Host "($description)" -ForegroundColor Gray
+                $created++
             } else {
                 Write-Host "❌ Error creating $name : $result" -ForegroundColor Red
                 $errors++
             }
         }
     } catch {
-        Write-Host "❌ Error creating $name : $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "❌ Error processing $name : $($_.Exception.Message)" -ForegroundColor Red
         $errors++
     }
 }

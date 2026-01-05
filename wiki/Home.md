@@ -142,14 +142,27 @@ Additional pages planned:
 - Best practices and architecture guides
 
 ### 📋 Project Information
+
+#### 🤝 Community & Governance
+- **[💬 Support Guide (SUPPORT.md)](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md)** - How to get help and response times
+- **[📜 Code of Conduct (CODE_OF_CONDUCT.md)](https://github.com/Carme99/bug-free-umbrella/blob/main/CODE_OF_CONDUCT.md)** - Community standards and expectations
+- **[🏛️ Governance (GOVERNANCE.md)](https://github.com/Carme99/bug-free-umbrella/blob/main/GOVERNANCE.md)** - Project governance and solo maintainer model
+- **[🤲 Contributing (CONTRIBUTING.md)](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)** - How to contribute to the project
+- **[🔒 Security Policy (SECURITY.md)](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md)** - Reporting security vulnerabilities
+
+#### 🤖 Automated Repository Management
+This repository uses automated GitHub workflows to maintain quality and organization:
+- **Issue Auto-Labeler** - Automatically categorizes issues with 46 technology and type labels
+- **Stale Issue Manager** - Closes inactive issues (60+ days) and PRs (30+ days) with warning period
+- **Link Validator** - Weekly validation of all documentation links to prevent dead links
+
+#### 📚 Version History
 - **[📋 Full Changelog (CHANGELOG.md)](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)** - Complete version history
   - [v3.0.3 "Drizzle" ☔](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix) - Latest patch (wiki fix)
   - [v3.0.2 "Drizzle" ☔](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup) - Latest release
   - [v3.0.1 "Drizzle" ☔](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release)
   - [v3.0.0 "Hurricane" 🌪️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#300---2025-12-30--hurricane---repository-restructure)
   - [v2.2.0 "Shower" 🌧️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#220---2025-12-28--shower---navigation--usability-improvements)
-- **[Contributing](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)** - How to contribute to the project
-- **[Security Policy](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md)** - Reporting security vulnerabilities
 - **[GitHub Repository](https://github.com/Carme99/bug-free-umbrella)** - Source code and issues
 
 ---

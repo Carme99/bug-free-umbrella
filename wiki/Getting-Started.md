@@ -326,11 +326,16 @@ Get-Help .\ScriptName.ps1 -Full
 ### Support
 | Issue | Where to Go |
 |-------|-------------|
+| Need support or help | [Support Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md) - Response times and channels |
 | Script not working | [Troubleshooting Guide](Troubleshooting) |
 | Don't understand usage | [Script Examples](Script-Examples) |
-| Found a bug | [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues) |
+| Found a bug | [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues) - Auto-labeled for organization |
 | Want to contribute | [Contributing Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md) |
+| Community standards | [Code of Conduct](https://github.com/Carme99/bug-free-umbrella/blob/main/CODE_OF_CONDUCT.md) |
 | Security concern | [Security Policy](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md) |
+| Project governance | [Governance](https://github.com/Carme99/bug-free-umbrella/blob/main/GOVERNANCE.md) - Solo maintainer model |
+
+**Note:** This is a hobby project. See the [Support Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md) for response time expectations (typically 1-2 weeks). Issues are automatically labeled and inactive issues/PRs are closed after 60-90 days.
 
 ---
 
