@@ -41,11 +41,17 @@ jobs:
             --cache
             --max-cache-age 1d
             --exclude-path ./docs
+            --exclude-path ./wiki
             --exclude-path ./CHANGELOG.md
             --exclude 'linkedin.com'
             --exclude 'twitter.com'
             --exclude 'facebook.com'
-            --accept 200,204,429
+            --exclude 'reddit.com'
+            --exclude 'intune.microsoft.com'
+            --exclude 'endpoint.microsoft.com'
+            --exclude 'docs.microsoft.com'
+            --exclude 'hhs.gov'
+            --accept 200,204,429,403
             --timeout 20
             --retry-wait-time 10
             --max-retries 3
