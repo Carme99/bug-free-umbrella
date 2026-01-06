@@ -197,7 +197,7 @@ try {
         ID = 100
     } -MaxEvents 1 -ErrorAction SilentlyContinue
 
-    if ($bootEvents -and $bootEvents[0].Properties.Count -gt 0) {
+    if ($bootEvents -and $bootEvents.Count -gt 0 -and $bootEvents[0].Properties.Count -gt 0) {
         $bootTimeMs = $bootEvents[0].Properties[0].Value
         $bootTimeSec = [Math]::Round($bootTimeMs / 1000, 1)
 

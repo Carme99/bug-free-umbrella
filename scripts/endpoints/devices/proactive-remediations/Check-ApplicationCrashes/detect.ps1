@@ -43,11 +43,13 @@ try {
             $issues += "Excessive application crashes detected: $crashCount events"
 
             # Identify most problematic applications
+            # Use structured properties instead of parsing localized message text
+            # For Event ID 1000, Properties[0] contains the application name
             $crashedApps = $appCrashes | ForEach-Object {
-                if ($_.Message -match "Faulting application name: (.+?),") {
-                    $matches[1]
+                if ($_.Properties -and $_.Properties.Count -gt 0) {
+                    $_.Properties[0].Value
                 }
-            } | Group-Object | Sort-Object Count -Descending | Select-Object -First 5
+            } | Where-Object { $_ } | Group-Object | Sort-Object Count -Descending | Select-Object -First 5
 
             Write-Host "  Most frequently crashing applications:"
             foreach ($app in $crashedApps) {
@@ -104,12 +106,14 @@ try {
     }
 
     # Check for Office application crashes
+    # Note: FilterHashtable doesn't support wildcards, so query all errors and filter with Where-Object
     $officeErrors = Get-WinEvent -FilterHashtable @{
         LogName = 'Application'
-        ProviderName = 'Microsoft Office *'
         Level = 2
         StartTime = (Get-Date).AddDays(-$daysToCheck)
-    } -MaxEvents 20 -ErrorAction SilentlyContinue
+    } -MaxEvents 200 -ErrorAction SilentlyContinue | Where-Object {
+        $_.ProviderName -like 'Microsoft Office*'
+    } | Select-Object -First 20
 
     if ($officeErrors) {
         $officeCount = $officeErrors.Count

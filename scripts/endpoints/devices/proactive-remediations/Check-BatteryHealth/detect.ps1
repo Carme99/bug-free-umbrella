@@ -32,13 +32,33 @@ try {
     $issues = @()
 
     # Get battery report
-    powercfg /batteryreport /output "$env:TEMP\battery-report.xml" /xml | Out-Null
+    $output = powercfg /batteryreport /output "$env:TEMP\battery-report.xml" /xml 2>&1
+    $powercfgSuccess = $LASTEXITCODE -eq 0
 
-    if (Test-Path "$env:TEMP\battery-report.xml") {
+    if ($powercfgSuccess -and (Test-Path "$env:TEMP\battery-report.xml")) {
         [xml]$batteryReport = Get-Content "$env:TEMP\battery-report.xml"
 
-        $designCapacity = [int]$batteryReport.BatteryReport.Batteries.Battery.DesignCapacity
-        $fullChargeCapacity = [int]$batteryReport.BatteryReport.Batteries.Battery.FullChargeCapacity
+        # Validate XML structure exists
+        if ($batteryReport.BatteryReport.Batteries.Battery) {
+            # Handle multi-battery systems - get first battery or single battery
+            $battery = if ($batteryReport.BatteryReport.Batteries.Battery -is [array]) {
+                $batteryReport.BatteryReport.Batteries.Battery[0]
+            } else {
+                $batteryReport.BatteryReport.Batteries.Battery
+            }
+
+            # Validate properties exist before casting
+            if ($battery.DesignCapacity -and $battery.FullChargeCapacity) {
+                $designCapacity = [int]$battery.DesignCapacity
+                $fullChargeCapacity = [int]$battery.FullChargeCapacity
+            } else {
+                $designCapacity = 0
+                $fullChargeCapacity = 0
+            }
+        } else {
+            $designCapacity = 0
+            $fullChargeCapacity = 0
+        }
 
         if ($designCapacity -gt 0) {
             $healthPercentage = [math]::Round(($fullChargeCapacity / $designCapacity) * 100, 1)

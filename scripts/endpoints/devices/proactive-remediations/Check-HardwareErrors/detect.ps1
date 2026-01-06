@@ -125,12 +125,19 @@ try {
     }
 
     # Check network adapter hardware errors
-    $netErrors = Get-WinEvent -FilterHashtable @{
+    # Note: FilterHashtable doesn't support wildcards, so query all errors and filter with Where-Object
+    $allSystemErrors = Get-WinEvent -FilterHashtable @{
         LogName = 'System'
-        ProviderName = 'e1*', 'NETw*', 'Realtek*', 'Intel*'
         Level = 2
         StartTime = (Get-Date).AddDays(-$daysToCheck)
-    } -MaxEvents 20 -ErrorAction SilentlyContinue
+    } -MaxEvents 200 -ErrorAction SilentlyContinue
+
+    $netErrors = $allSystemErrors | Where-Object {
+        $_.ProviderName -like 'e1*' -or
+        $_.ProviderName -like 'NETw*' -or
+        $_.ProviderName -like 'Realtek*' -or
+        $_.ProviderName -like 'Intel*'
+    } | Select-Object -First 20
 
     if ($netErrors) {
         $netErrorCount = $netErrors.Count
@@ -142,12 +149,10 @@ try {
     }
 
     # Check battery hardware errors (laptops)
-    $batteryErrors = Get-WinEvent -FilterHashtable @{
-        LogName = 'System'
-        ProviderName = 'Microsoft-Windows-Battery*'
-        Level = 2
-        StartTime = (Get-Date).AddDays(-$daysToCheck)
-    } -MaxEvents 10 -ErrorAction SilentlyContinue
+    # Reuse $allSystemErrors from above to avoid redundant query
+    $batteryErrors = $allSystemErrors | Where-Object {
+        $_.ProviderName -like 'Microsoft-Windows-Battery*'
+    } | Select-Object -First 10
 
     if ($batteryErrors) {
         $batteryErrorCount = $batteryErrors.Count
