@@ -17,7 +17,7 @@ try {
     # Generate detailed battery report
     powercfg /batteryreport /output "$env:TEMP\battery-report.html" | Out-Null
 
-    $battery = Get-WmiObject -Class Win32_Battery -ErrorAction SilentlyContinue
+    $battery = Get-CimInstance -ClassName Win32_Battery -ErrorAction SilentlyContinue
 
     if ($battery) {
         Write-Host "Battery Health Report:"

@@ -30,7 +30,16 @@ try {
         DeviceName = $env:COMPUTERNAME
         Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
         TotalScore = 0
-        Categories = @{}
+        Categories = @{
+            Uptime = 0
+            CrashStability = 0
+            ApplicationStability = 0
+            ServiceHealth = 0
+            SystemErrors = 0
+            HardwareHealth = 0
+            BootPerformance = 0
+            SecurityPosture = 0
+        }
         Issues = @()
         Recommendations = @()
     }

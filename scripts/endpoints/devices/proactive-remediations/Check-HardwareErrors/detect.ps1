@@ -52,7 +52,7 @@ try {
 
     # Check disk SMART status
     Write-Host "`nChecking disk health..."
-    $disks = Get-WmiObject -Namespace root\wmi -Class MSStorageDriver_FailurePredictStatus -ErrorAction SilentlyContinue
+    $disks = Get-CimInstance -Namespace root\wmi -ClassName MSStorageDriver_FailurePredictStatus -ErrorAction SilentlyContinue
 
     if ($disks) {
         foreach ($disk in $disks) {
@@ -63,7 +63,7 @@ try {
         }
 
         # Get SMART data
-        $smartData = Get-WmiObject -Namespace root\wmi -Class MSStorageDriver_FailurePredictData -ErrorAction SilentlyContinue
+        $smartData = Get-CimInstance -Namespace root\wmi -ClassName MSStorageDriver_FailurePredictData -ErrorAction SilentlyContinue
 
         foreach ($smart in $smartData) {
             Write-Host "  Disk instance: $($smart.InstanceName)"

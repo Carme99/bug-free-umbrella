@@ -16,6 +16,9 @@
 #>
 
 try {
+    # Configuration
+    $minDiskSpaceGB = 10  # Minimum free space required for DISM operation
+
     $remediationActions = @()
 
     # SAFETY CHECK 1: Verify sufficient disk space (DISM needs ~10GB)
@@ -24,9 +27,9 @@ try {
         $freeSpaceGB = [math]::Round($systemDrive.SizeRemaining / 1GB, 2)
         Write-Host "System drive free space: $freeSpaceGB GB"
 
-        if ($freeSpaceGB -lt 10) {
+        if ($freeSpaceGB -lt $minDiskSpaceGB) {
             Write-Host "ERROR: Insufficient disk space for DISM operation"
-            Write-Host "Required: At least 10GB free"
+            Write-Host "Required: At least ${minDiskSpaceGB}GB free"
             Write-Host "Available: $freeSpaceGB GB"
             Write-Host ""
             Write-Host "Please free up disk space before running system file repairs"
@@ -35,7 +38,7 @@ try {
     }
 
     # SAFETY CHECK 2: Check battery status (don't run on battery for laptops)
-    $battery = Get-WmiObject -Class Win32_Battery -ErrorAction SilentlyContinue
+    $battery = Get-CimInstance -ClassName Win32_Battery -ErrorAction SilentlyContinue
     if ($battery) {
         # Device has a battery (laptop/tablet)
         $batteryStatus = $battery.BatteryStatus
