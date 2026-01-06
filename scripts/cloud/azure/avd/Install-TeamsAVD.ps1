@@ -92,13 +92,21 @@ $script:TempPath = $env:TEMP
 
 function Write-Log {
     param(
-        [Parameter(Mandatory)]
-        [string]$Message,
+        [Parameter(Mandatory=$false)]
+        [AllowEmptyString()]
+        [string]$Message = "",
 
         [Parameter()]
         [ValidateSet('Info', 'Success', 'Warning', 'Error')]
         [string]$Level = 'Info'
     )
+
+    # Handle empty messages for blank lines
+    if ([string]::IsNullOrEmpty($Message)) {
+        Write-Host ""
+        Add-Content -Path $LogPath -Value "" -ErrorAction SilentlyContinue
+        return
+    }
 
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
     $logMessage = "[$timestamp] [$Level] $Message"
