@@ -47,7 +47,7 @@ try {
             # Extract boot duration from event (in milliseconds)
             if ($latestBootEvent.Properties.Count -gt 0) {
                 $bootTimeMs = $latestBootEvent.Properties[0].Value
-                $bootTimeSec = [math]::Round($bootTimeMs / 1000, 1)
+                $bootTimeSec = [Math]::Round($bootTimeMs / 1000, 1)
 
                 Write-Host "  Boot Duration: $bootTimeSec seconds"
 
@@ -70,7 +70,7 @@ try {
             $latestShutdown = $shutdownEvents | Select-Object -First 1
             if ($latestShutdown.Properties.Count -gt 0) {
                 $shutdownTimeMs = $latestShutdown.Properties[0].Value
-                $shutdownTimeSec = [math]::Round($shutdownTimeMs / 1000, 1)
+                $shutdownTimeSec = [Math]::Round($shutdownTimeMs / 1000, 1)
 
                 Write-Host "  Last Shutdown Duration: $shutdownTimeSec seconds"
 

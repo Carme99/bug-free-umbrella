@@ -22,7 +22,7 @@ try {
     $degradationThreshold = 70  # Percentage
 
     # Check if device has a battery
-    $battery = Get-WmiObject -Class Win32_Battery -ErrorAction SilentlyContinue
+    $battery = Get-CimInstance -ClassName Win32_Battery -ErrorAction SilentlyContinue
 
     if (-not $battery) {
         Write-Host "No battery detected (desktop or battery not present)"

@@ -22,7 +22,7 @@ try {
     if ($os) {
         $lastBoot = $os.LastBootUpTime
         $uptime = (Get-Date) - $lastBoot
-        $uptimeDays = [math]::Round($uptime.TotalDays, 2)
+        $uptimeDays = [Math]::Round($uptime.TotalDays, 2)
 
         # Check for pending reboots
         $pendingReboot = $false

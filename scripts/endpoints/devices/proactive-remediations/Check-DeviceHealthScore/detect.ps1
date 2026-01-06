@@ -59,7 +59,7 @@ try {
     if ($os) {
         $lastBoot = $os.LastBootUpTime
         $uptime = (Get-Date) - $lastBoot
-        $uptimeDays = [math]::Round($uptime.TotalDays, 2)
+        $uptimeDays = [Math]::Round($uptime.TotalDays, 2)
 
         if ($uptimeDays -gt 30) {
             $uptimeScore -= 10
@@ -199,7 +199,7 @@ try {
 
     if ($bootEvents -and $bootEvents[0].Properties.Count -gt 0) {
         $bootTimeMs = $bootEvents[0].Properties[0].Value
-        $bootTimeSec = [math]::Round($bootTimeMs / 1000, 1)
+        $bootTimeSec = [Math]::Round($bootTimeMs / 1000, 1)
 
         if ($bootTimeSec -gt 180) {
             $bootScore -= 10

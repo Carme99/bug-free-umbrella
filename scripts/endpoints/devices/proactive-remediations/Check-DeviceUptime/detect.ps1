@@ -32,8 +32,8 @@ try {
     if ($os) {
         $lastBoot = $os.LastBootUpTime
         $uptime = (Get-Date) - $lastBoot
-        $uptimeDays = [math]::Round($uptime.TotalDays, 2)
-        $uptimeHours = [math]::Round($uptime.TotalHours, 1)
+        $uptimeDays = [Math]::Round($uptime.TotalDays, 2)
+        $uptimeHours = [Math]::Round($uptime.TotalHours, 1)
 
         Write-Host "Device Uptime Report:"
         Write-Host "  Last Boot: $lastBoot"

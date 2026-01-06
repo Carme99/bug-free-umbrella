@@ -59,7 +59,15 @@ param(
 
 # Import helper module
 $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
-Import-Module "$scriptPath\..\IntuneGraphHelper.psm1" -Force
+$helperModule = "$scriptPath\..\IntuneGraphHelper.psm1"
+
+if (-not (Test-Path $helperModule)) {
+    Write-Error "Required module not found: $helperModule"
+    Write-Error "Please ensure IntuneGraphHelper.psm1 is present in the scripts/endpoints/intune directory"
+    exit 1
+}
+
+Import-Module $helperModule -Force
 
 function Calculate-DeviceHealthScore {
     param($device)

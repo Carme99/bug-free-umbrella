@@ -65,9 +65,11 @@ try {
         # Get SMART data
         $smartData = Get-CimInstance -Namespace root\wmi -ClassName MSStorageDriver_FailurePredictData -ErrorAction SilentlyContinue
 
-        foreach ($smart in $smartData) {
-            Write-Host "  Disk instance: $($smart.InstanceName)"
-            Write-Host "  Status: $(if ($smart.PredictFailure) {'FAILING'} else {'OK'})"
+        if ($smartData) {
+            foreach ($smart in $smartData) {
+                Write-Host "  Disk instance: $($smart.InstanceName)"
+                Write-Host "  Status: $(if ($smart.PredictFailure) {'FAILING'} else {'OK'})"
+            }
         }
     }
 
