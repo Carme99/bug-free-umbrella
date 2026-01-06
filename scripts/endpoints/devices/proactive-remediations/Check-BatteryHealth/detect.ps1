@@ -32,7 +32,7 @@ try {
     $issues = @()
 
     # Get battery report
-    powercfg /batteryreport /output "$env:TEMP\battery-report.html" /xml | Out-Null
+    powercfg /batteryreport /output "$env:TEMP\battery-report.xml" /xml | Out-Null
 
     if (Test-Path "$env:TEMP\battery-report.xml") {
         [xml]$batteryReport = Get-Content "$env:TEMP\battery-report.xml"

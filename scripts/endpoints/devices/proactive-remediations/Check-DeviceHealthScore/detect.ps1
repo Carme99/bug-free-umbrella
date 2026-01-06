@@ -45,10 +45,10 @@ try {
     # 1. UPTIME HEALTH (Max deduction: 10 points)
     Write-Host "[1/8] Analyzing Uptime..."
     $uptimeScore = 100
-    $os = Get-WmiObject -Class Win32_OperatingSystem -ErrorAction SilentlyContinue
+    $os = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue
 
     if ($os) {
-        $lastBoot = $os.ConvertToDateTime($os.LastBootUpTime)
+        $lastBoot = $os.LastBootUpTime
         $uptime = (Get-Date) - $lastBoot
         $uptimeDays = [math]::Round($uptime.TotalDays, 2)
 
@@ -165,7 +165,7 @@ try {
     }
 
     # Check disk SMART
-    $disks = Get-WmiObject -Namespace root\wmi -Class MSStorageDriver_FailurePredictStatus -ErrorAction SilentlyContinue
+    $disks = Get-CimInstance -Namespace root\wmi -ClassName MSStorageDriver_FailurePredictStatus -ErrorAction SilentlyContinue
     if ($disks) {
         foreach ($disk in $disks) {
             if ($disk.PredictFailure -eq $true) {
@@ -210,17 +210,26 @@ try {
     Write-Host "[8/8] Analyzing Security Posture..."
     $securityScore = 100
 
-    # Check Windows Defender status
-    $defender = Get-MpComputerStatus -ErrorAction SilentlyContinue
-    if ($defender) {
-        if (-not $defender.RealTimeProtectionEnabled) {
-            $securityScore -= 5
-            $healthReport.Issues += "Real-time protection disabled"
+    # Check if Defender module is available (may not be present on servers with third-party AV)
+    $defenderModule = Get-Module -ListAvailable -Name Defender -ErrorAction SilentlyContinue
+
+    if ($defenderModule) {
+        # Check Windows Defender status
+        $defender = Get-MpComputerStatus -ErrorAction SilentlyContinue
+        if ($defender) {
+            if (-not $defender.RealTimeProtectionEnabled) {
+                $securityScore -= 5
+                $healthReport.Issues += "Real-time protection disabled"
+            }
+            if ($defender.AntivirusSignatureAge -gt 7) {
+                $securityScore -= 3
+                $healthReport.Issues += "Antivirus signatures outdated: $($defender.AntivirusSignatureAge) days old"
+            }
         }
-        if ($defender.AntivirusSignatureAge -gt 7) {
-            $securityScore -= 3
-            $healthReport.Issues += "Antivirus signatures outdated: $($defender.AntivirusSignatureAge) days old"
-        }
+    } else {
+        # Defender module not available (likely server with third-party AV)
+        Write-Host "  Defender module not available - skipping AV checks"
+        Write-Host "  (Third-party antivirus or server environment detected)"
     }
 
     Write-Host "  Security Score: $securityScore/100"

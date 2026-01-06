@@ -17,10 +17,10 @@ try {
     $remediationActions = @()
 
     # Get uptime info
-    $os = Get-WmiObject -Class Win32_OperatingSystem -ErrorAction SilentlyContinue
+    $os = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue
 
     if ($os) {
-        $lastBoot = $os.ConvertToDateTime($os.LastBootUpTime)
+        $lastBoot = $os.LastBootUpTime
         $uptime = (Get-Date) - $lastBoot
         $uptimeDays = [math]::Round($uptime.TotalDays, 2)
 

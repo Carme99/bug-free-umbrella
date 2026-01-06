@@ -18,13 +18,20 @@ try {
     $issues = @()
 
     # Check for running WPR sessions
+    # NOTE: This check may produce false positives for legitimate active tracing.
+    # WPR sessions are typically short-lived (<1 hour). Long-running sessions
+    # may indicate orphaned traces consuming CPU/disk resources.
     $wprSessions = logman query -ets 2>&1 | Select-String -Pattern "WPR_initiated_"
 
     if ($wprSessions) {
-        $issues += "Active WPR tracing sessions detected (may cause performance issues)"
+        $sessionCount = ($wprSessions | Measure-Object).Count
+        # Only flag if multiple WPR sessions (more likely to be orphaned)
+        if ($sessionCount -gt 2) {
+            $issues += "Multiple active WPR tracing sessions detected: $sessionCount (may indicate orphaned sessions)"
+        }
     }
 
-    # Check for excessive ETW sessions
+    # Check for excessive ETW sessions (more reliable indicator of issues)
     $allSessions = logman query -ets 2>&1
     $sessionCount = ($allSessions | Select-String -Pattern "^[A-Za-z]").Count
 
