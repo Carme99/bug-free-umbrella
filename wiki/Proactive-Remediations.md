@@ -20,9 +20,9 @@ All scripts are located in: `/scripts/endpoints/devices/proactive-remediations/`
 
 ## Available Remediations
 
-**Total: 42 detect/remediate script pairs** across 7 categories
+**Total: 50 detect/remediate script pairs** across 8 categories
 
-> **🆕 Version 3.0 Update**: Added 10 advanced system maintenance remediations for performance monitoring, reliability, and hardware diagnostics.
+> **🆕 Version 3.1 Update**: Added 8 device health and uptime monitoring remediations for comprehensive health scoring, crash tracking, and reportable metrics.
 
 ### 🔒 Security & Compliance (6 remediations)
 
@@ -99,6 +99,20 @@ All scripts are located in: `/scripts/endpoints/devices/proactive-remediations/`
 | Remediation | Issue Detected | Remediation Action | Priority |
 |-------------|----------------|-------------------|----------|
 | **Fix-CertificateExpiry** 🆕 | Expired or expiring certificates (<30 days) | Remove expired certificates from Personal store | High |
+
+### 📊 Device Health & Uptime Monitoring (8 remediations) 🆕
+
+| Remediation | Issue Detected | Remediation Action | Priority |
+|-------------|----------------|-------------------|----------|
+| **Check-DeviceHealthScore** 🆕 | Overall health score <70/100 (weighted composite) | Prioritized improvement plan across all health categories | High |
+| **Check-DeviceUptime** 🆕 | Excessive uptime (>14 days) or pending reboots | Log for IT review, recommend scheduled reboot | Medium |
+| **Check-UnexpectedReboots** 🆕 | Crash reboots, bugchecks, BSOD events, crash dumps | Log for IT investigation, hardware/driver analysis needed | High |
+| **Check-SystemStabilityIndex** 🆕 | Windows Reliability Monitor score <5.0/10 | Provide stability improvement guidance | Medium |
+| **Check-BootPerformance** 🆕 | Boot time exceeds 120 seconds | Optimize startup programs, recommend driver updates | Medium |
+| **Check-ServiceFailures** 🆕 | Service crashes/failures (>3 events/week) | Restart critical services, log for investigation | Medium |
+| **Check-ApplicationCrashes** 🆕 | Application crashes (>10 events/week) | Provide app troubleshooting and update guidance | Medium |
+| **Check-SystemEventErrors** 🆕 | Critical errors in System event log (>5 events/week) | Flag for urgent IT investigation | High |
+| **Check-HardwareErrors** 🆕 | WHEA errors, disk SMART failures, hardware faults | URGENT: Flag for hardware diagnostics and replacement | Critical |
 
 ---
 
@@ -849,5 +863,5 @@ if ($LASTEXITCODE -eq 1) {
 
 ---
 
-**Last Updated:** 2026-01-05
-**Version:** 1.1.0
+**Last Updated:** 2026-01-06
+**Version:** 1.2.0

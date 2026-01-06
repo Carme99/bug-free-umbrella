@@ -7,7 +7,7 @@ A collection of ready-to-deploy Intune proactive remediation scripts for common 
 
 ## 📋 Overview
 
-This library provides **42 detect/remediate script pairs** that automatically identify and fix common device issues, organized by category:
+This library provides **50 detect/remediate script pairs** that automatically identify and fix common device issues, organized by category:
 
 ### 🔒 Security & Compliance (6 remediations)
 | Remediation | Purpose | Detection Criteria | Remediation Action |
@@ -78,6 +78,19 @@ This library provides **42 detect/remediate script pairs** that automatically id
 |-------------|---------|-------------------|-------------------|
 | **Fix-CertificateExpiry** | Expired certificates | Expired or expiring certs | Remove expired certificates |
 
+### 📊 Device Health & Uptime Monitoring (8 remediations)
+| Remediation | Purpose | Detection Criteria | Remediation Action |
+|-------------|---------|-------------------|-------------------|
+| **Check-DeviceUptime** 🆕 | Excessive uptime tracking | Uptime >14 days or pending reboots | Log for IT review, recommend reboot |
+| **Check-UnexpectedReboots** 🆕 | Crash and BSOD tracking | Unexpected reboots, bugchecks, crash dumps | Log for IT investigation |
+| **Check-SystemStabilityIndex** 🆕 | Windows Reliability Monitor score | Stability index <5.0 | Provide stability improvement guidance |
+| **Check-BootPerformance** 🆕 | Slow boot detection | Boot time >120 seconds | Optimize startup programs |
+| **Check-ServiceFailures** 🆕 | Service crash monitoring | Service crashes/failures >3 events | Restart critical services |
+| **Check-ApplicationCrashes** 🆕 | Application crash tracking | App crashes >10 events/week | Provide troubleshooting guidance |
+| **Check-SystemEventErrors** 🆕 | Critical system events | Critical errors in System log | Flag for urgent IT investigation |
+| **Check-HardwareErrors** 🆕 | Hardware failure detection | WHEA errors, disk SMART failures | URGENT: Flag for hardware replacement |
+| **Check-DeviceHealthScore** 🆕 | Comprehensive health scoring | Overall health score <70/100 | Prioritized improvement plan |
+
 ## 🚀 Deployment
 
 ### Via Intune Portal
@@ -140,6 +153,16 @@ This library provides **42 detect/remediate script pairs** that automatically id
 | Fix-WindowsSearch | As needed | Low |
 | Fix-DNSCache | As needed | Medium |
 | Fix-BrokenShortcuts | Weekly | Low |
+| **Device Health & Uptime Monitoring** 🆕 |
+| Check-DeviceHealthScore | Daily | High |
+| Check-DeviceUptime | Daily | Medium |
+| Check-UnexpectedReboots | Daily | High |
+| Check-SystemStabilityIndex | Daily | Medium |
+| Check-BootPerformance | Daily | Medium |
+| Check-ServiceFailures | Daily | Medium |
+| Check-ApplicationCrashes | Daily | Medium |
+| Check-SystemEventErrors | Daily | High |
+| Check-HardwareErrors | Daily | Critical |
 
 ## 📖 Detailed Descriptions
 
@@ -370,8 +393,8 @@ To add new remediations:
 
 ---
 
-**Version**: 3.0
-**Total Remediations**: 42 detect/remediate pairs
+**Version**: 3.1
+**Total Remediations**: 50 detect/remediate pairs
 **Compatible**: Windows 10/11, Windows Server 2016+
 **Last Updated**: January 2026
 
