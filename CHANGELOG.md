@@ -30,6 +30,232 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ---
 
+## [3.2.0] - 2026-01-06 🌧️ **"Monsoon"** - Device Health & Uptime Monitoring
+
+> **Focus**: Comprehensive device health monitoring, crash tracking, and reportable uptime metrics for proactive IT operations
+
+### Added
+
+#### 📊 Device Health & Uptime Monitoring (+8 remediations, 16 PowerShell files)
+
+**Comprehensive Health Reporting** (1 remediation)
+- **Check-DeviceHealthScore** - Calculate weighted 0-100 health score from 8 categories
+  - Uptime health (10% weight)
+  - Crash stability (20% weight)
+  - Application stability (10% weight)
+  - Service health (10% weight)
+  - System errors (15% weight)
+  - Hardware health (20% weight)
+  - Boot performance (5% weight)
+  - Security posture (10% weight)
+  - JSON export for reporting dashboards
+  - Prioritized improvement plans
+
+**Uptime & Reboot Tracking** (2 remediations)
+- **Check-DeviceUptime** - Monitor excessive uptime and pending reboots
+  - Configurable thresholds (14 days max, 7 days warning)
+  - Detect pending Windows Update reboots
+  - Detect pending Component Based Servicing reboots
+  - Recommend scheduled maintenance reboots
+- **Check-UnexpectedReboots** - Track crashes, blue screens, and system failures
+  - Event ID 41: Unexpected shutdowns (Kernel-Power)
+  - Event ID 1001: Bugcheck (BSOD) tracking
+  - Event ID 6008: Unexpected shutdown events
+  - Crash dump file analysis (MEMORY.DMP, minidumps)
+  - Application crash tracking
+
+**System Stability & Performance** (3 remediations)
+- **Check-SystemStabilityIndex** - Windows Reliability Monitor scoring
+  - Calculate 1-10 stability score from event logs
+  - Track application failures, Windows failures, warnings
+  - 7-day historical analysis
+  - Stability trend reporting
+- **Check-BootPerformance** - Boot and shutdown time monitoring
+  - Event ID 100: Boot duration tracking
+  - Event ID 200: Shutdown duration analysis
+  - Startup program inventory
+  - Boot performance degradation detection (Event ID 101)
+- **Check-ServiceFailures** - Service crash and failure monitoring
+  - Event ID 7034: Service crash detection
+  - Event ID 7031: Service recovery tracking
+  - Event ID 7000: Service start failures
+  - Event ID 7011: Service timeout errors
+  - Critical service health checks (Windows Update, BITS, WMI, etc.)
+
+**Application & Event Monitoring** (2 remediations)
+- **Check-ApplicationCrashes** - Application failure tracking
+  - Event ID 1000: Application crashes
+  - Event ID 1002: Application hangs
+  - Windows Error Reporting fault analysis
+  - .NET Runtime error detection
+  - Microsoft Office crash tracking
+  - Crash dump file inventory
+- **Check-SystemEventErrors** - Critical system event monitoring
+  - Level 1 (Critical) system errors
+  - Disk errors (Event IDs 7, 11, 51, 153, 55)
+  - Kernel/Power errors (Event ID 41)
+  - BugCheck tracking (Event ID 1001)
+  - Security critical event detection
+  - Event log service health
+
+**Hardware Health** (1 remediation)
+- **Check-HardwareErrors** - Hardware failure detection
+  - WHEA (Windows Hardware Error Architecture) monitoring
+  - Disk SMART status validation
+  - Physical disk error tracking
+  - CPU/Processor error detection
+  - USB controller error monitoring
+  - Network adapter hardware issues
+  - Battery hardware errors (laptops)
+  - Thermal/overheating event detection (Event ID 37)
+  - PCI/PCIe bus error monitoring
+
+### Changed
+
+**Proactive Remediation Library**
+- Total remediations: 42 → 50 (+19%)
+- Added new category: Device Health & Uptime Monitoring (8 scripts)
+- Enhanced reportability with JSON health score exports
+- Improved crash and failure diagnostics across all device types
+
+**Documentation Updates**
+- Updated README.md to version 3.1 (50 total remediations)
+- Updated wiki/Proactive-Remediations.md to version 1.2.0
+- Added comprehensive Device Health & Uptime Monitoring section
+- Updated deployment schedules with new monitoring scripts
+- Added daily schedule recommendations for health monitoring
+
+### Improved
+
+**Device Health Visibility**
+- Comprehensive 0-100 health scoring system
+- Multi-category weighted health assessment
+- JSON-exportable metrics for reporting dashboards
+- Trend analysis capabilities across 8 health dimensions
+
+**Proactive Issue Detection**
+- Earlier detection of impending hardware failures
+- Crash pattern identification before widespread issues
+- Boot performance degradation tracking
+- Service instability early warning
+- Application failure trend analysis
+
+**IT Reporting Capabilities**
+- Uptime tracking for compliance reporting
+- Device health score aggregation
+- Crash/BSOD frequency metrics
+- Hardware error trending
+- Stability index reporting
+
+**Maintenance Optimization**
+- Data-driven reboot scheduling recommendations
+- Hardware replacement prioritization
+- Service stability improvement guidance
+- Application troubleshooting metrics
+
+### Statistics
+
+**New Scripts**: 8 proactive remediations (16 PowerShell files)
+**Total Remediations**: 50 detect/remediate pairs (100 PowerShell files)
+**Lines of Code Added**: ~1,600
+**Documentation Updated**: 2 files (1 README, 1 wiki)
+**New Capabilities**: Comprehensive health scoring, uptime reporting, crash analytics
+
+### Deployment Recommendations
+
+**Priority Schedule** (Daily monitoring recommended):
+- **Critical**: Check-HardwareErrors (early failure detection)
+- **High**: Check-DeviceHealthScore (overall health tracking)
+- **High**: Check-UnexpectedReboots (crash monitoring)
+- **High**: Check-SystemEventErrors (critical error alerts)
+- **Medium**: Check-DeviceUptime (reboot compliance)
+- **Medium**: Check-SystemStabilityIndex (reliability trending)
+- **Medium**: Check-BootPerformance (performance optimization)
+- **Medium**: Check-ServiceFailures (service stability)
+- **Medium**: Check-ApplicationCrashes (app reliability)
+
+---
+
+## [3.1.0] - 2026-01-05 🌧️ **"Shower"** - Expanded Intune Operations
+
+> **Focus**: Comprehensive expansion of Intune management and proactive remediation capabilities
+
+### Added
+
+#### 🆕 Proactive Remediations (+10 scripts, 20 PowerShell files)
+
+**Performance & Reliability** (5 remediations)
+- **Fix-WindowsPerformanceRecorder** - Stop stuck WPR/ETW tracing sessions causing high CPU
+- **Fix-TaskSchedulerCorruption** - Repair Task Scheduler service and database issues
+- **Check-MicrosoftStoreAppsHealth** - Detect and fix AppX package registration errors
+- **Fix-SystemFileCorruption** - Run DISM RestoreHealth and SFC to repair corrupted system files
+- **Fix-WindowsUpdateRebootPending** - Clear stuck reboot pending flags (>7 days old)
+
+**Hardware & Diagnostics** (3 remediations)
+- **Check-PageFileConfiguration** - Verify page file is enabled and properly sized
+- **Check-MemoryDiagnostics** - Detect RAM errors and schedule Windows Memory Diagnostic
+- **Check-BatteryHealth** - Monitor laptop battery degradation (<70% capacity threshold)
+
+**Licensing & Activation** (2 remediations)
+- **Check-WindowsActivationGracePeriod** - Alert when activation expiring within 30 days
+- Trigger online activation before grace period expires
+
+### Changed
+
+**Proactive Remediation Library**
+- Total remediations: 32 → 42 (+31%)
+- Storage & Performance category: 7 → 9 scripts
+- System Services category: 8 → 13 scripts
+- Apps & Licensing category: 4 → 6 scripts
+- Enhanced hardware monitoring and diagnostics coverage
+- Added proactive activation monitoring
+
+**Documentation Updates**
+- Updated all READMEs to reflect 42 total remediations
+- Expanded deployment schedules and priority levels
+- Added detailed descriptions for advanced maintenance scripts
+- Updated wiki with comprehensive remediation catalog
+
+### Improved
+
+**System Reliability**
+- Enhanced detection of system file corruption
+- Improved Task Scheduler health monitoring
+- Better page file misconfiguration detection
+- Memory error tracking and diagnostics
+
+**Performance Monitoring**
+- Detection of orphaned WPR/ETW sessions
+- Store apps health and registration validation
+- Stuck reboot state identification
+
+**Hardware Health**
+- Battery capacity degradation tracking (laptops)
+- Memory diagnostic scheduling for RAM errors
+- Page file optimal configuration validation
+
+**Activation Management**
+- Grace period expiration warnings (30-day threshold)
+- Proactive activation before expiry
+
+### Statistics
+
+**New Scripts**: 10 proactive remediations (20 PowerShell files)
+**Total Remediations**: 42 detect/remediate pairs (84 PowerShell files)
+**Lines of Code Added**: ~1,800
+**Documentation Updated**: 4 files (2 READMEs, 1 wiki, 1 CHANGELOG)
+**Categories Enhanced**: 3 (Storage & Performance, System Services, Apps & Licensing)
+
+### Notes
+
+- All new scripts follow Intune proactive remediation best practices
+- Scripts run in SYSTEM context for full administrative access
+- Exit codes: 0 = compliant/success, 1 = issue detected/remediation needed
+- Comprehensive error handling and descriptive logging
+- Configurable thresholds in detect scripts (days, percentages, MB)
+
+---
+
 ## [3.0.3] - 2026-01-04 ☔ **"Drizzle"** - Wiki Version Reference Fix
 
 > **Focus**: Correct outdated version references in wiki documentation

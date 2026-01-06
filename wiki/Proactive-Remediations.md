@@ -20,44 +20,99 @@ All scripts are located in: `/scripts/endpoints/devices/proactive-remediations/`
 
 ## Available Remediations
 
-### System Performance
+**Total: 50 detect/remediate script pairs** across 8 categories
 
-| Remediation | Issue Detected | Remediation Action | Location |
+> **🆕 Version 3.1 Update**: Added 8 device health and uptime monitoring remediations for comprehensive health scoring, crash tracking, and reportable metrics.
+
+### 🔒 Security & Compliance (6 remediations)
+
+| Remediation | Issue Detected | Remediation Action | Priority |
 |-------------|----------------|-------------------|----------|
-| **Fix-DiskSpace** | Low disk space (<10% or <10GB free) | Cleanup temporary files, Windows Update cache, recycle bin | `proactive-remediations/Fix-DiskSpace/` |
-| **Fix-TempFiles** | Excessive temporary files | Remove old temp files, browser cache, system temp | `proactive-remediations/Fix-TempFiles/` |
-| **Fix-StaleProfiles** | Inactive user profiles (90+ days) | Remove stale local user profiles | `proactive-remediations/Fix-StaleProfiles/` |
+| **Check-SecurityBaseline** | Security settings not meeting baseline | Apply security baseline configurations | High |
+| **Fix-BitLockerNotEscrowedKeys** | BitLocker recovery key not escrowed to Azure AD | Force BitLocker key backup to Azure AD | High |
+| **Check-DefenderHealthStatus** 🆕 | Defender service down, outdated signatures (>7 days) | Start service, update signatures, initiate quick scan | High |
+| **Check-TPMStatus** 🆕 | TPM not enabled/activated/owned | Initialize TPM, take ownership | Medium |
+| **Check-LocalAdminAccounts** 🆕 | Unauthorized local administrator accounts | Disable built-in admin account, log unauthorized admins | High |
+| **Fix-PowerShellExecutionPolicy** 🆕 | PowerShell execution policy not RemoteSigned | Set execution policy to RemoteSigned | Medium |
 
-### Application Issues
+### 💾 Storage & Performance (9 remediations)
 
-| Remediation | Issue Detected | Remediation Action | Location |
+| Remediation | Issue Detected | Remediation Action | Priority |
 |-------------|----------------|-------------------|----------|
-| **Fix-TeamsCache** | Microsoft Teams cache issues | Clear Teams cache, reset configuration | `proactive-remediations/Fix-TeamsCache/` |
-| **Fix-BrokenShortcuts** | Broken desktop shortcuts | Remove invalid shortcuts | `proactive-remediations/Fix-BrokenShortcuts/` |
-| **Fix-WindowsSearch** | Windows Search indexer not running | Restart Windows Search service, rebuild index | `proactive-remediations/Fix-WindowsSearch/` |
+| **Fix-DiskSpace** | Low disk space (<10% or <10GB free) | Cleanup temporary files, Windows Update cache, recycle bin | High |
+| **Fix-TempFiles** | Excessive temporary files (>1GB) | Remove old temp files (>7 days) | Medium |
+| **Fix-StaleProfiles** | Inactive user profiles (90+ days) | Remove stale local user profiles (>120 days) | Medium |
+| **Fix-EventLogSize** 🆕 | Bloated event logs (>100MB) | Clear non-critical logs, configure size limits | Medium |
+| **Fix-EdgeCacheSize** 🆕 | Edge browser cache excessive (>500MB) | Clear Edge cache | Low |
+| **Check-DiskHealth** 🆕 | SMART errors, disk issues detected | Schedule disk check, optimize volumes | High |
+| **Fix-StartMenuLayout** 🆕 | Start Menu corrupted or not opening | Rebuild tile database, clear cache | Medium |
+| **Check-PageFileConfiguration** 🆕 | Page file disabled or misconfigured | Enable system-managed page file | High |
+| **Check-MemoryDiagnostics** 🆕 | RAM errors detected in event logs | Schedule Windows Memory Diagnostic on reboot | High |
 
-### System Services
+### 🔄 System Services (13 remediations)
 
-| Remediation | Issue Detected | Remediation Action | Location |
+| Remediation | Issue Detected | Remediation Action | Priority |
 |-------------|----------------|-------------------|----------|
-| **Fix-PrintSpooler** | Print Spooler service stopped or stuck | Restart Print Spooler, clear print queue | `proactive-remediations/Fix-PrintSpooler/` |
-| **Fix-DNSCache** | DNS cache corruption or issues | Flush DNS cache, re-register DNS | `proactive-remediations/Fix-DNSCache/` |
-| **Fix-WindowsUpdateStuck** | Windows Update stuck or failing | Reset Windows Update components | `proactive-remediations/Fix-WindowsUpdateStuck/` |
+| **Fix-WindowsUpdateStuck** | Windows Update stuck or failing | Reset Windows Update components | High |
+| **Fix-TimeSync** 🆕 | W32Time service not running/syncing, last sync >24h | Configure time.windows.com, force sync | Critical |
+| **Fix-PrintSpooler** | Print Spooler service stopped or stuck | Restart Print Spooler, clear print queue | Medium |
+| **Fix-TeamsCache** | Microsoft Teams cache issues | Clear Teams cache, reset configuration | Low |
+| **Fix-WindowsSearch** | Windows Search indexer not running | Restart Windows Search service, rebuild index | Low |
+| **Fix-DNSCache** | DNS cache corruption or issues | Flush DNS cache, re-register DNS | Medium |
+| **Fix-WindowsStoreLicensing** 🆕 | ClipSVC not running, Store licensing issues | Reset Store license cache, restart ClipSVC | Medium |
+| **Fix-OutdatedDrivers** 🆕 | Critical driver updates available | Install driver updates from Windows Update | Medium |
+| **Fix-WindowsPerformanceRecorder** 🆕 | Stuck WPR/ETW tracing sessions | Stop orphaned performance recorder sessions | Medium |
+| **Fix-TaskSchedulerCorruption** 🆕 | Task Scheduler service issues | Restart Task Scheduler service | Medium |
+| **Check-MicrosoftStoreAppsHealth** 🆕 | AppX packages in error state | Re-register Store apps | Medium |
+| **Fix-SystemFileCorruption** 🆕 | System file corruption detected | Run DISM RestoreHealth and SFC scan | High |
+| **Fix-WindowsUpdateRebootPending** 🆕 | Stuck reboot pending flags (>7 days) | Clear false positive reboot pending keys | Medium |
 
-### Security & Compliance
+### 🌐 Network & Connectivity (3 remediations)
 
-| Remediation | Issue Detected | Remediation Action | Location |
+| Remediation | Issue Detected | Remediation Action | Priority |
 |-------------|----------------|-------------------|----------|
-| **Check-SecurityBaseline** | Security settings not meeting baseline | Apply security baseline configurations | `proactive-remediations/Check-SecurityBaseline/` |
-| **Fix-BitLockerNotEscrowedKeys** | BitLocker recovery key not escrowed to Azure AD | Force BitLocker key backup to Azure AD | `proactive-remediations/Fix-BitLockerNotEscrowedKeys/` |
+| **Fix-NetworkAdapterPowerManagement** 🆕 | Network adapters configured to power down | Disable power management on physical adapters | High |
+| **Fix-SMBv1Protocol** 🆕 | Insecure SMBv1 protocol enabled | Disable SMBv1 (security risk) | Critical |
+| **Check-SharedFolders** 🆕 | Unauthorized network shares present | Remove unauthorized shares | High |
 
-### Regional Settings
+### 📱 Apps & Licensing (6 remediations)
 
-| Remediation | Issue Detected | Remediation Action | Location |
+| Remediation | Issue Detected | Remediation Action | Priority |
 |-------------|----------------|-------------------|----------|
-| **region-language-settings** | Incorrect regional/language settings | Set correct region, language, and time zone | `proactive-remediations/region-language-settings/` |
-| **keyboard-layout** | Wrong keyboard layout | Configure correct keyboard layout | `proactive-remediations/keyboard-layout/` |
-| **language-pack-audit** | Missing or incorrect language packs | Install required language packs | `proactive-remediations/language-pack-audit/` |
+| **Fix-OneDriveKnownFolderMove** 🆕 | OneDrive not running, KFM not configured | Start OneDrive, configure KFM registry settings | High |
+| **Fix-CredentialManager** 🆕 | Stale or orphaned credentials | Remove problematic credentials | Low |
+| **Fix-WindowsLicenseActivation** 🆕 | Windows not activated | Trigger online activation | High |
+| **Fix-BrokenShortcuts** | Broken desktop shortcuts | Remove invalid shortcuts | Low |
+| **Check-WindowsActivationGracePeriod** 🆕 | Activation grace period <30 days | Trigger activation before expiry | High |
+| **Check-BatteryHealth** 🆕 | Battery capacity degraded (<70% of design) | Report battery health for replacement tracking | Medium |
+
+### 🌍 Regional & Localization (3 remediations)
+
+| Remediation | Issue Detected | Remediation Action | Priority |
+|-------------|----------------|-------------------|----------|
+| **region-language-settings** | Incorrect regional/language settings | Set correct region, language, and time zone | Low |
+| **keyboard-layout** | Wrong keyboard layout | Configure correct keyboard layout | Low |
+| **language-pack-audit** | Missing or incorrect language packs | Install required language packs | Low |
+
+### 🔐 Certificate Management (1 remediation)
+
+| Remediation | Issue Detected | Remediation Action | Priority |
+|-------------|----------------|-------------------|----------|
+| **Fix-CertificateExpiry** 🆕 | Expired or expiring certificates (<30 days) | Remove expired certificates from Personal store | High |
+
+### 📊 Device Health & Uptime Monitoring (8 remediations) 🆕
+
+| Remediation | Issue Detected | Remediation Action | Priority |
+|-------------|----------------|-------------------|----------|
+| **Check-DeviceHealthScore** 🆕 | Overall health score <70/100 (weighted composite) | Prioritized improvement plan across all health categories | High |
+| **Check-DeviceUptime** 🆕 | Excessive uptime (>14 days) or pending reboots | Log for IT review, recommend scheduled reboot | Medium |
+| **Check-UnexpectedReboots** 🆕 | Crash reboots, bugchecks, BSOD events, crash dumps | Log for IT investigation, hardware/driver analysis needed | High |
+| **Check-SystemStabilityIndex** 🆕 | Windows Reliability Monitor score <5.0/10 | Provide stability improvement guidance | Medium |
+| **Check-BootPerformance** 🆕 | Boot time exceeds 120 seconds | Optimize startup programs, recommend driver updates | Medium |
+| **Check-ServiceFailures** 🆕 | Service crashes/failures (>3 events/week) | Restart critical services, log for investigation | Medium |
+| **Check-ApplicationCrashes** 🆕 | Application crashes (>10 events/week) | Provide app troubleshooting and update guidance | Medium |
+| **Check-SystemEventErrors** 🆕 | Critical errors in System event log (>5 events/week) | Flag for urgent IT investigation | High |
+| **Check-HardwareErrors** 🆕 | WHEA errors, disk SMART failures, hardware faults | URGENT: Flag for hardware diagnostics and replacement | Critical |
 
 ---
 
@@ -808,5 +863,5 @@ if ($LASTEXITCODE -eq 1) {
 
 ---
 
-**Last Updated:** 2026-01-05
-**Version:** 1.1.0
+**Last Updated:** 2026-01-06
+**Version:** 1.2.0
