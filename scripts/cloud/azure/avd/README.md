@@ -94,6 +94,7 @@ if ($LASTEXITCODE -eq 0) {
 | `-SkipUserCleanup` | Switch | Skip removal of old per-user Teams installations | False |
 | `-LogPath` | String | Custom path for transcript log | C:\ProgramData\Microsoft\IntuneManagementExtension\Logs\TeamsAVD_Install_[timestamp].log |
 | `-Force` | Switch | Force reinstallation even if already installed | False |
+| `-SkipSignatureCheck` | Switch | Skip Authenticode signature verification (trusted environments only) | False |
 
 #### Exit Codes
 
@@ -101,10 +102,11 @@ if ($LASTEXITCODE -eq 0) {
 |------|---------|-------------|
 | `0` | Success | All components installed and verified successfully |
 | `1` | EULA Not Accepted | User must accept EULA with `-AcceptEULA` parameter |
-| `2` | Download Failure | Failed to download WebView2 or Teams installer |
+| `2` | Download/Security Failure | Failed to download or signature verification failed |
 | `3` | Installation Failure | WebView2 or Teams installation failed |
 | `4` | Registry Failure | Registry configuration failed |
-| `5` | Not Administrator | Script must run as Administrator |
+
+**Note:** Administrator privileges are enforced by `#Requires -RunAsAdministrator` directive - the script will not run at all if not running as admin.
 
 #### Registry Configurations
 
@@ -380,8 +382,34 @@ After running this script on your gold image:
 
 #### Version History
 
-- **v2.0** (Current): Production-ready with idempotency, validation, comprehensive logging, and tests
+- **v3.0** (Current): Security-hardened with Authenticode verification, exponential backoff retry logic, graceful process shutdown, ASCII art UI, and all critical issues resolved
+- **v2.0**: Production-ready with idempotency, validation, comprehensive logging, and tests
 - **v1.0**: Original basic installer script
+
+#### What's New in v3.0
+
+🔒 **Security Enhancements:**
+- Authenticode signature verification for all downloads
+- Protection against tampered or malicious files
+- Optional bypass with `-SkipSignatureCheck` for trusted environments
+
+⚡ **Reliability Improvements:**
+- Exponential backoff retry logic for version detection (5 retries, 2-30s delays)
+- Graceful process shutdown (tries CloseMainWindow before Kill)
+- Finally blocks ensure cleanup always runs
+
+🎨 **User Experience:**
+- Beautiful ASCII art banner with TEAMS logo
+- Enhanced logging with visual prefixes: [✓] [⚠] [✗] [▶] [•]
+- Color-coded sections with box drawing characters
+- Professional installation summary
+
+🐛 **Critical Fixes:**
+- EULA check moved before transcript (performance)
+- ProgressPreference always restored (bug fix)
+- Exit codes properly defined (0, 3010 success codes)
+- Removed redundant admin check (handled by #Requires)
+- Fixed race condition in version detection
 
 ---
 

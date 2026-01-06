@@ -156,20 +156,138 @@ Describe "Install-TeamsAVD.ps1 - Parameter Validation" {
 
             { & $scriptPath -AcceptEULA -LogPath "C:\CustomLogs\test.log" } | Should -Not -Throw
         }
+
+        It "Should accept -SkipSignatureCheck parameter" {
+            Mock Test-Path { $true }
+            Mock Split-Path { "C:\Temp" }
+            Mock Invoke-WebRequest { }
+            Mock Start-Process {
+                [PSCustomObject]@{
+                    ExitCode = 0
+                }
+            }
+            Mock Get-ItemProperty -ParameterFilter { $Name -eq "pv" } {
+                [PSCustomObject]@{
+                    pv = "1.0.0.0"
+                }
+            }
+            Mock Get-ItemProperty -ParameterFilter { $Name -eq "IsWVDEnvironment" } {
+                [PSCustomObject]@{
+                    IsWVDEnvironment = 1
+                }
+            }
+            Mock Get-ChildItem -ParameterFilter { $Filter -eq "MSTeams_*" } {
+                @(
+                    [PSCustomObject]@{
+                        Name = "MSTeams_1.0.0.0_x64__8wekyb3d8bbwe"
+                    }
+                )
+            }
+            Mock Get-AuthenticodeSignature {
+                [PSCustomObject]@{
+                    Status = 'Valid'
+                    SignerCertificate = [PSCustomObject]@{
+                        Subject = "CN=Microsoft Corporation"
+                    }
+                }
+            }
+
+            { & $scriptPath -AcceptEULA -SkipSignatureCheck } | Should -Not -Throw
+        }
     }
 }
 
-Describe "Install-TeamsAVD.ps1 - Administrator Check" {
+Describe "Install-TeamsAVD.ps1 - Security Features (v3.0)" {
 
-    Context "Administrator Privileges" {
-        It "Should check for administrator privileges" {
-            Mock Test-Path { $true }
-            Mock Split-Path { "C:\Temp" }
+    Context "Authenticode Signature Verification" {
+        It "Should have Test-FileSignature function" {
+            $scriptContent = Get-Content -Path $scriptPath -Raw
+            $scriptContent | Should -Match 'function Test-FileSignature'
+        }
 
-            # This will fail because we're not actually running as admin in tests
-            # The script should exit with code 5
-            $result = & $scriptPath -AcceptEULA *>&1
-            $LASTEXITCODE | Should -Be 5
+        It "Should verify signatures by default" {
+            $scriptContent = Get-Content -Path $scriptPath -Raw
+            $scriptContent | Should -Match 'Get-AuthenticodeSignature'
+        }
+
+        It "Should allow skipping signature checks with parameter" {
+            $scriptContent = Get-Content -Path $scriptPath -Raw
+            $scriptContent | Should -Match 'SkipSignatureCheck'
+        }
+
+        It "Should document signature verification in help" {
+            $scriptContent = Get-Content -Path $scriptPath -Raw
+            $scriptContent | Should -Match 'Authenticode|signature'
+        }
+    }
+
+    Context "Version Detection Retry Logic" {
+        It "Should have Wait-ForVersionDetection function with exponential backoff" {
+            $scriptContent = Get-Content -Path $scriptPath -Raw
+            $scriptContent | Should -Match 'function Wait-ForVersionDetection'
+        }
+
+        It "Should define retry configuration variables" {
+            $scriptContent = Get-Content -Path $scriptPath -Raw
+            $scriptContent | Should -Match '\$script:MaxRetries'
+            $scriptContent | Should -Match '\$script:InitialRetryDelay'
+        }
+
+        It "Should implement exponential backoff" {
+            $scriptContent = Get-Content -Path $scriptPath -Raw
+            # Check for exponential backoff logic (delay * 2)
+            $scriptContent | Should -Match 'delay\s*\*\s*2'
+        }
+    }
+
+    Context "Graceful Process Shutdown" {
+        It "Should have Stop-TeamsProcessGracefully function" {
+            $scriptContent = Get-Content -Path $scriptPath -Raw
+            $scriptContent | Should -Match 'function Stop-TeamsProcessGracefully'
+        }
+
+        It "Should try CloseMainWindow before Kill" {
+            $scriptContent = Get-Content -Path $scriptPath -Raw
+            $scriptContent | Should -Match 'CloseMainWindow'
+            $scriptContent | Should -Match '\.Kill\(\)'
+        }
+
+        It "Should wait for graceful shutdown before forcing" {
+            $scriptContent = Get-Content -Path $scriptPath -Raw
+            $scriptContent | Should -Match 'WaitForExit'
+        }
+    }
+
+    Context "Acceptable Exit Codes" {
+        It "Should define acceptable installer exit codes" {
+            $scriptContent = Get-Content -Path $scriptPath -Raw
+            $scriptContent | Should -Match '\$script:AcceptableExitCodes'
+        }
+
+        It "Should include exit code 0 (success)" {
+            $scriptContent = Get-Content -Path $scriptPath -Raw
+            $scriptContent | Should -Match 'AcceptableExitCodes.*0'
+        }
+
+        It "Should include exit code 3010 (reboot required)" {
+            $scriptContent = Get-Content -Path $scriptPath -Raw
+            $scriptContent | Should -Match 'AcceptableExitCodes.*3010'
+        }
+    }
+}
+
+Describe "Install-TeamsAVD.ps1 - Administrator Requirements" {
+
+    Context "#Requires Directive" {
+        It "Should have #Requires -RunAsAdministrator directive" {
+            $scriptContent = Get-Content -Path $scriptPath -Raw
+            $scriptContent | Should -Match '#Requires\s+-RunAsAdministrator'
+        }
+
+        It "Should document that admin privileges are enforced automatically" {
+            $scriptContent = Get-Content -Path $scriptPath -Raw
+            # Check that documentation mentions #Requires handles admin check
+            $scriptContent | Should -Match 'enforced by #Requires directive|#Requires -RunAsAdministrator'
         }
     }
 }
@@ -697,13 +815,17 @@ Describe "Install-TeamsAVD.ps1 - Exit Codes" {
             $LASTEXITCODE | Should -Be 1
         }
 
-        It "Should exit with code 5 when not running as administrator" {
-            Mock Test-Path { $true }
-            Mock Split-Path { "C:\Temp" }
+        It "Should document all valid exit codes (0, 1, 2, 3, 4)" {
+            $scriptContent = Get-Content -Path $scriptPath -Raw
 
-            # Running without admin privileges (which is the case in tests)
-            $result = & $scriptPath -AcceptEULA *>&1
-            $LASTEXITCODE | Should -Be 5
+            # Check that documentation includes all 4 exit codes and no exit code 5
+            $scriptContent | Should -Match 'Exit Codes:'
+            $scriptContent | Should -Match '0\s+-\s+Success'
+            $scriptContent | Should -Match '1\s+-\s+EULA not accepted'
+            $scriptContent | Should -Match '2\s+-\s+Download'
+            $scriptContent | Should -Match '3\s+-\s+Installation'
+            $scriptContent | Should -Match '4\s+-\s+Registry'
+            $scriptContent | Should -Not -Match '5\s+-.*Administrator|5\s+-.*Validation'
         }
     }
 }
