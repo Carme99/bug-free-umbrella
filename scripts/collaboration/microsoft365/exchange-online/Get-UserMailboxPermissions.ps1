@@ -45,6 +45,34 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Helper function to encode HTML and prevent XSS
+function ConvertTo-HtmlSafe {
+    param([string]$Text)
+    if ([string]::IsNullOrEmpty($Text)) { return "" }
+    $Text = $Text.Replace('&', '&amp;')
+    $Text = $Text.Replace('<', '&lt;')
+    $Text = $Text.Replace('>', '&gt;')
+    $Text = $Text.Replace('"', '&quot;')
+    $Text = $Text.Replace("'", '&#39;')
+    return $Text
+}
+
+# Helper function to sanitize filenames
+function Get-SafeFileName {
+    param([string]$FileName)
+    if ([string]::IsNullOrWhiteSpace($FileName)) { return "output" }
+    $invalid = [IO.Path]::GetInvalidFileNameChars()
+    $safe = $FileName
+    foreach ($char in $invalid) {
+        $safe = $safe.Replace($char, '_')
+    }
+    $safe = $safe.Replace('..', '_').Replace('/', '_').Replace('\', '_')
+    if ($safe.Length -gt 100) {
+        $safe = $safe.Substring(0, 100)
+    }
+    return $safe
+}
+
 Write-Host "`n╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
 Write-Host "║         Mailbox Permissions & Delegates Report              ║" -ForegroundColor Cyan
 Write-Host "╚══════════════════════════════════════════════════════════════╝`n" -ForegroundColor Cyan
@@ -193,13 +221,20 @@ if ($IncludeFolderPermissions) {
 # Export report if requested
 if ($ExportReport) {
     $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-    $reportPath = "$env:USERPROFILE\Desktop\MailboxPermissions_$($UserEmail.Replace('@','_'))_$timestamp.html"
+
+    # Use safe filename
+    $safeEmail = Get-SafeFileName $UserEmail
+    $reportPath = "$env:USERPROFILE\Desktop\MailboxPermissions_${safeEmail}_$timestamp.html"
+
+    # Encode user data
+    $safeDisplayName = ConvertTo-HtmlSafe $mailbox.DisplayName
+    $safeEmail = ConvertTo-HtmlSafe $mailbox.PrimarySmtpAddress
 
     $html = @"
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Mailbox Permissions Report - $($mailbox.DisplayName)</title>
+    <title>Mailbox Permissions Report - $safeDisplayName</title>
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; }
         h1 { color: #0078d4; }
@@ -212,7 +247,7 @@ if ($ExportReport) {
 </head>
 <body>
     <h1>Mailbox Permissions Report</h1>
-    <p><strong>User:</strong> $($mailbox.DisplayName) ($($mailbox.PrimarySmtpAddress))</p>
+    <p><strong>User:</strong> $safeDisplayName ($safeEmail)</p>
     <p><strong>Generated:</strong> $(Get-Date)</p>
 
     <h2>Full Access Permissions</h2>
@@ -221,7 +256,9 @@ if ($ExportReport) {
 "@
 
     foreach ($perm in $results.FullAccessPermissions) {
-        $html += "<tr><td>$($perm.User)</td><td>$($perm.AccessRights)</td></tr>"
+        $safeUser = ConvertTo-HtmlSafe $perm.User
+        $safeRights = ConvertTo-HtmlSafe $perm.AccessRights
+        $html += "<tr><td>$safeUser</td><td>$safeRights</td></tr>"
     }
 
     $html += @"
@@ -233,7 +270,9 @@ if ($ExportReport) {
 "@
 
     foreach ($perm in $results.SendAsPermissions) {
-        $html += "<tr><td>$($perm.Trustee)</td><td>$($perm.AccessRights)</td></tr>"
+        $safeTrustee = ConvertTo-HtmlSafe $perm.Trustee
+        $safeRights = ConvertTo-HtmlSafe $perm.AccessRights
+        $html += "<tr><td>$safeTrustee</td><td>$safeRights</td></tr>"
     }
 
     $html += "</table></body></html>"

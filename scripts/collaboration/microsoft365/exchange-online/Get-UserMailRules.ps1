@@ -50,6 +50,34 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Helper function to encode HTML and prevent XSS
+function ConvertTo-HtmlSafe {
+    param([string]$Text)
+    if ([string]::IsNullOrEmpty($Text)) { return "" }
+    $Text = $Text.Replace('&', '&amp;')
+    $Text = $Text.Replace('<', '&lt;')
+    $Text = $Text.Replace('>', '&gt;')
+    $Text = $Text.Replace('"', '&quot;')
+    $Text = $Text.Replace("'", '&#39;')
+    return $Text
+}
+
+# Helper function to sanitize filenames
+function Get-SafeFileName {
+    param([string]$FileName)
+    if ([string]::IsNullOrWhiteSpace($FileName)) { return "output" }
+    $invalid = [IO.Path]::GetInvalidFileNameChars()
+    $safe = $FileName
+    foreach ($char in $invalid) {
+        $safe = $safe.Replace($char, '_')
+    }
+    $safe = $safe.Replace('..', '_').Replace('/', '_').Replace('\', '_')
+    if ($safe.Length -gt 100) {
+        $safe = $safe.Substring(0, 100)
+    }
+    return $safe
+}
+
 Write-Host "`n╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
 Write-Host "║            Mail Rules & Forwarding Report                   ║" -ForegroundColor Cyan
 Write-Host "╚══════════════════════════════════════════════════════════════╝`n" -ForegroundColor Cyan
@@ -259,13 +287,20 @@ Write-Host "╚═════════════════════�
 # Export report if requested
 if ($ExportReport) {
     $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-    $reportPath = "$env:USERPROFILE\Desktop\MailRules_$($UserEmail.Replace('@','_'))_$timestamp.html"
+
+    # Use safe filename
+    $safeEmailFile = Get-SafeFileName $UserEmail
+    $reportPath = "$env:USERPROFILE\Desktop\MailRules_${safeEmailFile}_$timestamp.html"
+
+    # Encode user data
+    $safeDisplayName = ConvertTo-HtmlSafe $mailbox.DisplayName
+    $safeEmail = ConvertTo-HtmlSafe $mailbox.PrimarySmtpAddress
 
     $html = @"
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Mail Rules Report - $($mailbox.DisplayName)</title>
+    <title>Mail Rules Report - $safeDisplayName</title>
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; }
         h1 { color: #0078d4; }
@@ -291,7 +326,10 @@ if ($ExportReport) {
         $html += "<div class='warning'><strong>⚠ Forwarding Enabled</strong></div>"
         $html += "<table><tr><th>Type</th><th>Forward To</th><th>Deliver to Mailbox</th></tr>"
         foreach ($fwd in $results.MailboxForwarding) {
-            $html += "<tr><td>$($fwd.Type)</td><td>$($fwd.ForwardTo)</td><td>$($fwd.DeliverToMailbox)</td></tr>"
+            $safeType = ConvertTo-HtmlSafe $fwd.Type
+            $safeForwardTo = ConvertTo-HtmlSafe $fwd.ForwardTo
+            $safeDeliver = ConvertTo-HtmlSafe $fwd.DeliverToMailbox
+            $html += "<tr><td>$safeType</td><td>$safeForwardTo</td><td>$safeDeliver</td></tr>"
         }
         $html += "</table>"
     }
@@ -306,7 +344,10 @@ if ($ExportReport) {
         foreach ($rule in $results.InboxRules) {
             $statusClass = if ($rule.Enabled) { "enabled" } else { "disabled" }
             $statusText = if ($rule.Enabled) { "Enabled" } else { "Disabled" }
-            $html += "<tr><td>$($rule.Name)</td><td class='$statusClass'>$statusText</td><td>$($rule.Priority)</td><td>$($rule.Actions)</td></tr>"
+            $safeName = ConvertTo-HtmlSafe $rule.Name
+            $safePriority = ConvertTo-HtmlSafe $rule.Priority
+            $safeActions = ConvertTo-HtmlSafe $rule.Actions
+            $html += "<tr><td>$safeName</td><td class='$statusClass'>$statusText</td><td>$safePriority</td><td>$safeActions</td></tr>"
         }
         $html += "</table>"
     }
