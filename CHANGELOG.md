@@ -23,6 +23,29 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ## [Unreleased]
 
+### Added
+
+#### 📦 M365 Apps Management
+- **Update-M365Apps.ps1** - Comprehensive M365 Apps update manager for environments without Microsoft AutoUpdate
+  - Automatic detection of installed M365 Apps with version comparison against Microsoft CDN
+  - Real-time update checking using Microsoft Office Releases API
+  - Interactive update channel selection (Monthly, Enterprise, Semi-Annual, Beta, LTSB)
+  - Local update download using Office Deployment Tool
+  - Automated installation with progress tracking and exit code handling
+  - Post-installation cleanup to reclaim disk space
+  - Rotating log files with automatic retention management (30-day default)
+  - Support for fresh installations on new systems
+  - Color-coded console output for interactive technician workflows
+  - Channel switching with registry CDNBaseUrl updates
+  - User confirmations for download, install, and cleanup operations
+  - Available in both `scripts/collaboration/microsoft365/office-apps/` and `scripts/cloud/azure/avd/` (reference copy for AVD workflows)
+- **Comprehensive Pester test suite** (Tests/Collaboration/Update-M365Apps.Tests.ps1)
+  - 100+ test cases covering script structure, documentation, functions, error handling, and security
+  - Validates all 11 primary functions and logging infrastructure
+  - Tests channel GUID mapping for 8 update channels
+  - Verifies registry operations, ODT integration, and API interactions
+  - Validates user interaction prompts and color-coded output
+
 ### In Progress
 - Phase 2 PowerShell best practices (Set-StrictMode implementation)
 - Parameter validation enhancements
