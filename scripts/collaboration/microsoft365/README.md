@@ -101,7 +101,37 @@ Connect-IPPSSession
 
 ---
 
-### Exchange Online (3 scripts)
+### Exchange Online (4 scripts)
+
+#### Manage-QuarantinedEmails.ps1
+Interactive tool for managing quarantined emails for specific M365 users.
+
+**Features:**
+- Search quarantined emails for any user (last 7-30 days)
+- View detailed quarantine information (sender, reason, size, policy)
+- Select and release quarantined messages interactively
+- Release to original or alternate recipient
+- Real-time quarantine list refresh after release
+- Support for all quarantine types (Spam, Phishing, Malware)
+
+**Usage:**
+```powershell
+# Interactive mode (prompts for user email)
+.\Manage-QuarantinedEmails.ps1 -AutoConnect
+
+# Check specific user's quarantine
+.\Manage-QuarantinedEmails.ps1 -UserEmail "john.doe@contoso.com"
+
+# Check last 14 days
+.\Manage-QuarantinedEmails.ps1 -UserEmail "john.doe@contoso.com" -Days 14
+
+# Auto-connect and check quarantine
+.\Manage-QuarantinedEmails.ps1 -UserEmail "john.doe@contoso.com" -AutoConnect
+```
+
+**Required Permissions:**
+- Quarantine role in Security & Compliance Center
+- Or Global Administrator role
 
 #### Set-MailboxRegionalSettings.ps1
 Exchange Online mailbox regional and calendar settings management.
@@ -571,10 +601,10 @@ Ensure you have the required administrator roles:
 Planned additions:
 - SharePoint site collection audit
 - Teams governance policies
-- Mail flow analysis
 - Conditional Access policy reporting
 - Azure AD sign-in logs analysis
 - DLP policy compliance
+- Advanced mail flow reporting
 
 ## 📚 Additional Resources
 
@@ -585,9 +615,9 @@ Planned additions:
 
 ---
 
-**Version**: 2.0
+**Version**: 2.1
 **Last Updated**: 2025
-**Total Scripts**: 14
+**Total Scripts**: 15
 
 ## 🤖 Development
 
