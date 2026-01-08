@@ -1,0 +1,48 @@
+<Configuration>
+  <!--
+    M365 Apps - Minimal Installation
+
+    This configuration installs only essential apps:
+    - Word, Excel, PowerPoint only
+    - Monthly Enterprise Channel
+    - 64-bit installation
+    - Smallest installation footprint
+    - Ideal for limited disk space or specialized workstations
+
+    Use case: Task workers, kiosks, limited-function devices
+
+    Usage: Place this file at C:\AVD\M365Apps\install.xml
+  -->
+
+  <Add OfficeClientEdition="64" Channel="MonthlyEnterprise" SourcePath="C:\AVD\M365Apps\OfficeUpdates">
+    <Product ID="O365ProPlusRetail">
+      <Language ID="en-us" />
+
+      <!-- Exclude all non-essential apps -->
+      <ExcludeApp ID="Groove" /> <!-- OneDrive for Business -->
+      <ExcludeApp ID="Lync" /> <!-- Skype for Business / Teams -->
+      <ExcludeApp ID="Outlook" />
+      <ExcludeApp ID="OneNote" />
+      <ExcludeApp ID="Access" />
+      <ExcludeApp ID="Publisher" />
+    </Product>
+  </Add>
+
+  <!-- Remove any old MSI-based Office installations -->
+  <RemoveMSI />
+
+  <!-- Display settings -->
+  <Display Level="Full" AcceptEULA="TRUE" />
+
+  <!-- Logging -->
+  <Logging Level="Standard" Path="C:\AVD\M365Apps\Logs" />
+
+  <!-- Automatic updates configuration -->
+  <Updates Enabled="TRUE" Channel="MonthlyEnterprise" />
+
+  <!-- Property settings -->
+  <Property Name="AUTOACTIVATE" Value="1" />
+  <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
+  <Property Name="SharedComputerLicensing" Value="0" />
+  <Property Name="PinIconsToTaskbar" Value="FALSE" />
+</Configuration>

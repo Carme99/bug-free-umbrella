@@ -39,6 +39,38 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
   - Channel switching with registry CDNBaseUrl updates
   - User confirmations for download, install, and cleanup operations
   - Available in both `scripts/collaboration/microsoft365/office-apps/` and `scripts/cloud/azure/avd/` (reference copy for AVD workflows)
+
+- **Example ODT Configuration Files** - 5 ready-to-use XML templates
+  - `example-install-monthly-enterprise.xml` - Recommended for most organizations (all apps)
+  - `example-install-semi-annual.xml` - Maximum stability for regulated industries (core apps only)
+  - `example-install-current-channel.xml` - Fastest updates for early adopters (all apps)
+  - `example-install-avd-shared.xml` - Azure Virtual Desktop with SharedComputerLicensing (REQUIRED for multi-session)
+  - `example-install-minimal.xml` - Minimal installation for limited disk space (Word, Excel, PowerPoint only)
+  - Fully commented with deployment guidance and customization examples
+  - Covers common deployment scenarios: enterprise, AVD, minimal, fast updates, stable updates
+
+- **Comprehensive Troubleshooting Guide** (TROUBLESHOOTING.md)
+  - 10 major troubleshooting sections with detailed solutions
+  - Prerequisites issues (ODT not found, XML missing, permissions)
+  - Network & connectivity (proxy settings, firewall, CDN access)
+  - Complete ODT exit code reference (0, 1, 17, 30066, 30088, 30094, 30180, 30182)
+  - Installation failures (Office won't close, disk space, hanging)
+  - Channel switching issues (version mismatches, registry problems)
+  - Registry & detection (Office not detected, version unknown)
+  - Activation & licensing (SharedComputerLicensing for AVD, product keys)
+  - Performance & disk space (slow downloads, long installations)
+  - Log file analysis (finding errors, reading ODT logs)
+  - Common error messages with step-by-step solutions
+  - PowerShell diagnostic commands and troubleshooting workflows
+
+- **Enhanced Documentation** (README.md)
+  - Quick Start guide with ODT download instructions
+  - Configuration file comparison table with use cases
+  - "Which configuration should I use?" decision guide
+  - XML customization examples (exclude apps, add languages, adjust behavior)
+  - Quick troubleshooting PowerShell commands
+  - Complete file inventory for the directory
+
 - **Comprehensive Pester test suite** (Tests/Collaboration/Update-M365Apps.Tests.ps1)
   - 100+ test cases covering script structure, documentation, functions, error handling, and security
   - Validates all 11 primary functions and logging infrastructure
