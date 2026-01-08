@@ -19,8 +19,6 @@
 .PARAMETER AutoConnect
     Automatically connect to Exchange Online if not already connected.
 
-.PARAMETER ReleaseToAlternate
-    Release message to an alternate recipient instead of the original recipient.
 
 .EXAMPLE
     .\Manage-QuarantinedEmails.ps1
@@ -62,10 +60,7 @@ param(
     [int]$Days = 7,
 
     [Parameter(Mandatory = $false)]
-    [switch]$AutoConnect,
-
-    [Parameter(Mandatory = $false)]
-    [switch]$ReleaseToAlternate
+    [switch]$AutoConnect
 )
 
 $ErrorActionPreference = "Stop"
@@ -131,7 +126,12 @@ function Connect-ToExchangeOnline {
 function Test-EmailAddress {
     param([string]$Email)
 
-    return $Email -match '^[\w\.-]+@[\w\.-]+\.\w+$'
+    if ([string]::IsNullOrWhiteSpace($Email)) { return $false }
+
+    # Improved regex that doesn't allow invalid patterns like user@.com
+    $pattern = '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$'
+
+    return $Email -match $pattern
 }
 
 # Function to get user email interactively
@@ -250,27 +250,17 @@ function Show-MessageDetails {
 
 # Function to release a quarantined message
 function Release-QuarantinedMessage {
-    param(
-        $Message,
-        [bool]$ReleaseToAlt = $false
-    )
+    param($Message)
 
     Write-Host "`n[*] Preparing to release message..." -ForegroundColor Cyan
 
-    $targetRecipient = $Message.RecipientAddress[0]
-
-    if ($ReleaseToAlt) {
-        Write-Host "[?] Enter alternate recipient email address:" -ForegroundColor Yellow
-        Write-Host -NoNewline "    Email: " -ForegroundColor Cyan
-        $altEmail = Read-Host
-
-        if (-not (Test-EmailAddress -Email $altEmail)) {
-            Write-Host "[-] Invalid email address!" -ForegroundColor Red
-            return $false
-        }
-
-        $targetRecipient = $altEmail.Trim()
+    # Validate message has recipients (array bounds check)
+    if ($null -eq $Message.RecipientAddress -or $Message.RecipientAddress.Count -eq 0) {
+        Write-Host "[-] Message has no recipients! Cannot release." -ForegroundColor Red
+        return $false
     }
+
+    $targetRecipient = $Message.RecipientAddress[0]
 
     Write-Host "`n[!] Confirm release:" -ForegroundColor Yellow
     Write-Host "    From    : $($Message.SenderAddress)" -ForegroundColor Gray
@@ -278,7 +268,7 @@ function Release-QuarantinedMessage {
     Write-Host "    Subject : $($Message.Subject)" -ForegroundColor Gray
     Write-Host "    Reason  : $($Message.QuarantineTypes -join ', ')" -ForegroundColor Gray
     Write-Host ""
-    Write-Host -NoNewline "[?] Release this message? (Y/N): " -ForegroundColor Yellow
+    Write-Host -NoNewline "[?] Release this message to original recipient? (Y/N): " -ForegroundColor Yellow
 
     $confirm = Read-Host
 
@@ -290,13 +280,14 @@ function Release-QuarantinedMessage {
     try {
         Write-Host "`n[*] Releasing message..." -ForegroundColor Cyan
 
-        # Release the message
+        # Release the message to original recipient
+        # Note: Release-QuarantineMessage only supports releasing to original recipients
         Release-QuarantineMessage -Identity $Message.Identity `
                                   -ReleaseToAll:$false `
                                   -ErrorAction Stop
 
         Write-Host "[+] Message successfully released to: $targetRecipient" -ForegroundColor Green
-        Write-Host "[i] The message should be delivered shortly." -ForegroundColor Green
+        Write-Host "[i] The message should be delivered to the original recipient shortly." -ForegroundColor Green
 
         return $true
     }
@@ -348,8 +339,7 @@ function Show-MessageActionMenu {
 
     Write-Host "`n[?] What would you like to do?" -ForegroundColor Yellow
     Write-Host "    1. Release message to original recipient" -ForegroundColor White
-    Write-Host "    2. Release message to alternate recipient" -ForegroundColor White
-    Write-Host "    3. Go back to list" -ForegroundColor White
+    Write-Host "    2. Go back to list" -ForegroundColor White
     Write-Host "    0. Exit" -ForegroundColor White
     Write-Host -NoNewline "`n    Choice: " -ForegroundColor Cyan
 
@@ -357,14 +347,10 @@ function Show-MessageActionMenu {
 
     switch ($action) {
         '1' {
-            $result = Release-QuarantinedMessage -Message $Message -ReleaseToAlt $false
+            $result = Release-QuarantinedMessage -Message $Message
             return @{ Action = 'Released'; Success = $result }
         }
         '2' {
-            $result = Release-QuarantinedMessage -Message $Message -ReleaseToAlt $true
-            return @{ Action = 'Released'; Success = $result }
-        }
-        '3' {
             return @{ Action = 'Back'; Success = $true }
         }
         '0' {
@@ -380,6 +366,9 @@ function Show-MessageActionMenu {
 #
 # Main Script Execution
 #
+
+# Only execute if not dot-sourced (for Pester tests)
+if ($MyInvocation.InvocationName -ne '.') {
 
 Show-Banner
 
@@ -483,3 +472,5 @@ while ($continue) {
 
 Write-Host "`n[+] Quarantine management session completed." -ForegroundColor Green
 exit 0
+
+} # End of invocation check

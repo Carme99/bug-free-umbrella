@@ -84,7 +84,7 @@ param(
     [switch]$ExportReport
 )
 
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 $script:UserData = @{}
 $script:ConnectedServices = @{
     ExchangeOnline = $false
@@ -92,6 +92,85 @@ $script:ConnectedServices = @{
 }
 
 #region Helper Functions
+
+function ConvertTo-HtmlSafe {
+    <#
+    .SYNOPSIS
+        Encode text for safe HTML output to prevent XSS attacks
+    #>
+    param([string]$Text)
+
+    if ([string]::IsNullOrEmpty($Text)) { return "" }
+
+    # Manual encoding (avoids System.Web dependency)
+    $Text = $Text.Replace('&', '&amp;')
+    $Text = $Text.Replace('<', '&lt;')
+    $Text = $Text.Replace('>', '&gt;')
+    $Text = $Text.Replace('"', '&quot;')
+    $Text = $Text.Replace("'", '&#39;')
+
+    return $Text
+}
+
+function Get-SafeFileName {
+    <#
+    .SYNOPSIS
+        Sanitize filename to prevent path traversal attacks
+    #>
+    param([string]$FileName)
+
+    if ([string]::IsNullOrWhiteSpace($FileName)) { return "output" }
+
+    # Remove invalid filename characters
+    $invalid = [IO.Path]::GetInvalidFileNameChars()
+    $safe = $FileName
+    foreach ($char in $invalid) {
+        $safe = $safe.Replace($char, '_')
+    }
+
+    # Additional security: Remove path traversal attempts
+    $safe = $safe.Replace('..', '_').Replace('/', '_').Replace('\', '_')
+
+    # Limit length
+    if ($safe.Length -gt 100) {
+        $safe = $safe.Substring(0, 100)
+    }
+
+    return $safe
+}
+
+function Get-MailboxSizeGB {
+    <#
+    .SYNOPSIS
+        Safely parse mailbox size from TotalItemSize with error handling
+    #>
+    param($TotalItemSize)
+
+    if (-not $TotalItemSize) { return 0 }
+
+    try {
+        # Match pattern: "12.34 GB (13,271,234 bytes)"
+        $sizeString = $TotalItemSize.ToString()
+        if ($sizeString -match '\((\d{1,3}(?:,\d{3})*(?:\.\d+)?)\s+bytes\)') {
+            $bytes = [double]($Matches[1] -replace ',', '')
+            return [math]::Round($bytes / 1GB, 2)
+        }
+
+        # Fallback: try old parsing method
+        if ($sizeString -match '\(([^)]+)\s+bytes\)') {
+            $bytesStr = $Matches[1] -replace ',', ''
+            $bytes = [double]$bytesStr
+            return [math]::Round($bytes / 1GB, 2)
+        }
+
+        Write-Host "[!] Warning: Could not parse mailbox size format: $sizeString" -ForegroundColor Yellow
+        return 0
+    }
+    catch {
+        Write-Host "[!] Warning: Error parsing mailbox size: $($_.Exception.Message)" -ForegroundColor Yellow
+        return 0
+    }
+}
 
 function Show-Banner {
     Clear-Host
@@ -102,7 +181,13 @@ function Show-Banner {
 
 function Test-EmailAddress {
     param([string]$Email)
-    return $Email -match '^[\w\.-]+@[\w\.-]+\.\w+$'
+
+    if ([string]::IsNullOrWhiteSpace($Email)) { return $false }
+
+    # Improved regex that doesn't allow invalid patterns like user@.com
+    $pattern = '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$'
+
+    return $Email -match $pattern
 }
 
 function Get-UserEmailInteractive {
@@ -279,14 +364,14 @@ function Get-MailboxStatistics {
     try {
         $stats = Get-EXOMailboxStatistics -Identity $script:UserData.UserPrincipalName -ErrorAction Stop
 
-        $mailboxSizeGB = if ($stats.TotalItemSize) {
-            [math]::Round(($stats.TotalItemSize.ToString().Split('(')[1].Split(' ')[0].Replace(',','') -as [double]) / 1GB, 2)
-        } else { 0 }
+        # Use safe parsing function with error handling
+        $mailboxSizeGB = Get-MailboxSizeGB $stats.TotalItemSize
 
         $mailboxDetails = Get-EXOMailbox -Identity $script:UserData.UserPrincipalName -Properties ProhibitSendQuota, ArchiveStatus
 
+        # Parse quota safely
         $quotaGB = if ($mailboxDetails.ProhibitSendQuota -ne 'Unlimited') {
-            [math]::Round(($mailboxDetails.ProhibitSendQuota.ToString().Split('(')[1].Split(' ')[0].Replace(',','') -as [double]) / 1GB, 2)
+            Get-MailboxSizeGB $mailboxDetails.ProhibitSendQuota
         } else { 0 }
 
         $quotaPercent = if ($quotaGB -gt 0) {
@@ -506,13 +591,24 @@ function Export-UserReport {
     Write-Host "`n[*] Generating comprehensive user report..." -ForegroundColor Cyan
 
     $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-    $reportPath = "$env:USERPROFILE\Desktop\M365_UserReport_$($script:UserData.UserPrincipalName.Replace('@','_'))_$timestamp.html"
+
+    # Use safe filename to prevent path traversal
+    $safeEmail = Get-SafeFileName $script:UserData.UserPrincipalName
+    $reportPath = "$env:USERPROFILE\Desktop\M365_UserReport_${safeEmail}_$timestamp.html"
+
+    # Encode all user data for HTML to prevent XSS
+    $safeDisplayName = ConvertTo-HtmlSafe $script:UserData.DisplayName
+    $safePrimaryEmail = ConvertTo-HtmlSafe $script:UserData.PrimaryEmail
+    $safeUserPrincipalName = ConvertTo-HtmlSafe $script:UserData.UserPrincipalName
+    $safeJobTitle = ConvertTo-HtmlSafe $script:UserData.JobTitle
+    $safeDepartment = ConvertTo-HtmlSafe $script:UserData.Department
+    $safeMailboxType = ConvertTo-HtmlSafe $script:UserData.MailboxType
 
     $html = @"
 <!DOCTYPE html>
 <html>
 <head>
-    <title>M365 User Report - $($script:UserData.DisplayName)</title>
+    <title>M365 User Report - $safeDisplayName</title>
     <style>
         body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
         h1 { color: #0078d4; border-bottom: 3px solid #0078d4; padding-bottom: 10px; }
@@ -535,12 +631,12 @@ function Export-UserReport {
     <div class="section">
         <h2>User Information</h2>
         <table>
-            <tr><td class="label">Display Name</td><td>$($script:UserData.DisplayName)</td></tr>
-            <tr><td class="label">Primary Email</td><td>$($script:UserData.PrimaryEmail)</td></tr>
-            <tr><td class="label">User Principal Name</td><td>$($script:UserData.UserPrincipalName)</td></tr>
-            <tr><td class="label">Job Title</td><td>$($script:UserData.JobTitle)</td></tr>
-            <tr><td class="label">Department</td><td>$($script:UserData.Department)</td></tr>
-            <tr><td class="label">Mailbox Type</td><td>$($script:UserData.MailboxType)</td></tr>
+            <tr><td class="label">Display Name</td><td>$safeDisplayName</td></tr>
+            <tr><td class="label">Primary Email</td><td>$safePrimaryEmail</td></tr>
+            <tr><td class="label">User Principal Name</td><td>$safeUserPrincipalName</td></tr>
+            <tr><td class="label">Job Title</td><td>$safeJobTitle</td></tr>
+            <tr><td class="label">Department</td><td>$safeDepartment</td></tr>
+            <tr><td class="label">Mailbox Type</td><td>$safeMailboxType</td></tr>
             <tr><td class="label">Account Status</td><td class="$(if ($script:UserData.AccountEnabled) { 'status-enabled' } else { 'status-disabled' })">$(if ($script:UserData.AccountEnabled) { 'Enabled' } else { 'Disabled' })</td></tr>
         </table>
     </div>
