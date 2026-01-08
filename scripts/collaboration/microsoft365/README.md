@@ -9,6 +9,27 @@ Enterprise-grade PowerShell scripts for comprehensive Microsoft 365 cloud servic
 
 This category provides cloud-based management tools for Microsoft 365 services including Exchange Online, Microsoft Teams, SharePoint/OneDrive, and Azure AD (Entra ID). These scripts complement the existing Intune management tools to provide complete M365 administration.
 
+## 🆕 User Management Toolkit (NEW!)
+
+**Looking for user-specific operations?** Check out our new **[User Management Toolkit](./USER-MANAGEMENT-TOOLKIT.md)** - a comprehensive suite designed for technicians to quickly troubleshoot individual user accounts.
+
+**Includes:**
+- `Get-M365UserInfo.ps1` - Interactive menu-driven user information tool (Swiss Army knife)
+- `Manage-QuarantinedEmails.ps1` - Release quarantined emails for users
+- `Get-UserMailboxPermissions.ps1` - Audit mailbox permissions and delegates
+- `Get-UserMailRules.ps1` - Check forwarding rules and inbox rules
+
+**Quick Start:**
+```powershell
+# All-in-one user information tool
+.\Get-M365UserInfo.ps1 -UserEmail "john.doe@contoso.com" -AutoConnect
+
+# Or manage quarantine directly
+.\Manage-QuarantinedEmails.ps1 -UserEmail "john.doe@contoso.com"
+```
+
+**[→ Read the full User Management Toolkit guide](./USER-MANAGEMENT-TOOLKIT.md)**
+
 ## 🏗️ Structure
 
 ```
@@ -101,7 +122,7 @@ Connect-IPPSSession
 
 ---
 
-### Exchange Online (4 scripts)
+### Exchange Online (7 scripts)
 
 #### Manage-QuarantinedEmails.ps1
 Interactive tool for managing quarantined emails for specific M365 users.
@@ -132,6 +153,91 @@ Interactive tool for managing quarantined emails for specific M365 users.
 **Required Permissions:**
 - Quarantine role in Security & Compliance Center
 - Or Global Administrator role
+
+#### Get-M365UserInfo.ps1 (NEW!)
+Interactive menu-driven user information and management toolkit.
+
+**Features:**
+- Consolidated user information view
+- Mailbox statistics (size, quota, usage)
+- License assignments
+- Quarantine check integration
+- Sign-in activity
+- Group memberships
+- Mobile devices
+- Interactive menu for all operations
+- Quick view mode
+- HTML report generation
+
+**Usage:**
+```powershell
+# Interactive mode
+.\Get-M365UserInfo.ps1 -UserEmail "john.doe@contoso.com" -AutoConnect
+
+# Quick summary view
+.\Get-M365UserInfo.ps1 -UserEmail "john.doe@contoso.com" -QuickView
+
+# Generate full report
+.\Get-M365UserInfo.ps1 -UserEmail "john.doe@contoso.com" -ExportReport
+```
+
+**Use Cases:**
+- First-line support troubleshooting
+- User account health check
+- VIP user support
+- Incident investigation
+
+#### Get-UserMailboxPermissions.ps1 (NEW!)
+Audit mailbox permissions and delegate access.
+
+**Features:**
+- Full Access permissions
+- Send As permissions
+- Send on Behalf permissions
+- Folder-level permissions (calendar, inbox, contacts, tasks)
+- Auto-mapping status
+- HTML export
+
+**Usage:**
+```powershell
+# Basic permission check
+.\Get-UserMailboxPermissions.ps1 -UserEmail "john.doe@contoso.com"
+
+# Include folder permissions
+.\Get-UserMailboxPermissions.ps1 -UserEmail "john.doe@contoso.com" -IncludeFolderPermissions -ExportReport
+```
+
+**Use Cases:**
+- Security audit (who has access)
+- Troubleshoot calendar permission issues
+- Verify delegate access
+- Compliance documentation
+
+#### Get-UserMailRules.ps1 (NEW!)
+Check email forwarding rules and inbox rules.
+
+**Features:**
+- Mailbox-level forwarding detection (internal & external)
+- Inbox rules with conditions and actions
+- Security warnings for suspicious rules
+- Auto-reply/Out of Office status
+- Rule priority analysis
+- HTML report with detailed breakdown
+
+**Usage:**
+```powershell
+# Check mail rules
+.\Get-UserMailRules.ps1 -UserEmail "john.doe@contoso.com"
+
+# Include disabled rules
+.\Get-UserMailRules.ps1 -UserEmail "john.doe@contoso.com" -ShowDisabledRules -ExportReport
+```
+
+**Use Cases:**
+- "I'm not receiving emails" troubleshooting
+- Security incident investigation
+- Detect unauthorized forwarding
+- Mail flow troubleshooting
 
 #### Set-MailboxRegionalSettings.ps1
 Exchange Online mailbox regional and calendar settings management.
@@ -615,9 +721,9 @@ Planned additions:
 
 ---
 
-**Version**: 2.1
+**Version**: 2.2
 **Last Updated**: 2025
-**Total Scripts**: 15
+**Total Scripts**: 19
 
 ## 🤖 Development
 
