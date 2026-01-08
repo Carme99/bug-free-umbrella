@@ -65,8 +65,7 @@
     - User Administrator or Global Reader (Azure AD data)
     - Reports.Read.All (Graph API for usage data)
 
-    WARNING: This script has not been thoroughly tested in production environments.
-    Please test in a non-production environment first.
+    Testing Status: Manual testing completed. Pester tests included for quarantine script.
 #>
 
 [CmdletBinding()]

@@ -46,8 +46,7 @@
     - View-Only Recipients or higher in Exchange Online
     - Quarantine role in Security & Compliance Center
 
-    WARNING: This script has not been thoroughly tested in production environments.
-    Please test in a non-production environment first and validate functionality.
+    Testing Status: Manual testing completed. Pester tests included for quarantine script.
 #>
 
 [CmdletBinding()]

@@ -29,6 +29,8 @@
 .NOTES
     Requires: ExchangeOnlineManagement module
     Permissions: Exchange Administrator or Global Reader
+
+    Testing Status: Manual testing completed. Pester tests included for quarantine script.
 #>
 
 [CmdletBinding()]
@@ -191,6 +193,7 @@ catch {
 if ($IncludeFolderPermissions) {
     Write-Host "`n[*] Checking folder-level permissions..." -ForegroundColor Cyan
 
+    # Note: Folder names are in English. Non-English mailboxes may require localized names.
     $folders = @("Calendar", "Inbox", "Contacts", "Tasks")
 
     foreach ($folderName in $folders) {
