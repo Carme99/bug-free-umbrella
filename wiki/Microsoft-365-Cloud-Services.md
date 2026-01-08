@@ -33,6 +33,10 @@ Manage mailboxes, mail flow, and distribution lists.
 
 | Script | Description | Location |
 |--------|-------------|----------|
+| **Get-M365UserInfo.ps1** | 🆕 Interactive user management toolkit with comprehensive reporting | `scripts/collaboration/microsoft365/` |
+| **Manage-QuarantinedEmails.ps1** | 🆕 Search and release quarantined emails for specific users | `scripts/collaboration/microsoft365/exchange-online/` |
+| **Get-UserMailboxPermissions.ps1** | 🆕 Audit mailbox and folder-level permissions for users | `scripts/collaboration/microsoft365/exchange-online/` |
+| **Get-UserMailRules.ps1** | 🆕 Investigate mail rules and forwarding for security audits | `scripts/collaboration/microsoft365/exchange-online/` |
 | **Get-MailboxHealth.ps1** | Comprehensive mailbox health and usage report | `scripts/collaboration/microsoft365/exchange-online/` |
 | **Get-MailFlowAnalysis.ps1** | Analyze mail flow patterns and issues | `scripts/collaboration/microsoft365/exchange-online/` |
 | **Get-SharedMailboxReport.ps1** | Audit shared mailbox usage and permissions | `scripts/collaboration/microsoft365/exchange-online/` |
@@ -295,7 +299,131 @@ Inactive Mailboxes (90+ days):
    Recommendation: Review and consider disabling
 ```
 
-### 4. Mail Flow Analysis
+### 4. User Management Toolkit (NEW in v3.3.0)
+
+🆕 Comprehensive toolkit for managing individual user accounts with interactive menus and detailed reporting.
+
+**Master Toolkit - Get-M365UserInfo.ps1:**
+```powershell
+# Interactive menu-driven user management
+.\Get-M365UserInfo.ps1
+
+# Auto-load specific user and run interactive menu
+.\Get-M365UserInfo.ps1 -UserEmail "john.doe@company.com"
+
+# Export comprehensive user report to HTML
+.\Get-M365UserInfo.ps1 -UserEmail "john.doe@company.com" -ExportReport
+```
+
+**Features:**
+- Comprehensive user information (Azure AD, mailbox, licenses, groups)
+- Quarantine management (search and release quarantined emails)
+- Permission auditing (mailbox, folder, Send As, Send on Behalf)
+- Mail rules investigation (forwarding, inbox rules, suspicious patterns)
+- HTML export with security protections (XSS-safe, path sanitization)
+- Interactive menu for guided workflows
+
+**Sample Output:**
+```
+=== M365 User Information ===
+User: john.doe@company.com
+
+[*] Azure AD Information
+Display Name: John Doe
+UPN: john.doe@company.com
+Job Title: Senior Engineer
+Department: IT
+Account Status: Enabled
+MFA Status: Enabled
+
+[*] Mailbox Information
+Mailbox Type: UserMailbox
+Size: 15.8 GB / 50 GB (32%)
+Item Count: 42,567
+Archive Enabled: Yes
+Archive Size: 8.2 GB
+
+[*] License Assignments
+  • Microsoft 365 E5
+  • Power BI Pro
+
+[*] Group Memberships (5 groups)
+  • IT Department
+  • Engineering Team
+  • Office 365 Users
+  • VPN Access
+  • Admin Tools
+
+[+] Data collection complete!
+```
+
+**Standalone Scripts:**
+
+**Manage Quarantined Emails:**
+```powershell
+# Interactive quarantine management
+.\Manage-QuarantinedEmails.ps1 -UserEmail "john.doe@company.com"
+
+# Shows last 7 days of quarantined messages
+# Allows viewing details and releasing messages
+```
+
+**Audit Mailbox Permissions:**
+```powershell
+# Basic permission audit
+.\Get-UserMailboxPermissions.ps1 -UserEmail "john.doe@company.com"
+
+# Include folder-level permissions and export report
+.\Get-UserMailboxPermissions.ps1 -UserEmail "john.doe@company.com" `
+                                  -IncludeFolderPermissions `
+                                  -ExportReport
+```
+
+**Investigate Mail Rules:**
+```powershell
+# Check forwarding and rules
+.\Get-UserMailRules.ps1 -UserEmail "john.doe@company.com"
+
+# Include disabled rules and export report
+.\Get-UserMailRules.ps1 -UserEmail "john.doe@company.com" `
+                        -ShowDisabledRules `
+                        -ExportReport
+```
+
+**Common Workflows:**
+
+1. **User Can't Find Email:**
+   ```powershell
+   # Check quarantine first
+   .\Manage-QuarantinedEmails.ps1 -UserEmail "user@company.com"
+
+   # If not in quarantine, check rules
+   .\Get-UserMailRules.ps1 -UserEmail "user@company.com"
+   ```
+
+2. **Security Audit - Unauthorized Access:**
+   ```powershell
+   # Check mailbox permissions
+   .\Get-UserMailboxPermissions.ps1 -UserEmail "executive@company.com" `
+                                     -IncludeFolderPermissions -ExportReport
+
+   # Check for forwarding rules
+   .\Get-UserMailRules.ps1 -UserEmail "executive@company.com" -ExportReport
+   ```
+
+3. **Comprehensive User Investigation:**
+   ```powershell
+   # Use master toolkit for complete analysis
+   .\Get-M365UserInfo.ps1 -UserEmail "user@company.com" -ExportReport
+
+   # Interactive menu provides access to:
+   # - User details
+   # - Quarantine search
+   # - Permission auditing
+   # - Mail rules investigation
+   ```
+
+### 5. Mail Flow Analysis
 
 Analyze email traffic patterns, identify bottlenecks, and detect anomalies.
 
@@ -344,7 +472,7 @@ Recommendations:
 - 89 mailboxes full - expand quotas or enable archiving
 ```
 
-### 5. Shared Mailbox Management
+### 6. Shared Mailbox Management
 
 Audit shared mailbox usage, permissions, and identify security issues.
 
@@ -400,7 +528,7 @@ Security Concerns:
 - 7 inactive mailboxes should be reviewed
 ```
 
-### 6. OneDrive Usage Reporting
+### 7. OneDrive Usage Reporting
 
 Monitor OneDrive storage consumption and user activity.
 
@@ -454,7 +582,7 @@ Inactive OneDrive Accounts (180+ days):
    Recommendation: Backup and remove
 ```
 
-### 7. Microsoft Teams Reporting
+### 8. Microsoft Teams Reporting
 
 Generate usage reports and monitor Teams adoption.
 
@@ -475,7 +603,7 @@ Generate usage reports and monitor Teams adoption.
                       -ExportBoth
 ```
 
-### 8. Power Platform Governance
+### 9. Power Platform Governance
 
 Audit Power Apps, Power Automate flows, and environments for compliance.
 
@@ -529,7 +657,7 @@ Recommendations:
 - Archive 23 inactive apps
 ```
 
-### 9. Microsoft Defender for Office 365 Threat Reporting
+### 10. Microsoft Defender for Office 365 Threat Reporting
 
 Monitor email threats and security incidents.
 
