@@ -1,0 +1,61 @@
+<Configuration>
+  <!--
+    M365 Apps - Azure Virtual Desktop (Multi-Session)
+
+    This configuration is specifically for AVD/WVD environments with:
+    - SharedComputerLicensing enabled (REQUIRED for multi-session Windows)
+    - Monthly Enterprise Channel
+    - 64-bit installation
+    - All core apps
+    - Optimized for multi-user scenarios
+
+    IMPORTANT: SharedComputerLicensing=1 is MANDATORY for:
+    - Windows 10/11 Enterprise multi-session
+    - Azure Virtual Desktop (AVD)
+    - Windows Virtual Desktop (WVD)
+    - Remote Desktop Services (RDS)
+    - Citrix / VMware Horizon environments
+
+    Channel GUID: 64256afe-f5d9-4f86-8936-8840a6a4f5be
+
+    Usage: Place this file at C:\AVD\M365Apps\install.xml
+  -->
+
+  <Add OfficeClientEdition="64" Channel="MonthlyEnterprise" SourcePath="C:\AVD\M365Apps\OfficeUpdates">
+    <Product ID="O365ProPlusRetail">
+      <Language ID="en-us" />
+      <Language ID="en-gb" />
+
+      <!-- Recommended exclusions for AVD -->
+      <ExcludeApp ID="Groove" /> <!-- OneDrive - use Files On-Demand instead -->
+      <ExcludeApp ID="Lync" /> <!-- Teams - install separately for AVD optimization -->
+      <ExcludeApp ID="Access" /> <!-- Rarely needed in AVD -->
+      <ExcludeApp ID="Publisher" /> <!-- Rarely needed in AVD -->
+    </Product>
+  </Add>
+
+  <!-- Remove any old MSI-based Office installations -->
+  <RemoveMSI />
+
+  <!-- Display settings - use None for automated deployments -->
+  <Display Level="Full" AcceptEULA="TRUE" />
+
+  <!-- Logging -->
+  <Logging Level="Standard" Path="C:\AVD\M365Apps\Logs" />
+
+  <!-- Automatic updates configuration -->
+  <Updates Enabled="TRUE" Channel="MonthlyEnterprise" />
+
+  <!-- AVD-specific property settings -->
+  <Property Name="AUTOACTIVATE" Value="1" />
+  <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
+
+  <!-- CRITICAL: SharedComputerLicensing MUST be set to 1 for AVD/multi-session -->
+  <Property Name="SharedComputerLicensing" Value="1" />
+
+  <!-- Don't pin icons in multi-user environment -->
+  <Property Name="PinIconsToTaskbar" Value="FALSE" />
+
+  <!-- Disable device-based licensing in shared environments -->
+  <Property Name="DeviceBasedLicensing" Value="0" />
+</Configuration>

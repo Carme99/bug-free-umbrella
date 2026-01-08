@@ -1,0 +1,49 @@
+<Configuration>
+  <!--
+    M365 Apps - Semi-Annual Enterprise Channel (Most Stable)
+
+    This configuration installs M365 Apps with:
+    - Semi-Annual Enterprise Channel (updates twice per year)
+    - 64-bit installation
+    - Core Office apps only (Word, Excel, PowerPoint, Outlook)
+    - Best for organizations requiring maximum stability
+    - Ideal for regulated industries or risk-averse environments
+
+    Channel GUID: b8f9b850-328d-4355-9145-c59439a0c4cf
+    Update frequency: Twice per year (January and July)
+
+    Usage: Place this file at C:\AVD\M365Apps\install.xml
+  -->
+
+  <Add OfficeClientEdition="64" Channel="SemiAnnual" SourcePath="C:\AVD\M365Apps\OfficeUpdates">
+    <Product ID="O365ProPlusRetail">
+      <Language ID="en-us" />
+      <Language ID="en-gb" />
+
+      <!-- Exclude non-essential apps for stability -->
+      <ExcludeApp ID="Groove" /> <!-- OneDrive for Business -->
+      <ExcludeApp ID="Lync" /> <!-- Skype for Business / Teams -->
+      <ExcludeApp ID="Access" />
+      <ExcludeApp ID="Publisher" />
+      <ExcludeApp ID="OneNote" />
+    </Product>
+  </Add>
+
+  <!-- Remove any old MSI-based Office installations -->
+  <RemoveMSI />
+
+  <!-- Display settings -->
+  <Display Level="Full" AcceptEULA="TRUE" />
+
+  <!-- Logging -->
+  <Logging Level="Standard" Path="C:\AVD\M365Apps\Logs" />
+
+  <!-- Automatic updates configuration -->
+  <Updates Enabled="TRUE" Channel="SemiAnnual" />
+
+  <!-- Property settings -->
+  <Property Name="AUTOACTIVATE" Value="1" />
+  <Property Name="FORCEAPPSHUTDOWN" Value="TRUE" />
+  <Property Name="SharedComputerLicensing" Value="0" />
+  <Property Name="PinIconsToTaskbar" Value="FALSE" />
+</Configuration>
