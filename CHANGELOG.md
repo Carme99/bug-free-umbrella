@@ -23,14 +23,11 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ## [Unreleased]
 
-### In Progress
-- Phase 2 PowerShell best practices (Set-StrictMode implementation)
-- Parameter validation enhancements
-- Additional Pester test coverage
+### Added
 
 ---
 
-## [3.1.0] - 2025-01-09 🌧️ **"Shower"** - WSUS Optimization Release
+## [3.5.0] - 2026-01-09 🌧️ **"Shower"** - WSUS Optimization Release
 
 > **Focus**: New comprehensive WSUS server optimization and maintenance script
 
