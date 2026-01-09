@@ -16,6 +16,7 @@ A comprehensive collection of PowerShell scripts for managing Windows Server 201
   - [Set English UK Regional Settings](#4-set-english-uk-regional-settings)
   - [Remove US Language Pack](#5-remove-us-language-pack)
   - [New Weekly Reboot Schedule](#17-new-weekly-reboot-schedule)
+  - [Optimize WSUS Server](#18-optimize-wsus-server)
 - [Usage Guidelines](#usage-guidelines)
 - [Best Practices](#best-practices)
 - [Troubleshooting](#troubleshooting)
@@ -1209,6 +1210,260 @@ Unregister-ScheduledTask -TaskName "Weekly Server Reboot" -Confirm:$false
 - Check if task has "Start when available" enabled
 - Review Task Scheduler history for execution logs
 - Ensure system wasn't in use (some policies prevent reboot if users logged in)
+
+---
+
+### 18. Optimize WSUS Server
+
+**File**: `Optimize-WsusServer.ps1`
+
+Comprehensive Windows Server Update Services (WSUS) optimization and maintenance script with interactive configuration wizard and automated scheduling.
+
+#### Features
+
+**Interactive Configuration Wizard**:
+- First-time setup with guided prompts for all settings
+- Customizable obsolete product lists (Windows 7/8, legacy Office, SQL Server, etc.)
+- Update title filtering (IE 6-10, Itanium, ARM64, consumer editions)
+- Scheduled task configuration (daily, weekly, monthly)
+- Advanced options (custom indexes, verbose logging, retention)
+
+**Deep Cleaning**:
+- Remove updates for 20+ obsolete products (EOL Windows/Office/SQL versions)
+- Decline superseded updates automatically
+- Optional driver update removal to reduce database bloat
+- Customizable product and title filter lists
+- Progress tracking with real-time counts
+
+**Database Optimization**:
+- Microsoft best practice SQL reindexing
+- Custom index creation on key WSUS tables
+- Statistics updates for query plan optimization
+- Fragmented index rebuilding (>10% fragmentation)
+
+**IIS Configuration Management**:
+- Validates against recommended WSUS IIS settings
+- Queue length optimization (25,000)
+- CPU reset interval, memory recycling settings
+- Automatic web.config backup before changes
+
+**Automated Scheduling**:
+- Daily task: Server optimization + superseded update cleanup
+- Weekly task: Database optimization + IIS config validation
+- Monthly task: Deep clean of obsolete updates
+
+#### Usage
+
+**Interactive Mode** (Recommended for first run):
+```powershell
+.\Optimize-WsusServer.ps1 -Interactive
+```
+
+The wizard will guide you through:
+1. Deep clean configuration (obsolete products to remove)
+2. Driver synchronization settings
+3. Scheduled task creation (daily/weekly/monthly)
+4. Advanced options (logging, retention, custom indexes)
+
+**Command-Line Operations**:
+```powershell
+# Run all built-in WSUS cleanup processes
+.\Optimize-WsusServer.ps1 -OptimizeServer
+
+# Optimize database (reindex, update statistics)
+.\Optimize-WsusServer.ps1 -OptimizeDatabase
+
+# Decline superseded updates
+.\Optimize-WsusServer.ps1 -DeclineSupersededUpdates
+
+# Deep clean obsolete updates
+.\Optimize-WsusServer.ps1 -DeepClean
+
+# Full optimization
+.\Optimize-WsusServer.ps1 -OptimizeServer -OptimizeDatabase -CheckConfig
+
+# Create scheduled tasks from configuration
+.\Optimize-WsusServer.ps1 -CreateTasks
+```
+
+**Custom Configuration File**:
+```powershell
+.\Optimize-WsusServer.ps1 -ConfigFile "C:\Custom\wsus-config.json" -OptimizeServer
+```
+
+#### Parameters
+
+| Parameter | Description | Example |
+|-----------|-------------|---------|
+| `-Interactive` | Launch configuration wizard | `-Interactive` |
+| `-OptimizeServer` | Run all WSUS cleanup processes | `-OptimizeServer` |
+| `-OptimizeDatabase` | Database reindex and statistics | `-OptimizeDatabase` |
+| `-DeclineSupersededUpdates` | Decline superseded updates | `-DeclineSupersededUpdates` |
+| `-DeepClean` | Remove obsolete updates | `-DeepClean` |
+| `-DisableDrivers` | Disable driver synchronization | `-DisableDrivers` |
+| `-CheckConfig` | Validate IIS configuration | `-CheckConfig` |
+| `-CreateTasks` | Create scheduled tasks | `-CreateTasks` |
+| `-ConfigFile` | Custom configuration path | `-ConfigFile "C:\config.json"` |
+| `-LogPath` | Custom log file path | `-LogPath "D:\Logs\wsus.log"` |
+
+#### Requirements
+
+- Windows Server 2016 or later
+- WSUS role installed and configured
+- SQL Server (Windows Internal Database or Full)
+- PowerShell 5.1 or later
+- Required modules: `SqlServer`, `UpdateServices`, `WebAdministration`
+- Administrator privileges (Run as Administrator)
+
+#### Configuration File
+
+The script uses a JSON configuration file (default: `C:\Scripts\WSUS\wsus-config.json`) that stores:
+
+- **Deep Clean Settings**: Lists of obsolete products and update titles
+- **IIS Settings**: Recommended IIS configuration values
+- **Scheduled Tasks**: Task schedules and operations
+- **Features**: Driver sync, custom indexes, etc.
+- **Logging**: Log path, retention, verbosity
+
+#### Default Obsolete Products Removed
+
+The script includes pre-configured lists for:
+
+**EOL Operating Systems**:
+- Windows 2000, XP, Vista, 7, 8, 8.1
+- Windows Server 2003, 2003 R2, 2008, 2008 R2
+
+**Legacy Applications**:
+- Office 2002, 2003, 2007, 2010
+- SQL Server 2000, 2005, 2008
+- Internet Explorer 6-10
+
+**Architecture/Edition Filters**:
+- Itanium and ARM64 architectures
+- Consumer editions (if enterprise-only)
+- Language packs (if not needed)
+
+#### Scheduled Tasks Created
+
+**Daily Task** (WSUS-DailyOptimization):
+- Default: 02:00 AM
+- Operations: Server cleanup, decline superseded updates
+
+**Weekly Task** (WSUS-WeeklyOptimization):
+- Default: Sunday at 03:00 AM
+- Operations: Database optimization, IIS config check
+
+**Monthly Task** (WSUS-MonthlyDeepClean):
+- Default: 1st day at 04:00 AM
+- Operations: Deep clean obsolete updates
+
+#### IIS Settings Validated
+
+| Setting | Recommended Value |
+|---------|-------------------|
+| Queue Length | 25,000 |
+| CPU Reset Interval | 15 minutes |
+| Recycling Memory | 0 (disabled) |
+| Private Memory Limit | 0 (disabled) |
+| Max Request Length | 204,800 KB |
+| Execution Timeout | 7,200 seconds |
+
+#### When to Use
+
+**Initial Setup**:
+- Run `-Interactive` to configure all settings
+- Creates configuration file for future runs
+- Sets up automated scheduled tasks
+
+**Regular Maintenance**:
+- Daily/weekly/monthly tasks run automatically
+- Manual runs as needed during troubleshooting
+
+**Performance Issues**:
+- Database growing too large
+- Slow WSUS console performance
+- Update synchronization taking too long
+- IIS application pool issues
+
+**After Major Changes**:
+- After removing obsolete products from environment
+- Before/after major Windows version upgrades
+- When cleaning up test/pilot deployments
+
+#### Output Example
+
+```
+========================================
+WSUS Optimization Script v2.0.0
+========================================
+
+[2025-01-09 02:00:00] [INFO] Connected to WSUS server: WSUS01
+[2025-01-09 02:00:05] [INFO] Starting WSUS server cleanup...
+[2025-01-09 02:00:10] [INFO] Cleaning up: Unused updates and update revisions...
+[2025-01-09 02:05:30] [SUCCESS]   Completed: Unused updates and update revisions
+[2025-01-09 02:05:35] [INFO] Cleaning up: Expired updates...
+[2025-01-09 02:10:15] [SUCCESS]   Completed: Expired updates
+[2025-01-09 02:10:20] [INFO] Declining superseded updates...
+[2025-01-09 02:15:45] [INFO] Declined 1,247 superseded updates
+[2025-01-09 02:15:50] [SUCCESS] WSUS server cleanup completed
+[2025-01-09 02:15:55] [INFO] Starting WSUS database optimization...
+[2025-01-09 02:16:00] [INFO] Rebuilding fragmented indexes...
+[2025-01-09 02:45:30] [SUCCESS] Database optimization completed successfully
+
+========================================
+Script execution completed
+========================================
+```
+
+#### Important Notes
+
+1. **First Run Duration**: Initial deep clean can take several hours depending on WSUS database size
+2. **Database Optimization**: Duration scales with database size (typically 30-90 minutes)
+3. **Backup Before Use**: Ensure WSUS backups are current before first deep clean
+4. **Test Environment**: Test in non-production first to understand impact
+5. **Schedule Off-Hours**: Run intensive operations during maintenance windows
+6. **Monitor Disk Space**: Ensure adequate space for database operations
+7. **Driver Sync**: Recommended to disable unless specifically needed
+8. **Configuration**: Customize obsolete product lists for your environment
+
+#### Troubleshooting
+
+**Database Optimization Fails**:
+- Verify SQL Server/WID service is running
+- Check SUSDB database is accessible
+- Ensure sufficient disk space for index rebuilds
+- Review SQL query timeout settings
+
+**IIS Configuration Fails**:
+- Verify WebAdministration module loaded
+- Check WsusPool app pool exists
+- Ensure WSUS Administration site is running
+- Review IIS permissions
+
+**Updates Not Being Declined**:
+- Verify WSUS server connection
+- Check filter criteria in configuration
+- Review update approval states
+- Ensure sufficient permissions
+
+**Scheduled Tasks Don't Run**:
+- Verify tasks created: `Get-ScheduledTask -TaskName "WSUS-*"`
+- Check task history in Task Scheduler
+- Ensure SYSTEM account has permissions
+- Review script path in task action
+
+#### Credits
+
+**Original Author**: Austin Warren ([@awarre](https://github.com/awarre))
+**Original Repository**: [awarre/Optimize-WsusServer](https://github.com/awarre/Optimize-WsusServer) v1.2.1
+**Modernized By**: Carme99 for Bug-Free Umbrella
+**Version**: 2.0.0
+
+This script is based on Austin Warren's excellent WSUS optimization script and has been modernized with enhanced features, syntax fixes, and additional functionality for 2025.
+
+#### Related Documentation
+
+For complete documentation, see: [`Optimize-WsusServer.md`](system/Optimize-WsusServer.md)
 
 ---
 

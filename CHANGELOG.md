@@ -30,6 +30,98 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ---
 
+## [3.1.0] - 2025-01-09 🌧️ **"Shower"** - WSUS Optimization Release
+
+> **Focus**: New comprehensive WSUS server optimization and maintenance script
+
+### Added
+
+#### Infrastructure Scripts
+
+**Optimize-WsusServer.ps1 v2.0.0** - Comprehensive WSUS optimization and maintenance
+- **Source**: Modernized version of Austin Warren's [Optimize-WsusServer](https://github.com/awarre/Optimize-WsusServer) v1.2.1
+- **All Critical Syntax Errors Fixed**:
+  - Fixed incomplete regex patterns in time/day validation loops
+  - Fixed unmatched parentheses in input validation
+  - Fixed broken menu selection logic
+  - All validation loops now properly functional
+- **Interactive Configuration Wizard**:
+  - First-time setup with guided prompts for all settings
+  - Customizable obsolete product lists (Windows 7/8, legacy Office, SQL Server, etc.)
+  - Update title filtering (IE 6-10, Itanium, ARM64, consumer editions)
+  - Scheduled task configuration (daily, weekly, monthly)
+  - Advanced options (custom indexes, verbose logging, retention)
+  - Configuration summary and save functionality
+- **Deep Cleaning Features**:
+  - Remove updates for 20+ obsolete products (EOL Windows/Office/SQL versions)
+  - Decline superseded updates automatically
+  - Optional driver update removal to reduce database bloat
+  - Customizable product and title filter lists
+  - Progress tracking with real-time counts
+- **Database Optimization**:
+  - Microsoft best practice SQL reindexing
+  - Custom index creation on key WSUS tables
+  - Statistics updates for query plan optimization
+  - Fragmented index rebuilding (>10% fragmentation)
+  - Automated cleanup of obsolete data
+- **IIS Configuration Management**:
+  - Validates against recommended WSUS IIS settings
+  - Queue length optimization (25,000)
+  - CPU reset interval configuration
+  - Memory recycling settings
+  - Request length and timeout adjustments
+  - Automatic web.config backup before changes
+- **Automated Scheduling**:
+  - Daily task: Server optimization + superseded update cleanup
+  - Weekly task: Database optimization + IIS config validation
+  - Monthly task: Deep clean of obsolete updates
+  - Runs as SYSTEM with highest privileges
+  - Configurable schedules with 24-hour time format
+- **Comprehensive Logging**:
+  - Color-coded console output (Info/Warning/Error/Success)
+  - Detailed file logging with timestamps
+  - Configurable log retention (default: 30 days)
+  - Optional verbose logging mode
+  - Automatic log directory creation
+- **Safety Features**:
+  - Configuration file backup before changes
+  - Web.config backup with timestamps
+  - ShouldProcess support for -WhatIf and -Confirm
+  - Detailed error handling and recovery
+  - Progress indicators for long operations
+- **Deployment Ready**:
+  - Full comment-based help with examples
+  - Requires PowerShell 5.1+ and Administrator privileges
+  - Module requirements: SqlServer, UpdateServices, WebAdministration
+  - JSON configuration file for persistent settings
+  - Support for custom config and log paths
+
+**Optimize-WsusServer.md** - Comprehensive documentation
+- Detailed feature overview and requirements
+- Installation and first-time setup guide
+- Usage examples for all operations
+- Configuration file structure and customization
+- Scheduled task details and management
+- IIS settings table with recommendations
+- Troubleshooting section for common issues
+- Best practices and performance considerations
+- Full attribution to original author Austin Warren
+- Related resources and community links
+
+### Statistics
+
+**Files Added**: 2
+**Total Lines**: 1,994 (1,853 script + 141 docs)
+**Original Version**: Austin Warren's v1.2.1
+**Modernized Version**: v2.0.0
+**Syntax Errors Fixed**: 6 critical errors
+**Default Obsolete Products**: 20+ EOL products
+**Scheduled Tasks**: 3 (daily, weekly, monthly)
+**Database Optimizations**: Custom indexes + reindexing
+**IIS Settings Validated**: 7 configuration parameters
+
+---
+
 ## [3.0.1] - 2025-12-31 ☔ **"Drizzle"** - Bug Fix Release
 
 > **Focus**: Critical bug fixes and code quality improvements
