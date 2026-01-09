@@ -11,6 +11,7 @@
 - [FAQ](FAQ)
 
 ### 📖 Script Reference
+- [📚 Command Recipes](https://github.com/Carme99/bug-free-umbrella/blob/main/docs/RECIPES.md) ⭐
 - [📍 Script Catalog](Script-Catalog)
 - [Script Examples](Script-Examples)
 

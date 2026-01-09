@@ -13,6 +13,7 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 **New here?** Start with these pages:
 - 🔧 **[Prerequisites](Prerequisites)** - Install required tools and modules
 - 📖 **[Getting Started](Getting-Started)** - Your first steps with the scripts
+- 📚 **[Command Recipes](https://github.com/Carme99/bug-free-umbrella/blob/main/docs/RECIPES.md)** - Quick cookbook with 80+ copy-paste commands ⭐ NEW!
 - 📍 **[Script Catalog](Script-Catalog)** - Browse all 260+ scripts by category
 - 🎯 **[Common Use Cases](Common-Use-Cases)** - Find scripts by what you need to do
 - 💡 **[Script Examples](Script-Examples)** - See detailed usage examples
@@ -31,6 +32,7 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 |------|-------------|
 | **[Prerequisites](Prerequisites)** | Required tools, modules, permissions, and setup |
 | **[Getting Started](Getting-Started)** | Quick start guide for your first scripts |
+| **[Command Recipes](https://github.com/Carme99/bug-free-umbrella/blob/main/docs/RECIPES.md)** | Quick cookbook with 80+ copy-paste commands ⭐ NEW! |
 | **[Common Use Cases](Common-Use-Cases)** | Find scripts by task or scenario |
 | **[FAQ](FAQ)** | Frequently asked questions and answers |
 | **[Script Catalog](Script-Catalog)** | Complete index of all 260+ scripts |
@@ -198,6 +200,7 @@ Quick links to accomplish specific tasks:
 
 | Task | Where to Find It |
 |------|------------------|
+| **Get ready-to-run commands** ⭐ NEW! | Check **[Command Recipes](https://github.com/Carme99/bug-free-umbrella/blob/main/docs/RECIPES.md)** cookbook |
 | **Find a specific script** | Browse the **[Script Catalog](Script-Catalog)** or search the **[repository](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts)** |
 | **See script examples** | Check **[Script Examples](Script-Examples)** page |
 | **Learn basic usage** | Start with **[Getting Started](Getting-Started)** |
