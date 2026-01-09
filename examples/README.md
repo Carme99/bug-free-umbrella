@@ -38,8 +38,8 @@ Regular operational tasks:
 
 ### Incident Response
 Troubleshooting and security scenarios:
-- Performance degradation investigation
-- Security breach response
+- **security-incident-response.ps1** - Comprehensive security breach investigation workflow
+- **performance-degradation-investigation.ps1** - System performance diagnostics and troubleshooting
 - Service outage diagnostics
 - Data recovery procedures
 
@@ -52,8 +52,9 @@ Audit and compliance workflows:
 
 ### Automation
 Scheduled task and CI/CD examples:
+- **scheduled-daily-reporting.ps1** - Automated daily compliance and health reporting with email delivery
+- **register-scheduled-tasks.ps1** - Bulk Task Scheduler registration for all monitoring workflows
 - Automated health monitoring
-- Scheduled compliance scans
 - Email reporting workflows
 - Integration with monitoring systems
 
@@ -71,6 +72,7 @@ Have a great workflow example? See [CONTRIBUTING.md](../CONTRIBUTING.md) for gui
 
 ## Additional Resources
 
-- [Script Catalog](../wiki/Script-Catalog)
-- [Troubleshooting Guide](../wiki/Troubleshooting)
-- [Workflows Documentation](../wiki/Workflows)
+- [Command Recipes](../docs/RECIPES.md) - Quick cookbook of common IT tasks (⭐ NEW!)
+- [Script Catalog](../wiki/Script-Catalog.md) - Complete script index
+- [Troubleshooting Guide](../wiki/Troubleshooting.md) - Common issues and solutions
+- [Workflows Documentation](../wiki/Workflows.md) - End-to-end process guides
