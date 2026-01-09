@@ -216,7 +216,7 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ---
 
-## [3.2.0] - 2026-01-06 🌧️ **"Monsoon"** - Device Health & Uptime Monitoring
+## [3.2.0] - 2026-01-06 🌧️ **"Sprinkle"** - M365 Apps Management
 
 #### 📦 M365 Apps Management
 - **Update-M365Apps.ps1** - Comprehensive M365 Apps update manager for environments without Microsoft AutoUpdate
@@ -1377,3 +1377,4 @@ Scripts in this repository were created with the assistance of **[Claude Code](h
 For detailed commit history, see [Git Log](https://github.com/Carme99/bug-free-umbrella/commits/main).
 
 **Last Updated**: 2025-12-31
+
