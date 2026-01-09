@@ -80,6 +80,26 @@ Write-Log "=== PERFORMANCE INVESTIGATION INITIATED ==="
 Write-Log "Incident ID: $IncidentId"
 Write-Log "Target System: $ComputerName"
 
+# Validate remote connectivity if not localhost
+$IsRemote = -not ($ComputerName -eq $env:COMPUTERNAME -or $ComputerName -eq "localhost" -or $ComputerName -eq ".")
+if ($IsRemote) {
+    Write-Host "Validating WinRM connectivity to remote computer..." -ForegroundColor Yellow
+    Write-Log "Validating WinRM connectivity to $ComputerName"
+    try {
+        $TestConnection = Test-WSMan -ComputerName $ComputerName -ErrorAction Stop
+        Write-Host "✓ WinRM connectivity confirmed" -ForegroundColor Green
+        Write-Log "SUCCESS: WinRM connectivity confirmed"
+    } catch {
+        Write-Error "WinRM connectivity test failed for $ComputerName : $_"
+        Write-Error "Remote performance monitoring requires WinRM. Please ensure:"
+        Write-Error "  1. WinRM is enabled on target computer: Enable-PSRemoting -Force"
+        Write-Error "  2. Network connectivity allows WinRM (port 5985/5986)"
+        Write-Error "  3. You have administrator rights on target computer"
+        Write-Log "ERROR: WinRM connectivity failed: $_"
+        exit 1
+    }
+}
+
 $Diagnostics = @()
 $PerformanceIssues = @()
 
@@ -177,9 +197,18 @@ try {
 Write-Host "`n[3/9] Identifying top CPU consumers..." -ForegroundColor Cyan
 Write-Log "Step 3: Identifying top CPU consumers"
 try {
-    $TopCPU = Get-Process -ComputerName $ComputerName |
-        Sort-Object CPU -Descending |
-        Select-Object -First 5 -Property ProcessName, CPU, WorkingSet, Id
+    # Use Invoke-Command for remote computers (Get-Process -ComputerName is deprecated)
+    if ($ComputerName -eq $env:COMPUTERNAME -or $ComputerName -eq "localhost" -or $ComputerName -eq ".") {
+        $TopCPU = Get-Process |
+            Sort-Object CPU -Descending |
+            Select-Object -First 5 -Property ProcessName, CPU, WorkingSet, Id
+    } else {
+        $TopCPU = Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+            Get-Process |
+                Sort-Object CPU -Descending |
+                Select-Object -First 5 -Property ProcessName, CPU, WorkingSet, Id
+        } -ErrorAction Stop
+    }
 
     Write-Host "  Top 5 CPU Consumers:" -ForegroundColor Yellow
     foreach ($Process in $TopCPU) {
@@ -208,9 +237,18 @@ try {
 Write-Host "`n[4/9] Identifying top memory consumers..." -ForegroundColor Cyan
 Write-Log "Step 4: Identifying top memory consumers"
 try {
-    $TopMemory = Get-Process -ComputerName $ComputerName |
-        Sort-Object WorkingSet -Descending |
-        Select-Object -First 5 -Property ProcessName, WorkingSet, CPU, Id
+    # Use Invoke-Command for remote computers (Get-Process -ComputerName is deprecated)
+    if ($ComputerName -eq $env:COMPUTERNAME -or $ComputerName -eq "localhost" -or $ComputerName -eq ".") {
+        $TopMemory = Get-Process |
+            Sort-Object WorkingSet -Descending |
+            Select-Object -First 5 -Property ProcessName, WorkingSet, CPU, Id
+    } else {
+        $TopMemory = Invoke-Command -ComputerName $ComputerName -ScriptBlock {
+            Get-Process |
+                Sort-Object WorkingSet -Descending |
+                Select-Object -First 5 -Property ProcessName, WorkingSet, CPU, Id
+        } -ErrorAction Stop
+    }
 
     Write-Host "  Top 5 Memory Consumers:" -ForegroundColor Yellow
     foreach ($Process in $TopMemory) {

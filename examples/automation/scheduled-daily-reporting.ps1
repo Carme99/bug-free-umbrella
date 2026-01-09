@@ -14,6 +14,21 @@
     Licensed under Apache License 2.0
     https://github.com/Carme99/bug-free-umbrella
 
+    SMTP AUTHENTICATION:
+    Most enterprise SMTP servers require authentication. This script uses Send-MailMessage which supports:
+    - Add -Credential parameter for authenticated SMTP
+    - Use -UseSsl for TLS/SSL encryption
+    - Alternative: Use Microsoft Graph API (Send-MgUserMail) for modern authentication
+
+    Example with credentials:
+    $Cred = Get-Credential
+    Send-MailMessage -Credential $Cred -UseSsl -Port 587 -SmtpServer "smtp.office365.com" ...
+
+    For unattended execution, store credentials securely using:
+    - Windows Credential Manager
+    - Azure Key Vault
+    - Encrypted credential files
+
     SCHEDULED TASK SETUP:
     Create a scheduled task to run this script daily:
 
@@ -483,8 +498,8 @@ if ($ReportData.Errors.Count -gt 0) {
         <h2 style="color: #d32f2f;">⚠ Errors Encountered</h2>
         <ul>
 "@
-    foreach ($Error in $ReportData.Errors) {
-        $EmailBody += "            <li>$Error</li>`n"
+    foreach ($ReportError in $ReportData.Errors) {
+        $EmailBody += "            <li>$ReportError</li>`n"
     }
     $EmailBody += "        </ul>`n"
 }
