@@ -2,7 +2,7 @@
 
 Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection of 260+ PowerShell scripts for enterprise IT management!
 
-> **Latest Release:** [v3.0.3 "Drizzle" ☔](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix) - Wiki version reference fixes!
+> **Latest Release:** [v3.4.0 "Rainbow" 🌈](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#340---2026-01-09--rainbow---documentation--examples-enhancement) - Documentation & Examples Enhancement!
 >
 > 📋 **[View Full Changelog →](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)** | 📦 **[GitHub Releases](https://github.com/Carme99/bug-free-umbrella/releases)**
 
@@ -13,6 +13,7 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 **New here?** Start with these pages:
 - 🔧 **[Prerequisites](Prerequisites)** - Install required tools and modules
 - 📖 **[Getting Started](Getting-Started)** - Your first steps with the scripts
+- 📚 **[Command Recipes](https://github.com/Carme99/bug-free-umbrella/blob/main/docs/RECIPES.md)** - Quick cookbook with 80+ copy-paste commands ⭐ NEW!
 - 📍 **[Script Catalog](Script-Catalog)** - Browse all 260+ scripts by category
 - 🎯 **[Common Use Cases](Common-Use-Cases)** - Find scripts by what you need to do
 - 💡 **[Script Examples](Script-Examples)** - See detailed usage examples
@@ -31,6 +32,7 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 |------|-------------|
 | **[Prerequisites](Prerequisites)** | Required tools, modules, permissions, and setup |
 | **[Getting Started](Getting-Started)** | Quick start guide for your first scripts |
+| **[Command Recipes](https://github.com/Carme99/bug-free-umbrella/blob/main/docs/RECIPES.md)** | Quick cookbook with 80+ copy-paste commands ⭐ NEW! |
 | **[Common Use Cases](Common-Use-Cases)** | Find scripts by task or scenario |
 | **[FAQ](FAQ)** | Frequently asked questions and answers |
 | **[Script Catalog](Script-Catalog)** | Complete index of all 260+ scripts |
@@ -167,26 +169,28 @@ This repository uses automated GitHub workflows to maintain quality and organiza
 
 ---
 
-## ☔ What's New in v3.0.3 "Drizzle"
+## 🌈 What's New in v3.4.0 "Rainbow"
 
-The latest release focuses on **wiki version reference fixes**:
+The latest release focuses on **documentation and examples enhancement**:
 
 ✨ **Highlights:**
-- 📝 **Wiki Version References Updated:** Corrected outdated v2.1.0 "Rainbow" 🌈 references to v3.0.2 "Drizzle" ☔
-  - Updated wiki/Home.md with all version references
-  - Fixed wiki/Script-Catalog.md version references
-  - Corrected wiki/WIKI-SETUP.md and wiki/Getting-Started.md footer metadata
-- 🔢 **Wiki Version Incremented:** 1.0.0 → 1.1.0 to track documentation updates
-- ✨ **Better Consistency:** All wiki pages now reference the correct current release
+- 📚 **Command Recipes Cookbook:** New RECIPES.md with 80+ ready-to-run commands organized by task
+- 🚨 **Incident Response Examples:** 2 production-ready workflows for security investigations and performance diagnostics
+- ⚙️ **Automation Examples:** 2 automation scripts for daily reporting and Task Scheduler bulk registration
+- 📖 **Wiki Integration:** Prominent cookbook links in Home, Sidebar, and navigation for easy discovery
+- 💡 **Quick Wins:** Reduced learning curve with copy-paste commands and real-world workflow templates
 
-**Previous Release:** [v3.0.2 "Drizzle" ☔](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup) - Documentation cleanup and broken link fixes
+**Quick Access:**
+- 📚 [Command Recipes Cookbook](https://github.com/Carme99/bug-free-umbrella/blob/main/docs/RECIPES.md) - 80+ copy-paste commands
+- 🚨 [Incident Response Examples](https://github.com/Carme99/bug-free-umbrella/tree/main/examples/incident-response) - Security & performance workflows
+- ⚙️ [Automation Examples](https://github.com/Carme99/bug-free-umbrella/tree/main/examples/automation) - Daily reporting & task scheduling
 
-**[Read Full Changelog →](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix)**
+**[Read Full Changelog →](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#340---2026-01-09--rainbow---documentation--examples-enhancement)**
 
 ### Recent Major Releases
+- 🌈 **[v3.4.0 "Rainbow"](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#340---2026-01-09--rainbow---documentation--examples-enhancement)** (2026-01-09) - Documentation & examples enhancement
+- 🌧️ **[v3.3.0 "Rainfall"](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#330---2026-01-08--rainfall---m365-user-management-toolkit)** (2026-01-08) - M365 User Management Toolkit
 - ☔ **[v3.0.3 "Drizzle"](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix)** (2026-01-04) - Wiki version reference fix
-- ☔ **[v3.0.2 "Drizzle"](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#302---2026-01-03--drizzle---documentation-cleanup)** (2026-01-03) - Documentation cleanup
-- ☔ **[v3.0.1 "Drizzle"](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#301---2025-12-31--drizzle---bug-fix-release)** (2025-12-31) - Bug fixes
 - 🌪️ **[v3.0.0 "Hurricane"](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#300---2025-12-30--hurricane---repository-restructure)** (2025-12-30) - Repository restructure
 - 🌧️ **[v2.2.0 "Shower"](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#220---2025-12-28--shower---navigation--usability-improvements)** (2025-12-28) - Navigation improvements
 
@@ -198,6 +202,7 @@ Quick links to accomplish specific tasks:
 
 | Task | Where to Find It |
 |------|------------------|
+| **Get ready-to-run commands** ⭐ NEW! | Check **[Command Recipes](https://github.com/Carme99/bug-free-umbrella/blob/main/docs/RECIPES.md)** cookbook |
 | **Find a specific script** | Browse the **[Script Catalog](Script-Catalog)** or search the **[repository](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts)** |
 | **See script examples** | Check **[Script Examples](Script-Examples)** page |
 | **Learn basic usage** | Start with **[Getting Started](Getting-Started)** |
@@ -276,10 +281,10 @@ Bug-Free Umbrella is a comprehensive collection of PowerShell scripts for enterp
 
 ---
 
-**Last Updated:** 2026-01-04
+**Last Updated:** 2026-01-09
 
-**Wiki Version:** 1.1.0
+**Wiki Version:** 1.2.0
 
-**Corresponds to Release:** v3.0.3 "Drizzle" ☔
+**Corresponds to Release:** v3.4.0 "Rainbow" 🌈
 
 **[📋 View Full Changelog →](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)**

@@ -20,6 +20,7 @@ Always test in a non-production environment first. Review all scripts before exe
 
 All documentation has moved to our comprehensive, searchable wiki:
 
+- 📚 **[Command Recipes](docs/RECIPES.md)** - Quick cookbook with 80+ copy-paste commands ⭐ NEW!
 - 🚀 **[Getting Started](../../wiki/Getting-Started)** - Quick start guides for every role
 - 📋 **[Script Catalog](../../wiki/Script-Catalog)** - Browse all 260+ scripts by category
 - 💡 **[Script Examples](../../wiki/Script-Examples)** - Real-world usage examples
