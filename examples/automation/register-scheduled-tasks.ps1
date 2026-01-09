@@ -54,6 +54,13 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     exit 1
 }
 
+# Validate script base path exists
+if (-not (Test-Path -Path $ScriptBasePath)) {
+    Write-Error "Script base path not found: $ScriptBasePath"
+    Write-Error "Please verify the -ScriptBasePath parameter points to the repository root"
+    exit 1
+}
+
 Write-Host "=== AUTOMATED TASK SCHEDULER REGISTRATION ===" -ForegroundColor Cyan
 Write-Host "Base Path: $ScriptBasePath" -ForegroundColor Yellow
 Write-Host "Task Prefix: $TaskPrefix" -ForegroundColor Yellow
@@ -76,6 +83,12 @@ function Register-AutomatedTask {
     $FullTaskName = "$TaskPrefix - $TaskName"
 
     try {
+        # Validate script path exists
+        if (-not (Test-Path -Path $ScriptPath)) {
+            Write-Warning "Script not found: $ScriptPath"
+            Write-Warning "Task '$FullTaskName' will be created but may fail when executed"
+        }
+
         # Check if task exists and remove if requested
         $ExistingTask = Get-ScheduledTask -TaskName $FullTaskName -ErrorAction SilentlyContinue
         if ($ExistingTask -and $RemoveExisting) {
@@ -141,10 +154,10 @@ $Result = Register-AutomatedTask `
 if ($Result) { $TasksCreated++ } else { $TasksFailed++ }
 
 Write-Host "`n[3/7] Creating Monthly Compliance Audit Task..." -ForegroundColor Cyan
-# Monthly on the 1st at 6:00 AM
-$MonthlyTrigger = New-ScheduledTaskTrigger -Daily -At 6:00AM
-# Modify trigger to run monthly
-$MonthlyTrigger.Repetition.Interval = "P1M"  # Every 1 month
+# Monthly on the 1st at 6:00 AM - Create using CIM class for proper monthly scheduling
+$MonthlyTrigger = New-ScheduledTaskTrigger -Daily -At 6:00AM -DaysInterval 30
+# Note: For true monthly (1st of month) scheduling, modify after registration via schtasks or Task Scheduler GUI
+# This creates a 30-day interval as a workaround for monthly scheduling limitation in PowerShell
 $Result = Register-AutomatedTask `
     -TaskName "Monthly Compliance Audit" `
     -Description "Monthly comprehensive compliance audit across all frameworks" `

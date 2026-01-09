@@ -36,7 +36,7 @@ param(
     [string[]]$EmailTo = @("it-team@company.com"),
 
     [Parameter(Mandatory = $false)]
-    [string]$EmailFrom = "daily-report@$env:USERDNSDOMAIN",
+    [string]$EmailFrom = "",
 
     [Parameter(Mandatory = $false)]
     [string]$SMTPServer = "smtp.office365.com",
@@ -50,6 +50,19 @@ param(
 
 # Define the root path to the scripts directory
 $ScriptRoot = Join-Path -Path $PSScriptRoot -ChildPath "..\..\scripts"
+
+# Validate script root exists
+if (-not (Test-Path -Path $ScriptRoot)) {
+    Write-Error "Script root path not found: $ScriptRoot"
+    Write-Error "Please ensure the script is run from the examples/automation directory"
+    exit 1
+}
+
+# Set EmailFrom if not provided
+if ([string]::IsNullOrWhiteSpace($EmailFrom)) {
+    $DomainName = if ($env:USERDNSDOMAIN) { $env:USERDNSDOMAIN } else { "company.com" }
+    $EmailFrom = "daily-report@$DomainName"
+}
 
 # Create report directory if it doesn't exist
 if (-not (Test-Path -Path $ReportPath)) {
@@ -80,6 +93,31 @@ $ReportData = @{
         FailedChecks = 0
         Warnings = 0
     }
+}
+
+# Validate required script paths exist
+Write-Log "Validating script dependencies..." "INFO"
+$RequiredScripts = @(
+    "$ScriptRoot\endpoints\intune\reporting\Get-DeviceComplianceReport.ps1"
+    "$ScriptRoot\endpoints\intune\reporting\Get-BitLockerStatus.ps1"
+    "$ScriptRoot\endpoints\intune\reporting\Get-WindowsUpdateCompliance.ps1"
+    "$ScriptRoot\security\compliance\frameworks\Invoke-SecurityComplianceScan.ps1"
+    "$ScriptRoot\security\compliance\frameworks\Get-FailedLoginReport.ps1"
+    "$ScriptRoot\security\compliance\frameworks\Get-ExpiredCertificates.ps1"
+    "$ScriptRoot\endpoints\intune\maintenance\Find-StaleDevices.ps1"
+)
+
+$MissingScripts = @()
+foreach ($Script in $RequiredScripts) {
+    if (-not (Test-Path -Path $Script)) {
+        $MissingScripts += $Script
+        Write-Log "WARNING: Required script not found: $Script" "WARN"
+    }
+}
+
+if ($MissingScripts.Count -gt 0) {
+    Write-Warning "Some required scripts are missing. Reports may be incomplete."
+    Write-Log "$($MissingScripts.Count) required scripts are missing" "WARN"
 }
 
 # Section 1: Device Compliance Report

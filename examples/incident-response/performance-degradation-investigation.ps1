@@ -46,6 +46,13 @@ param(
 # Define the root path to the scripts directory
 $ScriptRoot = Join-Path -Path $PSScriptRoot -ChildPath "..\..\scripts"
 
+# Validate script root exists
+if (-not (Test-Path -Path $ScriptRoot)) {
+    Write-Error "Script root path not found: $ScriptRoot"
+    Write-Error "Please ensure the script is run from the examples/incident-response directory"
+    exit 1
+}
+
 # Create report directory if it doesn't exist
 if (-not (Test-Path -Path $ReportPath)) {
     New-Item -Path $ReportPath -ItemType Directory -Force | Out-Null

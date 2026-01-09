@@ -46,6 +46,13 @@ param(
 # Define the root path to the scripts directory
 $ScriptRoot = Join-Path -Path $PSScriptRoot -ChildPath "..\..\scripts"
 
+# Validate script root exists
+if (-not (Test-Path -Path $ScriptRoot)) {
+    Write-Error "Script root path not found: $ScriptRoot"
+    Write-Error "Please ensure the script is run from the examples/incident-response directory"
+    exit 1
+}
+
 # Create report directory if it doesn't exist
 if (-not (Test-Path -Path $ReportPath)) {
     New-Item -Path $ReportPath -ItemType Directory -Force | Out-Null
@@ -300,28 +307,47 @@ try {
 Write-Host "`n[8/8] Account isolation..." -ForegroundColor Cyan
 Write-Log "Step 8: Account isolation"
 if ($IsolateAccount) {
-    Write-Host "⚠ ISOLATING ACCOUNT - User will be signed out and blocked" -ForegroundColor Red
-    Write-Log "CRITICAL: Account isolation initiated"
+    Write-Host "⚠ WARNING: Account isolation is a destructive operation!" -ForegroundColor Red -BackgroundColor Yellow
+    Write-Host "  This will:" -ForegroundColor Yellow
+    Write-Host "    - Revoke all active sessions" -ForegroundColor Yellow
+    Write-Host "    - Disable the account" -ForegroundColor Yellow
+    Write-Host "    - Block sign-in" -ForegroundColor Yellow
+    Write-Host ""
 
-    # In production, this would:
-    # - Revoke all active sessions
-    # - Disable the account
-    # - Reset password
-    # - Remove from groups
-    # - Block sign-in
+    $Confirmation = Read-Host "Type 'ISOLATE' to confirm account isolation for $SuspiciousUser"
 
-    Write-Host "  [!] Revoking active sessions..." -ForegroundColor Yellow
-    Write-Host "  [!] Disabling account..." -ForegroundColor Yellow
-    Write-Host "  [!] Blocking sign-in..." -ForegroundColor Yellow
-    Write-Host "  [!] Notifying security team..." -ForegroundColor Yellow
+    if ($Confirmation -ne 'ISOLATE') {
+        Write-Host "Account isolation cancelled by user" -ForegroundColor Yellow
+        Write-Log "Account isolation cancelled by user"
+        $Findings += @{
+            Category = "Response Action"
+            Status = "Cancelled"
+            Details = "Account isolation was cancelled by administrator"
+        }
+    } else {
+        Write-Host "⚠ ISOLATING ACCOUNT - User will be signed out and blocked" -ForegroundColor Red
+        Write-Log "CRITICAL: Account isolation initiated"
 
-    Write-Log "Account isolation actions would be performed here"
-    Write-Warning "Account isolation flag set - manual action required in production"
+        # In production, this would:
+        # - Revoke all active sessions
+        # - Disable the account
+        # - Reset password
+        # - Remove from groups
+        # - Block sign-in
 
-    $Findings += @{
-        Category = "Response Action"
-        Status = "Isolation Requested"
-        Details = "Account requires manual isolation by administrator"
+        Write-Host "  [!] Revoking active sessions..." -ForegroundColor Yellow
+        Write-Host "  [!] Disabling account..." -ForegroundColor Yellow
+        Write-Host "  [!] Blocking sign-in..." -ForegroundColor Yellow
+        Write-Host "  [!] Notifying security team..." -ForegroundColor Yellow
+
+        Write-Log "Account isolation actions would be performed here"
+        Write-Warning "Account isolation flag set - manual action required in production"
+
+        $Findings += @{
+            Category = "Response Action"
+            Status = "Isolation Requested"
+            Details = "Account requires manual isolation by administrator"
+        }
     }
 } else {
     Write-Host "ℹ Account isolation NOT requested - monitoring only" -ForegroundColor Yellow
