@@ -57,6 +57,15 @@ param(
     [string]$SMTPServer = "smtp.office365.com",
 
     [Parameter(Mandatory = $false)]
+    [int]$SMTPPort = 587,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$UseSsl,
+
+    [Parameter(Mandatory = $false)]
+    [System.Management.Automation.PSCredential]$Credential,
+
+    [Parameter(Mandatory = $false)]
     [string]$ReportPath = "C:\AutomatedReports",
 
     [Parameter(Mandatory = $false)]
@@ -116,7 +125,7 @@ $RequiredScripts = @(
     "$ScriptRoot\endpoints\intune\reporting\Get-DeviceComplianceReport.ps1"
     "$ScriptRoot\endpoints\intune\reporting\Get-BitLockerStatus.ps1"
     "$ScriptRoot\endpoints\intune\reporting\Get-WindowsUpdateCompliance.ps1"
-    "$ScriptRoot\security\compliance\frameworks\Invoke-SecurityComplianceScan.ps1"
+    "$ScriptRoot\security\compliance\frameworks\Test-CISBenchmark.ps1"
     "$ScriptRoot\security\compliance\frameworks\Get-FailedLoginReport.ps1"
     "$ScriptRoot\security\compliance\frameworks\Get-ExpiredCertificates.ps1"
     "$ScriptRoot\endpoints\intune\maintenance\Find-StaleDevices.ps1"
@@ -255,12 +264,11 @@ try {
 $ReportData.Summary.TotalChecks++
 
 # Section 4: Security Compliance Scan
-Write-Host "`n[4/7] Running security compliance scan (CIS Framework)..." -ForegroundColor Yellow
+Write-Host "`n[4/7] Running security compliance scan (CIS Benchmark)..." -ForegroundColor Yellow
 Write-Log "Section 4: Security Compliance Scan"
 try {
     $SecurityReport = Join-Path -Path $ReportPath -ChildPath "SecurityCompliance_$Timestamp.html"
-    & "$ScriptRoot\security\compliance\frameworks\Invoke-SecurityComplianceScan.ps1" `
-        -Framework CIS `
+    & "$ScriptRoot\security\compliance\frameworks\Test-CISBenchmark.ps1" `
         -ExportHTML `
         -OutputPath $SecurityReport
 
@@ -527,6 +535,19 @@ try {
         Body       = $EmailBody
         BodyAsHtml = $true
         SmtpServer = $SMTPServer
+        Port       = $SMTPPort
+    }
+
+    # Add authentication if credential provided
+    if ($Credential) {
+        $MailParams.Credential = $Credential
+        Write-Log "Using authenticated SMTP" "INFO"
+    }
+
+    # Add SSL/TLS if requested
+    if ($UseSsl) {
+        $MailParams.UseSsl = $true
+        Write-Log "Using SSL/TLS encryption" "INFO"
     }
 
     # Add attachments if any critical reports exist

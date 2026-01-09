@@ -40,6 +40,15 @@ param(
     [string]$SMTPServer,
 
     [Parameter(Mandatory = $false)]
+    [int]$SMTPPort = 587,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$UseSsl,
+
+    [Parameter(Mandatory = $false)]
+    [System.Management.Automation.PSCredential]$Credential,
+
+    [Parameter(Mandatory = $false)]
     [string]$To
 )
 
@@ -487,15 +496,28 @@ if ($EmailReport -and $SMTPServer -and $To) {
     Write-Host "`nSending incident report via email..." -ForegroundColor Cyan
     Write-Log "Sending email report to $To"
     try {
+        $DomainName = if ($env:USERDNSDOMAIN) { $env:USERDNSDOMAIN } else { "company.com" }
         $MailParams = @{
             To         = $To
-            From       = "security-noreply@$env:USERDNSDOMAIN"
+            From       = "security-noreply@$DomainName"
             Subject    = "🚨 SECURITY INCIDENT REPORT - $IncidentId - User: $SuspiciousUser"
             Body       = $HtmlReport
             BodyAsHtml = $true
             SmtpServer = $SMTPServer
+            Port       = $SMTPPort
             Priority   = "High"
         }
+
+        # Add authentication if credential provided
+        if ($Credential) {
+            $MailParams.Credential = $Credential
+        }
+
+        # Add SSL/TLS if requested
+        if ($UseSsl) {
+            $MailParams.UseSsl = $true
+        }
+
         Send-MailMessage @MailParams
         Write-Host "✓ Email sent successfully to $To" -ForegroundColor Green
         Write-Log "Email sent successfully"

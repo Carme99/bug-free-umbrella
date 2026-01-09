@@ -40,6 +40,15 @@ param(
     [string]$SMTPServer,
 
     [Parameter(Mandatory = $false)]
+    [int]$SMTPPort = 587,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$UseSsl,
+
+    [Parameter(Mandatory = $false)]
+    [System.Management.Automation.PSCredential]$Credential,
+
+    [Parameter(Mandatory = $false)]
     [string]$To
 )
 
@@ -594,14 +603,27 @@ if ($EmailReport -and $SMTPServer -and $To) {
     Write-Host "`nSending performance report via email..." -ForegroundColor Cyan
     Write-Log "Sending email report to $To"
     try {
+        $DomainName = if ($env:USERDNSDOMAIN) { $env:USERDNSDOMAIN } else { "company.com" }
         $MailParams = @{
             To         = $To
-            From       = "performance-monitoring@$env:USERDNSDOMAIN"
+            From       = "performance-monitoring@$DomainName"
             Subject    = "📊 Performance Investigation Report - $IncidentId - $ComputerName"
             Body       = $HtmlReport
             BodyAsHtml = $true
             SmtpServer = $SMTPServer
+            Port       = $SMTPPort
         }
+
+        # Add authentication if credential provided
+        if ($Credential) {
+            $MailParams.Credential = $Credential
+        }
+
+        # Add SSL/TLS if requested
+        if ($UseSsl) {
+            $MailParams.UseSsl = $true
+        }
+
         Send-MailMessage @MailParams
         Write-Host "✓ Email sent successfully to $To" -ForegroundColor Green
         Write-Log "Email sent successfully"
