@@ -641,5 +641,5 @@ Get-MgContext | Select-Object Scopes
 
 ---
 
-**Last Updated:** 2025-12-31
-**Version:** 1.0.0
+**Last Updated:** 2026-01-05
+**Version:** 1.1.0

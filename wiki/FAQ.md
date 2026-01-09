@@ -93,7 +93,7 @@ Absolutely! The scripts are open source. You can:
 - Modify them for your environment
 - Add features
 - Fix bugs
-- Share improvements back (see **[Contributing](../CONTRIBUTING.md)**)
+- Share improvements back (see **[Contributing](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)**)
 
 ---
 
@@ -121,7 +121,7 @@ The scripts are designed to be safe, but you should always:
 3. **Understand what it does**
 4. **Have backups**
 
-Report security concerns to our **[Security Policy](../SECURITY.md)**.
+Report security concerns to our **[Security Policy](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md)**.
 
 ---
 
@@ -240,7 +240,7 @@ See **[Troubleshooting](Troubleshooting)** for more help.
 ## Contributing & Support
 
 ### How can I contribute?
-See **[Contributing Guide](../CONTRIBUTING.md)** for:
+See **[Contributing Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)** for:
 - Bug reports
 - Feature requests
 - Pull requests
@@ -262,9 +262,33 @@ Yes! **[Create an issue](https://github.com/Carme99/bug-free-umbrella/issues/new
 - Any specific requirements
 
 ### How do I get support?
+- **[Support Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md)** - Response times and support channels (START HERE!)
 - **[Troubleshooting Guide](Troubleshooting)** - Common issues
-- **[GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues)** - Bug reports & questions
-- **[Discussions](https://github.com/Carme99/bug-free-umbrella/discussions)** - General questions & ideas
+- **[GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues)** - Bug reports & questions (auto-labeled)
+
+**Note:** GitHub Discussions are not enabled for this repository. Please use Issues for all questions.
+
+### How quickly will I get a response?
+This is a hobby project maintained in spare time. See the **[Support Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md)** for detailed response time expectations:
+
+| Issue Type | Typical Response Time |
+|------------|----------------------|
+| 🔴 Security vulnerabilities | 1-3 days |
+| 🐛 Critical bugs | 3-7 days |
+| ✨ Feature requests | 1-2 weeks |
+| ❓ Questions | 1-2 weeks |
+| 📝 Documentation | 2-4 weeks |
+
+**Important:** These are estimates, not guarantees. Responses may take longer depending on availability.
+
+### What is expected when contributing?
+Please review our **[Code of Conduct](https://github.com/Carme99/bug-free-umbrella/blob/main/CODE_OF_CONDUCT.md)** to understand community standards and expectations. All contributors must:
+- Be respectful and professional
+- Follow contribution guidelines in **[CONTRIBUTING.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)**
+- Understand this is a hobby project with no SLAs
+
+### Will my issue be closed automatically?
+Yes. Inactive issues are automatically closed after 60 days of inactivity (PRs after 30 days) with a 7-day warning. This helps keep the repository organized. Issues can be reopened if needed.
 
 ---
 
@@ -283,7 +307,8 @@ git pull origin main
 - Extract and replace old files
 
 ### How often are scripts updated?
-Check the **[Changelog](../CHANGELOG.md)** for release history. Recent updates:
+Check the **[Changelog](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)** for release history. Recent updates:
+- **v3.0.2 "Drizzle"** (2026-01-03) - Documentation cleanup
 - **v3.0.1 "Drizzle"** (2025-12-31) - Bug fixes
 - **v3.0.0 "Hurricane"** (2025-12-30) - Repository restructure
 - **v2.2.0 "Shower"** (2025-12-28) - Navigation improvements
@@ -334,5 +359,5 @@ Yes, use:
 
 ---
 
-**Last Updated:** 2025-12-31
-**Version:** 1.0.0
+**Last Updated:** 2026-01-05
+**Version:** 1.1.0

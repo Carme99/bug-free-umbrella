@@ -8,6 +8,411 @@ These scripts streamline the AVD image lifecycle, from preparing Windows images 
 
 ## Scripts
 
+### Install-TeamsAVD.ps1
+
+🚀 **NEW!** A production-ready installer for Microsoft Teams and WebView2 Runtime optimized for Azure Virtual Desktop environments.
+
+#### Overview
+
+This script automates the installation and configuration of Microsoft Teams (new) with WebView2 Runtime specifically for AVD gold images. It's designed for both fresh installations and updates, with comprehensive error handling, logging, and validation.
+
+**Perfect for:** AVD administrators preparing gold images, IT operations teams managing virtual desktop environments, and automated deployment pipelines.
+
+#### Key Features
+
+- ✅ **Idempotent**: Safely runs multiple times, only installing when needed
+- 🔄 **Smart Updates**: Detects existing installations and handles updates
+- 🛡️ **Production-Ready**: Comprehensive error handling and validation
+- 📊 **Detailed Logging**: Full transcript logging for audit and troubleshooting
+- 🧹 **User Cleanup**: Removes old per-user Teams installations
+- 🔧 **Registry Configuration**: Automatically configures AVD optimizations
+- ✓ **Installation Verification**: Validates successful installation of all components
+- 🎯 **Proper Exit Codes**: Returns appropriate exit codes for Intune/automation
+
+#### What It Does
+
+The script performs a complete Teams deployment workflow:
+
+1. ✓ Validates administrator privileges and EULA acceptance
+2. ✓ Configures AVD registry optimizations (IsWVDEnvironment, app side-loading)
+3. ✓ Prevents users from manually updating Teams
+4. ✓ Cleans up old per-user Teams installations (stops processes if needed)
+5. ✓ Downloads and installs WebView2 Runtime (required dependency)
+6. ✓ Downloads and installs Teams Bootstrapper (machine-wide deployment)
+7. ✓ Verifies all installations completed successfully
+8. ✓ Generates detailed installation summary
+9. ✓ Creates comprehensive transcript log
+
+#### Usage
+
+##### Basic Installation
+```powershell
+.\Install-TeamsAVD.ps1 -AcceptEULA
+```
+
+This installs both WebView2 and Teams with default settings, removes old user installations, and configures AVD optimizations.
+
+##### Skip User Profile Cleanup
+```powershell
+.\Install-TeamsAVD.ps1 -AcceptEULA -SkipUserCleanup
+```
+
+Use this when you want to preserve existing user-profile Teams installations.
+
+##### Force Reinstallation
+```powershell
+.\Install-TeamsAVD.ps1 -AcceptEULA -Force
+```
+
+Forces reinstallation even if current versions are already installed. Useful for troubleshooting or ensuring clean installations.
+
+##### Custom Log Path
+```powershell
+.\Install-TeamsAVD.ps1 -AcceptEULA -LogPath "C:\CustomLogs\teams-install.log"
+```
+
+Specify a custom location for the transcript log file.
+
+##### Automated Deployment (Intune)
+```powershell
+# Deploy as Intune Win32 app or proactive remediation
+.\Install-TeamsAVD.ps1 -AcceptEULA -Force
+
+# Check exit code
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "Installation successful"
+} else {
+    Write-Host "Installation failed with code $LASTEXITCODE"
+}
+```
+
+#### Parameters
+
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `-AcceptEULA` | Switch | **Required**. Accept WebView2 EULA | - |
+| `-SkipUserCleanup` | Switch | Skip removal of old per-user Teams installations | False |
+| `-LogPath` | String | Custom path for transcript log | C:\ProgramData\Microsoft\IntuneManagementExtension\Logs\TeamsAVD_Install_[timestamp].log |
+| `-Force` | Switch | Force reinstallation even if already installed | False |
+| `-SkipSignatureCheck` | Switch | Skip Authenticode signature verification (trusted environments only) | False |
+
+#### Exit Codes
+
+| Code | Meaning | Description |
+|------|---------|-------------|
+| `0` | Success | All components installed and verified successfully |
+| `1` | EULA Not Accepted | User must accept EULA with `-AcceptEULA` parameter |
+| `2` | Download/Security Failure | Failed to download or signature verification failed |
+| `3` | Installation Failure | WebView2 or Teams installation failed |
+| `4` | Registry Failure | Registry configuration failed |
+
+**Note:** Administrator privileges are enforced by `#Requires -RunAsAdministrator` directive - the script will not run at all if not running as admin.
+
+#### Registry Configurations
+
+The script configures the following registry settings for AVD optimization:
+
+1. **IsWVDEnvironment** (`HKLM:\SOFTWARE\Microsoft\Teams`)
+   - Enables Teams optimizations for virtual desktop environments
+   - Required for media optimization in AVD
+
+2. **AllowAllTrustedApps** (`HKLM:\Software\Policies\Microsoft\Windows\Appx`)
+   - Allows side-loading of trusted apps
+   - Required for Teams installation
+
+3. **AllowDevelopmentWithoutDevLicense** (`HKLM:\Software\Policies\Microsoft\Windows\Appx`)
+   - Permits app installation without dev license
+   - Required for Teams installation
+
+4. **PreventUserFromUpdatingTeams** (`HKLM:\Software\Policies\Microsoft\Office\Teams`)
+   - Prevents users from manually updating Teams
+   - Ensures consistent versions across environment
+
+#### Requirements
+
+**System Requirements:**
+- Windows 10 (1809+) or Windows 11
+- Windows Server 2019/2022 (for AVD session hosts)
+- Administrator privileges
+- Internet connectivity for downloads
+
+**AVD Requirements:**
+- AVD session host or gold image preparation VM
+- Outbound HTTPS (443) access to Microsoft CDN
+- Sufficient disk space (500MB+ recommended)
+
+**Network Requirements:**
+- Access to `go.microsoft.com` (Microsoft CDN)
+- No proxy authentication required (or configured proxy)
+
+#### What Gets Installed?
+
+1. **Microsoft Edge WebView2 Runtime**
+   - Latest stable version from Microsoft
+   - Required dependency for Teams
+   - Silent installation
+
+2. **Microsoft Teams (New)**
+   - Machine-wide deployment using bootstrapper
+   - Latest version from Microsoft
+   - Installs per-user on first login
+   - Optimized for VDI environments
+
+#### User Cleanup Process
+
+When cleaning up old Teams installations (default behavior):
+
+1. Enumerates all user profiles in `C:\Users`
+2. Skips system profiles (Public, Default, etc.)
+3. Checks for `AppData\Local\Microsoft\Teams` in each profile
+4. Stops any running Teams processes for that user
+5. Removes the Teams directory
+6. Logs success/failure for each profile
+
+Use `-SkipUserCleanup` to disable this behavior.
+
+#### Idempotency and Updates
+
+The script is fully idempotent - it's safe to run multiple times:
+
+- **First Run**: Installs WebView2 and Teams, configures registry
+- **Subsequent Runs**: Detects existing installations, skips downloads
+- **With -Force**: Forces reinstallation even if already installed
+- **Updates**: Normal runs will skip if installed; use `-Force` to update
+
+#### Example Workflows
+
+##### Workflow 1: AVD Gold Image Preparation
+
+```powershell
+# On your gold image VM, prepare for image capture
+
+# Step 1: Install all applications
+# ...
+
+# Step 2: Run Windows Updates
+# ...
+
+# Step 3: Install Teams for AVD
+.\Install-TeamsAVD.ps1 -AcceptEULA
+
+# Step 4: Remove Sysprep blockers
+.\Remove-SysprepBlockers.ps1 -Force
+
+# Step 5: Sysprep and capture
+```
+
+##### Workflow 2: Update Existing Gold Image
+
+```powershell
+# Boot existing gold image
+# Apply latest Windows updates
+
+# Force reinstall Teams to get latest version
+.\Install-TeamsAVD.ps1 -AcceptEULA -Force
+
+# Recapture image
+```
+
+##### Workflow 3: Intune Proactive Remediation
+
+**Detection Script:**
+```powershell
+# Detect if Teams is installed and configured
+$teamsInstalled = Test-Path "C:\Program Files\WindowsApps\MSTeams_*"
+$isWVD = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Teams" -Name "IsWVDEnvironment" -ErrorAction SilentlyContinue).IsWVDEnvironment
+
+if ($teamsInstalled -and $isWVD -eq 1) {
+    Write-Host "Teams properly configured for AVD"
+    exit 0
+} else {
+    Write-Host "Teams not configured for AVD"
+    exit 1
+}
+```
+
+**Remediation Script:**
+```powershell
+# Run the installer
+.\Install-TeamsAVD.ps1 -AcceptEULA
+exit $LASTEXITCODE
+```
+
+#### Output and Logs
+
+The script provides detailed console output with color-coded status:
+
+- 🟢 **Green**: Success messages
+- 🔵 **White**: Informational messages
+- 🟡 **Yellow**: Warnings
+- 🔴 **Red**: Errors
+
+**Log File Contents:**
+- Full transcript of script execution
+- Timestamps for each operation
+- Download URLs and file sizes
+- Installation exit codes
+- Registry configuration results
+- Version detection results
+- Error details and stack traces
+- Installation summary
+
+**Example Log Location:**
+`C:\ProgramData\Microsoft\IntuneManagementExtension\Logs\TeamsAVD_Install_20260106_153042.log`
+
+#### Installation Summary
+
+At the end of execution, the script displays a comprehensive summary:
+
+```
+=== Installation Summary ===
+Timestamp: 2026-01-06 15:30:45
+
+[✓] WebView2 Runtime: Installed (Version 123.0.2420.81)
+[✓] Microsoft Teams: Installed (Version 24267.1500.3211.6287)
+[✓] AVD Registry Configuration: Enabled
+
+Log file: C:\ProgramData\Microsoft\...\TeamsAVD_Install_20260106_153042.log
+
+=== Installation completed successfully ===
+AVD gold image is ready for user logins
+```
+
+#### Troubleshooting
+
+##### "EULA not accepted"
+
+You must explicitly accept the WebView2 EULA:
+```powershell
+.\Install-TeamsAVD.ps1 -AcceptEULA
+```
+
+Review EULA at: https://www.microsoft.com/en-us/legal/terms-of-use
+
+##### "Must be run as Administrator"
+
+Right-click PowerShell and select "Run as Administrator", or:
+```powershell
+Start-Process powershell -Verb RunAs -ArgumentList "-File .\Install-TeamsAVD.ps1 -AcceptEULA"
+```
+
+##### "Download failed"
+
+Check:
+1. Internet connectivity
+2. Firewall rules allowing HTTPS to `go.microsoft.com`
+3. Proxy configuration if applicable
+4. Sufficient disk space in `%TEMP%`
+
+##### "Installation completed but version detection failed"
+
+This warning usually means installation succeeded but the script couldn't verify it. Common causes:
+- Registry not yet updated (timing issue)
+- Installation still in progress
+- Check manually: Look for `C:\Program Files\WindowsApps\MSTeams_*`
+
+##### Teams not working after installation
+
+Verify registry settings:
+```powershell
+# Check IsWVDEnvironment
+Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Teams" -Name "IsWVDEnvironment"
+
+# Should return: IsWVDEnvironment : 1
+```
+
+If not set, run script again or manually configure:
+```powershell
+Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Teams" -Name "IsWVDEnvironment" -Value 1 -Force
+```
+
+##### "Failed to remove Teams for user X"
+
+User profile may be in use or locked. Options:
+1. Use `-SkipUserCleanup` to skip cleanup
+2. Reboot and run again
+3. Manually remove: Delete `C:\Users\[username]\AppData\Local\Microsoft\Teams`
+
+#### Best Practices
+
+1. **Always Use in Gold Images**: This script is designed for image preparation, not individual user machines
+2. **Run Before Sysprep**: Install Teams before running Sysprep on your gold image
+3. **Log Retention**: Keep logs for audit and compliance purposes
+4. **Test First**: Test in development environment before production deployment
+5. **Version Control**: Store installation logs to track which versions were deployed when
+6. **Force Updates**: Use `-Force` when you need to ensure latest versions
+7. **Automation**: Include in your automated image building pipeline
+
+#### Integration with AVD
+
+After running this script on your gold image:
+
+1. **Session hosts will have**:
+   - WebView2 Runtime pre-installed
+   - Teams bootstrapper configured for machine-wide deployment
+   - Proper AVD registry optimizations
+
+2. **On user first login**:
+   - Teams will install automatically per-user
+   - Media optimization will be enabled
+   - Users cannot manually update Teams
+
+3. **AVD Media Optimization**:
+   - Requires `IsWVDEnvironment=1` (configured by this script)
+   - Requires WebView2 Runtime (installed by this script)
+   - Provides optimized audio/video performance in AVD
+
+#### Comparison: Before vs After
+
+**Before (Manual Process):**
+1. Download WebView2 installer manually
+2. Run WebView2 installer
+3. Download Teams installer manually
+4. Remember the right command-line flags (`-p`)
+5. Run Teams installer
+6. Navigate to registry editor
+7. Create registry keys manually (hope you got the paths right)
+8. Check multiple user profiles for old Teams
+9. Manually remove from each profile
+10. Hope everything worked...
+
+**Now (This Script):**
+1. Run script with `-AcceptEULA`
+2. ✨ Done!
+
+#### Version History
+
+- **v3.0** (Current): Security-hardened with Authenticode verification, exponential backoff retry logic, graceful process shutdown, ASCII art UI, and all critical issues resolved
+- **v2.0**: Production-ready with idempotency, validation, comprehensive logging, and tests
+- **v1.0**: Original basic installer script
+
+#### What's New in v3.0
+
+🔒 **Security Enhancements:**
+- Authenticode signature verification for all downloads
+- Protection against tampered or malicious files
+- Optional bypass with `-SkipSignatureCheck` for trusted environments
+
+⚡ **Reliability Improvements:**
+- Exponential backoff retry logic for version detection (5 retries, 2-30s delays)
+- Graceful process shutdown (tries CloseMainWindow before Kill)
+- Finally blocks ensure cleanup always runs
+
+🎨 **User Experience:**
+- Beautiful ASCII art banner with TEAMS logo
+- Enhanced logging with visual prefixes: [✓] [⚠] [✗] [▶] [•]
+- Color-coded sections with box drawing characters
+- Professional installation summary
+
+🐛 **Critical Fixes:**
+- EULA check moved before transcript (performance)
+- ProgressPreference always restored (bug fix)
+- Exit codes properly defined (0, 3010 success codes)
+- Removed redundant admin check (handled by #Requires)
+- Fixed race condition in version detection
+
+---
+
 ### New-AzureComputeGalleryImage.ps1
 
 🚀 **NEW!** A comprehensive, interactive tool for creating Azure Compute Gallery images from gold VMs.

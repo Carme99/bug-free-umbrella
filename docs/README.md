@@ -50,23 +50,6 @@
 
 ---
 
-## 📂 Files in This Folder (Legacy)
-
-⚠️ **WARNING: These files are outdated and maintained for reference only.**
-
-| File | Status | Current Location |
-|------|--------|------------------|
-| **NAVIGATION.md** | ⛔ DEPRECATED | → [QUICK_START.md](../QUICK_START.md) + [Script Catalog](../../wiki/Script-Catalog) |
-| **SCRIPT-EXAMPLES.md** | ⛔ DEPRECATED | → [examples/](../examples/) + [Wiki Examples](../../wiki/Script-Examples) |
-| **WORKFLOWS.md** | ⛔ DEPRECATED | → [examples/](../examples/) + [Wiki Workflows](../../wiki/Workflows) |
-| **TROUBLESHOOTING.md** | ⛔ DEPRECATED | → [Wiki Troubleshooting](../../wiki/Troubleshooting) |
-| **INTUNE-SYNC-README.md** | ⛔ DEPRECATED | → [Wiki Intune Guide](../../wiki/Intune-Sync-Guide) |
-
-> **⚠️ IMPORTANT:** These files are **NOT maintained** and may contain outdated information.
-> Please use the Wiki and examples folder for current, accurate documentation.
-
----
-
 ## 🔗 Quick Links
 
 **Main Documentation:**

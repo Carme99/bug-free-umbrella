@@ -204,9 +204,9 @@ Common issues:
 - Check for MFA requirements
 - Ensure proper permissions assigned
 
-For more help, see **[Troubleshooting](Troubleshooting)**.
+For more help, see **[Troubleshooting](Troubleshooting)**, **[Support Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md)**, or review the **[Code of Conduct](https://github.com/Carme99/bug-free-umbrella/blob/main/CODE_OF_CONDUCT.md)** before reporting issues.
 
 ---
 
-**Last Updated:** 2025-12-31
-**Version:** 1.0.0
+**Last Updated:** 2026-01-05
+**Version:** 1.1.0

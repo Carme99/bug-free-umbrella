@@ -93,7 +93,7 @@ Here's how these scripts fit into a complete AVD image preparation workflow:
 | Resource | Description |
 |----------|-------------|
 | [ACG Image Builder Guide](Azure-Compute-Gallery-Image-Builder) | Complete documentation for New-AzureComputeGalleryImage.ps1 |
-| [AzureVirtualDesktop Folder](../AzureVirtualDesktop) | Source code and README |
+| [AVD Scripts Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/cloud/azure/avd) | Source code and scripts |
 | [Troubleshooting](Troubleshooting) | Common issues and solutions |
 
 ## Common Workflows

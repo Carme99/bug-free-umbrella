@@ -14,11 +14,11 @@ The wiki contains **10 comprehensive pages** totaling over **140KB of documentat
 3. **Getting-Started.md** - Comprehensive quick start guide
 
 ### Documentation Pages (Migrated from docs/)
-4. **Script-Catalog.md** - Complete index of all 260+ scripts (from NAVIGATION.md)
-5. **Script-Examples.md** - Detailed usage examples (from SCRIPT-EXAMPLES.md)
-6. **Workflows.md** - Step-by-step workflow guides (from WORKFLOWS.md)
-7. **Troubleshooting.md** - Common issues and solutions (from TROUBLESHOOTING.md)
-8. **Intune-Sync-Guide.md** - Intune sync guide (from INTUNE-SYNC-README.md)
+4. **Script-Catalog.md** - Complete index of all 260+ scripts (from docs/NAVIGATION.md, now deleted)
+5. **Script-Examples.md** - Detailed usage examples (from docs/SCRIPT-EXAMPLES.md, now deleted)
+6. **Workflows.md** - Step-by-step workflow guides (from docs/WORKFLOWS.md, now deleted)
+7. **Troubleshooting.md** - Common issues and solutions (from docs/TROUBLESHOOTING.md, now deleted)
+8. **Intune-Sync-Guide.md** - Intune sync guide (from docs/INTUNE-SYNC-README.md, now deleted)
 
 ### Additional Pages (To Be Created)
 - FAQ.md - Frequently asked questions
@@ -120,18 +120,30 @@ wiki/
    - Lists legacy files and wiki equivalents
    - Explains why wiki is better
 
-### Files Created
+### Files Created (Phase 1: Wiki Migration)
 
 3. **wiki/** directory
    - All wiki content pages
    - Ready to be pushed to wiki repository
 
-### Files Kept (Unchanged)
-- docs/NAVIGATION.md (legacy reference)
-- docs/SCRIPT-EXAMPLES.md (legacy reference)
-- docs/WORKFLOWS.md (legacy reference)
-- docs/TROUBLESHOOTING.md (legacy reference)
-- docs/INTUNE-SYNC-README.md (legacy reference)
+### Files Created (Phase 2: Community & Automation)
+
+4. **CODE_OF_CONDUCT.md** - Community standards and behavior expectations
+5. **SUPPORT.md** - Support channels, response times, how to get help
+6. **GOVERNANCE.md** - Project governance, solo maintainer model, decision-making
+7. **.github/CODEOWNERS** - Code ownership for PR reviews
+8. **.editorconfig** - Editor formatting standards (PowerShell, Markdown, YAML)
+9. **.github/workflows/stale.yml** - Auto-closes stale issues/PRs (60+ days)
+10. **.github/workflows/link-checker.yml** - Validates all markdown links weekly
+11. **.github/workflows/issue-labeler.yml** - Auto-labels new issues with 46 technology categories
+12. **.github/scripts/create-labels.ps1** - Creates 46 GitHub labels in repository
+
+### Files Deleted (Migrated to Wiki)
+- docs/NAVIGATION.md (DELETED - migrated to Script-Catalog.md)
+- docs/SCRIPT-EXAMPLES.md (DELETED - migrated to Script-Examples.md)
+- docs/WORKFLOWS.md (DELETED - migrated to Workflows.md)
+- docs/TROUBLESHOOTING.md (DELETED - migrated to Troubleshooting.md)
+- docs/INTUNE-SYNC-README.md (DELETED - migrated to Intune-Sync-Guide.md)
 
 ---
 
@@ -183,8 +195,8 @@ Your content here...
 
 ## See Also
 
-- [Related Page 1](Related-Page-1)
-- [Related Page 2](Related-Page-2)
+- [Related Page 1](Home) (example link)
+- [Related Page 2](Script-Catalog) (example link)
 
 ---
 
@@ -308,11 +320,12 @@ No pull request needed! (But changes are tracked in Git history)
 **Main Repository:**
 - [Main Repo](https://github.com/Carme99/bug-free-umbrella)
 - [Latest Release](https://github.com/Carme99/bug-free-umbrella/releases/latest)
-- [Changelog](../CHANGELOG.md)
+- [Changelog](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)
 
 ---
 
 **Created:** 2025-12-29
-**Wiki Version:** 1.0.0
-**Corresponds to:** v2.1.0 "Rainbow" 🌈
+**Last Updated:** 2026-01-04
+**Wiki Version:** 1.1.0
+**Corresponds to:** v3.0.2 "Drizzle" ☔
 **Created by:** [Claude Code](https://github.com/anthropics/claude-code)

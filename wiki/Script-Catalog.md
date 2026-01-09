@@ -9,19 +9,19 @@
 ### For First-Time Users
 | What you want to do | Go here |
 |---------------------|---------|
-| **Understand what this repo is** | [Main README](../README.md) |
-| **See what's new** | [CHANGELOG](../CHANGELOG.md) - Check out our fun release names! 🌈 |
+| **Understand what this repo is** | [Main README](https://github.com/Carme99/bug-free-umbrella/blob/main/README.md) |
+| **See what's new** | [CHANGELOG](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md) - Check out our fun release names! 🌈 |
 | **Get started quickly** | [Quick Start Guide](#quick-start-paths) (below) |
-| **See example outputs** | [SCRIPT-EXAMPLES.md](SCRIPT-EXAMPLES.md) |
+| **See example outputs** | [Script Examples](Script-Examples) |
 
 ### For Active Users
 | What you want to do | Go here |
 |---------------------|---------|
-| **Follow a complete workflow** | [WORKFLOWS.md](WORKFLOWS.md) |
-| **Troubleshoot a problem** | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
+| **Follow a complete workflow** | [Workflows](Workflows) |
+| **Troubleshoot a problem** | [Troubleshooting](Troubleshooting) |
 | **Find a specific script** | [Script Index](#script-index-by-category) (below) |
-| **Contribute** | [CONTRIBUTING.md](../CONTRIBUTING.md) |
-| **Report security issue** | [SECURITY.md](../SECURITY.md) |
+| **Contribute** | [CONTRIBUTING.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md) |
+| **Report security issue** | [SECURITY.md](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md) |
 
 ---
 
@@ -37,9 +37,9 @@ START HERE → Main README → M365 Scripts Section
     • Teams & SharePoint           → scripts/m365/teams/ or sharepoint-onedrive/
     • Regional settings            → scripts/m365/ (7 new scripts!)
            ↓
-    See examples → SCRIPT-EXAMPLES.md
+    See examples → Script-Examples
            ↓
-    Follow workflow → WORKFLOWS.md
+    Follow workflow → Workflows
 ```
 
 ### Path 2: "I manage Windows Servers"
@@ -52,9 +52,9 @@ START HERE → Main README → Server Management Section
     • Group Policy                → scripts/server/group-policy/
     • Backup verification         → scripts/server/backup-recovery/
            ↓
-    See examples → SCRIPT-EXAMPLES.md
+    See examples → Script-Examples
            ↓
-    Fix issues → TROUBLESHOOTING.md
+    Fix issues → Troubleshooting
 ```
 
 ### Path 3: "I do DevOps / Cloud Infrastructure"
@@ -68,9 +68,9 @@ START HERE → Main README → Cloud & DevOps Section
     • Kubernetes / Docker         → scripts/container-management/
     • Terraform / Bicep           → scripts/infrastructure-as-code/
            ↓
-    See examples → SCRIPT-EXAMPLES.md
+    See examples → Script-Examples
            ↓
-    Follow workflow → WORKFLOWS.md
+    Follow workflow → Workflows
 ```
 
 ### Path 4: "I want to auto-fix common PC problems"
@@ -87,7 +87,7 @@ START HERE → Main README → Proactive Remediations
     • Teams cache issues          → Fix-TeamsCache/
     • ...and 9 more!
            ↓
-    Deploy workflow → WORKFLOWS.md (Automated Winget Updates section)
+    Deploy workflow → Workflows (Automated Winget Updates section)
 ```
 
 ### Path 5: "I want to automate app updates"
@@ -103,7 +103,7 @@ START HERE → Main README → Winget Updates Section
     • productivity/               → 7-Zip, Notepad++, Adobe Reader
     • runtimes/                   → .NET, C++, Java
            ↓
-    Follow setup guide → WORKFLOWS.md (Setting up Automated Winget Updates)
+    Follow setup guide → Workflows (Setting up Automated Winget Updates)
 ```
 
 ---
@@ -114,16 +114,16 @@ START HERE → Main README → Winget Updates Section
 
 | Document | Purpose | When to Use |
 |----------|---------|-------------|
-| **[README.md](../README.md)** | Repository overview, quick start | First stop for new users |
-| **[CHANGELOG.md](../CHANGELOG.md)** | Version history with fun codenames! 🌂 | See what's new, understand changes |
-| **[docs/README.md](README.md)** | Complete documentation hub | Deep dive into all scripts |
-| **[SCRIPT-EXAMPLES.md](SCRIPT-EXAMPLES.md)** | Detailed examples with outputs | Learn how scripts work |
-| **[WORKFLOWS.md](WORKFLOWS.md)** | End-to-end step-by-step guides | Follow complete processes |
-| **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** | Common issues and solutions | When things don't work |
-| **[INTUNE-SYNC-README.md](INTUNE-SYNC-README.md)** | User group → device group sync | Specific Intune sync scenarios |
-| **[CONTRIBUTING.md](../CONTRIBUTING.md)** | How to contribute | Want to add scripts or fixes |
-| **[SECURITY.md](../SECURITY.md)** | Security policy | Report vulnerabilities |
-| **[SCRIPT_ANALYSIS_REPORT.md](../SCRIPT_ANALYSIS_REPORT.md)** | PowerShell code analysis | Understand code quality |
+| **[README.md](https://github.com/Carme99/bug-free-umbrella/blob/main/README.md)** | Repository overview, quick start | First stop for new users |
+| **[CHANGELOG.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)** | Version history with fun codenames! 🌂 | See what's new, understand changes |
+| **[Wiki Home](Home)** | Complete documentation hub | Deep dive into all scripts |
+| **[Script Examples](Script-Examples)** | Detailed examples with outputs | Learn how scripts work |
+| **[Workflows](Workflows)** | End-to-end step-by-step guides | Follow complete processes |
+| **[Troubleshooting](Troubleshooting)** | Common issues and solutions | When things don't work |
+| **[Intune Sync Guide](Intune-Sync-Guide)** | User group → device group sync | Specific Intune sync scenarios |
+| **[CONTRIBUTING.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)** | How to contribute | Want to add scripts or fixes |
+| **[SECURITY.md](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md)** | Security policy | Report vulnerabilities |
+| **[SCRIPT_ANALYSIS_REPORT.md](https://github.com/Carme99/bug-free-umbrella/blob/main/SCRIPT_ANALYSIS_REPORT.md)** | PowerShell code analysis | Understand code quality |
 
 ---
 
@@ -385,23 +385,23 @@ Organized by category:
 ## 🎓 Learning Paths
 
 ### Beginner Path: "New to PowerShell automation"
-1. Start with [Main README](../README.md) - understand the repository
-2. Review [SCRIPT-EXAMPLES.md](SCRIPT-EXAMPLES.md) - see how scripts work
+1. Start with [Main README](https://github.com/Carme99/bug-free-umbrella/blob/main/README.md) - understand the repository
+2. Review [Script Examples](Script-Examples) - see how scripts work
 3. Try a simple script like `Get-DeviceComplianceReport.ps1`
-4. Review [TROUBLESHOOTING.md](TROUBLESHOOTING.md) if issues arise
-5. Explore [Proactive Remediations](../scripts/device-management/proactive-remediations/) for auto-fix scripts
+4. Review [Troubleshooting](Troubleshooting) if issues arise
+5. Explore [Proactive Remediations](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations) for auto-fix scripts
 
 ### Intermediate Path: "I know PowerShell, want to deploy"
-1. Review [Main README](../README.md) prerequisites section
+1. Review [Main README](https://github.com/Carme99/bug-free-umbrella/blob/main/README.md) prerequisites section
 2. Pick your focus area from [Script Index](#script-index-by-category)
-3. Follow a complete workflow from [WORKFLOWS.md](WORKFLOWS.md)
-4. Review [CHANGELOG.md](../CHANGELOG.md) for latest improvements
-5. Consider [contributing](../CONTRIBUTING.md) improvements
+3. Follow a complete workflow from [Workflows](Workflows)
+4. Review [CHANGELOG.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md) for latest improvements
+5. Consider [contributing](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md) improvements
 
 ### Advanced Path: "I want to customize and contribute"
-1. Read [CONTRIBUTING.md](../CONTRIBUTING.md) guidelines
-2. Review [SCRIPT_ANALYSIS_REPORT.md](../SCRIPT_ANALYSIS_REPORT.md) for code quality standards
-3. Check [CHANGELOG.md](../CHANGELOG.md) - see what's been improved (e.g., 🌈 Rainbow release)
+1. Read [CONTRIBUTING.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md) guidelines
+2. Review [SCRIPT_ANALYSIS_REPORT.md](https://github.com/Carme99/bug-free-umbrella/blob/main/SCRIPT_ANALYSIS_REPORT.md) for code quality standards
+3. Check [CHANGELOG.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md) - see what's been improved (e.g., 🌈 Rainbow release)
 4. Fork, customize, and submit pull requests
 5. Help expand documentation and examples
 
@@ -416,20 +416,19 @@ Organized by category:
 | **Proactive Remediations** | 14 pairs (28 scripts) |
 | **Winget App Templates** | 40+ |
 | **Documentation Files** | 10 |
-| **Latest Release** | 2.1.0 "Rainbow" 🌈 |
+| **Latest Release** | 3.0.2 "Drizzle" ☔ |
 
 ---
 
-## 🌈 Latest Updates (v2.1.0 "Rainbow")
+## ☔ Latest Updates (v3.0.2 "Drizzle")
 
 **What's New:**
-- 🚀 Monitor-ServerHealth.ps1: 13 major new features including interactive mode!
-- ✅ Critical bug fixes: 2 syntax errors resolved
-- 📚 6 scripts with new comprehensive documentation
-- ⚡ Performance improvements in array operations
-- 🎨 Consistent formatting across 10 autopatch scripts
+- 🗑️ **Removed 5 Deprecated Files:** Deleted ~3,988 lines of outdated documentation
+- 🔗 **Fixed 44 Broken Links:** All documentation references now work correctly
+- 📚 **Cleaner Documentation:** Simplified docs folder, consistent wiki link format
+- ✨ **Better UX:** All internal wiki links now use proper wiki-style navigation
 
-**See full details:** [CHANGELOG.md](../CHANGELOG.md)
+**See full details:** [CHANGELOG.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)
 
 ---
 
@@ -441,13 +440,13 @@ Organized by category:
 3. **By Name**: Check the category folders in `scripts/`
 
 ### Understanding Scripts
-1. **See Examples**: [SCRIPT-EXAMPLES.md](SCRIPT-EXAMPLES.md) has detailed usage
+1. **See Examples**: [Script Examples](Script-Examples) has detailed usage
 2. **Get Help**: All major scripts support `Get-Help .\ScriptName.ps1 -Detailed`
 3. **Check Comments**: Every script has inline comments explaining logic
 
 ### Following Processes
-1. **Complete Workflows**: [WORKFLOWS.md](WORKFLOWS.md) has end-to-end guides
-2. **Common Issues**: [TROUBLESHOOTING.md](TROUBLESHOOTING.md) has solutions
+1. **Complete Workflows**: [Workflows](Workflows) has end-to-end guides
+2. **Common Issues**: [Troubleshooting](Troubleshooting) has solutions
 3. **Specific Scenarios**: Check individual script documentation
 
 ---
@@ -456,19 +455,19 @@ Organized by category:
 
 - **GitHub Repository**: [Carme99/bug-free-umbrella](https://github.com/Carme99/bug-free-umbrella)
 - **Issues & Feature Requests**: [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues)
-- **Changelog with Fun Codenames**: [CHANGELOG.md](../CHANGELOG.md) 🌂
+- **Changelog with Fun Codenames**: [CHANGELOG.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md) 🌂
 - **Claude Code**: [github.com/anthropics/claude-code](https://github.com/anthropics/claude-code)
 
 ---
 
 ## 🌟 Featured Scripts
 
-### 🆕 Recently Enhanced (v2.1.0 Rainbow 🌈)
-- **Monitor-ServerHealth.ps1** - Massively expanded! 541 → 1,928 lines
-  - Interactive mode with menu-driven operation
-  - 13 major new monitoring capabilities
-  - Email reporting, JSON export, progress indicators
-  - Location: `scripts/server/monitoring/`
+### 🆕 Recently Enhanced (v3.0.2 Drizzle ☔)
+- **Documentation Cleanup** - Removed technical debt
+  - 5 deprecated documentation files removed (~3,988 lines)
+  - 44 broken links fixed across all wiki pages
+  - Consistent wiki-style link format throughout
+  - All content successfully migrated to comprehensive wiki
 
 ### 🔥 Most Popular
 - **Get-DeviceComplianceReport.ps1** - Intune compliance reporting
@@ -487,17 +486,17 @@ Organized by category:
 
 | Question Type | Resource |
 |---------------|----------|
-| "How do I use this script?" | [SCRIPT-EXAMPLES.md](SCRIPT-EXAMPLES.md) |
-| "Something's not working" | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
-| "How do I deploy this?" | [WORKFLOWS.md](WORKFLOWS.md) |
-| "What's new?" | [CHANGELOG.md](../CHANGELOG.md) |
-| "I want to contribute" | [CONTRIBUTING.md](../CONTRIBUTING.md) |
-| "I found a security issue" | [SECURITY.md](../SECURITY.md) |
+| "How do I use this script?" | [Script Examples](Script-Examples) |
+| "Something's not working" | [Troubleshooting](Troubleshooting) |
+| "How do I deploy this?" | [Workflows](Workflows) |
+| "What's new?" | [CHANGELOG.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md) |
+| "I want to contribute" | [CONTRIBUTING.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md) |
+| "I found a security issue" | [SECURITY.md](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md) |
 | "General questions" | Check script comments or [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues) |
 
 ---
 
-**Last Updated**: 2025-12-29 (v2.1.0 "Rainbow" 🌈)
+**Last Updated**: 2026-01-03 (v3.0.2 "Drizzle" ☔)
 
 **Maintained by**: The Bug-Free Umbrella Team
 **Created with**: [Claude Code](https://github.com/anthropics/claude-code)
