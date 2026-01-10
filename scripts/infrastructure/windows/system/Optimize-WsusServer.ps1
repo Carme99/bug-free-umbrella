@@ -86,6 +86,16 @@ param (
     [switch]$Interactive,
 
     [Parameter()]
+    [ValidateScript({
+        # Validate path format and prevent path traversal
+        if ($_ -match '\.\.[/\\]') {
+            throw "Path traversal detected in ConfigFile parameter"
+        }
+        if ($_ -notmatch '^[A-Za-z]:\\') {
+            throw "ConfigFile must be an absolute Windows path"
+        }
+        return $true
+    })]
     [string]$ConfigFile = "C:\Scripts\WSUS\wsus-config.json",
 
     [Parameter()]
@@ -465,12 +475,12 @@ function Get-WsusConfig {
         }
         catch {
             Write-Log "Failed to load configuration from $Path. Using defaults. Error: $_" -Level Warning
-            return $script:DefaultConfig.Clone()
+            return Copy-HashtableDeep $script:DefaultConfig
         }
     }
     else {
         Write-Log "Configuration file not found. Using defaults." -Level Info
-        return $script:DefaultConfig.Clone()
+        return Copy-HashtableDeep $script:DefaultConfig
     }
 }
 
@@ -536,6 +546,42 @@ function ConvertTo-Hashtable {
     }
 
     return $hash
+}
+
+function Copy-HashtableDeep {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        $InputObject
+    )
+
+    $clone = @{}
+
+    foreach ($key in $InputObject.Keys) {
+        $value = $InputObject[$key]
+
+        if ($value -is [hashtable]) {
+            # Recursively clone nested hashtables
+            $clone[$key] = Copy-HashtableDeep $value
+        }
+        elseif ($value -is [Array]) {
+            # Clone array elements
+            $clone[$key] = @($value | ForEach-Object {
+                if ($_ -is [hashtable]) {
+                    Copy-HashtableDeep $_
+                }
+                else {
+                    $_
+                }
+            })
+        }
+        else {
+            # Copy value types and strings
+            $clone[$key] = $value
+        }
+    }
+
+    return $clone
 }
 
 #endregion
@@ -628,7 +674,14 @@ function Start-InteractiveWizard {
             do {
                 $product = Read-Host "Product"
                 if (-not [string]::IsNullOrWhiteSpace($product)) {
-                    $customProducts += $product
+                    # Validate input
+                    try {
+                        Test-SafeString -InputString $product -MaxLength 255
+                        $customProducts += $product
+                    }
+                    catch {
+                        Write-Host "Invalid input: $_" -ForegroundColor Red
+                    }
                 }
             } while (-not [string]::IsNullOrWhiteSpace($product))
 
@@ -799,7 +852,7 @@ function Start-InteractiveWizard {
                     Optimize-WsusUpdates -Config $config
                 }
 
-                if ($config.CheckConfig) {
+                if (Confirm-Choice -Message "Check IIS configuration?" -DefaultYes $true) {
                     Test-WsusIISConfig -Config $config
                 }
             }
