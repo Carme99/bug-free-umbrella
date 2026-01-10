@@ -50,6 +50,9 @@
 .PARAMETER LogPath
     Custom log file path. Default: C:\Scripts\WSUS\Logs\wsus-optimization.log
 
+.PARAMETER SqlServerInstance
+    SQL Server instance for WSUS database. If not specified, auto-detects from WSUS configuration or defaults to WID.
+
 .NOTES
     Version:        2.0.0
     Author:         Modernized by Carme99 for 2025
@@ -107,7 +110,10 @@ param (
     [switch]$CreateTasks,
 
     [Parameter()]
-    [string]$LogPath = "C:\Scripts\WSUS\Logs\wsus-optimization.log"
+    [string]$LogPath = "C:\Scripts\WSUS\Logs\wsus-optimization.log",
+
+    [Parameter()]
+    [string]$SqlServerInstance
 )
 
 #region Configuration
@@ -223,6 +229,11 @@ $script:DefaultConfig = @{
         AutomaticCleanup = $true
     }
 
+    # Database Settings
+    Database = @{
+        SqlServerInstance = $null  # Auto-detect from WSUS registry or use WID
+    }
+
     # Logging
     Logging = @{
         Enabled = $true
@@ -303,6 +314,135 @@ function Write-Progress-Custom {
     }
 
     Write-Progress @params
+}
+
+function Test-SafePath {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+
+        [Parameter()]
+        [switch]$MustExist
+    )
+
+    try {
+        # Resolve to absolute path
+        $resolved = [System.IO.Path]::GetFullPath($Path)
+
+        # Check for valid Windows path format
+        if ($resolved -notmatch '^[A-Za-z]:\\') {
+            throw "Invalid path format: $Path"
+        }
+
+        # Check for path traversal attempts
+        if ($resolved -match '\.\.[/\\]') {
+            throw "Path traversal detected: $Path"
+        }
+
+        # Check for dangerous characters in path
+        $invalidChars = [System.IO.Path]::GetInvalidPathChars()
+        foreach ($char in $invalidChars) {
+            if ($Path.Contains($char)) {
+                throw "Path contains invalid character: $char"
+            }
+        }
+
+        # If must exist, verify the path exists
+        if ($MustExist -and -not (Test-Path -Path $resolved)) {
+            throw "Path does not exist: $resolved"
+        }
+
+        return $resolved
+    }
+    catch {
+        Write-Log "Path validation failed for '$Path': $_" -Level Error
+        throw
+    }
+}
+
+function Test-SafeString {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string]$InputString,
+
+        [Parameter()]
+        [int]$MaxLength = 255,
+
+        [Parameter()]
+        [string[]]$DisallowedChars = @('<', '>', ':', '"', '|', '?', '*')
+    )
+
+    # Check length
+    if ($InputString.Length -gt $MaxLength) {
+        throw "Input exceeds maximum length of $MaxLength characters"
+    }
+
+    # Check for disallowed characters
+    foreach ($char in $DisallowedChars) {
+        if ($InputString.Contains($char)) {
+            throw "Input contains disallowed character: $char"
+        }
+    }
+
+    return $true
+}
+
+function Get-SafeXmlDocument {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+
+    try {
+        # Create XML reader settings to prevent XXE attacks
+        $xmlSettings = New-Object System.Xml.XmlReaderSettings
+        $xmlSettings.DtdProcessing = [System.Xml.DtdProcessing]::Prohibit
+        $xmlSettings.XmlResolver = $null
+
+        # Load XML safely
+        $reader = [System.Xml.XmlReader]::Create($Path, $xmlSettings)
+        $xmlDoc = New-Object System.Xml.XmlDocument
+        $xmlDoc.Load($reader)
+        $reader.Close()
+
+        return $xmlDoc
+    }
+    catch {
+        Write-Log "Failed to load XML document from '$Path': $_" -Level Error
+        throw
+    }
+}
+
+function Get-WsusSqlInstance {
+    [CmdletBinding()]
+    param()
+
+    try {
+        # Try to get SQL instance from WSUS registry
+        $wsusSetupKey = "HKLM:\SOFTWARE\Microsoft\Update Services\Server\Setup"
+
+        if (Test-Path $wsusSetupKey) {
+            $sqlInstance = (Get-ItemProperty -Path $wsusSetupKey -Name "SqlServerName" -ErrorAction SilentlyContinue).SqlServerName
+
+            if (-not [string]::IsNullOrEmpty($sqlInstance)) {
+                Write-Log "Detected SQL Server instance from WSUS configuration: $sqlInstance" -Level Info
+                return $sqlInstance
+            }
+        }
+
+        # Default to Windows Internal Database (WID)
+        $widInstance = "\\.\pipe\MICROSOFT##WID\tsql\query"
+        Write-Log "Using default Windows Internal Database (WID): $widInstance" -Level Info
+        return $widInstance
+    }
+    catch {
+        Write-Log "Failed to detect SQL instance, using WID default: $_" -Level Warning
+        return "\\.\pipe\MICROSOFT##WID\tsql\query"
+    }
 }
 
 #endregion
@@ -714,7 +854,8 @@ function Get-WsusIISConfig {
         $webConfigPath = Get-WebConfigFile -PSPath $sitePath | Select-Object -ExpandProperty FullName
 
         if (Test-Path $webConfigPath) {
-            [xml]$webConfig = Get-Content $webConfigPath
+            # Load XML safely to prevent XXE attacks
+            $webConfig = Get-SafeXmlDocument -Path $webConfigPath
             $config.ClientMaxRequestLength = [int]$webConfig.configuration.'system.web'.httpRuntime.maxRequestLength
             $config.ClientExecutionTimeout = [int]$webConfig.configuration.'system.web'.httpRuntime.executionTimeout
         }
@@ -810,7 +951,8 @@ function Set-WsusIISConfig {
             Copy-Item -Path $webConfigPath -Destination $backupPath -Force
             Write-Log "Web.config backed up to: $backupPath" -Level Info
 
-            [xml]$webConfig = Get-Content $webConfigPath
+            # Load XML safely to prevent XXE attacks
+            $webConfig = Get-SafeXmlDocument -Path $webConfigPath
 
             # Update httpRuntime settings
             if ($null -eq $webConfig.configuration.'system.web'.httpRuntime) {
@@ -956,7 +1098,8 @@ BEGIN
     PRINT @msg
 
     DECLARE @sql nvarchar(1000)
-    SET @sql = 'ALTER INDEX [' + @indexname + '] ON [' + @schemaname + '].[' + @tablename + '] REBUILD WITH (ONLINE = OFF)'
+    -- Use QUOTENAME() to prevent SQL injection
+    SET @sql = 'ALTER INDEX ' + QUOTENAME(@indexname) + ' ON ' + QUOTENAME(@schemaname) + '.' + QUOTENAME(@tablename) + ' REBUILD WITH (ONLINE = OFF)'
 
     BEGIN TRY
         EXEC sp_executesql @sql
@@ -997,16 +1140,24 @@ GO
 
 function Initialize-WsusDatabase {
     [CmdletBinding(SupportsShouldProcess = $true)]
-    param()
+    param(
+        [Parameter()]
+        [string]$SqlInstance
+    )
 
     if (-not $PSCmdlet.ShouldProcess("WSUS Database", "Create custom indexes")) {
         return
     }
 
     try {
-        Write-Log "Creating custom database indexes..." -Level Info
+        # Detect SQL instance if not provided
+        if ([string]::IsNullOrEmpty($SqlInstance)) {
+            $SqlInstance = Get-WsusSqlInstance
+        }
 
-        $result = Invoke-Sqlcmd -Query $script:CreateCustomIndexesSQL -ServerInstance "\\.\pipe\MICROSOFT##WID\tsql\query" -Verbose
+        Write-Log "Creating custom database indexes on SQL instance: $SqlInstance" -Level Info
+
+        $result = Invoke-Sqlcmd -Query $script:CreateCustomIndexesSQL -ServerInstance $SqlInstance -Verbose
 
         if ($result) {
             $result | ForEach-Object { Write-Log $_ -Level Info }
@@ -1023,7 +1174,10 @@ function Initialize-WsusDatabase {
 function Optimize-WsusDatabase {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
-        [hashtable]$Config
+        [hashtable]$Config,
+
+        [Parameter()]
+        [string]$SqlInstance
     )
 
     if (-not $PSCmdlet.ShouldProcess("WSUS Database", "Optimize and reindex")) {
@@ -1031,10 +1185,21 @@ function Optimize-WsusDatabase {
     }
 
     try {
-        Write-Log "Starting WSUS database optimization..." -Level Info
+        # Detect SQL instance if not provided
+        if ([string]::IsNullOrEmpty($SqlInstance)) {
+            # Try to get from config first
+            if ($Config.Database.SqlServerInstance) {
+                $SqlInstance = $Config.Database.SqlServerInstance
+            }
+            else {
+                $SqlInstance = Get-WsusSqlInstance
+            }
+        }
+
+        Write-Log "Starting WSUS database optimization on SQL instance: $SqlInstance" -Level Info
         Write-Progress-Custom -Activity "WSUS Database Optimization" -Status "Running optimization scripts..."
 
-        $result = Invoke-Sqlcmd -Query $script:OptimizeDatabaseSQL -ServerInstance "\\.\pipe\MICROSOFT##WID\tsql\query" -QueryTimeout 7200 -Verbose
+        $result = Invoke-Sqlcmd -Query $script:OptimizeDatabaseSQL -ServerInstance $SqlInstance -QueryTimeout 7200 -Verbose
 
         if ($result) {
             $result | ForEach-Object { Write-Log $_ -Level Info }
@@ -1441,8 +1606,12 @@ function New-WsusDailyTask {
         $taskName = "WSUS-DailyOptimization"
         $time = $Config.ScheduledTasks.Daily.Time
 
-        # Build argument string
-        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`" -OptimizeServer -DeclineSupersededUpdates -ConfigFile `"$script:ConfigFile`""
+        # Validate paths to prevent command injection
+        $validatedScriptPath = Test-SafePath -Path $ScriptPath -MustExist
+        $validatedConfigPath = Test-SafePath -Path $script:ConfigFile
+
+        # Build argument string with validated paths
+        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$validatedScriptPath`" -OptimizeServer -DeclineSupersededUpdates -ConfigFile `"$validatedConfigPath`""
 
         $action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument $arguments
         $trigger = New-ScheduledTaskTrigger -Daily -At $time
@@ -1476,7 +1645,11 @@ function New-WsusWeeklyTask {
         $time = $Config.ScheduledTasks.Weekly.Time
         $dayOfWeek = $Config.ScheduledTasks.Weekly.DayOfWeek
 
-        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`" -OptimizeDatabase -CheckConfig -ConfigFile `"$script:ConfigFile`""
+        # Validate paths to prevent command injection
+        $validatedScriptPath = Test-SafePath -Path $ScriptPath -MustExist
+        $validatedConfigPath = Test-SafePath -Path $script:ConfigFile
+
+        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$validatedScriptPath`" -OptimizeDatabase -CheckConfig -ConfigFile `"$validatedConfigPath`""
 
         $action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument $arguments
         $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek $dayOfWeek -At $time
@@ -1509,13 +1682,13 @@ function New-WsusMonthlyTask {
         $time = $Config.ScheduledTasks.Monthly.Time
         $day = $Config.ScheduledTasks.Monthly.Day
 
-        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`" -DeepClean -ConfigFile `"$script:ConfigFile`""
+        # Validate paths to prevent command injection
+        $validatedScriptPath = Test-SafePath -Path $ScriptPath -MustExist
+        $validatedConfigPath = Test-SafePath -Path $script:ConfigFile
+
+        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$validatedScriptPath`" -DeepClean -ConfigFile `"$validatedConfigPath`""
 
         $action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument $arguments
-
-        # Monthly trigger
-        $trigger = New-ScheduledTaskTrigger -Daily -At $time
-        $trigger.DaysInterval = 0
 
         # Use CIM to set monthly schedule properly
         $class = Get-CimClass -ClassName MSFT_TaskMonthlyTrigger -Namespace Root/Microsoft/Windows/TaskScheduler
