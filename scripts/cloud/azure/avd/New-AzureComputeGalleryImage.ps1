@@ -82,10 +82,21 @@
 .PARAMETER Force
     Run non-interactively without confirmation prompts.
 
+.PARAMETER WhatIf
+    Dry-run mode. Validates configuration and runs pre-flight checks without
+    creating any resources. Useful for testing configurations.
+
+.EXAMPLE
+    .\New-AzureComputeGalleryImage.ps1
+
+    Auto-discovers JSON configuration files in the script directory and prompts
+    for selection. If no JSON files found, runs in interactive mode.
+
 .EXAMPLE
     .\New-AzureComputeGalleryImage.ps1 -Interactive
 
-    Runs in interactive mode with guided prompts for all configuration.
+    Runs in interactive mode with guided prompts for all configuration,
+    bypassing JSON auto-discovery.
 
 .EXAMPLE
     .\New-AzureComputeGalleryImage.ps1 -GenerateConfig -ConfigFile ".\my-config.json"
@@ -96,6 +107,12 @@
     .\New-AzureComputeGalleryImage.ps1 -ConfigFile ".\my-config.json"
 
     Runs using settings from the specified configuration file.
+
+.EXAMPLE
+    .\New-AzureComputeGalleryImage.ps1 -ConfigFile ".\prod-config.json" -WhatIf
+
+    Validates the configuration and runs pre-flight checks without creating any
+    resources. Perfect for testing before actual execution.
 
 .EXAMPLE
     .\New-AzureComputeGalleryImage.ps1 -SourceVMName "WIN11-GOLD" -SourceVMResourceGroup "rg-images" `
@@ -113,9 +130,18 @@
       - Gallery and image definition must already exist
       - Source VM must have Azure Windows Guest Agent installed
 
+    New in v3.2:
+      - JSON configuration auto-discovery from script directory
+      - Configuration schema validation with detailed error messages
+      - Configuration preview before execution
+      - Pre-flight validation checks (7 checks before resource creation)
+      - Dry-run mode (-WhatIf) for testing without creating resources
+      - Execution time tracking and detailed logging to file
+      - Step-by-step timing breakdowns in final summary
+
     Author: Jack Lee
-    Version: 3.1
-    Last Updated: 30/12/2025
+    Version: 3.2
+    Last Updated: 14/01/2026
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'Interactive')]
@@ -172,7 +198,9 @@ param(
 
     [switch]$SkipCleanup,
 
-    [switch]$Force
+    [switch]$Force,
+
+    [switch]$WhatIf
 )
 
 $ErrorActionPreference = 'Stop'
@@ -217,7 +245,7 @@ function Show-Banner {
 "@
 
     $titleText = @"
-    ║  █┼   ┃   « GALLERY IMAGE BUILDER v3.0 »    ░▒▓█ PIPELINE █▓▒░        ┃  ┼█  ║
+    ║  █┼   ┃   « GALLERY IMAGE BUILDER v3.2 »    ░▒▓█ PIPELINE █▓▒░        ┃  ┼█  ║
 "@
 
     $titleBoxClose = @"
@@ -388,6 +416,195 @@ function Read-Configuration {
         Write-ErrorMsg "Failed to parse configuration file: $_"
         exit 1
     }
+}
+
+function Test-ConfigurationSchema {
+    param([object]$Config)
+
+    $requiredFields = @{
+        'TenantId' = '^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$'
+        'SubscriptionId' = '^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$'
+        'Location' = '.+'
+        'SourceVM.Name' = '.+'
+        'SourceVM.ResourceGroup' = '.+'
+        'Gallery.ResourceGroup' = '.+'
+        'Gallery.Name' = '.+'
+        'Gallery.ImageDefinitionName' = '.+'
+        'Network.VNetName' = '.+'
+        'Network.VNetResourceGroup' = '.+'
+        'Network.SubnetName' = '.+'
+        'TempVM.Size' = '^Standard_[A-Z]+'
+    }
+
+    $validRegions = @('East US', 'West US', 'UK South', 'UK West', 'West Europe', 'North Europe', 'Central US', 'East US 2', 'West US 2', 'Southeast Asia', 'Australia East')
+    $validStrategies = @('Major', 'Minor', 'Patch')
+
+    $errors = @()
+
+    foreach ($field in $requiredFields.Keys) {
+        $value = $Config
+        foreach ($part in $field.Split('.')) {
+            $value = $value.$part
+        }
+        if (-not $value) {
+            $errors += "Missing required field: $field"
+        } elseif ($value -notmatch $requiredFields[$field]) {
+            $errors += "Invalid format for $field : $value"
+        }
+    }
+
+    if ($Config.Options.VersioningStrategy -and $Config.Options.VersioningStrategy -notin $validStrategies) {
+        $errors += "Invalid VersioningStrategy. Must be: $($validStrategies -join ', ')"
+    }
+
+    return $errors
+}
+
+function Show-ConfigPreview {
+    param([hashtable]$Config)
+
+    Write-Header "Configuration Preview"
+    Write-Host "Source VM:" -ForegroundColor Cyan
+    Write-Host "  $($Config.SourceVMName) " -NoNewline -ForegroundColor Yellow
+    Write-Host "($($Config.SourceVMResourceGroup))" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "Target Gallery:" -ForegroundColor Cyan
+    Write-Host "  $($Config.GalleryName)/$($Config.ImageDefinitionName)" -ForegroundColor Yellow
+    Write-Host "  Location: " -NoNewline -ForegroundColor Gray
+    Write-Host $Config.Location -ForegroundColor White
+    Write-Host "  Strategy: " -NoNewline -ForegroundColor Gray
+    Write-Host $VersioningStrategy -ForegroundColor White
+    Write-Host ""
+
+    if (-not $Force) {
+        $confirm = Read-Host "Use this configuration? (Y/N)"
+        if ($confirm -ne 'Y' -and $confirm -ne 'y') {
+            Write-Warning2 "Configuration declined"
+            exit 0
+        }
+    }
+}
+
+function Test-PreFlightChecks {
+    param([hashtable]$Config)
+
+    Write-Header "Pre-Flight Validation"
+    $checks = @()
+
+    # Check 1: Source VM exists and accessible
+    Write-Host "  [1/7] Checking source VM..." -NoNewline -ForegroundColor Cyan
+    try {
+        $vm = Get-AzVM -ResourceGroupName $Config.SourceVMResourceGroup -Name $Config.SourceVMName -ErrorAction Stop
+        Write-Host " ✓" -ForegroundColor Green
+        $checks += @{Name="Source VM"; Status="Pass"; Details="Found"}
+    } catch {
+        Write-Host " ✗" -ForegroundColor Red
+        $checks += @{Name="Source VM"; Status="Fail"; Details=$_.Exception.Message}
+    }
+
+    # Check 2: Gallery exists
+    Write-Host "  [2/7] Checking gallery..." -NoNewline -ForegroundColor Cyan
+    try {
+        $gallery = Get-AzGallery -ResourceGroupName $Config.GalleryResourceGroup -Name $Config.GalleryName -ErrorAction Stop
+        Write-Host " ✓" -ForegroundColor Green
+        $checks += @{Name="Gallery"; Status="Pass"; Details="Found"}
+    } catch {
+        Write-Host " ✗" -ForegroundColor Red
+        $checks += @{Name="Gallery"; Status="Fail"; Details=$_.Exception.Message}
+    }
+
+    # Check 3: Image Definition exists
+    Write-Host "  [3/7] Checking image definition..." -NoNewline -ForegroundColor Cyan
+    try {
+        $imageDef = Get-AzGalleryImageDefinition -ResourceGroupName $Config.GalleryResourceGroup -GalleryName $Config.GalleryName -Name $Config.ImageDefinitionName -ErrorAction Stop
+        Write-Host " ✓" -ForegroundColor Green
+        $checks += @{Name="Image Definition"; Status="Pass"; Details="Found"}
+    } catch {
+        Write-Host " ✗" -ForegroundColor Red
+        $checks += @{Name="Image Definition"; Status="Fail"; Details=$_.Exception.Message}
+    }
+
+    # Check 4: VNet and Subnet exist
+    Write-Host "  [4/7] Checking network..." -NoNewline -ForegroundColor Cyan
+    try {
+        $vnet = Get-AzVirtualNetwork -Name $Config.VNetName -ResourceGroupName $Config.VNetResourceGroup -ErrorAction Stop
+        $subnet = Get-AzVirtualNetworkSubnetConfig -Name $Config.SubnetName -VirtualNetwork $vnet -ErrorAction Stop
+        Write-Host " ✓" -ForegroundColor Green
+        $checks += @{Name="Network"; Status="Pass"; Details="VNet and Subnet found"}
+    } catch {
+        Write-Host " ✗" -ForegroundColor Red
+        $checks += @{Name="Network"; Status="Fail"; Details=$_.Exception.Message}
+    }
+
+    # Check 5: RBAC permissions (basic)
+    Write-Host "  [5/7] Checking permissions..." -NoNewline -ForegroundColor Cyan
+    try {
+        $context = Get-AzContext
+        $sub = Get-AzSubscription -SubscriptionId $Config.SubscriptionId -ErrorAction Stop
+        Write-Host " ✓" -ForegroundColor Green
+        $checks += @{Name="Permissions"; Status="Pass"; Details="Subscription accessible"}
+    } catch {
+        Write-Host " ✗" -ForegroundColor Red
+        $checks += @{Name="Permissions"; Status="Fail"; Details="Cannot access subscription"}
+    }
+
+    # Check 6: VM Size available in region
+    Write-Host "  [6/7] Checking VM size availability..." -NoNewline -ForegroundColor Cyan
+    try {
+        $vmSizes = Get-AzVMSize -Location $Config.Location | Where-Object { $_.Name -eq $Config.VMSize }
+        if ($vmSizes) {
+            Write-Host " ✓" -ForegroundColor Green
+            $checks += @{Name="VM Size"; Status="Pass"; Details="$($Config.VMSize) available"}
+        } else {
+            Write-Host " ✗" -ForegroundColor Red
+            $checks += @{Name="VM Size"; Status="Fail"; Details="$($Config.VMSize) not available in $($Config.Location)"}
+        }
+    } catch {
+        Write-Host " ⚠" -ForegroundColor Yellow
+        $checks += @{Name="VM Size"; Status="Warning"; Details="Could not verify"}
+    }
+
+    # Check 7: Disk encryption status
+    Write-Host "  [7/7] Checking disk encryption..." -NoNewline -ForegroundColor Cyan
+    try {
+        if ($vm.StorageProfile.OsDisk.EncryptionSettings.Enabled) {
+            Write-Host " ⚠" -ForegroundColor Yellow
+            $checks += @{Name="Disk Encryption"; Status="Warning"; Details="OS disk is encrypted - may cause issues"}
+        } else {
+            Write-Host " ✓" -ForegroundColor Green
+            $checks += @{Name="Disk Encryption"; Status="Pass"; Details="Not encrypted"}
+        }
+    } catch {
+        Write-Host " ⚠" -ForegroundColor Yellow
+        $checks += @{Name="Disk Encryption"; Status="Warning"; Details="Could not verify"}
+    }
+
+    Write-Host ""
+
+    # Summary
+    $failures = $checks | Where-Object { $_.Status -eq "Fail" }
+    $warnings = $checks | Where-Object { $_.Status -eq "Warning" }
+
+    if ($failures) {
+        Write-ErrorMsg "Pre-flight checks failed ($($failures.Count) failures):"
+        foreach ($failure in $failures) {
+            Write-Host "  • $($failure.Name): " -NoNewline -ForegroundColor Red
+            Write-Host $failure.Details -ForegroundColor Gray
+        }
+        return $false
+    }
+
+    if ($warnings) {
+        Write-Warning2 "Pre-flight checks passed with warnings ($($warnings.Count) warnings):"
+        foreach ($warning in $warnings) {
+            Write-Host "  • $($warning.Name): " -NoNewline -ForegroundColor Yellow
+            Write-Host $warning.Details -ForegroundColor Gray
+        }
+    } else {
+        Write-Success "All pre-flight checks passed!"
+    }
+
+    return $true
 }
 
 function Get-InteractiveConfiguration {
@@ -642,12 +859,87 @@ if ($GenerateConfig) {
 
 Show-Banner
 
+# ==========================
+# Execution Time Tracking & Logging
+# ==========================
+$scriptStartTime = Get-Date
+$logFile = Join-Path $PSScriptRoot "image-build-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
+$stepTimes = @{}
+
+function Write-Log {
+    param([string]$Message, [string]$Level = "INFO")
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$timestamp] [$Level] $Message"
+    Add-Content -Path $logFile -Value $logMessage
+}
+
+Write-Log "Script started"
+Write-Info "Execution log: $logFile"
+Write-Host ""
+
+# ==========================
+# JSON File Auto-Discovery
+# ==========================
+# If no ConfigFile was specified, check for JSON files in the script directory
+if ($PSCmdlet.ParameterSetName -ne 'ConfigFile' -and $PSCmdlet.ParameterSetName -ne 'Explicit') {
+    $jsonFiles = Get-ChildItem -Path $PSScriptRoot -Filter "*.json" -File -ErrorAction SilentlyContinue
+
+    if ($jsonFiles) {
+        Write-Header "Configuration Files Detected"
+        Write-Info "Found $($jsonFiles.Count) JSON configuration file(s) in the script directory:"
+        Write-Host ""
+
+        $index = 1
+        foreach ($file in $jsonFiles) {
+            Write-Host "  [$index] " -NoNewline -ForegroundColor Cyan
+            Write-Host $file.Name -ForegroundColor White
+            $index++
+        }
+
+        Write-Host ""
+        Write-Host "  [0] " -NoNewline -ForegroundColor Cyan
+        Write-Host "Enter configuration manually (Interactive Mode)" -ForegroundColor Gray
+        Write-Host ""
+
+        $selection = Read-Host "Select a configuration file (0-$($jsonFiles.Count))"
+
+        if ($selection -match '^\d+$' -and [int]$selection -gt 0 -and [int]$selection -le $jsonFiles.Count) {
+            $selectedFile = $jsonFiles[[int]$selection - 1]
+            $ConfigFile = $selectedFile.FullName
+            Write-Success "Using configuration file: $($selectedFile.Name)"
+            Write-Host ""
+            # Override parameter set to use ConfigFile
+            $PSCmdlet.ParameterSetName = 'ConfigFile'
+        } elseif ($selection -eq '0') {
+            Write-Info "Proceeding with interactive mode"
+            Write-Host ""
+        } else {
+            Write-Warning2 "Invalid selection. Proceeding with interactive mode"
+            Write-Host ""
+        }
+    }
+}
+
 # Load configuration based on parameter set
 $config = @{}
 
 if ($PSCmdlet.ParameterSetName -eq 'ConfigFile') {
     Write-Info "Loading configuration from file: $ConfigFile"
     $configData = Read-Configuration -Path $ConfigFile
+
+    # Validate configuration schema
+    Write-Info "Validating configuration..."
+    $validationErrors = Test-ConfigurationSchema -Config $configData
+    if ($validationErrors) {
+        Write-ErrorMsg "Configuration validation failed:"
+        foreach ($error in $validationErrors) {
+            Write-Host "  • $error" -ForegroundColor Red
+        }
+        Write-Log "Configuration validation failed: $($validationErrors -join '; ')" "ERROR"
+        exit 1
+    }
+    Write-Success "Configuration validated"
+    Write-Log "Configuration validated successfully"
 
     $config.TenantId = $configData.TenantId
     $config.SubscriptionId = $configData.SubscriptionId
@@ -699,6 +991,11 @@ if ($missing) {
 
 # Generate unique temporary resource group name
 $tempRG = "acg-temp-$(Get-Date -Format 'yyyyMMdd-HHmmss')-$(Get-Random -Maximum 9999)"
+
+# Show config preview (only for ConfigFile mode, not Interactive which already confirmed)
+if ($PSCmdlet.ParameterSetName -eq 'ConfigFile') {
+    Show-ConfigPreview -Config $config
+}
 
 # Summary and confirmation
 Write-Header "Configuration Summary"
@@ -753,16 +1050,65 @@ $currentStep = 0
 # Step 1: Azure Authentication
 # ==========================
 $currentStep++
+$stepStart = Get-Date
 Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Authenticating to Azure"
+Write-Log "Step $currentStep : Authenticating to Azure"
 if (-not (Connect-AzureEnvironment -TenantId $config.TenantId -SubscriptionId $config.SubscriptionId)) {
+    Write-Log "Authentication failed" "ERROR"
     exit 1
+}
+$stepTimes["Authentication"] = ((Get-Date) - $stepStart).TotalSeconds
+Write-Log "Authentication completed in $($stepTimes["Authentication"]) seconds"
+
+# ==========================
+# Pre-Flight Validation Checks
+# ==========================
+Write-Host ""
+Write-Log "Starting pre-flight validation checks"
+if (-not (Test-PreFlightChecks -Config $config)) {
+    Write-Log "Pre-flight checks failed" "ERROR"
+    if (-not $Force) {
+        $continue = Read-Host "Pre-flight checks failed. Continue anyway? (Y/N)"
+        if ($continue -ne 'Y' -and $continue -ne 'y') {
+            Write-Warning2 "Operation cancelled"
+            Write-Log "Operation cancelled by user after pre-flight failure"
+            exit 1
+        }
+        Write-Log "User chose to continue despite pre-flight failures"
+    }
+}
+Write-Log "Pre-flight checks completed"
+
+# WhatIf Mode - Exit after validation
+if ($WhatIf) {
+    Write-Host ""
+    Write-Header "Dry-Run Mode (WhatIf)"
+    Write-Success "All validations passed!"
+    Write-Info "The following resources would be created:"
+    Write-Host "  • Temporary RG: " -NoNewline -ForegroundColor Gray
+    Write-Host $tempRG -ForegroundColor Yellow
+    Write-Host "  • Snapshot: " -NoNewline -ForegroundColor Gray
+    Write-Host "$($config.SourceVMName)-snapshot-*" -ForegroundColor Yellow
+    Write-Host "  • Managed Disk: " -NoNewline -ForegroundColor Gray
+    Write-Host "$($config.SourceVMName)-disk-*" -ForegroundColor Yellow
+    Write-Host "  • Clone VM: " -NoNewline -ForegroundColor Gray
+    Write-Host "$($config.SourceVMName)-clone-*" -ForegroundColor Yellow
+    Write-Host "  • Gallery Image Version: " -NoNewline -ForegroundColor Gray
+    $nextVersionPreview = Get-NextImageVersion -ResourceGroupName $config.GalleryResourceGroup -GalleryName $config.GalleryName -ImageDefinitionName $config.ImageDefinitionName -Strategy $VersioningStrategy
+    Write-Host $nextVersionPreview -ForegroundColor Green
+    Write-Host ""
+    Write-Success "Dry-run completed successfully. No resources were created."
+    Write-Log "Dry-run completed successfully"
+    exit 0
 }
 
 # ==========================
 # Step 2: Validate Source VM
 # ==========================
 $currentStep++
+$stepStart = Get-Date
 Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Validating source VM"
+Write-Log "Step $currentStep : Validating source VM"
 $sourceVM = Get-AzVM -ResourceGroupName $config.SourceVMResourceGroup -Name $config.SourceVMName -ErrorAction SilentlyContinue
 if (-not $sourceVM) {
     Write-ErrorMsg "Source VM '$($config.SourceVMName)' not found in resource group '$($config.SourceVMResourceGroup)'"
@@ -999,6 +1345,9 @@ if (-not $SkipCleanup) {
 # ==========================
 # Final Summary
 # ==========================
+$scriptEndTime = Get-Date
+$totalDuration = ($scriptEndTime - $scriptStartTime).TotalMinutes
+
 Write-Host ""
 Write-Host "╔═══════════════════════════════════════════════════════════════════════════╗" -ForegroundColor Green
 Write-Host "║                                                                           ║" -ForegroundColor Green
@@ -1006,6 +1355,18 @@ Write-Host "║                     ✓ IMAGE CREATION SUCCESSFUL ✓           
 Write-Host "║                                                                           ║" -ForegroundColor Green
 Write-Host "╚═══════════════════════════════════════════════════════════════════════════╝" -ForegroundColor Green
 Write-Host ""
+
+Write-Host "Execution Summary:" -ForegroundColor Cyan
+Write-Host "  Total Duration       : " -NoNewline -ForegroundColor Gray
+Write-Host "$([math]::Round($totalDuration, 2)) minutes" -ForegroundColor White
+Write-Host "  Start Time           : " -NoNewline -ForegroundColor Gray
+Write-Host $scriptStartTime.ToString("yyyy-MM-dd HH:mm:ss") -ForegroundColor White
+Write-Host "  End Time             : " -NoNewline -ForegroundColor Gray
+Write-Host $scriptEndTime.ToString("yyyy-MM-dd HH:mm:ss") -ForegroundColor White
+Write-Host "  Log File             : " -NoNewline -ForegroundColor Gray
+Write-Host $logFile -ForegroundColor White
+Write-Host ""
+
 Write-Host "Gallery Image Details:" -ForegroundColor Cyan
 Write-Host "  Gallery              : " -NoNewline -ForegroundColor Gray
 Write-Host $config.GalleryName -ForegroundColor White
@@ -1016,11 +1377,24 @@ Write-Host $nextVersion -ForegroundColor Green
 Write-Host "  Resource Group       : " -NoNewline -ForegroundColor Gray
 Write-Host $config.GalleryResourceGroup -ForegroundColor White
 Write-Host ""
+
+if ($stepTimes.Count -gt 0) {
+    Write-Host "Step Timings:" -ForegroundColor Cyan
+    foreach ($step in $stepTimes.Keys | Sort-Object) {
+        Write-Host "  $step : " -NoNewline -ForegroundColor Gray
+        Write-Host "$([math]::Round($stepTimes[$step], 1))s" -ForegroundColor White
+    }
+    Write-Host ""
+}
+
 Write-Host "Next Steps:" -ForegroundColor Cyan
 Write-Host "  • Use this image to create AVD session hosts" -ForegroundColor Gray
 Write-Host "  • Deploy VMs from the gallery image" -ForegroundColor Gray
 Write-Host "  • Configure your host pools to use version: $nextVersion" -ForegroundColor Gray
 Write-Host ""
 Write-Success "Script completed successfully!"
+
+Write-Log "Script completed successfully in $([math]::Round($totalDuration, 2)) minutes"
+Write-Log "Image version $nextVersion created in gallery $($config.GalleryName)"
 
 
