@@ -147,6 +147,15 @@
 [CmdletBinding(DefaultParameterSetName = 'Interactive')]
 param(
     [Parameter(ParameterSetName = 'ConfigFile', Mandatory)]
+    [ValidateScript({
+        if (-not (Test-Path $_ -PathType Leaf)) {
+            throw "Configuration file not found: $_"
+        }
+        if ($_ -notmatch '\.json$') {
+            throw "Configuration file must be a JSON file: $_"
+        }
+        return $true
+    })]
     [string]$ConfigFile,
 
     [Parameter(ParameterSetName = 'GenerateConfig')]
@@ -417,7 +426,7 @@ function Read-Configuration {
         $config = Get-Content $Path -Raw | ConvertFrom-Json
         return $config
     } catch {
-        Write-ErrorMsg "Failed to parse configuration file: $_"
+        Write-ErrorMsg "Failed to parse configuration file: $($_.Exception.Message)"
         exit 1
     }
 }
@@ -437,10 +446,9 @@ function Test-ConfigurationSchema {
         'Network.VNetName' = '.+'
         'Network.VNetResourceGroup' = '.+'
         'Network.SubnetName' = '.+'
-        'TempVM.Size' = '^Standard_[A-Z]+'
+        'TempVM.Size' = '^Standard_[A-Za-z0-9_]+'
     }
 
-    $validRegions = @('East US', 'West US', 'UK South', 'UK West', 'West Europe', 'North Europe', 'Central US', 'East US 2', 'West US 2', 'Southeast Asia', 'Australia East')
     $validStrategies = @('Major', 'Minor', 'Patch')
 
     $errors = @()
@@ -736,7 +744,7 @@ function Connect-AzureEnvironment {
         Write-Host $context.Tenant.Id -ForegroundColor White
         return $true
     } catch {
-        Write-ErrorMsg "Failed to authenticate to Azure: $_"
+        Write-ErrorMsg "Failed to authenticate to Azure: $($_.Exception.Message)"
         return $false
     }
 }
@@ -1323,7 +1331,7 @@ try {
     Invoke-AzVMRunCommand -ResourceGroupName $tempRG -Name $cloneVMName -CommandId 'RunPowerShellScript' -ScriptString $sysprepScript -ErrorAction Stop | Out-Null
     Write-Success "Sysprep completed successfully"
 } catch {
-    Write-ErrorMsg "Sysprep failed: $_"
+    Write-ErrorMsg "Sysprep failed: $($_.Exception.Message)"
     if (-not $SkipCleanup) {
         Write-Info "Cleaning up temporary resources..."
         Remove-AzResourceGroup -Name $tempRG -Force | Out-Null
@@ -1381,7 +1389,7 @@ try {
     $stepTimes["Publish to Gallery"] = ((Get-Date) - $stepStart).TotalSeconds
     Write-Log "Step $currentStep completed in $($stepTimes["Publish to Gallery"]) seconds"
 } catch {
-    Write-ErrorMsg "Failed to create gallery image version: $_"
+    Write-ErrorMsg "Failed to create gallery image version: $($_.Exception.Message)"
     if (-not $SkipCleanup) {
         Write-Info "Cleaning up temporary resources..."
         Remove-AzResourceGroup -Name $tempRG -Force | Out-Null
