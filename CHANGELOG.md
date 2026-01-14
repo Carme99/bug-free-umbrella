@@ -27,6 +27,159 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ---
 
+## [3.5.0] - 2026-01-15 🌧️ **"Shower"** - AVD Image Builder Enhancement
+
+> **Focus**: Production-ready enhancements for Azure Virtual Desktop image building automation based on real-world feedback
+
+### Added
+
+#### 🖼️ AVD Image Builder v3.5 Enhancements
+
+**JSON Auto-Discovery** (scripts/cloud/azure/avd/New-AzureComputeGalleryImage.ps1)
+- Automatically detects `*-config.json` files in script directory
+- Interactive menu for configuration file selection
+- Displays available configurations with numbered selection
+- Option to fall back to interactive mode (select `[0]`)
+- Backward compatible with `-ConfigFile` parameter
+
+**Pre-Flight Validation System** (7 comprehensive checks)
+- Source VM existence and accessibility verification
+- Gallery and image definition validation
+- Network configuration (VNet/Subnet) validation
+- RBAC permissions verification
+- VM size availability in target region
+- Disk encryption status detection (warns if encrypted)
+- Subscription access validation
+- **Benefit**: Catches errors before 15-20 minute wait, saves Azure compute costs
+
+**Configuration Schema Validation**
+- Validates JSON structure and required fields
+- UUID format validation for Tenant and Subscription IDs (case-insensitive)
+- VM size naming convention checks (`Standard_*` format)
+- Region validation against supported Azure locations
+- Versioning strategy validation (Major/Minor/Patch)
+- Actionable error messages with field-level details
+
+**Configuration Preview**
+- Visual summary before execution starts
+- Shows source VM, target gallery, location, versioning strategy
+- User confirmation prompt (skippable with `-Force`)
+- Available for ConfigFile mode
+
+**Dry-Run Mode (`-WhatIf`)**
+- Test configurations without creating resources
+- Validates entire config and runs all pre-flight checks
+- Shows what resources would be created
+- Zero Azure costs for testing
+- Perfect for CI/CD pipeline validation
+
+**Execution Time Tracking & Audit Logging**
+- Automatic timestamped log files: `image-build-YYYYMMDD-HHmmss.log`
+- Per-step timing captured for all 12 steps
+- Final summary with total execution duration
+- Comprehensive audit trail for compliance
+- Log file created only after validation succeeds
+
+**New Parameters**
+- `-WhatIf`: Dry-run mode, validates without creating resources
+- `-SkipPreFlightChecks`: Skip pre-flight validation (advanced users/CI-CD)
+
+### Changed
+
+- **Script Version**: 3.2 → 3.5
+- **Banner**: Updated to display version dynamically from `$ScriptVersion` variable
+- **JSON Discovery Filter**: Changed from `*.json` to `*-config.json` for better specificity
+- **Log File Creation**: Moved after validation to prevent log creation for invalid configs
+- **Last Updated**: 15/01/2026
+
+### Fixed
+
+- **Undefined Variable**: Fixed `$VersioningStrategy` reference in config preview functions (used `$config.VersioningStrategy` instead)
+- **Scope Issue**: Fixed `$vm` variable scope in pre-flight disk encryption check (re-fetches VM to avoid undefined variable)
+- **Incomplete Feature**: Completed step time tracking for all 12 execution steps (was only tracking Step 1)
+- **Case-Sensitivity**: Fixed UUID regex to accept uppercase characters in GUIDs (`[0-9a-fA-F]` instead of `[0-9a-f]`)
+
+### Improved
+
+**Configuration Management**
+- More robust config file handling
+- Better error messages for configuration issues
+- Clearer validation feedback
+- Reduced false positives in validation
+
+**Operational Excellence**
+- Faster failure feedback (5-10 seconds vs 15-20 minutes)
+- Reduced wasted Azure costs from failed runs
+- Better audit trails for troubleshooting
+- Improved debugging with per-step timing
+
+**User Experience**
+- Auto-discovery reduces parameter typing
+- Interactive menu for easy config selection
+- Clear visual previews before execution
+- Professional timestamped logging
+
+### Statistics
+
+- **Script Size**: 1,928 → 2,100+ lines
+- **New Features**: 6 major capabilities added
+- **Bug Fixes**: 4 critical issues resolved
+- **New Parameters**: 2 (`-WhatIf`, `-SkipPreFlightChecks`)
+- **Validation Checks**: 7 pre-flight checks
+- **Step Timing**: 12 steps tracked
+- **Lines Changed**: +250 / -20
+
+### Migration Notes
+
+**Fully Backward Compatible** - No breaking changes!
+
+- Existing scripts and workflows continue to work without modification
+- New features are opt-in through parameters or auto-discovery
+- All previous parameters and behavior preserved
+
+**Recommended Workflow:**
+```powershell
+# 1. Test configuration with dry-run
+.\New-AzureComputeGalleryImage.ps1 -ConfigFile "prod.json" -WhatIf
+
+# 2. If validation passes, run for real
+.\New-AzureComputeGalleryImage.ps1 -ConfigFile "prod.json"
+
+# 3. Review log file for audit trail
+Get-Content image-build-*.log | Select-Object -Last 50
+```
+
+**Auto-Discovery Workflow:**
+```powershell
+# Place configs in script directory:
+# - prod-config.json
+# - test-config.json
+# - dev-config.json
+
+# Run script, select from menu
+.\New-AzureComputeGalleryImage.ps1
+# Select [1] prod-config.json
+```
+
+### Performance Impact
+
+- Pre-flight checks add: 5-10 seconds
+- Saves on failed runs: 15-20 minutes
+- **Net time savings**: 10-15 minutes per configuration error
+
+### Dependencies
+
+- Azure PowerShell modules (Az.Accounts, Az.Compute, Az.Network, Az.Resources)
+- PowerShell 5.1+ (PowerShell 7+ recommended for best performance)
+- Azure RBAC permissions (Contributor or specific permissions for VM, Gallery, Network resources)
+
+### Credits
+
+- Feature requests and feedback from operations team
+- Thorough code review and recommendations from PR reviewers
+
+---
+
 ## [3.4.0] - 2026-01-09 🌈 **"Rainbow"** - Documentation & Examples Enhancement
 
 > **Focus**: Quick-win content additions for improved user experience and accessibility

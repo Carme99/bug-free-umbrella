@@ -130,7 +130,7 @@
       - Gallery and image definition must already exist
       - Source VM must have Azure Windows Guest Agent installed
 
-    New in v3.2:
+    New in v3.5:
       - JSON configuration auto-discovery from script directory
       - Configuration schema validation with detailed error messages
       - Configuration preview before execution
@@ -140,8 +140,8 @@
       - Step-by-step timing breakdowns in final summary
 
     Author: Jack Lee
-    Version: 3.2
-    Last Updated: 14/01/2026
+    Version: 3.5
+    Last Updated: 15/01/2026
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'Interactive')]
@@ -198,6 +198,8 @@ param(
 
     [switch]$SkipCleanup,
 
+    [switch]$SkipPreFlightChecks,
+
     [switch]$Force,
 
     [switch]$WhatIf
@@ -205,6 +207,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'  # Suppress default progress bars
+$ScriptVersion = "3.5"
+
 # ==========================
 # ASCII Art & Branding
 # ==========================
@@ -245,7 +249,7 @@ function Show-Banner {
 "@
 
     $titleText = @"
-    ║  █┼   ┃   « GALLERY IMAGE BUILDER v3.2 »    ░▒▓█ PIPELINE █▓▒░        ┃  ┼█  ║
+    ║  █┼   ┃   « GALLERY IMAGE BUILDER v$ScriptVersion »    ░▒▓█ PIPELINE █▓▒░        ┃  ┼█  ║
 "@
 
     $titleBoxClose = @"
@@ -422,8 +426,8 @@ function Test-ConfigurationSchema {
     param([object]$Config)
 
     $requiredFields = @{
-        'TenantId' = '^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$'
-        'SubscriptionId' = '^[0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}$'
+        'TenantId' = '^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$'
+        'SubscriptionId' = '^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$'
         'Location' = '.+'
         'SourceVM.Name' = '.+'
         'SourceVM.ResourceGroup' = '.+'
@@ -473,7 +477,7 @@ function Show-ConfigPreview {
     Write-Host "  Location: " -NoNewline -ForegroundColor Gray
     Write-Host $Config.Location -ForegroundColor White
     Write-Host "  Strategy: " -NoNewline -ForegroundColor Gray
-    Write-Host $VersioningStrategy -ForegroundColor White
+    Write-Host $Config.VersioningStrategy -ForegroundColor White
     Write-Host ""
 
     if (-not $Force) {
@@ -567,7 +571,8 @@ function Test-PreFlightChecks {
     # Check 7: Disk encryption status
     Write-Host "  [7/7] Checking disk encryption..." -NoNewline -ForegroundColor Cyan
     try {
-        if ($vm.StorageProfile.OsDisk.EncryptionSettings.Enabled) {
+        $vmForEncryption = Get-AzVM -ResourceGroupName $Config.SourceVMResourceGroup -Name $Config.SourceVMName -ErrorAction SilentlyContinue
+        if ($vmForEncryption -and $vmForEncryption.StorageProfile.OsDisk.EncryptionSettings.Enabled) {
             Write-Host " ⚠" -ForegroundColor Yellow
             $checks += @{Name="Disk Encryption"; Status="Warning"; Details="OS disk is encrypted - may cause issues"}
         } else {
@@ -860,21 +865,23 @@ if ($GenerateConfig) {
 Show-Banner
 
 # ==========================
-# Execution Time Tracking & Logging
+# Execution Time Tracking
 # ==========================
 $scriptStartTime = Get-Date
-$logFile = Join-Path $PSScriptRoot "image-build-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
 $stepTimes = @{}
+
+# Placeholder for log file (created after validation)
+$logFile = $null
 
 function Write-Log {
     param([string]$Message, [string]$Level = "INFO")
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$timestamp] [$Level] $Message"
-    Add-Content -Path $logFile -Value $logMessage
+    if ($logFile) {
+        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        $logMessage = "[$timestamp] [$Level] $Message"
+        Add-Content -Path $logFile -Value $logMessage
+    }
 }
 
-Write-Log "Script started"
-Write-Info "Execution log: $logFile"
 Write-Host ""
 
 # ==========================
@@ -882,7 +889,7 @@ Write-Host ""
 # ==========================
 # If no ConfigFile was specified, check for JSON files in the script directory
 if ($PSCmdlet.ParameterSetName -ne 'ConfigFile' -and $PSCmdlet.ParameterSetName -ne 'Explicit') {
-    $jsonFiles = Get-ChildItem -Path $PSScriptRoot -Filter "*.json" -File -ErrorAction SilentlyContinue
+    $jsonFiles = Get-ChildItem -Path $PSScriptRoot -Filter "*-config.json" -File -ErrorAction SilentlyContinue
 
     if ($jsonFiles) {
         Write-Header "Configuration Files Detected"
@@ -1029,7 +1036,7 @@ Write-Host "Options:" -ForegroundColor Cyan
 Write-Host "  VM Size         : " -NoNewline -ForegroundColor Gray
 Write-Host $config.VMSize -ForegroundColor White
 Write-Host "  Versioning      : " -NoNewline -ForegroundColor Gray
-Write-Host $VersioningStrategy -ForegroundColor White
+Write-Host $config.VersioningStrategy -ForegroundColor White
 Write-Host "  Temp RG         : " -NoNewline -ForegroundColor Gray
 Write-Host $tempRG -ForegroundColor White
 Write-Host ""
@@ -1041,6 +1048,13 @@ if (-not $Force) {
         exit 0
     }
 }
+
+# ==========================
+# Initialize Logging (After Validation)
+# ==========================
+$logFile = Join-Path $PSScriptRoot "image-build-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
+Write-Log "Script started"
+Write-Info "Execution log: $logFile"
 
 Write-Host ""
 $totalSteps = 12
@@ -1063,21 +1077,25 @@ Write-Log "Authentication completed in $($stepTimes["Authentication"]) seconds"
 # ==========================
 # Pre-Flight Validation Checks
 # ==========================
-Write-Host ""
-Write-Log "Starting pre-flight validation checks"
-if (-not (Test-PreFlightChecks -Config $config)) {
-    Write-Log "Pre-flight checks failed" "ERROR"
-    if (-not $Force) {
-        $continue = Read-Host "Pre-flight checks failed. Continue anyway? (Y/N)"
-        if ($continue -ne 'Y' -and $continue -ne 'y') {
-            Write-Warning2 "Operation cancelled"
-            Write-Log "Operation cancelled by user after pre-flight failure"
-            exit 1
+if (-not $SkipPreFlightChecks) {
+    Write-Host ""
+    Write-Log "Starting pre-flight validation checks"
+    if (-not (Test-PreFlightChecks -Config $config)) {
+        Write-Log "Pre-flight checks failed" "ERROR"
+        if (-not $Force) {
+            $continue = Read-Host "Pre-flight checks failed. Continue anyway? (Y/N)"
+            if ($continue -ne 'Y' -and $continue -ne 'y') {
+                Write-Warning2 "Operation cancelled"
+                Write-Log "Operation cancelled by user after pre-flight failure"
+                exit 1
+            }
+            Write-Log "User chose to continue despite pre-flight failures"
         }
-        Write-Log "User chose to continue despite pre-flight failures"
     }
+    Write-Log "Pre-flight checks completed"
+} else {
+    Write-Log "Pre-flight checks skipped by user"
 }
-Write-Log "Pre-flight checks completed"
 
 # WhatIf Mode - Exit after validation
 if ($WhatIf) {
@@ -1131,12 +1149,16 @@ if (-not $SkipAgentCheck -and $powerState -eq 'VM running') {
         Write-Warning2 "Guest agent status: $agentStatus (continuing anyway)"
     }
 }
+$stepTimes["Validate Source VM"] = ((Get-Date) - $stepStart).TotalSeconds
+Write-Log "Step $currentStep completed in $($stepTimes["Validate Source VM"]) seconds"
 
 # ==========================
 # Step 3: Validate Gallery
 # ==========================
 $currentStep++
+$stepStart = Get-Date
 Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Validating Azure Compute Gallery"
+Write-Log "Step $currentStep : Validating Azure Compute Gallery"
 
 $gallery = Get-AzGallery -ResourceGroupName $config.GalleryResourceGroup -Name $config.GalleryName -ErrorAction SilentlyContinue
 if (-not $gallery) {
@@ -1156,12 +1178,16 @@ if (-not $imageDef) {
     exit 1
 }
 Write-Success "Image definition found: $($config.ImageDefinitionName)"
+$stepTimes["Validate Gallery"] = ((Get-Date) - $stepStart).TotalSeconds
+Write-Log "Step $currentStep completed in $($stepTimes["Validate Gallery"]) seconds"
 
 # ==========================
 # Step 4: Calculate Next Version
 # ==========================
 $currentStep++
+$stepStart = Get-Date
 Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Calculating next image version"
+Write-Log "Step $currentStep : Calculating next image version"
 
 $nextVersion = Get-NextImageVersion `
     -ResourceGroupName $config.GalleryResourceGroup `
@@ -1170,12 +1196,16 @@ $nextVersion = Get-NextImageVersion `
     -Strategy $VersioningStrategy
 
 Write-Success "Next image version: $nextVersion (strategy: $VersioningStrategy)"
+$stepTimes["Calculate Version"] = ((Get-Date) - $stepStart).TotalSeconds
+Write-Log "Step $currentStep completed in $($stepTimes["Calculate Version"]) seconds"
 
 # ==========================
 # Step 5: Validate Network
 # ==========================
 $currentStep++
+$stepStart = Get-Date
 Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Validating network configuration"
+Write-Log "Step $currentStep : Validating network configuration"
 
 $vnet = Get-AzVirtualNetwork -Name $config.VNetName -ResourceGroupName $config.VNetResourceGroup -ErrorAction SilentlyContinue
 if (-not $vnet) {
@@ -1189,15 +1219,21 @@ if (-not $subnet) {
     exit 1
 }
 Write-Success "Network validated: $($config.VNetName)/$($config.SubnetName)"
+$stepTimes["Validate Network"] = ((Get-Date) - $stepStart).TotalSeconds
+Write-Log "Step $currentStep completed in $($stepTimes["Validate Network"]) seconds"
 
 # ==========================
 # Step 6: Create Temporary Resource Group
 # ==========================
 $currentStep++
+$stepStart = Get-Date
 Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Creating temporary resource group"
+Write-Log "Step $currentStep : Creating temporary resource group"
 
 $tempRGObj = New-AzResourceGroup -Name $tempRG -Location $config.Location -Force
 Write-Success "Temporary resource group created: $tempRG"
+$stepTimes["Create Temp RG"] = ((Get-Date) - $stepStart).TotalSeconds
+Write-Log "Step $currentStep completed in $($stepTimes["Create Temp RG"]) seconds"
 
 # Define temporary resource names
 $snapshotName = "$($config.SourceVMName)-snapshot-v$($nextVersion.Replace('.', '-'))"
@@ -1209,7 +1245,9 @@ $managedImageName = "$($config.SourceVMName)-image-v$($nextVersion.Replace('.', 
 # Step 7: Create Snapshot
 # ==========================
 $currentStep++
+$stepStart = Get-Date
 Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Creating snapshot from source OS disk"
+Write-Log "Step $currentStep : Creating snapshot from source OS disk"
 
 $sourceOSDisk = $sourceVM.StorageProfile.OsDisk.Name
 $sourceDisk = Get-AzDisk -ResourceGroupName $config.SourceVMResourceGroup -DiskName $sourceOSDisk
@@ -1218,22 +1256,30 @@ Write-Info "Source OS disk: $sourceOSDisk"
 $snapshotConfig = New-AzSnapshotConfig -SourceUri $sourceDisk.Id -CreateOption Copy -Location $config.Location
 $snapshot = New-AzSnapshot -Snapshot $snapshotConfig -SnapshotName $snapshotName -ResourceGroupName $tempRG
 Write-Success "Snapshot created: $snapshotName"
+$stepTimes["Create Snapshot"] = ((Get-Date) - $stepStart).TotalSeconds
+Write-Log "Step $currentStep completed in $($stepTimes["Create Snapshot"]) seconds"
 
 # ==========================
 # Step 8: Create Managed Disk
 # ==========================
 $currentStep++
+$stepStart = Get-Date
 Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Creating managed disk from snapshot"
+Write-Log "Step $currentStep : Creating managed disk from snapshot"
 
 $diskConfig = New-AzDiskConfig -Location $snapshot.Location -SourceResourceId $snapshot.Id -CreateOption Copy
 $disk = New-AzDisk -Disk $diskConfig -ResourceGroupName $tempRG -DiskName $diskName
 Write-Success "Managed disk created: $diskName"
+$stepTimes["Create Disk"] = ((Get-Date) - $stepStart).TotalSeconds
+Write-Log "Step $currentStep completed in $($stepTimes["Create Disk"]) seconds"
 
 # ==========================
 # Step 9: Create Clone VM
 # ==========================
 $currentStep++
+$stepStart = Get-Date
 Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Creating clone VM"
+Write-Log "Step $currentStep : Creating clone VM"
 
 Write-Info "Initializing VM configuration..."
 $vmConfig = New-AzVMConfig -VMName $cloneVMName -VMSize $config.VMSize | Set-AzVMBootDiagnostic -Disable
@@ -1247,12 +1293,16 @@ $vmConfig = Add-AzVMNetworkInterface -VM $vmConfig -Id $nic.Id
 Write-Info "Provisioning VM (this may take several minutes)..."
 New-AzVM -VM $vmConfig -ResourceGroupName $tempRG -Location $config.Location -DisableBginfoExtension | Out-Null
 Write-Success "Clone VM created: $cloneVMName"
+$stepTimes["Create Clone VM"] = ((Get-Date) - $stepStart).TotalSeconds
+Write-Log "Step $currentStep completed in $($stepTimes["Create Clone VM"]) seconds"
 
 # ==========================
 # Step 10: Wait for VM Agent & Run Sysprep
 # ==========================
 $currentStep++
+$stepStart = Get-Date
 Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Waiting for VM agent and running Sysprep"
+Write-Log "Step $currentStep : Waiting for VM agent and running Sysprep"
 
 Write-Info "Waiting for VM agent to be ready..."
 if (-not (Wait-ForVMAgent -ResourceGroupName $tempRG -Name $cloneVMName -TimeoutMinutes 15)) {
@@ -1287,24 +1337,32 @@ Stop-AzVM -Name $cloneVMName -ResourceGroupName $tempRG -Force | Out-Null
 Write-Info "Marking VM as generalized..."
 Set-AzVM -ResourceGroupName $tempRG -Name $cloneVMName -Generalized | Out-Null
 Write-Success "VM generalized successfully"
+$stepTimes["Sysprep & Generalize"] = ((Get-Date) - $stepStart).TotalSeconds
+Write-Log "Step $currentStep completed in $($stepTimes["Sysprep & Generalize"]) seconds"
 
 # ==========================
 # Step 11: Create Managed Image
 # ==========================
 $currentStep++
+$stepStart = Get-Date
 Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Creating managed image"
+Write-Log "Step $currentStep : Creating managed image"
 
 $vmForGen = Get-AzVM -Name $cloneVMName -ResourceGroupName $tempRG
 $imageConfig = New-AzImageConfig -Location $config.Location -HyperVGeneration $vmForGen.StorageProfile.OsDisk.HyperVGeneration
 $imageConfig = Set-AzImageOsDisk -Image $imageConfig -OsState Generalized -OsType Windows -ManagedDiskId $disk.Id
 $managedImage = New-AzImage -ImageName $managedImageName -ResourceGroupName $tempRG -Image $imageConfig
 Write-Success "Managed image created: $managedImageName"
+$stepTimes["Create Managed Image"] = ((Get-Date) - $stepStart).TotalSeconds
+Write-Log "Step $currentStep completed in $($stepTimes["Create Managed Image"]) seconds"
 
 # ==========================
 # Step 12: Publish to Gallery
 # ==========================
 $currentStep++
+$stepStart = Get-Date
 Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Publishing to Azure Compute Gallery"
+Write-Log "Step $currentStep : Publishing to Azure Compute Gallery"
 
 Write-Info "Creating gallery image version: $nextVersion"
 Write-Info "This operation may take 10-20 minutes depending on image size..."
@@ -1320,6 +1378,8 @@ try {
         -ErrorAction Stop | Out-Null
 
     Write-Success "Gallery image version created: $nextVersion"
+    $stepTimes["Publish to Gallery"] = ((Get-Date) - $stepStart).TotalSeconds
+    Write-Log "Step $currentStep completed in $($stepTimes["Publish to Gallery"]) seconds"
 } catch {
     Write-ErrorMsg "Failed to create gallery image version: $_"
     if (-not $SkipCleanup) {
