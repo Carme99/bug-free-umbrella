@@ -76,6 +76,10 @@
 .PARAMETER SkipAgentCheck
     Skip the pre-flight check of the source VM's guest agent status.
 
+.PARAMETER SkipPreFlightChecks
+    Skip all pre-flight validation checks. Useful for advanced users or CI/CD
+    pipelines where validation is performed separately.
+
 .PARAMETER SkipCleanup
     Keep temporary resources for debugging. Not recommended for production.
 
@@ -473,7 +477,10 @@ function Test-ConfigurationSchema {
 }
 
 function Show-ConfigPreview {
-    param([hashtable]$Config)
+    param(
+        [hashtable]$Config,
+        [string]$Strategy
+    )
 
     Write-Header "Configuration Preview"
     Write-Host "Source VM:" -ForegroundColor Cyan
@@ -485,7 +492,7 @@ function Show-ConfigPreview {
     Write-Host "  Location: " -NoNewline -ForegroundColor Gray
     Write-Host $Config.Location -ForegroundColor White
     Write-Host "  Strategy: " -NoNewline -ForegroundColor Gray
-    Write-Host $Config.VersioningStrategy -ForegroundColor White
+    Write-Host $Strategy -ForegroundColor White
     Write-Host ""
 
     if (-not $Force) {
@@ -878,7 +885,7 @@ Show-Banner
 $scriptStartTime = Get-Date
 $stepTimes = @{}
 
-# Placeholder for log file (created after validation)
+# Placeholder for log file (created after authentication)
 $logFile = $null
 
 function Write-Log {
@@ -972,6 +979,9 @@ if ($PSCmdlet.ParameterSetName -eq 'ConfigFile') {
     $SkipAgentCheck = $configData.Options.SkipAgentCheck
     $SkipCleanup = $configData.Options.SkipCleanup
 
+    # Show config preview before continuing
+    Show-ConfigPreview -Config $config -Strategy $VersioningStrategy
+
 } elseif ($PSCmdlet.ParameterSetName -eq 'Interactive' -or -not $TenantId) {
     $config = Get-InteractiveConfiguration
 
@@ -1007,11 +1017,6 @@ if ($missing) {
 # Generate unique temporary resource group name
 $tempRG = "acg-temp-$(Get-Date -Format 'yyyyMMdd-HHmmss')-$(Get-Random -Maximum 9999)"
 
-# Show config preview (only for ConfigFile mode, not Interactive which already confirmed)
-if ($PSCmdlet.ParameterSetName -eq 'ConfigFile') {
-    Show-ConfigPreview -Config $config
-}
-
 # Summary and confirmation
 Write-Header "Configuration Summary"
 Write-Host "Azure Environment:" -ForegroundColor Cyan
@@ -1044,7 +1049,7 @@ Write-Host "Options:" -ForegroundColor Cyan
 Write-Host "  VM Size         : " -NoNewline -ForegroundColor Gray
 Write-Host $config.VMSize -ForegroundColor White
 Write-Host "  Versioning      : " -NoNewline -ForegroundColor Gray
-Write-Host $config.VersioningStrategy -ForegroundColor White
+Write-Host $VersioningStrategy -ForegroundColor White
 Write-Host "  Temp RG         : " -NoNewline -ForegroundColor Gray
 Write-Host $tempRG -ForegroundColor White
 Write-Host ""
@@ -1056,13 +1061,6 @@ if (-not $Force) {
         exit 0
     }
 }
-
-# ==========================
-# Initialize Logging (After Validation)
-# ==========================
-$logFile = Join-Path $PSScriptRoot "image-build-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
-Write-Log "Script started"
-Write-Info "Execution log: $logFile"
 
 Write-Host ""
 $totalSteps = 12
@@ -1081,6 +1079,13 @@ if (-not (Connect-AzureEnvironment -TenantId $config.TenantId -SubscriptionId $c
 }
 $stepTimes["Authentication"] = ((Get-Date) - $stepStart).TotalSeconds
 Write-Log "Authentication completed in $($stepTimes["Authentication"]) seconds"
+
+# ==========================
+# Initialize Logging (After Authentication)
+# ==========================
+$logFile = Join-Path $PSScriptRoot "image-build-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
+Write-Log "Script started"
+Write-Info "Execution log: $logFile"
 
 # ==========================
 # Pre-Flight Validation Checks
@@ -1464,5 +1469,4 @@ Write-Success "Script completed successfully!"
 
 Write-Log "Script completed successfully in $([math]::Round($totalDuration, 2)) minutes"
 Write-Log "Image version $nextVersion created in gallery $($config.GalleryName)"
-
 
