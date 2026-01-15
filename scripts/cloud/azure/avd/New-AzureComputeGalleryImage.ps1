@@ -570,7 +570,9 @@ function Test-PreFlightChecks {
     # Check 6: VM Size available in region
     Write-Host "  [6/7] Checking VM size availability..." -NoNewline -ForegroundColor Cyan
     try {
-        $vmSizes = Get-AzVMSize -Location $Config.Location | Where-Object { $_.Name -eq $Config.VMSize }
+        $locationNormalized = $Config.Location.Replace(' ', '').ToLower()
+        $vmSizes = Get-AzComputeResourceSku -ErrorAction Stop |
+            Where-Object { $_.ResourceType -eq 'virtualMachines' -and $_.Locations -contains $locationNormalized -and $_.Name -eq $Config.VMSize }
         if ($vmSizes) {
             Write-Host " ✓" -ForegroundColor Green
             $checks += @{Name="VM Size"; Status="Pass"; Details="$($Config.VMSize) available"}
@@ -580,7 +582,7 @@ function Test-PreFlightChecks {
         }
     } catch {
         Write-Host " ⚠" -ForegroundColor Yellow
-        $checks += @{Name="VM Size"; Status="Warning"; Details="Could not verify"}
+        $checks += @{Name="VM Size"; Status="Warning"; Details="Could not verify: $($_.Exception.Message)"}
     }
 
     # Check 7: Disk encryption status
@@ -904,7 +906,7 @@ Write-Host ""
 # ==========================
 # If no ConfigFile was specified, check for JSON files in the script directory
 if ($PSCmdlet.ParameterSetName -ne 'ConfigFile' -and $PSCmdlet.ParameterSetName -ne 'Explicit') {
-    $jsonFiles = Get-ChildItem -Path $PSScriptRoot -Filter "*-config.json" -File -ErrorAction SilentlyContinue
+    $jsonFiles = Get-ChildItem -Path $PSScriptRoot -Filter "*.json" -File -ErrorAction SilentlyContinue
 
     if ($jsonFiles) {
         Write-Header "Configuration Files Detected"
@@ -930,8 +932,6 @@ if ($PSCmdlet.ParameterSetName -ne 'ConfigFile' -and $PSCmdlet.ParameterSetName 
             $ConfigFile = $selectedFile.FullName
             Write-Success "Using configuration file: $($selectedFile.Name)"
             Write-Host ""
-            # Override parameter set to use ConfigFile
-            $PSCmdlet.ParameterSetName = 'ConfigFile'
         } elseif ($selection -eq '0') {
             Write-Info "Proceeding with interactive mode"
             Write-Host ""
@@ -945,7 +945,7 @@ if ($PSCmdlet.ParameterSetName -ne 'ConfigFile' -and $PSCmdlet.ParameterSetName 
 # Load configuration based on parameter set
 $config = @{}
 
-if ($PSCmdlet.ParameterSetName -eq 'ConfigFile') {
+if ($ConfigFile) {
     Write-Info "Loading configuration from file: $ConfigFile"
     $configData = Read-Configuration -Path $ConfigFile
 
@@ -1469,4 +1469,3 @@ Write-Success "Script completed successfully!"
 
 Write-Log "Script completed successfully in $([math]::Round($totalDuration, 2)) minutes"
 Write-Log "Image version $nextVersion created in gallery $($config.GalleryName)"
-
