@@ -2,7 +2,7 @@
 
 Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection of 260+ PowerShell scripts for enterprise IT management!
 
-> **Latest Release:** [v3.4.0 "Rainbow" 🌈](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#340---2026-01-09--rainbow---documentation--examples-enhancement) - Documentation & Examples Enhancement!
+> **Latest Release:** [v3.6.0 "Shower" 🌧️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#360---2026-01-16--shower---intune-device-management-scripts) - Intune Device Management Scripts! ⭐ NEW
 >
 > 📋 **[View Full Changelog →](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)** | 📦 **[GitHub Releases](https://github.com/Carme99/bug-free-umbrella/releases)**
 
@@ -45,7 +45,7 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 |----------|-------------|
 | **[Security & Compliance](Security-Compliance)** | 17 scripts for CIS benchmarks, auditing, and compliance |
 | **[Server Management](Server-Management)** | 31 scripts for Windows Server administration |
-| **[Intune Management](Intune-Management)** | 18 scripts for Endpoint Manager and device management |
+| **[Intune Management](Intune-Management)** | 20 scripts for Endpoint Manager and device management ⭐ 2 NEW |
 | **[Microsoft 365 Services](Microsoft-365-Cloud-Services)** | 17 scripts for M365, Exchange, Teams, SharePoint |
 | **[Proactive Remediations](Proactive-Remediations)** | 15 auto-fix script pairs for common device issues |
 | **[Winget Updates](Winget-Updates)** | 40+ application auto-update templates |
@@ -59,11 +59,11 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 
 | Metric | Count |
 |--------|-------|
-| **Total Scripts** | 260+ |
+| **Total Scripts** | 262+ |
 | **Categories** | 20 |
 | **Proactive Remediations** | 14 pairs (28 scripts) |
 | **Winget App Templates** | 40+ applications |
-| **Latest Release** | v3.0.3 "Drizzle" ☔ |
+| **Latest Release** | v3.6.0 "Shower" 🌧️ |
 | **Documentation Pages** | Comprehensive wiki! |
 
 ---
@@ -84,7 +84,7 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 
 ### 💼 Microsoft 365 & Enterprise
 - **[Microsoft 365 Cloud Services](Microsoft-365-Cloud-Services)** - 17 scripts for M365 management
-- **[Intune Management](Intune-Management)** - Comprehensive Intune toolkit (18 scripts)
+- **[Intune Management](Intune-Management)** - Comprehensive Intune toolkit (20 scripts) ⭐ 2 NEW
   - **[Intune Sync Guide](Intune-Sync-Guide)** - Sync status troubleshooting
 - Email Services - Covered in Microsoft 365 Services page
 
