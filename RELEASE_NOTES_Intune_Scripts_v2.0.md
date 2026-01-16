@@ -484,8 +484,8 @@ Feature requests welcome! Please provide:
 - Lenovo Product Database
 
 ### References
-- [Microsoft Graph API - Managed Devices](https://docs.microsoft.com/en-us/graph/api/resources/intune-devices-manageddevice)
-- [Microsoft Graph API - Devices](https://docs.microsoft.com/en-us/graph/api/resources/device)
+- [Microsoft Graph API - Managed Devices](https://learn.microsoft.com/en-us/graph/api/resources/intune-devices-manageddevice)
+- [Microsoft Graph API - Devices](https://learn.microsoft.com/en-us/graph/api/resources/device)
 - [Lenovo Commercial Systems Management](https://docs.lenovocdrt.com/)
 
 ---

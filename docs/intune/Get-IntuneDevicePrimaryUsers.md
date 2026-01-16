@@ -369,6 +369,6 @@ For issues, questions, or feature requests:
 
 ## See Also
 
-- [Microsoft Graph API - Managed Devices](https://docs.microsoft.com/en-us/graph/api/resources/intune-devices-manageddevice)
-- [Microsoft Graph PowerShell SDK](https://docs.microsoft.com/en-us/powershell/microsoftgraph/)
-- [Intune Device Management](https://docs.microsoft.com/en-us/mem/intune/remote-actions/device-management)
+- [Microsoft Graph API - Managed Devices](https://learn.microsoft.com/en-us/graph/api/resources/intune-devices-manageddevice)
+- [Microsoft Graph PowerShell SDK](https://learn.microsoft.com/en-us/powershell/microsoftgraph/)
+- [Intune Device Management](https://learn.microsoft.com/en-us/mem/intune/remote-actions/device-management)

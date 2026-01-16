@@ -89,6 +89,7 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 - **Wiki**: Updated Intune Management page with new scripts
 - **Stats**: Intune scripts increased from 18 to 20
+- **Documentation URLs**: Updated Microsoft documentation links from `docs.microsoft.com` to `learn.microsoft.com` (8 URLs)
 
 ### Statistics
 

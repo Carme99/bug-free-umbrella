@@ -595,9 +595,9 @@ $timestamp = Get-Date -Format "yyyy-MM-dd"
 - [Lenovo Model Lookup](https://pcsupport.lenovo.com/us/en/)
 
 ### Microsoft Resources
-- [Microsoft Graph API - Devices](https://docs.microsoft.com/en-us/graph/api/resources/device)
-- [Intune Managed Devices](https://docs.microsoft.com/en-us/graph/api/resources/intune-devices-manageddevice)
-- [Azure AD Extension Attributes](https://docs.microsoft.com/en-us/azure/active-directory/hybrid/how-to-connect-sync-feature-directory-extensions)
+- [Microsoft Graph API - Devices](https://learn.microsoft.com/en-us/graph/api/resources/device)
+- [Intune Managed Devices](https://learn.microsoft.com/en-us/graph/api/resources/intune-devices-manageddevice)
+- [Azure AD Extension Attributes](https://learn.microsoft.com/en-us/entra/identity/hybrid/connect/how-to-connect-sync-feature-directory-extensions)
 
 ## Related Scripts
 
