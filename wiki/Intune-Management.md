@@ -2,6 +2,8 @@
 
 Comprehensive scripts for Microsoft Intune device management, application deployment, compliance reporting, and maintenance. These scripts help you manage and monitor endpoints enrolled in Microsoft Endpoint Manager.
 
+**⭐ NEW in v3.6.0:** Two powerful new scripts for device primary user reporting and Lenovo device enrichment!
+
 ## Overview
 
 The Intune Management category provides tools for:
@@ -42,6 +44,8 @@ Generate comprehensive reports on device compliance, apps, and security.
 | **Get-WingetUpdateCompliance.ps1** | Monitor Winget app updates | `scripts/endpoints/intune/reporting/` |
 | **Get-AutopilotDeploymentReport.ps1** | Track Autopilot deployment success | `scripts/endpoints/intune/reporting/` |
 | **Get-DeviceGroupMembership.ps1** | Audit device group assignments | `scripts/endpoints/intune/reporting/` |
+| **Get-IntuneDevicePrimaryUsers.ps1** ⭐ NEW | Resolve primary users with hardware specs | `scripts/endpoints/intune/reporting/` |
+| **Get-UserDeviceAffinity.ps1** | Generate user-device affinity reports | `scripts/endpoints/intune/reporting/` |
 
 ### Configuration Maintenance
 Manage Intune configurations, policies, and devices.
@@ -52,6 +56,7 @@ Manage Intune configurations, policies, and devices.
 | **Find-PolicyConflicts.ps1** | Detect conflicting policy assignments | `scripts/endpoints/intune/maintenance/` |
 | **Find-StaleDevices.ps1** | Identify inactive or orphaned devices | `scripts/endpoints/intune/maintenance/` |
 | **Invoke-DeviceBulkActions.ps1** | Perform bulk device actions (sync, retire, wipe) | `scripts/endpoints/intune/maintenance/` |
+| **Add-LenovoFriendlyModelNames.ps1** ⭐ NEW | Enrich Lenovo devices with friendly model names | `scripts/endpoints/intune/maintenance/` |
 
 ---
 
@@ -625,6 +630,147 @@ Get-MgContext | Select-Object Scopes
 
 ---
 
+## New Scripts in v3.6.0
+
+### Get-IntuneDevicePrimaryUsers.ps1 ⭐ NEW
+
+Comprehensive device reporting tool that resolves primary users and collects detailed hardware specifications for Intune managed devices.
+
+**Key Features:**
+- **True Primary User Detection**: Uses Graph API `managedDevice/users` (beta) with intelligent fallback chain
+- **Hardware Collection**: RAM, storage (total/free/%), CPU, model, serial, OS, last sync timestamp
+- **Flexible Input**: Direct parameters, CSV/TXT files, interactive mode, GUID support
+- **Output Options**: Console display, CSV export (UTF-8), configurable paths
+- **Data Enrichment**: Retrieves friendly model names from Entra extension attributes
+
+**Quick Start:**
+```powershell
+# Single device lookup
+.\Get-IntuneDevicePrimaryUsers.ps1 -DeviceName "LTW1010013"
+
+# Bulk processing from CSV
+.\Get-IntuneDevicePrimaryUsers.ps1 -InputFile "C:\IT\Devices.csv"
+
+# Custom output path
+.\Get-IntuneDevicePrimaryUsers.ps1 `
+    -DeviceName "LTW1010013" `
+    -OutputPath "C:\Reports\PrimaryUsers.csv"
+
+# Console only (no export)
+.\Get-IntuneDevicePrimaryUsers.ps1 -DeviceName "LTW1010013" -NoExport
+
+# Use different extension attribute for friendly model
+.\Get-IntuneDevicePrimaryUsers.ps1 `
+    -DeviceName "LTW1010013" `
+    -FriendlyModelAttribute "extensionAttribute2"
+```
+
+**Use Cases:**
+- Primary user auditing and compliance reporting
+- Hardware inventory and capacity planning
+- Device-user assignment verification
+- Help desk quick lookups
+- Asset management integration
+
+**Required Permissions:**
+- `DeviceManagementManagedDevices.Read.All`
+- `Directory.Read.All`
+- `User.Read.All`
+- `Device.Read.All`
+
+**Output Fields:**
+- DeviceName, LastSeen, PrimaryUserDisplayName, PrimaryUserUPN, Source
+- FriendlyModel, Manufacturer, Model, SerialNumber
+- OperatingSystem, OSVersion, CPU, CPUArchitecture
+- RAM_GB, StorageTotal_GB, StorageFree_GB, StorageFree_Percent
+
+**Documentation:** See `docs/intune/Get-IntuneDevicePrimaryUsers.md` for complete guide
+
+---
+
+### Add-LenovoFriendlyModelNames.ps1 ⭐ NEW
+
+Automates enrichment of Lenovo device records with human-readable model names by mapping MTM codes to product family names using Lenovo's official dataset.
+
+**Key Features:**
+- **Automatic MTM Mapping**: Maps 4-character codes (e.g., "21AH") to friendly names (e.g., "ThinkPad T14 Gen 3")
+- **Dual Update Targets**: Intune Notes (append) + Entra extension attributes (set/overwrite)
+- **Reliability**: Retry logic (3 attempts), rate limiting (100ms), error logging to CSV
+- **Safety**: Audit mode, WhatIf/Confirm support, selective updates
+- **Authentication**: Robust sign-in with automatic device code fallback
+
+**Quick Start:**
+```powershell
+# Initial validation (recommended first step)
+.\Add-LenovoFriendlyModelNames.ps1 -AuditOnly
+
+# Preview changes without applying
+.\Add-LenovoFriendlyModelNames.ps1 -WhatIf
+
+# Production run
+.\Add-LenovoFriendlyModelNames.ps1
+
+# Strict validation - fail if any MTM codes unmapped
+.\Add-LenovoFriendlyModelNames.ps1 -AuditOnly -FailIfMissingMappings
+
+# Update only Notes field
+.\Add-LenovoFriendlyModelNames.ps1 -UpdateExtensionAttributes:$false
+
+# Use custom extension attribute
+.\Add-LenovoFriendlyModelNames.ps1 -ExtensionAttributeName "extensionAttribute5"
+
+# Add prefix to Notes entries
+.\Add-LenovoFriendlyModelNames.ps1 -NotesPrefix "Model"
+
+# Verbose logging for troubleshooting
+.\Add-LenovoFriendlyModelNames.ps1 -VerboseOutput
+```
+
+**Use Cases:**
+- Device inventory enrichment with readable model names
+- Help desk efficiency (quick device identification)
+- Asset management and device categorization
+- Compliance reporting with friendly names
+- Lifecycle management by product family
+
+**Required Permissions:**
+- `DeviceManagementManagedDevices.ReadWrite.All`
+- `Device.ReadWrite.All`
+
+**How It Works:**
+1. Retrieves all Lenovo devices from Intune
+2. Extracts MTM code from model string (first 4 characters)
+3. Downloads Lenovo's official product dataset
+4. Maps MTM codes to friendly family names
+5. Updates Intune Notes and/or Entra extension attributes
+
+**Example Mapping:**
+```
+Model String: "21AH001AUS"
+MTM Code:     "21AH"
+Friendly:     "ThinkPad T14 Gen 3"
+```
+
+**Output Summary:**
+```
+=== Update Summary ===
+Intune Notes:
+  Updated: 203
+  Skipped (already present): 42
+
+Entra Extension Attributes:
+  Updated: 245
+  Skipped: 0
+
+Other:
+  Unknown/Unmapped: 2
+  Errors: 0
+```
+
+**Documentation:** See `docs/intune/Add-LenovoFriendlyModelNames.md` for complete guide
+
+---
+
 ## Related Resources
 
 ### Internal Documentation
@@ -641,5 +787,5 @@ Get-MgContext | Select-Object Scopes
 
 ---
 
-**Last Updated:** 2026-01-05
+**Last Updated:** 2026-01-16
 **Version:** 1.1.0

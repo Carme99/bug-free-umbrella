@@ -27,6 +27,110 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ---
 
+## [3.6.0] - 2026-01-16 🌧️ **"Shower"** - Intune Device Management Scripts
+
+> **Focus**: Two powerful new Intune management scripts for device reporting and Lenovo device enrichment
+
+### Added
+
+#### 📱 Intune Device Primary Users Script (NEW!)
+
+**Get-IntuneDevicePrimaryUsers.ps1** (`scripts/endpoints/intune/reporting/`)
+- Comprehensive device reporting tool for primary user resolution and hardware specs
+- **Primary User Detection**: Uses Graph API `managedDevice/users` (beta) with intelligent fallback chain
+- **Hardware Collection**: RAM, storage, CPU, model, serial, OS, last sync timestamp
+- **Flexible Input**: Direct parameters, CSV/TXT files, interactive mode, GUID support
+- **Output Options**: Console display, CSV export (UTF-8), configurable paths
+- **Data Enrichment**: Retrieves friendly model names from Entra extension attributes
+- **Graph API Best Practices**: OData escaping, progress indicators, graceful error handling
+
+**Use Cases:**
+- Primary user auditing and compliance reporting
+- Hardware inventory and capacity planning
+- Device-user assignment verification
+- Help desk quick lookups
+- Asset management integration
+
+#### 🖥️ Lenovo Friendly Model Names Script (NEW!)
+
+**Add-LenovoFriendlyModelNames.ps1** (`scripts/endpoints/intune/maintenance/`)
+- Automates enrichment of Lenovo device records with human-readable model names
+- **MTM Code Mapping**: Maps 4-character codes to product families using official Lenovo dataset
+- **Dual Updates**: Intune Notes (append) + Entra extension attributes (set/overwrite)
+- **Reliability**: Retry logic (3 attempts), rate limiting (100ms), error logging to CSV
+- **Safety**: Audit mode, WhatIf/Confirm support, selective updates
+- **Authentication**: Robust sign-in with automatic device code fallback
+- **Validation**: MTM format checks, mapping coverage reports, strict mode option
+
+**Key Improvements over v1.0:**
+- ✅ Fixed switch parameter declarations
+- ✅ Added network resilience with exponential backoff
+- ✅ Added progress indicators and rate limiting
+- ✅ Improved MTM matching with targeted regex
+- ✅ Added comprehensive error logging with CSV export
+- ✅ Enhanced validation and status reporting
+
+#### 📚 Comprehensive Documentation
+
+**New Documentation Files:**
+- `docs/intune/Get-IntuneDevicePrimaryUsers.md` - Complete usage guide (88KB)
+- `docs/intune/Add-LenovoFriendlyModelNames.md` - Enterprise deployment guide (95KB)
+- `RELEASE_NOTES_Intune_Scripts_v2.0.md` - Detailed release notes (75KB)
+
+**Documentation Includes:**
+- Parameter reference tables with descriptions
+- Real-world usage examples and integration scenarios
+- Troubleshooting guides with common issues
+- Performance optimization guidance
+- Security and compliance notes
+- MTM code reference guide
+
+### Changed
+
+- **Wiki**: Updated Intune Management page with new scripts
+- **Stats**: Intune scripts increased from 18 to 20
+- **Documentation URLs**: Updated Microsoft documentation links from `docs.microsoft.com` to `learn.microsoft.com` (8 URLs)
+
+### Statistics
+
+- **New Scripts**: 2 production-ready PowerShell scripts
+- **Total Lines**: ~1,300 lines of PowerShell code
+- **Documentation**: 3 comprehensive guides (~260KB total)
+- **Examples**: 20+ usage examples across documentation
+- **Required Permissions**: 6 Graph API scopes documented
+- **Test Coverage**: Windows 10/11, Server 2019/2022, PowerShell 5.1-7.x
+
+### Migration Notes
+
+**Get-IntuneDevicePrimaryUsers.ps1** - New Script (No Migration)
+- Fresh installation, follow documentation in `docs/intune/`
+- Compatible with existing Intune management workflows
+- Can be integrated with scheduled tasks, Power BI, compliance reporting
+
+**Add-LenovoFriendlyModelNames.ps1 v2.0** - Backward Compatible
+```powershell
+# v1.0 (if existed) - switches had issues
+-UpdateNotes $true  # Always true, couldn't disable
+
+# v2.0 (correct behavior)
+-UpdateNotes              # Enabled by default
+-UpdateNotes:$false       # Can now be disabled
+-UpdateExtensionAttributes:$false  # Works correctly
+```
+
+**Recommended Upgrade Process:**
+1. Test with `-WhatIf` to preview behavior
+2. Run `-AuditOnly` to validate mapping coverage
+3. Deploy to production
+
+### Related
+
+- **Pull Request**: [Add Intune device management scripts](https://github.com/Carme99/bug-free-umbrella/pull/XX)
+- **Branch**: `claude/intune-primary-users-script-c5oLw`
+- **Documentation**: See `docs/intune/` for complete guides
+
+---
+
 ## [3.5.0] - 2026-01-15 🌧️ **"Shower"** - AVD Image Builder Enhancement
 
 > **Focus**: Production-ready enhancements for Azure Virtual Desktop image building automation based on real-world feedback
