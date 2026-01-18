@@ -6,23 +6,42 @@ PowerShell utility scripts for system management, maintenance, and automation ta
 
 ### Update-DotNetRuntimes.ps1
 
-**Comprehensive .NET runtime maintenance script with EOL detection, automatic updates, and disk space cleanup.**
+**Comprehensive .NET runtime maintenance script with interactive menu system, EOL detection, automatic updates, and disk space cleanup.**
 
-This advanced script manages ASP.NET Core and Windows Desktop runtimes across your system, automatically updating to the latest patches, removing EOL (End of Life) versions, and cleaning up old patch installations to reclaim disk space.
+This enterprise-grade script manages ASP.NET Core and Windows Desktop runtimes across your system with an interactive menu for easy management or full CLI automation. Features include automatic updates, EOL detection with LTS replacement, dependency analysis, system restore points, and security-hardened installation with Authenticode signature verification.
+
+**Version:** 2.5 | **Last Updated:** 2025-01-17
 
 #### Features
 
+##### Core Capabilities
+- ✅ **Interactive Menu System** - 8 maintenance options with user-friendly interface
+- ✅ **Full CLI Automation** - Complete parameter support for scripting and CI/CD
 - ✅ **Architecture Aware** - Handles both x64 and x86 runtimes independently
 - ✅ **Automatic Updates** - Downloads and installs latest patches per channel
-- ✅ **EOL Detection** - Identifies and removes end-of-life runtime versions
-- ✅ **Smart EOL Replacement** - Automatically suggests and installs LTS replacements for EOL versions
-- ✅ **Patch Cleanup** - Removes lower patch versions automatically
-- ✅ **Disk Usage Reporting** - Before/after reports with reclaimed space
+- ✅ **EOL Detection & Removal** - Identifies and removes end-of-life runtime versions
+- ✅ **Smart EOL Replacement** - Automatically suggests and installs LTS replacements
+
+##### Security & Safety
+- 🔒 **Authenticode Verification** - Mandatory digital signature validation (no bypass)
+- 🔒 **SHA512 Hash Validation** - Integrity checks for all downloads
+- 🔒 **Dependency Detection** - Scans for IIS, ANCM, Windows Services, Scheduled Tasks
+- 🔒 **System Restore Points** - Optional rollback support before major changes
+- 🔒 **Protected Channels** - Prevent accidental removal of critical runtimes
+
+##### Performance & Reporting
+- ⚡ **Performance Optimized** - .NET DirectoryInfo API for fast disk operations
+- ⚡ **Smart Caching** - 5-minute cache with Force override for fresh data
+- 📊 **Disk Usage Reporting** - Before/after reports with reclaimed space
+- 📊 **Multiple Export Formats** - CSV and JSON reports available
+- 📊 **Structured Logging** - PowerShell streams for automation compatibility
+
+##### Flexibility
 - ✅ **LTS Filtering** - Option to only update Long Term Support channels
 - ✅ **Uninstall Tool Integration** - Auto-installs .NET Uninstall Tool if needed
-- ✅ **Multiple Export Formats** - CSV and JSON reports available
-- ✅ **Interactive Mode** - Prompts for all options when needed
 - ✅ **Dry Run Mode** - Preview changes without applying them
+- ✅ **One-Shot Cleanup** - Single parameter for complete maintenance
+- ✅ **Non-Interactive Mode** - Batch processing support
 
 #### Requirements
 
@@ -33,22 +52,40 @@ This advanced script manages ASP.NET Core and Windows Desktop runtimes across yo
 
 #### Usage
 
-**Basic Usage (Auto-approve all):**
+**Interactive Menu Mode (NEW in v2.5):**
 ```powershell
-# Default: auto-approve, remove EOL, cleanup patches
+# Launch interactive menu with 8 maintenance options
 .\Update-DotNetRuntimes.ps1
 ```
 
-**Interactive Mode:**
+**One-Shot Complete Maintenance (NEW in v2.5):**
 ```powershell
-# Prompt for all configuration options
-.\Update-DotNetRuntimes.ps1 -Interactive
+# Fully automated: update all, remove EOL, cleanup patches, install uninstall tool
+.\Update-DotNetRuntimes.ps1 -OneShotCleanup
+```
+
+**CLI Automation (Non-Interactive):**
+```powershell
+# Automated execution with all parameters specified
+.\Update-DotNetRuntimes.ps1 -NonInteractive -Approve -RemoveEol -CleanupLowerPatches
 ```
 
 **Dry Run (Preview Only):**
 ```powershell
 # See what would be updated without making changes
 .\Update-DotNetRuntimes.ps1 -DryRun
+```
+
+**With Dependency Protection (NEW in v2.5):**
+```powershell
+# Block EOL removal if dependencies detected (IIS, Services, Tasks)
+.\Update-DotNetRuntimes.ps1 -DependencyCheck Block
+```
+
+**With System Restore Point (NEW in v2.5):**
+```powershell
+# Create restore point before making changes
+.\Update-DotNetRuntimes.ps1 -CreateRestorePoint -RestorePointName "Before .NET Update"
 ```
 
 **LTS Only:**
@@ -63,10 +100,16 @@ This advanced script manages ASP.NET Core and Windows Desktop runtimes across yo
 .\Update-DotNetRuntimes.ps1 -Arch x64 -LogPath "C:\Logs\dotnet-update.log"
 ```
 
-**Conservative Mode:**
+**Protected Channels (NEW in v2.5):**
 ```powershell
-# No auto-removal of EOL, require confirmation
-.\Update-DotNetRuntimes.ps1 -RemoveEol:$false -Approve:$false
+# Prevent accidental removal of critical runtime versions
+.\Update-DotNetRuntimes.ps1 -ProtectChannels 8.0,9.0
+```
+
+**Force Fresh Scan (NEW in v2.5):**
+```powershell
+# Bypass cache and perform fresh system scan
+.\Update-DotNetRuntimes.ps1 -Force
 ```
 
 **With Reports:**
@@ -79,70 +122,145 @@ This advanced script manages ASP.NET Core and Windows Desktop runtimes across yo
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `Approve` | Switch | `$true` | Auto-approve all installs and removals (non-interactive) |
-| `RemoveEol` | Switch | `$true` | Automatically remove EOL runtimes |
-| `CleanupLowerPatches` | Switch | `$true` | Remove lower patch versions (mandatory) |
-| `AutoInstallUninstallTool` | Switch | `$true` | Install .NET Uninstall Tool if missing |
-| `ForceFileCleanup` | Switch | `$true` | Use filesystem cleanup if uninstall tool unavailable |
-| `Interactive` | Switch | `$false` | Prompt for all configuration options |
+| **Interactive & Automation** |||
+| `NonInteractive` | Switch | `$false` | Disable menu system, use CLI mode only |
+| `Approve` | Switch | `$false` | Auto-approve all installs and removals without prompts |
 | `DryRun` | Switch | `$false` | Preview actions without making changes |
-| `UninstallToolMsiUrl` | String | *(GitHub release)* | Override URL for uninstall tool MSI |
-| `Arch` | String | *(both)* | Limit to x64 or x86 only |
-| `LtsOnly` | Switch | `$false` | Only update LTS channels |
-| `IncludeChannels` | String[] | *(all)* | Specific channels to process (e.g., '8.0', '9.0') |
+| `OneShotCleanup` | Switch | `$false` | 🆕 Preset: enables all automation flags for complete maintenance |
+| **Runtime Management** |||
+| `RemoveEol` | Switch | `$false` | Automatically remove EOL (end-of-life) runtimes |
+| `CleanupLowerPatches` | Switch | `$false` | Remove lower patch versions within each channel |
+| `LtsOnly` | Switch | `$false` | Only update Long Term Support channels |
+| `IncludeChannels` | String[] | *(all)* | Specific channels to process (e.g., `8.0`, `9.0`) |
+| `ProtectChannels` | String[] | *(none)* | 🆕 Channels to protect from removal |
 | `MinVersion` | Version | *(none)* | Minimum version floor (skip if latest is below) |
+| `Arch` | String | *(both)* | Limit to `x64` or `x86` only |
+| **Safety & Dependencies** |||
+| `DependencyCheck` | String | `Warn` | 🆕 Dependency handling: `Warn`, `Block`, or `Off` |
+| `CreateRestorePoint` | Switch | `$false` | 🆕 Create system restore point before changes |
+| `RestorePointName` | String | *(auto)* | 🆕 Custom restore point description |
+| `Force` | Switch | `$false` | 🆕 Bypass cache and force fresh system scan |
+| **Tools & Reporting** |||
+| `AutoInstallUninstallTool` | Switch | `$false` | Install .NET Uninstall Tool if missing |
+| `UninstallToolMsiUrl` | String | *(GitHub)* | Override URL for uninstall tool MSI |
+| `ForceFileCleanup` | Switch | `$false` | Use filesystem cleanup if uninstall tool unavailable |
 | `LogPath` | String | *(none)* | Path to transcript log file |
 | `ReportPath` | String | *(none)* | CSV export path for disk usage report |
 | `JsonSummaryPath` | String | *(none)* | JSON export path for action summary |
+| **Advanced** |||
+| `SkipDiskScan` | Switch | `$false` | Skip disk usage calculations for faster execution |
 
 #### What It Does
 
-1. **Discovery Phase**
+**Interactive Menu Mode** (default when no parameters specified):
+   - Presents 8 maintenance options in a user-friendly menu
+   - Shows real-time system status (installed runtimes, disk usage, dependencies)
+   - Options include: Update all, Remove EOL, Install specific versions, Cleanup, Reports
+
+**Automated CLI Mode** (when parameters or `-NonInteractive` specified):
+
+1. **Discovery & Analysis Phase**
    - Scans for installed ASP.NET Core and Windows Desktop runtimes (x64 and x86)
    - Fetches official .NET release metadata from Microsoft
    - Identifies which channels have updates available
+   - 🆕 **Detects dependencies**: IIS, ANCM module, Windows Services, Scheduled Tasks, running processes
+   - 🆕 **Caches system status** for 5 minutes (override with `-Force`)
 
 2. **EOL Handling**
    - Detects channels that have reached End of Life
    - Suggests active LTS replacement versions
+   - 🆕 **Dependency safety**: Warns or blocks removal if dependencies detected (configurable)
+   - 🆕 **Protected channels**: Prevents removal of specified critical versions
    - Optionally removes EOL runtimes (with approval)
    - Can automatically install recommended LTS replacement
    - Cleans up associated base runtimes
 
-3. **Update Phase**
+3. **Safety Measures** 🆕
+   - Creates system restore point before changes (optional)
+   - Validates runtime dependencies before removal
+   - Checks for protected channels
+   - Dry run mode for preview without changes
+
+4. **Update Phase**
    - Downloads latest patch versions per channel
+   - 🆕 **Mandatory Authenticode signature validation** (no bypass - security hardened)
    - Verifies file integrity with SHA512 hashes
    - Installs base runtime and ASP.NET Core/WindowsDesktop runtime
    - Supports both x64 and x86 architectures
 
-4. **Cleanup Phase**
+5. **Cleanup Phase**
    - Removes lower patch versions within each channel
-   - Uses .NET Uninstall Tool if available
+   - Uses .NET Uninstall Tool if available (auto-installs if missing)
    - Falls back to filesystem cleanup if needed
+   - 🆕 **Performance optimized** with .NET DirectoryInfo API
    - Verifies cleanup completed successfully
 
-5. **Reporting Phase**
+6. **Reporting Phase**
    - Compares disk usage before and after
    - Shows reclaimed space per runtime
+   - 🆕 **Enhanced logging** with PowerShell streams (Write-Warning, Write-Error, Write-Information)
    - Exports detailed reports to CSV/JSON
 
-#### Output Example
+#### Output Examples
 
+**Interactive Menu Mode** (NEW in v2.5):
+```
+╔═════════════════════════════════════════════════════════════════╗
+║            .NET Runtime Maintenance Tool v2.5                   ║
+║                                                                 ║
+║  System Status (cached, use option 8 to refresh)               ║
+║  ─────────────────────────────────────────────────────────     ║
+║  • IIS Installed: No                                            ║
+║  • ANCM Detected: No                                            ║
+║  • .NET Services: 0                                             ║
+║  • .NET Tasks: 0                                                ║
+║  • Total Disk: 2.4 GB                                           ║
+║                                                                 ║
+║  Installed Runtimes:                                            ║
+║  • ASP.NET Core 8.0.22 x64 (LTS, current)                       ║
+║  • ASP.NET Core 9.0.11 x64 (STS, current)                       ║
+║  • Desktop 8.0.22 x64 (LTS, current)                            ║
+║                                                                 ║
+╠═════════════════════════════════════════════════════════════════╣
+║  Maintenance Options:                                           ║
+║  ─────────────────────────────────────────────────────────     ║
+║  [1] Update All Runtimes (patches only)                         ║
+║  [2] Remove EOL Runtimes                                        ║
+║  [3] Install Specific Runtime Version                           ║
+║  [4] Cleanup Lower Patches                                      ║
+║  [5] Generate Disk Usage Report                                 ║
+║  [6] Show System Dependencies                                   ║
+║  [7] Create System Restore Point                                ║
+║  [8] Refresh System Status (force scan)                         ║
+║  [9] Exit                                                       ║
+╚═════════════════════════════════════════════════════════════════╝
+
+Enter selection (1-9):
+```
+
+**CLI Automation Mode Output:**
 ```
 === ASP.NET Core Channel 6.0 x64 ===
 EOL channel detected: 6.0 | End of support: 2024-11-12 | Installed: 6.0.14
   → Recommended replacement: .NET 8.0 LTS (supported until 2026-11-10)
   → Will install .NET 8.0 LTS after removal
+WARNING: Dependency check: 0 Windows Services, 0 Scheduled Tasks, 0 running processes
 Using uninstall tool to remove ASP.NET Core 6.0
+Verifying digital signature...
+Signature valid (Signer: CN=Microsoft Corporation)
 Removal complete for EOL channel 6.0 x64
 Installing replacement: .NET 8.0 LTS x64...
 Downloading ASP.NET Core Runtime x64...
+Verifying SHA512 hash... ✓
+Verifying Authenticode signature... ✓
 Installing ASP.NET Core Runtime 8.0.22 x64...
 Successfully installed .NET 8.0 LTS (8.0.22) x64
 
 === ASP.NET Core Channel 9.0 x64 ===
 Update available: 9.0.8 → 9.0.11 (x64)
 Downloading ASP.NET Core Runtime x64...
+Verifying SHA512 hash... ✓
+Verifying Authenticode signature... ✓
 Installing ASP.NET Core Runtime 9.0.11 x64...
 Update complete for 9.0 x64 to 9.0.11
 
@@ -166,7 +284,12 @@ Cleanup complete for ASP.NET Core Runtime x64
 #### Troubleshooting
 
 **Script reports "not running elevated":**
-- Run PowerShell as Administrator for install/uninstall operations
+- Right-click PowerShell and select "Run as Administrator"
+- Required for install/uninstall operations
+
+**Menu doesn't appear:**
+- Add `-NonInteractive` to force CLI mode
+- Check if parameters were specified (auto-switches to CLI mode)
 
 **"dotnet.exe not found":**
 - Ensure .NET SDK or Runtime is installed
@@ -175,24 +298,62 @@ Cleanup complete for ASP.NET Core Runtime x64
 **"Failed to fetch release data":**
 - Check internet connectivity
 - Verify firewall isn't blocking `dotnetcli.blob.core.windows.net`
+- Try `-Force` to bypass cache
+
+**"MSI signature invalid" error:** 🆕
+- This is a security feature preventing tampered downloads
+- Verify internet connection isn't being intercepted (proxy/firewall)
+- Download may be corrupted - script will retry automatically
+
+**Dependency check blocking removal:** 🆕
+- Use `-DependencyCheck Warn` to continue with warning only
+- Review dependencies with menu option 6
+- Manually stop services/tasks before removal if safe
 
 **Cleanup not removing files:**
 - Try with `-ForceFileCleanup` to use filesystem method
 - Check if files are in use (close running .NET applications)
+- Use menu option 4 for interactive cleanup
 
 **Uninstall tool installation fails:**
 - Download manually from GitHub: `dotnet/cli-lab` releases
 - Install MSI and rerun script with `-AutoInstallUninstallTool:$false`
 
+**Restore point creation fails:** 🆕
+- Ensure System Restore is enabled
+- Check disk space (requires ~300MB minimum)
+- May fail on Windows Server (not supported by default)
+
 #### Scheduled Task Setup
 
+**Full Automation (Recommended for v2.5):**
 ```powershell
-# Run monthly on patch Tuesday (2nd Tuesday, 3 AM)
+# Run monthly with one-shot cleanup preset
 $action = New-ScheduledTaskAction -Execute "PowerShell.exe" `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"C:\Scripts\Update-DotNetRuntimes.ps1`" -LogPath `"C:\Logs\dotnet-update.log`""
+    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"C:\Scripts\Update-DotNetRuntimes.ps1`" -OneShotCleanup -LogPath `"C:\Logs\dotnet-update.log`" -ReportPath `"C:\Reports\dotnet-$(Get-Date -Format 'yyyy-MM').csv`""
 
-# 2nd Tuesday of month at 3 AM
+# 2nd Tuesday of month at 3 AM (Patch Tuesday)
 $trigger = New-ScheduledTaskTrigger -Weekly -WeeksInterval 1 -DaysOfWeek Tuesday -At 3am
+
+$principal = New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" `
+    -LogonType ServiceAccount -RunLevel Highest
+
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries `
+    -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 2)
+
+Register-ScheduledTask -TaskName ".NET Runtime Maintenance" `
+    -Action $action -Trigger $trigger -Principal $principal `
+    -Settings $settings -Description "Updates .NET runtimes, removes EOL versions, and cleans up patches"
+```
+
+**Conservative Automation (with dependency protection):**
+```powershell
+# Run with dependency checks and protected channels
+$action = New-ScheduledTaskAction -Execute "PowerShell.exe" `
+    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"C:\Scripts\Update-DotNetRuntimes.ps1`" -NonInteractive -Approve -CleanupLowerPatches -DependencyCheck Block -ProtectChannels 8.0,9.0 -CreateRestorePoint -LogPath `"C:\Logs\dotnet-update.log`""
+
+# Weekly on Sunday at 2 AM
+$trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek Sunday -At 2am
 
 $principal = New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" `
     -LogonType ServiceAccount -RunLevel Highest
@@ -200,19 +361,35 @@ $principal = New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" `
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries `
     -DontStopIfGoingOnBatteries -StartWhenAvailable
 
-Register-ScheduledTask -TaskName ".NET Runtime Maintenance" `
+Register-ScheduledTask -TaskName ".NET Runtime Updates (Conservative)" `
     -Action $action -Trigger $trigger -Principal $principal `
-    -Settings $settings -Description "Updates .NET runtimes and removes EOL versions"
+    -Settings $settings -Description "Updates .NET runtimes with safety checks"
 ```
 
 #### Best Practices
 
+**Testing & Validation:**
 1. **Test in Dev First** - Run with `-DryRun` to preview changes
-2. **Schedule During Maintenance** - Run during low-usage periods
-3. **Keep LTS Only** - Use `-LtsOnly` for production stability
-4. **Monitor Logs** - Enable `-LogPath` for troubleshooting
-5. **Export Reports** - Track disk usage trends over time
-6. **Backup Before Major Updates** - Snapshot VMs before channel upgrades
+2. **Use Interactive Mode** - Try menu mode interactively before automating
+3. **Review Dependencies** - Check menu option 6 before removing EOL runtimes
+
+**Production Deployment:**
+4. **Schedule During Maintenance** - Run during low-usage periods (Patch Tuesday +1 week)
+5. **Create Restore Points** 🆕 - Use `-CreateRestorePoint` before major updates
+6. **Enable Dependency Checks** 🆕 - Use `-DependencyCheck Block` on production servers
+7. **Protect Critical Channels** 🆕 - Use `-ProtectChannels` to prevent accidental removal
+
+**Operational Excellence:**
+8. **Keep LTS Only** - Use `-LtsOnly` for production stability
+9. **Monitor Logs** - Enable `-LogPath` for troubleshooting and compliance
+10. **Export Reports** - Track disk usage trends with monthly CSV exports
+11. **Use OneShotCleanup** 🆕 - Single parameter for complete automation
+12. **Force Refresh Weekly** 🆕 - Use `-Force` weekly to ensure fresh data
+
+**Security:**
+13. **Never bypass signatures** - Script enforces mandatory Authenticode validation
+14. **Run as SYSTEM** - Use scheduled tasks with NT AUTHORITY\SYSTEM
+15. **Audit dependency changes** - Review dependency reports before production deployment
 
 #### Exit Codes
 
@@ -401,4 +578,4 @@ For more information about this repository:
 
 ---
 
-**Last Updated:** 2025-12-30
+**Last Updated:** 2025-01-17
