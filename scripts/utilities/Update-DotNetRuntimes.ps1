@@ -155,7 +155,18 @@ param(
     [Parameter(Mandatory=$false)][switch]$PlanOnly,
     [Parameter(Mandatory=$false)][switch]$Quiet,
     [Parameter(Mandatory=$false)][switch]$DryRun,
-    [Parameter(Mandatory=$false)][string]$UninstallToolMsiUrl,
+    [Parameter(Mandatory=$false)]
+    [ValidateScript({
+        if ([string]::IsNullOrWhiteSpace($_)) { return $true }
+        $uri = [uri]$_
+        if ($uri.Scheme -ne 'https') { throw "URL must use HTTPS protocol" }
+        $allowedDomains = @('github.com', 'githubusercontent.com', 'microsoft.com', 'download.microsoft.com')
+        if ($allowedDomains -notcontains $uri.Host) {
+            throw "URL must be from trusted domain: github.com, githubusercontent.com, microsoft.com, or download.microsoft.com"
+        }
+        return $true
+    })]
+    [string]$UninstallToolMsiUrl,
     [Parameter(Mandatory=$false)][ValidateSet('x64','x86')][string]$Arch,
     [Parameter(Mandatory=$false)][switch]$LtsOnly,
     [Parameter(Mandatory=$false)][string[]]$IncludeChannels,
@@ -310,11 +321,28 @@ function Read-MenuChoice {
 
 function Initialize-NetworkDefaults {
     try {
-        $protocols = [System.Net.ServicePointManager]::SecurityProtocol
-        if ($protocols -band [System.Net.SecurityProtocolType]::Tls12 -eq 0) {
-            [System.Net.ServicePointManager]::SecurityProtocol = $protocols -bor [System.Net.SecurityProtocolType]::Tls12
+        # SECURITY: Enforce TLS 1.2+ only, disable weak protocols (SSL3, TLS 1.0, TLS 1.1)
+        $tls12 = [System.Net.SecurityProtocolType]::Tls12
+
+        # Check if TLS 1.3 is available (PowerShell 7+ / .NET Core 3.0+)
+        $tls13 = $null
+        try {
+            $tls13 = [System.Net.SecurityProtocolType]::Tls13
+        } catch {
+            # TLS 1.3 not available, will use TLS 1.2 only
         }
-    } catch { Write-Log -Level Warn -Message "TLS 1.2 config failed" -Context @{ Error=$_.Exception.Message } }
+
+        # Set to TLS 1.2 + TLS 1.3 (if available), explicitly excluding weak protocols
+        if ($tls13) {
+            [System.Net.ServicePointManager]::SecurityProtocol = $tls12 -bor $tls13
+            Write-Log -Level Info -Message "Enforced TLS 1.2 and TLS 1.3 (weak protocols disabled)"
+        } else {
+            [System.Net.ServicePointManager]::SecurityProtocol = $tls12
+            Write-Log -Level Info -Message "Enforced TLS 1.2 only (weak protocols disabled)"
+        }
+    } catch {
+        Write-Log -Level Warn -Message "TLS configuration failed" -Context @{ Error=$_.Exception.Message }
+    }
 }
 
 function Start-TypedTranscript {
@@ -641,14 +669,28 @@ function Install-DotnetUninstallTool {
             Save-FileWithRetry -Url $msiUrl -Destination $temp -MinBytes 20480
         }
 
-        # SECURITY FIX: Authenticode verification (always required, no bypass)
-        Write-Log -Level Info -Message "Verifying digital signature"
+        # SECURITY FIX: Authenticode verification with publisher validation (always required, no bypass)
+        Write-Log -Level Info -Message "Verifying digital signature and publisher"
         $sig = Get-AuthenticodeSignature -FilePath $temp
         if ($sig.Status -ne 'Valid') {
             Write-Log -Level Error -Message "MSI signature invalid - installation blocked" -Context @{ Status=$sig.Status; Signer=$sig.SignerCertificate.Subject }
             throw "MSI signature validation failed. The downloaded file may be corrupted or tampered with."
         }
-        Write-Log -Level Ok -Message "Signature valid" -Context @{ Signer=$sig.SignerCertificate.Subject }
+
+        # Verify publisher is Microsoft
+        $publisher = $sig.SignerCertificate.Subject
+        if ($publisher -notmatch 'CN=Microsoft Corporation') {
+            Write-Log -Level Error -Message "MSI publisher validation failed - not signed by Microsoft" -Context @{ Publisher=$publisher }
+            throw "Publisher validation failed. MSI must be signed by Microsoft Corporation."
+        }
+
+        # Check certificate expiration
+        if ($sig.SignerCertificate.NotAfter -lt (Get-Date)) {
+            Write-Log -Level Error -Message "Signer certificate has expired" -Context @{ Expired=$sig.SignerCertificate.NotAfter }
+            throw "Signer certificate has expired."
+        }
+
+        Write-Log -Level Ok -Message "Signature and publisher validated" -Context @{ Publisher=$publisher }
 
         Write-Log -Level Info -Message "Installing uninstall tool"
         if ($PSCmdlet.ShouldProcess($temp, "Install MSI")) {
@@ -969,9 +1011,9 @@ function Invoke-ExecutionPlan {
 function Get-SystemStatus {
     param([switch]$Force, [switch]$SkipDiskScan)
 
-    # Honor Force parameter
+    # Honor Force parameter and CacheValid flag
     $cacheAge = if ($script:MenuState.LastScanTime) { (Get-Date) - $script:MenuState.LastScanTime } else { [TimeSpan]::MaxValue }
-    if (-not $Force -and $script:SystemCache -and $cacheAge.TotalMinutes -lt 5) {
+    if (-not $Force -and $script:SystemCache -and $script:MenuState.CacheValid -and $cacheAge.TotalMinutes -lt 5) {
         return $script:SystemCache
     }
 
