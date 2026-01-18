@@ -26,7 +26,7 @@ Find the right script for your task quickly. This page organizes scripts by comm
   - `development/VisualStudioCode/` - Auto-update VS Code
   - `productivity/MicrosoftTeams/` - Auto-update Teams
 - **`scripts/utilities/Update-AllAppsWinget.ps1`** - System-wide winget updater
-- **`scripts/utilities/Update-DotNetRuntimes.ps1`** - .NET runtime maintenance
+- **`scripts/utilities/Update-DotNetRuntimes.ps1`** (v2.5) - .NET runtime maintenance with interactive menu and security-hardened updates
 
 **Documentation:** [Winget Updates](Winget-Updates) | [Script Catalog](Script-Catalog#winget-updates)
 

@@ -25,6 +25,77 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ### Added
 
+#### 🔧 .NET Runtime Maintenance Script v2.5 Upgrade (MAJOR UPDATE)
+
+**Update-DotNetRuntimes.ps1** (`scripts/utilities/`)
+- **Interactive Menu System** - 8 maintenance options with user-friendly interface
+  - Update all runtimes (patches only)
+  - Remove EOL runtimes
+  - Install specific runtime versions
+  - Cleanup lower patches
+  - Generate disk usage reports
+  - Show system dependencies
+  - Create system restore points
+  - Refresh system status (force scan)
+
+- **Enhanced Security** 🔒
+  - **CRITICAL FIX**: Mandatory Authenticode signature validation (no bypass allowed)
+  - SHA512 hash verification for all downloads
+  - Prevents installation of tampered or malicious MSI files
+  - Security-hardened installation process
+
+- **Dependency Detection & Safety** 🔒
+  - Scans for IIS and ANCM (ASP.NET Core Module)
+  - Detects Windows Services using .NET runtimes
+  - Identifies Scheduled Tasks with .NET dependencies
+  - Monitors running .NET processes
+  - Configurable dependency handling: Warn / Block / Off
+  - Protected channels feature prevents accidental removal
+
+- **Performance & Reliability** ⚡
+  - **CRITICAL FIX**: Robust error handling in disk usage calculations
+  - **FIX**: Cache invalidation bug with Force parameter
+  - .NET DirectoryInfo API for 10-100x faster disk operations
+  - Smart caching (5-minute TTL) with Force override
+  - Lazy loading for optional operations
+
+- **New CLI Parameters**
+  - `OneShotCleanup` - Single parameter for complete automation
+  - `DependencyCheck` - Control dependency validation behavior
+  - `ProtectChannels` - Prevent accidental removal of critical versions
+  - `CreateRestorePoint` / `RestorePointName` - System restore support
+  - `Force` - Bypass cache for fresh scans
+  - `NonInteractive` - Explicit CLI mode control
+  - `SkipDiskScan` - Fast execution without disk analysis
+
+- **Enhanced Logging & Reporting**
+  - Proper PowerShell streams (Write-Warning, Write-Error, Write-Information)
+  - Structured logging with context
+  - Automation-friendly output
+  - Real-time status display in menu mode
+
+### Changed
+
+- **Update-DotNetRuntimes.ps1**: Upgraded from v1.0.0 to v2.5
+  - Complete rewrite with dual-mode operation (interactive menu + CLI automation)
+  - Parameter defaults changed for safer operations (require explicit approval)
+  - Admin enforcement with user-friendly error messages
+  - Enhanced documentation in scripts/utilities/README.md
+
+### Fixed
+
+- **SECURITY**: Signature validation bypass vulnerability in MSI installation
+- **PERFORMANCE**: Null reference errors in disk usage calculation
+- **BUG**: Cache invalidation not honoring Force parameter
+
+### Statistics
+
+- **Updated Scripts**: 1 production-ready PowerShell script
+- **Lines Changed**: +1,100 / -1,246 (net -146 lines, more efficient code)
+- **New Features**: 10+ new parameters, 8-option menu system
+- **Critical Fixes**: 3 (1 security, 2 reliability)
+- **Documentation**: Comprehensive README update with 15 best practices
+
 ---
 
 ## [3.6.0] - 2026-01-16 🌧️ **"Shower"** - Intune Device Management Scripts

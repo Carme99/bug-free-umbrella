@@ -198,7 +198,7 @@ Common issues:
 ## Related Scripts
 
 - **[Update-AllAppsWinget.ps1](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/utilities/Update-AllAppsWinget.ps1)** - System-wide winget updater
-- **[Update-DotNetRuntimes.ps1](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/utilities/Update-DotNetRuntimes.ps1)** - .NET runtime maintenance
+- **[Update-DotNetRuntimes.ps1](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/utilities/Update-DotNetRuntimes.ps1)** (v2.5) - .NET runtime maintenance with interactive menu, EOL detection, and security-hardened updates
 - **[Proactive Remediations](Proactive-Remediations)** - Other auto-fix scripts
 
 ---
