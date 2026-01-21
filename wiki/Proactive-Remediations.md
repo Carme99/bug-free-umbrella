@@ -20,9 +20,11 @@ All scripts are located in: `/scripts/endpoints/devices/proactive-remediations/`
 
 ## Available Remediations
 
-**Total: 50 detect/remediate script pairs** across 8 categories
+**Total: 51 detect/remediate script pairs** across 8 categories
 
-> **🆕 Version 3.1 Update**: Added 8 device health and uptime monitoring remediations for comprehensive health scoring, crash tracking, and reportable metrics.
+> **🆕 Version 3.2 Update**: Added Check-OutdatedCriticalApps remediation for rapid security patching of critical applications (browsers, VPN, security tools) using winget.
+>
+> **Version 3.1**: Added 8 device health and uptime monitoring remediations for comprehensive health scoring, crash tracking, and reportable metrics.
 
 ### 🔒 Security & Compliance (6 remediations)
 
@@ -75,10 +77,11 @@ All scripts are located in: `/scripts/endpoints/devices/proactive-remediations/`
 | **Fix-SMBv1Protocol** 🆕 | Insecure SMBv1 protocol enabled | Disable SMBv1 (security risk) | Critical |
 | **Check-SharedFolders** 🆕 | Unauthorized network shares present | Remove unauthorized shares | High |
 
-### 📱 Apps & Licensing (6 remediations)
+### 📱 Apps & Licensing (7 remediations)
 
 | Remediation | Issue Detected | Remediation Action | Priority |
 |-------------|----------------|-------------------|----------|
+| **Check-OutdatedCriticalApps** 🆕 | Outdated security-critical applications | Update apps via winget (browsers, VPN, security tools) | High |
 | **Fix-OneDriveKnownFolderMove** 🆕 | OneDrive not running, KFM not configured | Start OneDrive, configure KFM registry settings | High |
 | **Fix-CredentialManager** 🆕 | Stale or orphaned credentials | Remove problematic credentials | Low |
 | **Fix-WindowsLicenseActivation** 🆕 | Windows not activated | Trigger online activation | High |

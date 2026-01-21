@@ -7,7 +7,7 @@ A collection of ready-to-deploy Intune proactive remediation scripts for common 
 
 ## 📋 Overview
 
-This library provides **50 detect/remediate script pairs** that automatically identify and fix common device issues, organized by category:
+This library provides **51 detect/remediate script pairs** that automatically identify and fix common device issues, organized by category:
 
 ### 🔒 Security & Compliance (6 remediations)
 | Remediation | Purpose | Detection Criteria | Remediation Action |
@@ -56,9 +56,10 @@ This library provides **50 detect/remediate script pairs** that automatically id
 | **Fix-SMBv1Protocol** | SMBv1 security risk | SMBv1 enabled | Disable insecure SMBv1 protocol |
 | **Check-SharedFolders** | Unauthorized shares | Unauthorized network shares | Remove unauthorized shares |
 
-### 📱 Apps & Licensing (6 remediations)
+### 📱 Apps & Licensing (7 remediations)
 | Remediation | Purpose | Detection Criteria | Remediation Action |
 |-------------|---------|-------------------|-------------------|
+| **Check-OutdatedCriticalApps** 🆕 | Security-critical app updates | Outdated browsers, VPN, security tools | Update apps via winget with priority scheduling |
 | **Fix-OneDriveKnownFolderMove** | OneDrive KFM issues | OneDrive not running/syncing | Restart OneDrive, configure KFM |
 | **Fix-CredentialManager** | Stale credentials | Orphaned credentials | Remove stale credentials |
 | **Fix-WindowsLicenseActivation** | Windows activation | Windows not activated | Trigger online activation |
@@ -131,6 +132,8 @@ This library provides **50 detect/remediate script pairs** that automatically id
 | Fix-StaleProfiles | Weekly | Medium |
 | Check-DiskHealth | Daily | High |
 | **Applications & Services** |
+| Check-OutdatedCriticalApps (Priority) | Every 4 hours | High |
+| Check-OutdatedCriticalApps (Comprehensive) | Daily | Medium |
 | Fix-OneDriveKnownFolderMove | Daily | High |
 | Fix-EdgeCacheSize | Weekly | Low |
 | Fix-WindowsStoreLicensing | Daily | Medium |
@@ -197,6 +200,13 @@ This library provides **50 detect/remediate script pairs** that automatically id
 **Remediates**: Starts OneDrive, configures KFM registry settings
 **Safe**: Yes - works with Intune policies
 **Note**: Full KFM requires Intune policy configuration
+
+#### Check-OutdatedCriticalApps
+**Detects**: Outdated security-critical applications (browsers, VPN clients, security tools) using winget
+**Remediates**: Updates applications via winget with priority-based scheduling and process management
+**Safe**: Yes - only updates signed packages from official winget repository
+**Critical**: Ensures rapid security patching for high-CVE applications
+**Note**: Deploy TWO remediations - priority apps every 4 hours, comprehensive apps daily. See Check-OutdatedCriticalApps/README.md for full deployment guidance
 
 ### Storage & Performance
 
@@ -393,8 +403,8 @@ To add new remediations:
 
 ---
 
-**Version**: 3.1
-**Total Remediations**: 50 detect/remediate pairs
+**Version**: 3.2
+**Total Remediations**: 51 detect/remediate pairs
 **Compatible**: Windows 10/11, Windows Server 2016+
 **Last Updated**: January 2026
 
