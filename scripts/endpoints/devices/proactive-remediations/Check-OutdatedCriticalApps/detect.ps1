@@ -128,8 +128,8 @@ function Get-OutdatedApps {
     Write-Log "Checking for available updates (attempt $($RetryCount + 1)/$MaxRetries)"
 
     try {
-        # Run winget list with upgrade filter
-        $wingetOutput = & winget list --upgrade-available 2>&1 | Out-String
+        # Run winget list with upgrade filter (explicitly use Microsoft source)
+        $wingetOutput = & winget list --upgrade-available --source winget 2>&1 | Out-String
 
         if ($LASTEXITCODE -ne 0 -and $RetryCount -lt ($MaxRetries - 1)) {
             Write-Log "Winget command failed (exit code: $LASTEXITCODE), retrying..." "WARN"
@@ -140,11 +140,18 @@ function Get-OutdatedApps {
         # Parse winget output to find outdated apps
         $lines = $wingetOutput -split "`n" | Where-Object { $_ -match '\S' }
         $outdatedApps = @()
+        $failedParseCount = 0
+        $dataLineCount = 0
 
         foreach ($line in $lines) {
             # Skip header lines and non-data lines
             if ($line -match '^Name\s+Id\s+' -or $line -match '^-+' -or $line -match '^\d+ upgrades available') {
                 continue
+            }
+
+            # Count potential data lines (lines that aren't obviously headers/footers)
+            if ($line -match '[a-zA-Z]' -and $line -notmatch '^\s*$') {
+                $dataLineCount++
             }
 
             # Match lines with package information
@@ -155,6 +162,19 @@ function Get-OutdatedApps {
                 $currentVersion = $matches[3].Trim()
                 $availableVersion = $matches[4].Trim()
 
+                # Validate captured data is not empty and contains expected patterns
+                if ([string]::IsNullOrWhiteSpace($appId) -or -not ($appId -match '\.')) {
+                    Write-Log "Regex matched but captured invalid App ID from line: $line" "WARN"
+                    $failedParseCount++
+                    continue
+                }
+
+                if ([string]::IsNullOrWhiteSpace($appName)) {
+                    Write-Log "Regex matched but captured empty App Name from line: $line" "WARN"
+                    $failedParseCount++
+                    continue
+                }
+
                 $outdatedApps += [PSCustomObject]@{
                     Name = $appName
                     Id = $appId
@@ -162,6 +182,20 @@ function Get-OutdatedApps {
                     AvailableVersion = $availableVersion
                     IsPriority = ($appId -in $PriorityApps)
                 }
+            } elseif ($line -match '[a-zA-Z]' -and $line -notmatch '^\s*$' -and $dataLineCount -gt 0) {
+                # Log lines that look like data but failed to parse
+                Write-Log "Failed to parse potential data line: $line" "WARN"
+                $failedParseCount++
+            }
+        }
+
+        # Warn if significant parsing failures occurred
+        if ($failedParseCount -gt 0) {
+            $failureRate = [math]::Round(($failedParseCount / [math]::Max($dataLineCount, 1)) * 100, 1)
+            Write-Log "Warning: $failedParseCount of $dataLineCount lines failed to parse ($failureRate%)" "WARN"
+
+            if ($failureRate -gt 50) {
+                Write-Log "High parse failure rate suggests winget output format may have changed" "ERROR"
             }
         }
 

@@ -96,14 +96,36 @@ $StandardApps = @(
 
 # Process name mapping (for apps with different process names)
 $ProcessNameMap = @{
+    # Browsers
     'Google.Chrome' = 'chrome'
     'Mozilla.Firefox' = 'firefox'
     'Microsoft.Edge' = 'msedge'
+    'BraveSoftware.BraveBrowser' = 'brave'
+
+    # VPN & Remote Access
+    'Cisco.CiscoAnyConnect' = 'vpnui'
+    'OpenVPN.OpenVPN' = 'openvpn-gui'
+    'WireGuard.WireGuard' = 'wireguard'
+
+    # Development Tools
     'Microsoft.VisualStudioCode' = 'Code'
+    'Git.Git' = 'git'
+    'Python.Python.3.12' = 'python'
+    'Python.Python.3.11' = 'python'
+
+    # Security Tools
+    'Microsoft.PowerShell' = 'pwsh'
+    '1Password.1Password' = '1Password'
+    'Bitwarden.Bitwarden' = 'Bitwarden'
+
+    # Standard Apps
+    'Adobe.Acrobat.Reader.64-bit' = 'AcroRd32'
     'VideoLAN.VLC' = 'vlc'
-    'Notepad++.Notepad++' = 'notepad++'
-    'Microsoft.Teams' = 'Teams'
     'Zoom.Zoom' = 'Zoom'
+    'Microsoft.Teams' = 'Teams'
+    'Notepad++.Notepad++' = 'notepad++'
+    '7zip.7zip' = '7zFM'
+    'Microsoft.PowerToys' = 'PowerToys'
 }
 
 $LogPath = "$env:TEMP\WingetUpdateRemediation.log"
@@ -246,12 +268,12 @@ function Update-Application {
 
     try {
         # Execute winget upgrade with timeout
-        Write-Log "Executing: winget upgrade --id $AppId --silent --accept-source-agreements --accept-package-agreements"
+        Write-Log "Executing: winget upgrade --id $AppId --source winget --silent --accept-source-agreements --accept-package-agreements"
 
         $timeoutSeconds = $TimeoutPerAppMinutes * 60
         $job = Start-Job -ScriptBlock {
             param($id)
-            & winget upgrade --id $id --silent --accept-source-agreements --accept-package-agreements 2>&1
+            & winget upgrade --id $id --source winget --silent --accept-source-agreements --accept-package-agreements 2>&1
         } -ArgumentList $AppId
 
         $completed = Wait-Job -Job $job -Timeout $timeoutSeconds
@@ -322,7 +344,7 @@ function Update-Application {
 
 function Get-OutdatedApps {
     try {
-        $wingetOutput = & winget list --upgrade-available 2>&1 | Out-String
+        $wingetOutput = & winget list --upgrade-available --source winget 2>&1 | Out-String
         $lines = $wingetOutput -split "`n" | Where-Object { $_ -match '\S' }
         $outdatedApps = @()
 
