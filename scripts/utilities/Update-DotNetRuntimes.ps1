@@ -160,9 +160,25 @@ param(
         if ([string]::IsNullOrWhiteSpace($_)) { return $true }
         $uri = [uri]$_
         if ($uri.Scheme -ne 'https') { throw "URL must use HTTPS protocol" }
-        $allowedDomains = @('github.com', 'githubusercontent.com', 'microsoft.com', 'download.microsoft.com')
-        if ($allowedDomains -notcontains $uri.Host) {
-            throw "URL must be from trusted domain: github.com, githubusercontent.com, microsoft.com, or download.microsoft.com"
+        # FIX: Use regex for subdomain protection (e.g., prevents evil-github.com)
+        $allowedDomainPatterns = @(
+            '^github\.com$',
+            '^.*\.github\.com$',
+            '^githubusercontent\.com$',
+            '^.*\.githubusercontent\.com$',
+            '^microsoft\.com$',
+            '^.*\.microsoft\.com$',
+            '^download\.microsoft\.com$'
+        )
+        $isAllowed = $false
+        foreach ($pattern in $allowedDomainPatterns) {
+            if ($uri.Host -match $pattern) {
+                $isAllowed = $true
+                break
+            }
+        }
+        if (-not $isAllowed) {
+            throw "URL must be from trusted domain: *.github.com, *.githubusercontent.com, *.microsoft.com, or download.microsoft.com"
         }
         return $true
     })]
@@ -703,9 +719,14 @@ function Install-DotnetUninstallTool {
         Write-Log -Level Info -Message "Installing uninstall tool"
         if ($PSCmdlet.ShouldProcess($temp, "Install MSI")) {
             $args = "/i `"$temp`" /quiet /norestart"
-            # NOTE: Start-Process -Wait doesn't support timeout. MSI installs typically complete quickly (<2 min)
-            # If timeout needed, refactor to use System.Diagnostics.Process with WaitForExit(timeout)
-            $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $args -Wait -PassThru -NoNewWindow
+            # FIX: Added timeout handling using WaitForExit() method
+            $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $args -PassThru -NoNewWindow
+            $timeoutMs = 10 * 60 * 1000  # 10 minutes
+            if (-not $proc.WaitForExit($timeoutMs)) {
+                Write-Log -Level Warn -Message "MSI installer timed out after 10 minutes"
+                try { $proc.Kill() } catch {}
+                return $false
+            }
             if ($proc.ExitCode -eq 3010) { $script:RebootRequired = $true }
             if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 3010) {
                 Write-Log -Level Warn -Message "MSI install non-zero exit" -Context @{ ExitCode=$proc.ExitCode }
@@ -738,8 +759,14 @@ function Remove-AspNetCoreChannel {
         $label = "ASP.NET Core $MajorMinor $a"
         Write-Log -Level Info -Message "Removing EOL channel" -Context @{ Target=$label }
         if ($PSCmdlet.ShouldProcess($label, "Remove ASP.NET Core runtime")) {
-            # NOTE: Uninstall tool operations typically complete quickly (<2 min)
-            $p = Start-Process -FilePath $tool -ArgumentList $args -Wait -PassThru -NoNewWindow
+            # FIX: Added timeout handling using WaitForExit() method
+            $p = Start-Process -FilePath $tool -ArgumentList $args -PassThru -NoNewWindow
+            $timeoutMs = 10 * 60 * 1000  # 10 minutes
+            if (-not $p.WaitForExit($timeoutMs)) {
+                Write-Log -Level Warn -Message "Uninstall tool timed out after 10 minutes" -Context @{ Target=$label }
+                try { $p.Kill() } catch {}
+                return $false
+            }
             Add-Action -Type 'EOL-Removed' -Product 'AspNetCore' -Channel $MajorMinor -Arch $a -Detail "Removed" -ExitCode $p.ExitCode -Method 'UninstallTool'
             if ($p.ExitCode -gt 1) { Write-Log -Level Warn -Message "Tool error" -Context @{ ExitCode=$p.ExitCode }; return $false }
         }
@@ -855,8 +882,15 @@ function Invoke-PostPatchCleanup {
         $label = "$($t.Name) $ArchToClean"
         Write-Log -Level Info -Message "Cleaning lower patches" -Context @{ Target=$label }
         if ($PSCmdlet.ShouldProcess($label, "Remove lower patches")) {
-            # NOTE: Cleanup operations typically complete quickly (<5 min)
-            $p = Start-Process -FilePath $tool -ArgumentList $args -Wait -PassThru -NoNewWindow
+            # FIX: Added timeout handling using WaitForExit() method
+            $p = Start-Process -FilePath $tool -ArgumentList $args -PassThru -NoNewWindow
+            $timeoutMs = 10 * 60 * 1000  # 10 minutes
+            if (-not $p.WaitForExit($timeoutMs)) {
+                Write-Log -Level Warn -Message "Cleanup operation timed out after 10 minutes" -Context @{ Target=$label }
+                try { $p.Kill() } catch {}
+                $results += [PSCustomObject]@{ Label=$label; ExitCode=-1; Product=$t.Product; Arch=$ArchToClean }
+                continue
+            }
             $results += [PSCustomObject]@{ Label=$label; ExitCode=$p.ExitCode; Product=$t.Product; Arch=$ArchToClean }
             $status = if ($p.ExitCode -eq 0) { "completed" } elseif ($p.ExitCode -eq 1) { "no items" } else { "failed" }
             Add-Action -Type 'Cleanup' -Product $t.Product -Channel 'lower-patches' -Arch $ArchToClean -Detail "$label $status" -ExitCode $p.ExitCode -Method 'UninstallTool'

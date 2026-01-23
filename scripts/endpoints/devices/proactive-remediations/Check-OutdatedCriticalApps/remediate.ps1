@@ -216,6 +216,14 @@ function Stop-AppProcess {
                 Write-Log "Force killing $processName" "WARN"
                 Stop-Process -Name $processName -Force -ErrorAction SilentlyContinue
                 Start-Sleep -Seconds 2
+
+                # FIX: Verify process was actually terminated
+                $stillRunning = Get-Process -Name $processName -ErrorAction SilentlyContinue
+                if ($stillRunning) {
+                    Write-Log "Failed to terminate $processName after force kill" "ERROR"
+                    return $false
+                }
+                Write-Log "Successfully force-killed $processName"
                 return $true
             }
 
@@ -331,9 +339,13 @@ function Update-Application {
                 }
             }
         } else {
-            # Timeout occurred
-            Stop-Job -Job $job
-            Remove-Job -Job $job -Force
+            # Timeout occurred - FIX: Add error handling for job cleanup
+            try {
+                Stop-Job -Job $job -ErrorAction SilentlyContinue
+                Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
+            } catch {
+                Write-Log "Error cleaning up timed out job: $_" "WARN"
+            }
 
             Write-Log "Update timed out for $AppName after $TimeoutPerAppMinutes minutes" "ERROR"
             return [PSCustomObject]@{

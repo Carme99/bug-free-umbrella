@@ -64,9 +64,21 @@ $PriorityApps = @(
 )
 
 $ProcessNameMap = @{
+    # Browsers
     'Google.Chrome' = 'chrome'
     'Mozilla.Firefox' = 'firefox'
     'Microsoft.Edge' = 'msedge'
+    'BraveSoftware.BraveBrowser' = 'brave'
+
+    # VPN & Remote Access
+    'Cisco.CiscoAnyConnect' = 'vpnui'
+    'OpenVPN.OpenVPN' = 'openvpn-gui'
+    'WireGuard.WireGuard' = 'wireguard'
+
+    # Security Tools
+    'Microsoft.PowerShell' = 'pwsh'
+    '1Password.1Password' = '1Password'
+    'Bitwarden.Bitwarden' = 'Bitwarden'
 }
 
 $LogPath = "$env:TEMP\WingetUpdateRemediation_Priority.log"
@@ -109,7 +121,9 @@ function Stop-AppProcess {
 
     $processName = Get-AppProcessName -AppId $AppId
     if (-not $processName) {
-        return $true
+        # FIX: Return false when process name cannot be determined (safer default)
+        Write-Log "Cannot determine process name for $AppId - skipping process close" "WARN"
+        return $false
     }
 
     $processes = Get-Process -Name $processName -ErrorAction SilentlyContinue
@@ -130,6 +144,13 @@ function Stop-AppProcess {
         if ($remainingProcesses) {
             Stop-Process -Name $processName -Force -ErrorAction SilentlyContinue
             Start-Sleep -Seconds 1
+
+            # FIX: Verify process was actually terminated after force kill
+            $stillRunning = Get-Process -Name $processName -ErrorAction SilentlyContinue
+            if ($stillRunning) {
+                Write-Log "Failed to terminate $processName after force kill" "ERROR"
+                return $false
+            }
         }
 
         Write-Log "Successfully closed $processName"

@@ -105,7 +105,8 @@ function Test-WingetAvailable {
         Write-Log "Winget found at: $($wingetPath.Source)"
         return $true
     } catch {
-        Write-Log "Winget not found or not accessible" "ERROR"
+        # FIX: Include exception details in log
+        Write-Log "Winget not found or not accessible: $($_.Exception.Message)" "ERROR"
         return $false
     }
 }
