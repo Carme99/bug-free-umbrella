@@ -64,9 +64,21 @@ $PriorityApps = @(
 )
 
 $ProcessNameMap = @{
+    # Browsers
     'Google.Chrome' = 'chrome'
     'Mozilla.Firefox' = 'firefox'
     'Microsoft.Edge' = 'msedge'
+    'BraveSoftware.BraveBrowser' = 'brave'
+
+    # VPN & Remote Access
+    'Cisco.CiscoAnyConnect' = 'vpnui'
+    'OpenVPN.OpenVPN' = 'openvpn-gui'
+    'WireGuard.WireGuard' = 'wireguard'
+
+    # Security Tools & Development
+    'Microsoft.PowerShell' = 'pwsh'
+    '1Password.1Password' = '1Password'
+    'Bitwarden.Bitwarden' = 'Bitwarden'
 }
 
 $LogPath = "$env:TEMP\WingetUpdateRemediation_Priority.log"
@@ -120,14 +132,19 @@ function Stop-AppProcess {
     Write-Log "Force closing $processName..."
 
     try {
+        # FIX: Increased grace period from 2s to 12s to prevent data loss
+        # Send close signal to all processes
         $processes | ForEach-Object {
             $_.CloseMainWindow() | Out-Null
         }
 
-        Start-Sleep -Seconds 2
+        # Wait 12 seconds for graceful shutdown (was 2 seconds)
+        # This gives users time to save work in browsers, VPNs, development tools
+        Start-Sleep -Seconds 12
 
         $remainingProcesses = Get-Process -Name $processName -ErrorAction SilentlyContinue
         if ($remainingProcesses) {
+            Write-Log "Process did not close gracefully, forcing termination..." "WARN"
             Stop-Process -Name $processName -Force -ErrorAction SilentlyContinue
             Start-Sleep -Seconds 1
         }
@@ -168,15 +185,20 @@ function Update-PriorityApp {
 
         if ($completed) {
             $output = Receive-Job -Job $job
-            $exitCode = $job.State
-
             Remove-Job -Job $job -Force
 
-            if ($exitCode -eq 'Completed') {
+            # FIX: Check actual winget output instead of job state
+            # Winget success indicators: "Successfully installed", "No applicable update found", "No available upgrade found"
+            $outputString = $output | Out-String
+            $isSuccess = $outputString -match 'Successfully installed' -or
+                        $outputString -match 'No applicable update found' -or
+                        $outputString -match 'No available upgrade found'
+
+            if ($isSuccess) {
                 Write-Log "Successfully updated $AppName" "SUCCESS"
                 return $true
             } else {
-                Write-Log "Update failed for $AppName" "ERROR"
+                Write-Log "Update failed for $AppName - Output: $($outputString.Substring(0, [Math]::Min(200, $outputString.Length)))" "ERROR"
 
                 if ($RetryCount -lt ($MaxRetries - 1)) {
                     Write-Log "Retrying (attempt $($RetryCount + 2)/$MaxRetries)..."

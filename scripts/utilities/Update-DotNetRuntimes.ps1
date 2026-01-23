@@ -703,9 +703,14 @@ function Install-DotnetUninstallTool {
         Write-Log -Level Info -Message "Installing uninstall tool"
         if ($PSCmdlet.ShouldProcess($temp, "Install MSI")) {
             $args = "/i `"$temp`" /quiet /norestart"
-            # NOTE: Start-Process -Wait doesn't support timeout. MSI installs typically complete quickly (<2 min)
-            # If timeout needed, refactor to use System.Diagnostics.Process with WaitForExit(timeout)
-            $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $args -Wait -PassThru -NoNewWindow
+            # FIX: Added timeout handling (was missing, only EXE installs had timeout)
+            $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $args -PassThru -NoNewWindow
+            $timeoutMs = 10 * 60 * 1000  # 10 minutes timeout
+            if (-not $proc.WaitForExit($timeoutMs)) {
+                Write-Log -Level Warn -Message "MSI installer timed out after 10 minutes"
+                try { $proc.Kill() } catch {}
+                return $false
+            }
             if ($proc.ExitCode -eq 3010) { $script:RebootRequired = $true }
             if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 3010) {
                 Write-Log -Level Warn -Message "MSI install non-zero exit" -Context @{ ExitCode=$proc.ExitCode }

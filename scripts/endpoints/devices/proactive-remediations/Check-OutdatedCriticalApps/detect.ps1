@@ -108,14 +108,29 @@ function Test-WingetAvailable {
 }
 
 function Test-NetworkConnectivity {
-    try {
-        $testConnection = Test-NetConnection -ComputerName "www.microsoft.com" -Port 443 -InformationLevel Quiet -WarningAction SilentlyContinue -ErrorAction Stop
-        if ($testConnection) {
-            Write-Log "Network connectivity verified"
-            return $true
+    param([int]$MaxRetries = 3)
+
+    # FIX: Added retry logic with exponential backoff for transient network issues
+    for ($i = 1; $i -le $MaxRetries; $i++) {
+        try {
+            $testConnection = Test-NetConnection -ComputerName "www.microsoft.com" -Port 443 -InformationLevel Quiet -WarningAction SilentlyContinue -ErrorAction Stop
+            if ($testConnection) {
+                if ($i -gt 1) {
+                    Write-Log "Network connectivity verified on attempt $i"
+                } else {
+                    Write-Log "Network connectivity verified"
+                }
+                return $true
+            }
+        } catch {
+            if ($i -lt $MaxRetries) {
+                $waitSeconds = [Math]::Pow(2, $i - 1)
+                Write-Log "Network connectivity check attempt $i failed, retrying in $waitSeconds seconds..." "WARN"
+                Start-Sleep -Seconds $waitSeconds
+            } else {
+                Write-Log "Network connectivity check failed after $MaxRetries attempts: $_" "ERROR"
+            }
         }
-    } catch {
-        Write-Log "Network connectivity check failed: $_" "WARN"
     }
     return $false
 }
@@ -189,13 +204,16 @@ function Get-OutdatedApps {
             }
         }
 
+        # FIX: Lowered failure threshold from 50% to 20% for better detection of format changes
         # Warn if significant parsing failures occurred
         if ($failedParseCount -gt 0) {
             $failureRate = [math]::Round(($failedParseCount / [math]::Max($dataLineCount, 1)) * 100, 1)
             Write-Log "Warning: $failedParseCount of $dataLineCount lines failed to parse ($failureRate%)" "WARN"
 
-            if ($failureRate -gt 50) {
-                Write-Log "High parse failure rate suggests winget output format may have changed" "ERROR"
+            # Lowered from 50% to 20% - if 1 in 5 lines fail, something is likely wrong
+            if ($failureRate -gt 20) {
+                Write-Log "High parse failure rate ($failureRate%) suggests winget output format may have changed" "ERROR"
+                Write-Log "This may indicate security updates are not being detected properly" "ERROR"
             }
         }
 

@@ -154,12 +154,10 @@ function Get-AppProcessName {
         return $ProcessNameMap[$AppId]
     }
 
-    # Extract process name from App ID (last part after dot)
-    $parts = $AppId -split '\.'
-    if ($parts.Count -gt 0) {
-        return $parts[-1]
-    }
-
+    # FIX: Removed unreliable fallback that extracted last part of App ID
+    # This often produced wrong process names (e.g., "64-bit" for Adobe.Acrobat.Reader.64-bit)
+    # Better to return null and skip than use wrong process name
+    Write-Log "No process name mapping found for $AppId - process detection will be skipped" "WARN"
     return $null
 }
 
@@ -194,11 +192,15 @@ function Stop-AppProcess {
         Write-Log "Attempting to close $processName (attempt $i/$MaxAttempts)"
 
         try {
+            # FIX: Increased grace period from 3s to 12s to prevent data loss
+            # Send close signal to all processes
             $processes | ForEach-Object {
                 $_.CloseMainWindow() | Out-Null
             }
 
-            Start-Sleep -Seconds 3
+            # Wait 12 seconds for graceful shutdown (was 3 seconds)
+            # This gives users time to save work in browsers, VPNs, development tools
+            Start-Sleep -Seconds 12
 
             $remainingProcesses = Get-Process -Name $processName -ErrorAction SilentlyContinue
             if (-not $remainingProcesses) {
@@ -208,7 +210,7 @@ function Stop-AppProcess {
 
             # Force kill if last attempt
             if ($i -eq $MaxAttempts) {
-                Write-Log "Force killing $processName" "WARN"
+                Write-Log "Process did not close gracefully after 12s, forcing termination..." "WARN"
                 Stop-Process -Name $processName -Force -ErrorAction SilentlyContinue
                 Start-Sleep -Seconds 2
                 return $true
@@ -254,6 +256,12 @@ function Update-Application {
                         Message = "Application is running and could not be closed"
                     }
                 }
+
+                # FIX: Re-check after brief wait to ensure process stayed closed (race condition fix)
+                Start-Sleep -Seconds 2
+                if (Test-AppRunning -AppId $AppId) {
+                    Write-Log "Process restarted immediately after closing, update may fail" "WARN"
+                }
             } else {
                 Write-Log "$AppName is currently running, skipping update" "WARN"
                 return [PSCustomObject]@{
@@ -280,11 +288,16 @@ function Update-Application {
 
         if ($completed) {
             $output = Receive-Job -Job $job
-            $exitCode = $job.State
-
             Remove-Job -Job $job -Force
 
-            if ($exitCode -eq 'Completed') {
+            # FIX: Check actual winget output instead of job state
+            # Winget success indicators: "Successfully installed", "No applicable update found", "No available upgrade found"
+            $outputString = $output | Out-String
+            $isSuccess = $outputString -match 'Successfully installed' -or
+                        $outputString -match 'No applicable update found' -or
+                        $outputString -match 'No available upgrade found'
+
+            if ($isSuccess) {
                 Write-Log "Successfully updated $AppName" "SUCCESS"
                 return [PSCustomObject]@{
                     AppId = $AppId
@@ -293,7 +306,7 @@ function Update-Application {
                     Message = "Update completed successfully"
                 }
             } else {
-                $errorMessage = $output -join "`n"
+                $errorMessage = $outputString.Substring(0, [Math]::Min(500, $outputString.Length))
                 Write-Log "Update failed for $AppName : $errorMessage" "ERROR"
 
                 # Retry logic
