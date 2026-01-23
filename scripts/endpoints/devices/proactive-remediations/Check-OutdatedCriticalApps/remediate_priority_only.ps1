@@ -199,12 +199,17 @@ function Update-PriorityApp {
 
             # Check actual winget output for success indicators
             $outputString = $output -join "`n"
-            $isSuccess = $outputString -match 'Successfully installed' -or
-                         $outputString -match 'No applicable update found' -or
-                         $outputString -match 'No available upgrade found'
 
-            if ($isSuccess) {
+            # FIX: Differentiate between actually updated vs already up-to-date
+            $wasUpdated = $outputString -match 'Successfully installed'
+            $alreadyUpToDate = $outputString -match 'No applicable update found' -or
+                               $outputString -match 'No available upgrade found'
+
+            if ($wasUpdated) {
                 Write-Log "Successfully updated $AppName" "SUCCESS"
+                return $true
+            } elseif ($alreadyUpToDate) {
+                Write-Log "$AppName is already up-to-date (no update needed)" "INFO"
                 return $true
             } else {
                 Write-Log "Update failed for $AppName" "ERROR"

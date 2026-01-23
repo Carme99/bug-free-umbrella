@@ -166,9 +166,16 @@ function Get-OutdatedApps {
                 $currentVersion = $matches[3].Trim()
                 $availableVersion = $matches[4].Trim()
 
-                # Validate captured data is not empty and contains expected patterns
+                # FIX: Defense-in-depth validation at parsing stage
                 if ([string]::IsNullOrWhiteSpace($appId) -or -not ($appId -match '\.')) {
                     Write-Log "Regex matched but captured invalid App ID from line: $line" "WARN"
+                    $failedParseCount++
+                    continue
+                }
+
+                # Additional security validation: AppId format check (defense-in-depth)
+                if ($appId -notmatch '^[a-zA-Z0-9\.\-_]+$') {
+                    Write-Log "AppId contains invalid characters (security check): $appId" "WARN"
                     $failedParseCount++
                     continue
                 }
@@ -198,8 +205,12 @@ function Get-OutdatedApps {
             $failureRate = [math]::Round(($failedParseCount / [math]::Max($dataLineCount, 1)) * 100, 1)
             Write-Log "Warning: $failedParseCount of $dataLineCount lines failed to parse ($failureRate%)" "WARN"
 
-            if ($failureRate -gt 50) {
-                Write-Log "High parse failure rate suggests winget output format may have changed" "ERROR"
+            # FIX: Exit with error when failure rate is critically high
+            if ($failureRate -gt 75) {
+                Write-Log "CRITICAL: Parse failure rate exceeds 75% - winget output format may have changed. This may indicate security updates are not being detected properly." "ERROR"
+                return @()  # Return empty array to trigger remediation failure
+            } elseif ($failureRate -gt 50) {
+                Write-Log "High parse failure rate suggests winget output format may have changed. Consider investigating." "ERROR"
             }
         }
 

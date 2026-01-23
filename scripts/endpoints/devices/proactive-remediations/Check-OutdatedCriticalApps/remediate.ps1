@@ -308,17 +308,27 @@ function Update-Application {
 
             # Check actual winget output for success indicators
             $outputString = $output -join "`n"
-            $isSuccess = $outputString -match 'Successfully installed' -or
-                         $outputString -match 'No applicable update found' -or
-                         $outputString -match 'No available upgrade found'
 
-            if ($isSuccess) {
+            # FIX: Differentiate between actually updated, already up-to-date, and failed
+            $wasUpdated = $outputString -match 'Successfully installed'
+            $alreadyUpToDate = $outputString -match 'No applicable update found' -or
+                               $outputString -match 'No available upgrade found'
+
+            if ($wasUpdated) {
                 Write-Log "Successfully updated $AppName" "SUCCESS"
                 return [PSCustomObject]@{
                     AppId = $AppId
                     AppName = $AppName
                     Success = $true
-                    Message = "Update completed successfully"
+                    Message = "Update installed successfully"
+                }
+            } elseif ($alreadyUpToDate) {
+                Write-Log "$AppName is already up-to-date (no update needed)" "INFO"
+                return [PSCustomObject]@{
+                    AppId = $AppId
+                    AppName = $AppName
+                    Success = $true
+                    Message = "Already up-to-date"
                 }
             } else {
                 $errorMessage = $output -join "`n"
