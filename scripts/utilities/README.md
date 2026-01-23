@@ -10,7 +10,29 @@ PowerShell utility scripts for system management, maintenance, and automation ta
 
 This enterprise-grade script manages ASP.NET Core and Windows Desktop runtimes across your system with an interactive menu for easy management or full CLI automation. Features include automatic updates, EOL detection with LTS replacement, dependency analysis, system restore points, and security-hardened installation with Authenticode signature verification.
 
-**Version:** 2.5 | **Last Updated:** 2025-01-17
+**Version:** 2.6 | **Last Updated:** 2026-01-21
+
+#### Recent Updates
+
+**v2.6 (2026-01-21) - Critical Bug Fixes** 🐛
+- ✅ Fixed menu option 1, 3, 4 crashes (AspNetGroups null parameter error)
+- ✅ Fixed menu option 7 hang (Disk Usage Analyzer)
+- ✅ Fixed menu option 5 certificate validation (MSI publisher check too strict)
+- ✅ Fixed null reference errors in runtime update planning
+- ✅ Fixed array bounds errors in EOL removal
+- ✅ Fixed undefined variable crash in WhatIf mode
+- ✅ Fixed indefinite hangs with installer process timeouts
+- ✅ Fixed null handling in disk usage calculations
+- 🎯 **Result**: All menu options now fully functional (previously 5 of 8 failed)
+
+**v2.5 (2025-01-17) - Major Feature Release** 🚀
+- ✨ Added interactive menu system with 8 maintenance options
+- ✨ Added dependency detection (IIS, services, scheduled tasks)
+- ✨ Added system restore point support
+- ✨ Added protected channels feature
+- ✨ Added smart caching with Force override
+- 🔒 Enhanced security with mandatory signature validation
+- ⚡ Performance optimizations with .NET DirectoryInfo API
 
 #### Features
 
@@ -206,7 +228,7 @@ This enterprise-grade script manages ASP.NET Core and Windows Desktop runtimes a
 **Interactive Menu Mode** (NEW in v2.5):
 ```
 ╔═════════════════════════════════════════════════════════════════╗
-║            .NET Runtime Maintenance Tool v2.5                   ║
+║            .NET Runtime Maintenance Tool v2.6                   ║
 ║                                                                 ║
 ║  System Status (cached, use option 8 to refresh)               ║
 ║  ─────────────────────────────────────────────────────────     ║
@@ -578,4 +600,4 @@ For more information about this repository:
 
 ---
 
-**Last Updated:** 2025-01-17
+**Last Updated:** 2026-01-21

@@ -2,7 +2,7 @@
 
 Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection of 260+ PowerShell scripts for enterprise IT management!
 
-> **Latest Release:** [v3.6.0 "Shower" 🌧️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#360---2026-01-16--shower---intune-device-management-scripts) - Intune Device Management Scripts! ⭐ NEW
+> **Latest Release:** [v3.7.0 "Shower" 🌧️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#370---2026-01-21--shower---security--maintenance-release) - Security Updates & Bug Fixes! ⭐ NEW
 >
 > 📋 **[View Full Changelog →](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)** | 📦 **[GitHub Releases](https://github.com/Carme99/bug-free-umbrella/releases)**
 
@@ -47,7 +47,7 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 | **[Server Management](Server-Management)** | 31 scripts for Windows Server administration |
 | **[Intune Management](Intune-Management)** | 20 scripts for Endpoint Manager and device management ⭐ 2 NEW |
 | **[Microsoft 365 Services](Microsoft-365-Cloud-Services)** | 17 scripts for M365, Exchange, Teams, SharePoint |
-| **[Proactive Remediations](Proactive-Remediations)** | 15 auto-fix script pairs for common device issues |
+| **[Proactive Remediations](Proactive-Remediations)** | 51 auto-fix script pairs for common device issues ⭐ NEW: Check-OutdatedCriticalApps |
 | **[Winget Updates](Winget-Updates)** | 40+ application auto-update templates |
 | **[Azure Virtual Desktop](Azure-Virtual-Desktop)** | AVD deployment and image building guides |
 | **[Azure Compute Gallery Image Builder](Azure-Compute-Gallery-Image-Builder)** | Interactive ACG workflow |
@@ -61,9 +61,9 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 |--------|-------|
 | **Total Scripts** | 262+ |
 | **Categories** | 20 |
-| **Proactive Remediations** | 14 pairs (28 scripts) |
+| **Proactive Remediations** | 51 pairs (102 scripts) |
 | **Winget App Templates** | 40+ applications |
-| **Latest Release** | v3.6.0 "Shower" 🌧️ |
+| **Latest Release** | v3.7.0 "Shower" 🌧️ |
 | **Documentation Pages** | Comprehensive wiki! |
 
 ---

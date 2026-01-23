@@ -160,9 +160,25 @@ param(
         if ([string]::IsNullOrWhiteSpace($_)) { return $true }
         $uri = [uri]$_
         if ($uri.Scheme -ne 'https') { throw "URL must use HTTPS protocol" }
-        $allowedDomains = @('github.com', 'githubusercontent.com', 'microsoft.com', 'download.microsoft.com')
-        if ($allowedDomains -notcontains $uri.Host) {
-            throw "URL must be from trusted domain: github.com, githubusercontent.com, microsoft.com, or download.microsoft.com"
+        # FIX: Use regex for subdomain protection (e.g., prevents evil-github.com)
+        $allowedDomainPatterns = @(
+            '^github\.com$',
+            '^.*\.github\.com$',
+            '^githubusercontent\.com$',
+            '^.*\.githubusercontent\.com$',
+            '^microsoft\.com$',
+            '^.*\.microsoft\.com$',
+            '^download\.microsoft\.com$'
+        )
+        $isAllowed = $false
+        foreach ($pattern in $allowedDomainPatterns) {
+            if ($uri.Host -match $pattern) {
+                $isAllowed = $true
+                break
+            }
+        }
+        if (-not $isAllowed) {
+            throw "URL must be from trusted domain: *.github.com, *.githubusercontent.com, *.microsoft.com, or download.microsoft.com"
         }
         return $true
     })]
@@ -189,10 +205,8 @@ $script:RebootRequired = $false
 $script:SystemCache = $null
 $script:MenuState = @{ LastScanTime = $null; CacheValid = $false }
 
-# Emoji compatibility detection
-$script:UseEmoji = if ($PSVersionTable.PSVersion.Major -ge 7) { $true }
-    elseif ([Environment]::OSVersion.Version.Major -ge 10 -and [Environment]::OSVersion.Version.Build -ge 18362) { $true }
-    else { $false }
+# Emoji disabled for cross-platform compatibility
+$script:UseEmoji = $false
 
 # ========================= LOGGING & OUTPUT ========================= #
 
@@ -265,15 +279,12 @@ function Add-Action {
 function Write-Banner {
     if ($Quiet) { return }
     Write-Host ""
-    Write-Host "    ██████╗  ██████╗ ████████╗███╗   ██╗███████╗████████╗" -ForegroundColor Cyan
-    Write-Host "    ██╔══██╗██╔═══██╗╚══██╔══╝████╗  ██║██╔════╝╚══██╔══╝" -ForegroundColor Cyan
-    Write-Host "    ██║  ██║██║   ██║   ██║   ██╔██╗ ██║█████╗     ██║   " -ForegroundColor Cyan
-    Write-Host "    ██║  ██║██║   ██║   ██║   ██║╚██╗██║██╔══╝     ██║   " -ForegroundColor Cyan
-    Write-Host "    ██████╔╝╚██████╔╝   ██║   ██║ ╚████║███████╗   ██║   " -ForegroundColor Cyan
-    Write-Host "    ╚═════╝  ╚═════╝    ╚═╝   ╚═╝  ╚═══╝╚══════╝   ╚═╝   " -ForegroundColor Cyan
+    Write-Host "    ========================================================" -ForegroundColor Cyan
+    Write-Host "              .NET RUNTIME MAINTENANCE TOOL" -ForegroundColor Cyan
+    Write-Host "    ========================================================" -ForegroundColor Cyan
     Write-Host ""
     Write-Host "        Runtime Maintenance Tool v$script:Version (Production-Ready)" -ForegroundColor Magenta
-    Write-Host "            ASP.NET Core • WindowsDesktop • Base Runtime" -ForegroundColor DarkCyan
+    Write-Host "            ASP.NET Core | WindowsDesktop | Base Runtime" -ForegroundColor DarkCyan
     Write-Host ""
 }
 
@@ -498,17 +509,21 @@ function Get-InstalledProductByArch {
 }
 
 function Get-AllInstalledAspNetCoreRuntimes {
+    # FIX: Don't use Where-Object { $_ } as it returns $null for empty arrays
+    # Get-InstalledProductByArch already returns @() when no runtimes found
     @(
         Get-InstalledProductByArch -DotnetPath "C:\Program Files\dotnet\dotnet.exe" -ProductRegex '^Microsoft\.AspNetCore\.App\s+\d+\.\d+\.\d+' -ArchLabel 'x64'
         Get-InstalledProductByArch -DotnetPath "C:\Program Files (x86)\dotnet\dotnet.exe" -ProductRegex '^Microsoft\.AspNetCore\.App\s+\d+\.\d+\.\d+' -ArchLabel 'x86'
-    ) | Where-Object { $_ }
+    )
 }
 
 function Get-AllInstalledWindowsDesktopRuntimes {
+    # FIX: Don't use Where-Object { $_ } as it returns $null for empty arrays
+    # Get-InstalledProductByArch already returns @() when no runtimes found
     @(
         Get-InstalledProductByArch -DotnetPath "C:\Program Files\dotnet\dotnet.exe" -ProductRegex '^Microsoft\.WindowsDesktop\.App\s+\d+\.\d+\.\d+' -ArchLabel 'x64'
         Get-InstalledProductByArch -DotnetPath "C:\Program Files (x86)\dotnet\dotnet.exe" -ProductRegex '^Microsoft\.WindowsDesktop\.App\s+\d+\.\d+\.\d+' -ArchLabel 'x86'
-    ) | Where-Object { $_ }
+    )
 }
 
 # ========================= RELEASE METADATA ========================= #
@@ -609,7 +624,7 @@ function Test-FileHashIfAvailable {
 }
 
 function Install-Exe {
-    param([string]$Path, [string]$Arguments="/quiet /norestart")
+    param([string]$Path, [string]$Arguments="/quiet /norestart", [int]$TimeoutMinutes=10)
     if (-not (Test-Path $Path)) { throw "Installer not found: $Path" }
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = $Path
@@ -619,7 +634,14 @@ function Install-Exe {
     $psi.RedirectStandardError = $true
     $psi.CreateNoWindow = $true
     $proc = [System.Diagnostics.Process]::Start($psi)
-    $proc.WaitForExit()
+
+    # FIX: Add timeout to prevent indefinite hangs
+    $timeoutMs = $TimeoutMinutes * 60 * 1000
+    if (-not $proc.WaitForExit($timeoutMs)) {
+        try { $proc.Kill() } catch {}
+        throw "Installer timed out after $TimeoutMinutes minutes"
+    }
+
     $exitCode = $proc.ExitCode
     $reboot = ($exitCode -eq 3010)
     if ($exitCode -ne 0 -and $exitCode -ne 3010) { throw "Installer failed: exit code $exitCode" }
@@ -678,8 +700,10 @@ function Install-DotnetUninstallTool {
         }
 
         # Verify publisher is Microsoft
+        # FIX: Accept certificates where CN=Microsoft Corporation OR O=Microsoft Corporation
+        # Microsoft uses product-specific CNs (like "CN=.NET") with "O=Microsoft Corporation"
         $publisher = $sig.SignerCertificate.Subject
-        if ($publisher -notmatch 'CN=Microsoft Corporation') {
+        if ($publisher -notmatch 'CN=Microsoft Corporation' -and $publisher -notmatch 'O=Microsoft Corporation') {
             Write-Log -Level Error -Message "MSI publisher validation failed - not signed by Microsoft" -Context @{ Publisher=$publisher }
             throw "Publisher validation failed. MSI must be signed by Microsoft Corporation."
         }
@@ -695,7 +719,14 @@ function Install-DotnetUninstallTool {
         Write-Log -Level Info -Message "Installing uninstall tool"
         if ($PSCmdlet.ShouldProcess($temp, "Install MSI")) {
             $args = "/i `"$temp`" /quiet /norestart"
-            $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $args -Wait -PassThru -NoNewWindow
+            # FIX: Added timeout handling using WaitForExit() method
+            $proc = Start-Process -FilePath "msiexec.exe" -ArgumentList $args -PassThru -NoNewWindow
+            $timeoutMs = 10 * 60 * 1000  # 10 minutes
+            if (-not $proc.WaitForExit($timeoutMs)) {
+                Write-Log -Level Warn -Message "MSI installer timed out after 10 minutes"
+                try { $proc.Kill() } catch {}
+                return $false
+            }
             if ($proc.ExitCode -eq 3010) { $script:RebootRequired = $true }
             if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 3010) {
                 Write-Log -Level Warn -Message "MSI install non-zero exit" -Context @{ ExitCode=$proc.ExitCode }
@@ -728,7 +759,14 @@ function Remove-AspNetCoreChannel {
         $label = "ASP.NET Core $MajorMinor $a"
         Write-Log -Level Info -Message "Removing EOL channel" -Context @{ Target=$label }
         if ($PSCmdlet.ShouldProcess($label, "Remove ASP.NET Core runtime")) {
-            $p = Start-Process -FilePath $tool -ArgumentList $args -Wait -PassThru -NoNewWindow
+            # FIX: Added timeout handling using WaitForExit() method
+            $p = Start-Process -FilePath $tool -ArgumentList $args -PassThru -NoNewWindow
+            $timeoutMs = 10 * 60 * 1000  # 10 minutes
+            if (-not $p.WaitForExit($timeoutMs)) {
+                Write-Log -Level Warn -Message "Uninstall tool timed out after 10 minutes" -Context @{ Target=$label }
+                try { $p.Kill() } catch {}
+                return $false
+            }
             Add-Action -Type 'EOL-Removed' -Product 'AspNetCore' -Channel $MajorMinor -Arch $a -Detail "Removed" -ExitCode $p.ExitCode -Method 'UninstallTool'
             if ($p.ExitCode -gt 1) { Write-Log -Level Warn -Message "Tool error" -Context @{ ExitCode=$p.ExitCode }; return $false }
         }
@@ -791,16 +829,39 @@ function Get-DiskUsageSnapshot {
 
 function Summarize-DiskUsage {
     param([object[]]$Entries)
+
+    # FIX: Handle empty or null entries
+    if (-not $Entries -or $Entries.Count -eq 0) {
+        return @()
+    }
+
     $grouped = $Entries | Group-Object { "$($_.Product)|$($_.Root)|$($_.MajorMinor)" }
+
+    if (-not $grouped) {
+        return @()
+    }
+
     $summary = foreach ($g in $grouped) {
         $items = $g.Group
         $topPatch = ($items | Sort-Object Patch -Descending | Select-Object -First 1)
         $total = ($items | Measure-Object -Property Bytes -Sum).Sum
         $lower = ($items | Where-Object { $_.Patch -lt $topPatch.Patch } | Measure-Object -Property Bytes -Sum).Sum
+
+        # FIX: Handle potential null values
+        if ($null -eq $total) { $total = 0 }
+        if ($null -eq $lower) { $lower = 0 }
+
         $parts = $g.Name -split '\|'
-        [PSCustomObject]@{ Product=$parts[0]; Root=$parts[1]; Channel=$parts[2]; HighestPatch=$topPatch.Version; TotalBytes=[long]$total; LowerBytes=[long]$lower }
+        [PSCustomObject]@{
+            Product = $parts[0]
+            Root = $parts[1]
+            Channel = $parts[2]
+            HighestPatch = $topPatch.Version
+            TotalBytes = [long]$total
+            LowerBytes = [long]$lower
+        }
     }
-    $summary
+    return @($summary)  # Ensure array return
 }
 
 function Invoke-PostPatchCleanup {
@@ -821,7 +882,15 @@ function Invoke-PostPatchCleanup {
         $label = "$($t.Name) $ArchToClean"
         Write-Log -Level Info -Message "Cleaning lower patches" -Context @{ Target=$label }
         if ($PSCmdlet.ShouldProcess($label, "Remove lower patches")) {
-            $p = Start-Process -FilePath $tool -ArgumentList $args -Wait -PassThru -NoNewWindow
+            # FIX: Added timeout handling using WaitForExit() method
+            $p = Start-Process -FilePath $tool -ArgumentList $args -PassThru -NoNewWindow
+            $timeoutMs = 10 * 60 * 1000  # 10 minutes
+            if (-not $p.WaitForExit($timeoutMs)) {
+                Write-Log -Level Warn -Message "Cleanup operation timed out after 10 minutes" -Context @{ Target=$label }
+                try { $p.Kill() } catch {}
+                $results += [PSCustomObject]@{ Label=$label; ExitCode=-1; Product=$t.Product; Arch=$ArchToClean }
+                continue
+            }
             $results += [PSCustomObject]@{ Label=$label; ExitCode=$p.ExitCode; Product=$t.Product; Arch=$ArchToClean }
             $status = if ($p.ExitCode -eq 0) { "completed" } elseif ($p.ExitCode -eq 1) { "no items" } else { "failed" }
             Add-Action -Type 'Cleanup' -Product $t.Product -Channel 'lower-patches' -Arch $ArchToClean -Detail "$label $status" -ExitCode $p.ExitCode -Method 'UninstallTool'
@@ -849,7 +918,10 @@ function Invoke-RuntimeUpdatePlan {
     if ($UpdateAspNet) {
         foreach ($grp in $AspNetGroups) {
             if ($Architecture -ne 'Both' -and $grp.Architecture -ne $Architecture) { continue }
+            # FIX: Validate group has items before accessing
+            if (-not $grp.Group -or $grp.Group.Count -eq 0) { continue }
             $highest = ($grp.Group | Sort-Object Patch -Descending | Select-Object -First 1)
+            if (-not $highest) { continue }
             $channelMeta = Get-ChannelMetadata -IndexData $ReleaseIndex -MajorMinor $grp.Name
             if (-not $channelMeta) { continue }
 
@@ -887,7 +959,10 @@ function Invoke-RuntimeUpdatePlan {
     if ($UpdateDesktop) {
         foreach ($grp in $DesktopGroups) {
             if ($Architecture -ne 'Both' -and $grp.Architecture -ne $Architecture) { continue }
+            # FIX: Validate group has items before accessing
+            if (-not $grp.Group -or $grp.Group.Count -eq 0) { continue }
             $highest = ($grp.Group | Sort-Object Patch -Descending | Select-Object -First 1)
+            if (-not $highest) { continue }
             $channelMeta = Get-ChannelMetadata -IndexData $ReleaseIndex -MajorMinor $grp.Name
             if (-not $channelMeta) { continue }
 
@@ -955,8 +1030,11 @@ function Invoke-ExecutionPlan {
                     Write-Log -Level Info -Message "Installing $($item.TargetVersion)..."
                     if (-not $WhatIf) {
                         $installResult = Install-Exe -Path $tempFile -Arguments "/quiet /norestart"
-                        if ($installResult.RebootRequired) { $script:RebootRequired = $true }
+                        # FIX: Check if $installResult exists before accessing properties
+                        if ($installResult -and $installResult.RebootRequired) { $script:RebootRequired = $true }
                         Remove-Item -Path $tempFile -Force -ErrorAction SilentlyContinue
+                    } else {
+                        Write-Log -Level Info -Message "[WhatIf] Would install $($item.TargetVersion)"
                     }
 
                     $results += [PSCustomObject]@{
@@ -1017,7 +1095,7 @@ function Get-SystemStatus {
         return $script:SystemCache
     }
 
-    $icon = if ($script:UseEmoji) { "🔍" } else { "[*]" }
+    $icon = "[*]"
     Write-Host "`n$icon Scanning system..." -ForegroundColor Cyan
 
     $status = @{}
@@ -1038,8 +1116,11 @@ function Get-SystemStatus {
     if (-not $SkipDiskScan) {
         $diskEntries = Get-DiskUsageSnapshot
         $diskSummary = Summarize-DiskUsage -Entries $diskEntries
-        $status.TotalDiskUsage = ($diskSummary | Measure-Object -Property TotalBytes -Sum).Sum
-        $status.ReclaimableDisk = ($diskSummary | Measure-Object -Property LowerBytes -Sum).Sum
+        # FIX: Handle null from Measure-Object when collection is empty
+        $totalSum = ($diskSummary | Measure-Object -Property TotalBytes -Sum).Sum
+        $reclaimSum = ($diskSummary | Measure-Object -Property LowerBytes -Sum).Sum
+        $status.TotalDiskUsage = if ($null -eq $totalSum) { 0 } else { $totalSum }
+        $status.ReclaimableDisk = if ($null -eq $reclaimSum) { 0 } else { $reclaimSum }
     } else {
         $status.TotalDiskUsage = 0
         $status.ReclaimableDisk = 0
@@ -1093,7 +1174,7 @@ function New-SystemSnapshot {
 
 function Show-StartupScreen {
     Write-Banner
-    $icon = if ($script:UseEmoji) { "🔍" } else { "[*]" }
+    $icon = "[*]"
     Write-Host "$icon Initializing...`n" -ForegroundColor Cyan
 
     # Skip slow disk scan on startup
@@ -1101,14 +1182,14 @@ function Show-StartupScreen {
 
     Write-Host "System Information:" -ForegroundColor White
     Write-Host "  Computer         : $($status.ComputerName)" -ForegroundColor Gray
-    Write-Host "  Administrator    : $(if ($status.IsAdmin) { '✓ Yes' } else { '✗ No' })" -ForegroundColor $(if ($status.IsAdmin) { 'Green' } else { 'Yellow' })
+    Write-Host "  Administrator    : $(if ($status.IsAdmin) { '[OK] Yes' } else { '[X] No' })" -ForegroundColor $(if ($status.IsAdmin) { 'Green' } else { 'Yellow' })
     Write-Host ""
 
     Write-Host "Runtime Detection:" -ForegroundColor White
-    if ($status.HasDotnetX64) { Write-Host "  ✓ dotnet.exe (x64)" -ForegroundColor Green }
-    if ($status.HasDotnetX86) { Write-Host "  ✓ dotnet.exe (x86)" -ForegroundColor Green }
-    if (-not $status.HasDotnetX64 -and -not $status.HasDotnetX86) { Write-Host "  ✗ No dotnet.exe" -ForegroundColor Red }
-    Write-Host "  $(if ($status.HasUninstallTool) { '✓' } else { '✗' }) Uninstall tool: $(if ($status.HasUninstallTool) { 'Installed' } else { 'Not installed' })" -ForegroundColor $(if ($status.HasUninstallTool) { 'Green' } else { 'Yellow' })
+    if ($status.HasDotnetX64) { Write-Host "  [OK] dotnet.exe (x64)" -ForegroundColor Green }
+    if ($status.HasDotnetX86) { Write-Host "  [OK] dotnet.exe (x86)" -ForegroundColor Green }
+    if (-not $status.HasDotnetX64 -and -not $status.HasDotnetX86) { Write-Host "  [X] No dotnet.exe" -ForegroundColor Red }
+    Write-Host "  $(if ($status.HasUninstallTool) { '[OK]' } else { '[X]' }) Uninstall tool: $(if ($status.HasUninstallTool) { 'Installed' } else { 'Not installed' })" -ForegroundColor $(if ($status.HasUninstallTool) { 'Green' } else { 'Yellow' })
     Write-Host ""
 
     $aspCount = ($status.AspNetGroups | Measure-Object).Count
@@ -1117,14 +1198,14 @@ function Show-StartupScreen {
     Write-Host "  ASP.NET Core      : $aspCount channels" -ForegroundColor Gray
     Write-Host "  WindowsDesktop    : $deskCount channels" -ForegroundColor Gray
     if ($status.EolChannels.Count -gt 0) {
-        Write-Host "  ⚠️  EOL Detected  : $($status.EolChannels.Count) channels" -ForegroundColor Yellow
+        Write-Host "  [!]  EOL Detected  : $($status.EolChannels.Count) channels" -ForegroundColor Yellow
     }
     Write-Host ""
 
     if ($status.IisInstalled) {
         Write-Host "IIS Environment:" -ForegroundColor White
-        Write-Host "  ✓ IIS Installed" -ForegroundColor Green
-        if ($status.IisSiteCount -gt 0) { Write-Host "  ⚠️  Active Sites  : $($status.IisSiteCount)" -ForegroundColor Yellow }
+        Write-Host "  [OK] IIS Installed" -ForegroundColor Green
+        if ($status.IisSiteCount -gt 0) { Write-Host "  [!]  Active Sites  : $($status.IisSiteCount)" -ForegroundColor Yellow }
         Write-Host ""
     }
 
@@ -1138,9 +1219,9 @@ function Show-MainMenu {
         $status = Get-SystemStatus  # Use cached version (fast)
 
         Write-Host ""
-        Write-Host "╔══════════════════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
-        Write-Host "║  DOTNET MAINTAINER v$script:Version - MAIN MENU                                   ║" -ForegroundColor Cyan
-        Write-Host "╚══════════════════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
+        Write-Host "============================================================================" -ForegroundColor Cyan
+        Write-Host "  DOTNET MAINTAINER v$script:Version - MAIN MENU" -ForegroundColor Cyan
+        Write-Host "============================================================================" -ForegroundColor Cyan
         Write-Host ""
         Write-Host "  [1]  Quick Maintenance (Recommended)" -ForegroundColor White
         Write-Host "  [2]  View System Status (Refresh)" -ForegroundColor White
@@ -1184,7 +1265,7 @@ function Invoke-QuickMaintenance {
     $confirm = Read-YesNoDefault -Prompt "Proceed with full maintenance (update, remove EOL, cleanup)?" -Default $false
     if (-not $confirm) { Write-Host "Cancelled." -ForegroundColor Yellow; return }
 
-    $icon = if ($script:UseEmoji) { "🔍" } else { "[*]" }
+    $icon = "[*]"
     Write-Host "`n$icon Building plan..." -ForegroundColor Cyan
 
     $status = Get-SystemStatus -Force
@@ -1196,22 +1277,22 @@ function Invoke-QuickMaintenance {
     if ($updatePlan.Count -gt 0) {
         Write-Host "`nUpdates available:" -ForegroundColor Yellow
         foreach ($p in $updatePlan) {
-            Write-Host "  • $($p.Product) $($p.Channel) ($($p.Architecture)): $($p.CurrentVersion) → $($p.TargetVersion)" -ForegroundColor White
+            Write-Host "  - $($p.Product) $($p.Channel) ($($p.Architecture)): $($p.CurrentVersion) -> $($p.TargetVersion)" -ForegroundColor White
         }
 
-        Write-Host "`n⏳ Installing..." -ForegroundColor Cyan
+        Write-Host "`n[...] Installing..." -ForegroundColor Cyan
         $results = Invoke-ExecutionPlan -Plan $updatePlan
         $successCount = ($results | Where-Object { $_.Success }).Count
-        Write-Host "✓ Updates: $successCount/$($results.Count) successful" -ForegroundColor Green
+        Write-Host "[OK] Updates: $successCount/$($results.Count) successful" -ForegroundColor Green
     } else {
-        Write-Host "✓ All runtimes up to date" -ForegroundColor Green
+        Write-Host "[OK] All runtimes up to date" -ForegroundColor Green
     }
 
     if ($status.ReclaimableDisk -gt 0) {
-        Write-Host "`n🧹 Cleaning lower patches..." -ForegroundColor Cyan
+        Write-Host "`n[CLEAN] Cleaning lower patches..." -ForegroundColor Cyan
         Invoke-PostPatchCleanup -ArchToClean 'x64'
         Invoke-PostPatchCleanup -ArchToClean 'x86'
-        Write-Host "✓ Cleanup complete" -ForegroundColor Green
+        Write-Host "[OK] Cleanup complete" -ForegroundColor Green
     }
 
     $script:MenuState.CacheValid = $false
@@ -1224,25 +1305,31 @@ function Show-SystemStatusDetailed {
     Write-Host "`nASP.NET Core Runtimes:" -ForegroundColor Yellow
     if ($status.AspNetGroups.Count -eq 0) { Write-Host "  None" -ForegroundColor Gray } else {
         foreach ($grp in $status.AspNetGroups) {
+            # FIX: Validate group has items before accessing
+            if (-not $grp.Group -or $grp.Group.Count -eq 0) { continue }
             $highest = ($grp.Group | Sort-Object Patch -Descending | Select-Object -First 1)
-            Write-Host "  • $($grp.Name) ($($grp.Architecture)) - $($highest.RawVersion)" -ForegroundColor White
+            if (-not $highest) { continue }
+            Write-Host "  - $($grp.Name) ($($grp.Architecture)) - $($highest.RawVersion)" -ForegroundColor White
         }
     }
 
     Write-Host "`nWindows Desktop Runtimes:" -ForegroundColor Yellow
     if ($status.DesktopGroups.Count -eq 0) { Write-Host "  None" -ForegroundColor Gray } else {
         foreach ($grp in $status.DesktopGroups) {
+            # FIX: Validate group has items before accessing
+            if (-not $grp.Group -or $grp.Group.Count -eq 0) { continue }
             $highest = ($grp.Group | Sort-Object Patch -Descending | Select-Object -First 1)
-            Write-Host "  • $($grp.Name) ($($grp.Architecture)) - $($highest.RawVersion)" -ForegroundColor White
+            if (-not $highest) { continue }
+            Write-Host "  - $($grp.Name) ($($grp.Architecture)) - $($highest.RawVersion)" -ForegroundColor White
         }
     }
 
     Write-Host "`nEOL Status:" -ForegroundColor Yellow
     if ($status.EolChannels.Count -eq 0) {
-        Write-Host "  ✓ No EOL channels" -ForegroundColor Green
+        Write-Host "  [OK] No EOL channels" -ForegroundColor Green
     } else {
-        Write-Host "  ⚠️  EOL found:" -ForegroundColor Red
-        foreach ($eol in $status.EolChannels) { Write-Host "     • $eol" -ForegroundColor DarkYellow }
+        Write-Host "  [!]  EOL found:" -ForegroundColor Red
+        foreach ($eol in $status.EolChannels) { Write-Host "     - $eol" -ForegroundColor DarkYellow }
     }
 }
 
@@ -1256,12 +1343,12 @@ function Invoke-AutomatedUpdate {
     $plan = Invoke-RuntimeUpdatePlan -AspNetGroups $status.AspNetGroups -DesktopGroups $status.DesktopGroups `
                                       -ReleaseIndex $index -UpdateAspNet -UpdateDesktop
 
-    if ($plan.Count -eq 0) { Write-Host "✓ All up to date" -ForegroundColor Green; return }
+    if ($plan.Count -eq 0) { Write-Host "[OK] All up to date" -ForegroundColor Green; return }
 
-    Write-Host "`n⏳ Installing $($plan.Count) update(s)..." -ForegroundColor Cyan
+    Write-Host "`n[...] Installing $($plan.Count) update(s)..." -ForegroundColor Cyan
     $results = Invoke-ExecutionPlan -Plan $plan
     $successCount = ($results | Where-Object { $_.Success }).Count
-    Write-Host "`n✓ Completed: $successCount/$($results.Count)" -ForegroundColor Green
+    Write-Host "`n[OK] Completed: $successCount/$($results.Count)" -ForegroundColor Green
 
     $script:MenuState.CacheValid = $false
 }
@@ -1273,12 +1360,12 @@ function Invoke-InteractiveUpdate {
     $allUpdates = Invoke-RuntimeUpdatePlan -AspNetGroups $status.AspNetGroups -DesktopGroups $status.DesktopGroups `
                                             -ReleaseIndex $index -UpdateAspNet -UpdateDesktop
 
-    if ($allUpdates.Count -eq 0) { Write-Host "✓ All up to date" -ForegroundColor Green; return }
+    if ($allUpdates.Count -eq 0) { Write-Host "[OK] All up to date" -ForegroundColor Green; return }
 
     Write-Host "Available updates:`n" -ForegroundColor Yellow
     for ($i = 0; $i -lt $allUpdates.Count; $i++) {
         $u = $allUpdates[$i]
-        Write-Host "[$($i+1)] $($u.Product) $($u.Channel) ($($u.Architecture)): $($u.CurrentVersion) → $($u.TargetVersion)" -ForegroundColor White
+        Write-Host "[$($i+1)] $($u.Product) $($u.Channel) ($($u.Architecture)): $($u.CurrentVersion) -> $($u.TargetVersion)" -ForegroundColor White
     }
 
     Write-Host "`nEnter numbers (comma-separated), 'all', or 'none':" -ForegroundColor Cyan
@@ -1295,9 +1382,9 @@ function Invoke-InteractiveUpdate {
 
     if ($selected.Count -eq 0) { Write-Host "None selected" -ForegroundColor Yellow; return }
 
-    Write-Host "`n⏳ Installing..." -ForegroundColor Cyan
+    Write-Host "`n[...] Installing..." -ForegroundColor Cyan
     $results = Invoke-ExecutionPlan -Plan $selected
-    Write-Host "✓ Done: $(($results | Where-Object { $_.Success }).Count)/$($results.Count)" -ForegroundColor Green
+    Write-Host "[OK] Done: $(($results | Where-Object { $_.Success }).Count)/$($results.Count)" -ForegroundColor Green
     $script:MenuState.CacheValid = $false
 }
 
@@ -1305,17 +1392,22 @@ function Invoke-EolRemovalWizard {
     Write-Section "EOL Removal Wizard"
     $status = Get-SystemStatus
     if ($status.EolChannels.Count -eq 0) {
-        Write-Host "✓ No EOL channels detected" -ForegroundColor Green
+        Write-Host "[OK] No EOL channels detected" -ForegroundColor Green
         return
     }
 
-    Write-Host "⚠️  EOL Channels:" -ForegroundColor Yellow
-    foreach ($eol in $status.EolChannels) { Write-Host "  • $eol" -ForegroundColor DarkYellow }
+    Write-Host "[!]  EOL Channels:" -ForegroundColor Yellow
+    foreach ($eol in $status.EolChannels) { Write-Host "  - $eol" -ForegroundColor DarkYellow }
     Write-Host ""
 
     # Risk assessment
     foreach ($eol in $status.EolChannels) {
         $parts = $eol -split ' '
+        # FIX: Validate split results before accessing array elements
+        if ($parts.Count -lt 2) {
+            Write-Log -Level Warn -Message "Invalid EOL format, skipping risk assessment" -Context @{ EOL=$eol }
+            continue
+        }
         $channel = $parts[0]
         $arch = $parts[1].Trim('()')
         $risk = Test-EolRemovalRisk -Channel $channel -ArchLabel $arch
@@ -1326,7 +1418,7 @@ function Invoke-EolRemovalWizard {
     }
 
     if ($DependencyCheck -eq 'Block' -and $status.IisInstalled) {
-        Write-Host "`n🛑 BLOCKED: IIS detected. Migrate apps first." -ForegroundColor Red
+        Write-Host "`n[STOP] BLOCKED: IIS detected. Migrate apps first." -ForegroundColor Red
         return
     }
 
@@ -1336,18 +1428,24 @@ function Invoke-EolRemovalWizard {
     if (-not (Get-DotnetUninstallToolPath)) {
         Write-Host "Installing uninstall tool..." -ForegroundColor Cyan
         $installed = Install-DotnetUninstallTool -UrlOverride $UninstallToolMsiUrl
-        if (-not $installed) { Write-Host "✗ Tool install failed" -ForegroundColor Red; return }
+        if (-not $installed) { Write-Host "[X] Tool install failed" -ForegroundColor Red; return }
     }
 
     $removed = 0
     foreach ($eol in $status.EolChannels) {
         $parts = $eol -split ' '
+        # FIX: Validate split results before accessing array elements
+        if ($parts.Count -lt 2) {
+            Write-Log -Level Warn -Message "Invalid EOL format, skipping removal" -Context @{ EOL=$eol }
+            Write-Host "  [X] Skipped $eol (invalid format)" -ForegroundColor Red
+            continue
+        }
         $success = Remove-AspNetCoreChannel -MajorMinor $parts[0] -ArchLimit $parts[1].Trim('()')
-        if ($success) { $removed++; Write-Host "  ✓ Removed $eol" -ForegroundColor Green }
-        else { Write-Host "  ✗ Failed $eol" -ForegroundColor Red }
+        if ($success) { $removed++; Write-Host "  [OK] Removed $eol" -ForegroundColor Green }
+        else { Write-Host "  [X] Failed $eol" -ForegroundColor Red }
     }
 
-    Write-Host "`n✓ Removed: $removed/$($status.EolChannels.Count)" -ForegroundColor Green
+    Write-Host "`n[OK] Removed: $removed/$($status.EolChannels.Count)" -ForegroundColor Green
     $script:MenuState.CacheValid = $false
 }
 
@@ -1355,7 +1453,7 @@ function Invoke-CleanupWizard {
     Write-Section "Cleanup Lower Patches"
     $status = Get-SystemStatus  # Full scan with disk usage
     if ($status.ReclaimableDisk -eq 0) {
-        Write-Host "✓ No lower patches to clean" -ForegroundColor Green
+        Write-Host "[OK] No lower patches to clean" -ForegroundColor Green
         return
     }
 
@@ -1363,24 +1461,42 @@ function Invoke-CleanupWizard {
     $confirm = Read-YesNoDefault -Prompt "Proceed with cleanup?" -Default $false
     if (-not $confirm) { Write-Host "Cancelled." -ForegroundColor Yellow; return }
 
-    Write-Host "`n🧹 Cleaning..." -ForegroundColor Cyan
+    Write-Host "`n[CLEAN] Cleaning..." -ForegroundColor Cyan
     Invoke-PostPatchCleanup -ArchToClean 'x64'
     Invoke-PostPatchCleanup -ArchToClean 'x86'
-    Write-Host "✓ Cleanup complete" -ForegroundColor Green
+    Write-Host "[OK] Cleanup complete" -ForegroundColor Green
     $script:MenuState.CacheValid = $false
 }
 
 function Show-DiskUsageAnalyzer {
     Write-Section "Disk Usage Analyzer"
-    Write-Host "⏳ Analyzing..." -ForegroundColor Cyan
+    Write-Host "[...] Analyzing..." -ForegroundColor Cyan
 
-    $entries = Get-DiskUsageSnapshot
-    $summary = Summarize-DiskUsage -Entries $entries
+    try {
+        $entries = Get-DiskUsageSnapshot
 
-    foreach ($s in ($summary | Sort-Object Product,Channel)) {
-        Write-Host "`n$($s.Product) $($s.Channel):" -ForegroundColor Yellow
-        Write-Host "  Total: $(Format-Bytes $s.TotalBytes)" -ForegroundColor White
-        Write-Host "  Lower patches: $(Format-Bytes $s.LowerBytes)" -ForegroundColor Gray
+        if (-not $entries -or $entries.Count -eq 0) {
+            Write-Host "`n[INFO] No .NET runtime directories found or no disk usage data available" -ForegroundColor Yellow
+            return
+        }
+
+        $summary = Summarize-DiskUsage -Entries $entries
+
+        if (-not $summary -or $summary.Count -eq 0) {
+            Write-Host "`n[INFO] No summary data available" -ForegroundColor Yellow
+            return
+        }
+
+        foreach ($s in ($summary | Sort-Object Product,Channel)) {
+            Write-Host "`n$($s.Product) $($s.Channel):" -ForegroundColor Yellow
+            Write-Host "  Total: $(Format-Bytes $s.TotalBytes)" -ForegroundColor White
+            Write-Host "  Lower patches: $(Format-Bytes $s.LowerBytes)" -ForegroundColor Gray
+        }
+
+        Write-Host "`n[OK] Analysis complete" -ForegroundColor Green
+    } catch {
+        Write-Log -Level Error -Message "Disk analysis failed: $($_.Exception.Message)"
+        Write-Host "`n[ERROR] Disk analysis failed. See logs for details." -ForegroundColor Red
     }
 }
 
@@ -1400,7 +1516,7 @@ function Export-ComplianceReport {
     }
 
     $report | ConvertTo-Json -Depth 10 | Out-File -FilePath $reportPath -Encoding UTF8
-    Write-Host "✓ Exported: $reportPath" -ForegroundColor Green
+    Write-Host "[OK] Exported: $reportPath" -ForegroundColor Green
 }
 
 # ========================= MAIN EXECUTION ========================= #
@@ -1416,7 +1532,7 @@ try {
     if (-not (Test-Admin)) {
         if ($isInteractiveMode -and -not $NonInteractive) {
             Write-Host ""
-            Write-Host "⛔ Administrator Privileges Required" -ForegroundColor Red
+            Write-Host "[ADMIN REQUIRED] Administrator Privileges Required" -ForegroundColor Red
             Write-Host ""
             Write-Host "Right-click the script and select 'Run as Administrator'" -ForegroundColor Yellow
             Write-Host ""
@@ -1432,7 +1548,7 @@ try {
         # INTERACTIVE MENU MODE
         Show-StartupScreen
         Show-MainMenu
-        Write-Host "`n✓ Session complete`n" -ForegroundColor Green
+        Write-Host "`n[OK] Session complete`n" -ForegroundColor Green
     } else {
         # AUTOMATED CLI MODE
         Write-Banner
@@ -1466,20 +1582,20 @@ try {
                                                         -ReleaseIndex $index -UpdateAspNet -UpdateDesktop -Architecture $archToProcess
 
                 if ($updatePlan.Count -gt 0) {
-                    Write-Host "`n📋 Planned Updates:" -ForegroundColor Yellow
+                    Write-Host "`n[PLAN] Planned Updates:" -ForegroundColor Yellow
                     foreach ($p in $updatePlan) {
-                        Write-Host "  [UPDATE] $($p.Product) $($p.Channel) ($($p.Architecture)): $($p.CurrentVersion) → $($p.TargetVersion)" -ForegroundColor White
+                        Write-Host "  [UPDATE] $($p.Product) $($p.Channel) ($($p.Architecture)): $($p.CurrentVersion) -> $($p.TargetVersion)" -ForegroundColor White
                     }
                 }
 
                 if ($RemoveEol -and $status.EolChannels.Count -gt 0) {
-                    Write-Host "`n🗑️  Planned Removals:" -ForegroundColor Yellow
+                    Write-Host "`n[REMOVE]  Planned Removals:" -ForegroundColor Yellow
                     foreach ($eol in $status.EolChannels) {
                         Write-Host "  [REMOVE] $eol" -ForegroundColor Red
                     }
                 }
 
-                Write-Host "`n✓ Plan complete (no changes - PlanOnly mode)" -ForegroundColor Green
+                Write-Host "`n[OK] Plan complete (no changes - PlanOnly mode)" -ForegroundColor Green
                 exit 0
             }
 
@@ -1548,9 +1664,9 @@ try {
             }
 
             Write-Section "Execution Complete"
-            Write-Host "✓ Automated maintenance completed" -ForegroundColor Green
+            Write-Host "[OK] Automated maintenance completed" -ForegroundColor Green
             if ($script:RebootRequired) {
-                Write-Host "⚠️  System reboot recommended" -ForegroundColor Yellow
+                Write-Host "[!]  System reboot recommended" -ForegroundColor Yellow
             }
 
         } finally {
