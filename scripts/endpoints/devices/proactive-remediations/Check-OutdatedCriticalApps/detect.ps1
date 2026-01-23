@@ -36,7 +36,10 @@
 
 param(
     [bool]$EnableLogging = $false,
+
+    [ValidateRange(1, 10)]
     [int]$MaxRetries = 3,
+
     [bool]$PriorityAppsOnly = $false
 )
 

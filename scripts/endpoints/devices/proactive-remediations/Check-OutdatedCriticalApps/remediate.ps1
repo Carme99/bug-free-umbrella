@@ -49,10 +49,15 @@
 
 param(
     [bool]$EnableLogging = $false,
+
+    [ValidateRange(1, 10)]
     [int]$MaxRetries = 3,
+
     [bool]$PriorityAppsOnly = $false,
     [bool]$UpdateOnlyIfNotRunning = $true,
     [bool]$ForceCloseApps = $false,
+
+    [ValidateRange(1, 60)]
     [int]$TimeoutPerAppMinutes = 10
 )
 
@@ -266,6 +271,17 @@ function Update-Application {
         }
     }
 
+    # Validate AppId format for security
+    if ($AppId -notmatch '^[a-zA-Z0-9\.\-_]+$') {
+        Write-Log "Invalid AppId format: $AppId" "ERROR"
+        return [PSCustomObject]@{
+            AppId = $AppId
+            AppName = $AppName
+            Success = $false
+            Message = "Invalid AppId format - security validation failed"
+        }
+    }
+
     try {
         # Execute winget upgrade with timeout
         Write-Log "Executing: winget upgrade --id $AppId --source winget --silent --accept-source-agreements --accept-package-agreements"
@@ -280,11 +296,15 @@ function Update-Application {
 
         if ($completed) {
             $output = Receive-Job -Job $job
-            $exitCode = $job.State
-
             Remove-Job -Job $job -Force
 
-            if ($exitCode -eq 'Completed') {
+            # Check actual winget output for success indicators
+            $outputString = $output -join "`n"
+            $isSuccess = $outputString -match 'Successfully installed' -or
+                         $outputString -match 'No applicable update found' -or
+                         $outputString -match 'No available upgrade found'
+
+            if ($isSuccess) {
                 Write-Log "Successfully updated $AppName" "SUCCESS"
                 return [PSCustomObject]@{
                     AppId = $AppId

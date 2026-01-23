@@ -156,6 +156,12 @@ function Update-PriorityApp {
         }
     }
 
+    # Validate AppId format for security
+    if ($AppId -notmatch '^[a-zA-Z0-9\.\-_]+$') {
+        Write-Log "Invalid AppId format: $AppId" "ERROR"
+        return $false
+    }
+
     try {
         Write-Log "Executing: winget upgrade --id $AppId --silent"
 
@@ -168,11 +174,15 @@ function Update-PriorityApp {
 
         if ($completed) {
             $output = Receive-Job -Job $job
-            $exitCode = $job.State
-
             Remove-Job -Job $job -Force
 
-            if ($exitCode -eq 'Completed') {
+            # Check actual winget output for success indicators
+            $outputString = $output -join "`n"
+            $isSuccess = $outputString -match 'Successfully installed' -or
+                         $outputString -match 'No applicable update found' -or
+                         $outputString -match 'No available upgrade found'
+
+            if ($isSuccess) {
                 Write-Log "Successfully updated $AppName" "SUCCESS"
                 return $true
             } else {
