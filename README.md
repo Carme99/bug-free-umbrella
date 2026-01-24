@@ -31,6 +31,12 @@ Your personal collection of 260+ battle-tested PowerShell scripts for when you n
 
 ---
 
+## 📑 Quick Navigation
+
+**Jump to:** [What's This?](#-whats-this-all-about) • [Features](#-quick-highlights) • [Get Started](#-get-started-in-60-seconds) • [Scripts](#-whats-inside-the-toolbox) • [Popular Scripts](#-popular-scripts-aka-the-fan-favorites) • [Documentation](#-documentation) • [Contributing](#-join-the-party)
+
+---
+
 ## 🎯 What's This All About?
 
 Ever find yourself thinking *"there's got to be a script for this"*? Well, now there is. This repo is what happens when you combine:
@@ -102,16 +108,63 @@ This isn't just a random pile of scripts. Everything's organized into **7 techno
 
 ## 💡 Popular Scripts (AKA The Fan Favorites)
 
-These are the scripts people actually use every week:
+New here? **Try these first** - they're the most commonly used scripts in the wild:
 
-- **🔍 Get-DeviceComplianceReport.ps1** - Find out which devices are misbehaving
-- **🔄 Sync-IntuneDevice.ps1** - Force that stubborn device to check in
-- **🖥️ Monitor-ServerHealth.ps1** - "Is the server okay?" answered in 30 seconds
-- **🔐 Invoke-SecurityComplianceScan.ps1** - Multi-framework compliance check that actually works
-- **☁️ Monitor-AzureResources.ps1** - Keep tabs on your Azure environment
-- **📦 Winget Update Templates** - Auto-update everything from Chrome to Zoom
+<table>
+<tr>
+<td width="50%">
 
-**[→ See real-world examples](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Examples)**
+### 📱 For Intune Admins
+- **[Get-DeviceComplianceReport.ps1](scripts/endpoints/intune/reporting/)** - Find misbehaving devices fast
+- **[Sync-IntuneDevice.ps1](scripts/endpoints/intune/maintenance/)** - Force that stubborn device to check in
+- **[Check-OutdatedCriticalApps](scripts/endpoints/devices/proactive-remediations/Check-OutdatedCriticalApps/)** - Auto-detect outdated critical apps
+
+</td>
+<td width="50%">
+
+### 🖥️ For Server Admins
+- **[Monitor-ServerHealth.ps1](scripts/infrastructure/windows/monitoring/)** - 30-second health check
+- **[Invoke-SecurityComplianceScan.ps1](scripts/security/compliance/frameworks/)** - Multi-framework compliance
+- **[Get-EventLogErrors.ps1](scripts/infrastructure/windows/monitoring/)** - Find issues before users report them
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### ☁️ For Cloud Engineers
+- **[Monitor-AzureResources.ps1](scripts/cloud/azure/core/)** - Keep tabs on your Azure environment
+- **[Get-AzureCostReport.ps1](scripts/cloud/azure/core/)** - Track spending before surprises
+- **[Kubernetes Health Checks](scripts/cloud/containers/)** - K8s cluster monitoring
+
+</td>
+<td width="50%">
+
+### 📦 For Everyone
+- **[Winget Update Templates](scripts/endpoints/devices/winget/)** - Auto-update 40+ apps (Chrome, Zoom, Teams, etc.)
+- **[Command Recipes](docs/RECIPES.md)** - 80+ copy-paste commands
+- **[Proactive Remediations](scripts/endpoints/devices/proactive-remediations/)** - 14 auto-fix script pairs
+
+</td>
+</tr>
+</table>
+
+**[→ Browse all 260+ scripts in the catalog](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Catalog)**
+
+---
+
+## 🎯 Real Problems, Real Solutions
+
+Here's what these scripts actually help you do:
+
+- **"My Intune devices won't sync!"** → `Sync-IntuneDevice.ps1` forces sync and shows you why
+- **"Which servers need patching?"** → `Monitor-ServerHealth.ps1` + compliance reports
+- **"How much are we spending on Azure?"** → `Get-AzureCostReport.ps1` breaks it down
+- **"Users keep installing outdated software!"** → Winget auto-update templates
+- **"I need to audit 100 servers for CIS compliance!"** → Multi-framework scanner does it all
+- **"Exchange mailbox permissions are a mess!"** → `Get-UserMailboxPermissions.ps1` maps it out
+
+**Real IT problems. Real working solutions.** No fluff.
 
 ---
 
@@ -201,6 +254,17 @@ This entire repository is maintained by one human developer and [Claude Code](ht
 
 ---
 
+---
+
+## 📬 Stay Updated
+
+- 🌟 **[Star this repo](https://github.com/Carme99/bug-free-umbrella)** to get notified of new scripts
+- 👀 **[Watch releases](https://github.com/Carme99/bug-free-umbrella/releases)** for version updates
+- 📋 **[Read the CHANGELOG](CHANGELOG.md)** to see what's new
+- 🐛 **[Follow issues](https://github.com/Carme99/bug-free-umbrella/issues)** to track development
+
+---
+
 <div align="center">
 
 ### Ready to Automate Your World? 🚀
@@ -212,5 +276,7 @@ This entire repository is maintained by one human developer and [Claude Code](ht
 *Built with 🤖 AI assistance, ☕ caffeine, and 🌂 a commitment to sharing knowledge*
 
 **Star ⭐ this repo if it saves you time!**
+
+Made with ❤️ by the IT community, for the IT community
 
 </div>
