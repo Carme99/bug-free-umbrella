@@ -116,6 +116,6 @@ Future enhancements planned for the catalog:
 
 ## Questions?
 
-- **General usage:** See [QUICK_START.md](../../QUICK_START.md)
+- **General usage:** See [Getting Started Guide](../../wiki/Getting-Started)
 - **Detailed docs:** Visit the [Wiki](../../wiki)
 - **Issues:** [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues)
