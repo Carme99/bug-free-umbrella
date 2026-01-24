@@ -6,13 +6,26 @@ Your personal collection of 260+ battle-tested PowerShell scripts for when you n
 
 <div align="center">
 
-![PowerShell](https://img.shields.io/badge/PowerShell-7.0+-blue?logo=powershell)
-![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)
-![License](https://img.shields.io/badge/License-Apache%202.0-green)
-![Scripts](https://img.shields.io/badge/Scripts-260+-orange)
-![Maintained](https://img.shields.io/badge/Maintained%20with-Claude%20Code-blueviolet)
+[![PowerShell](https://img.shields.io/badge/PowerShell-7.0+-5391FE?style=for-the-badge&logo=powershell&logoColor=white)](https://github.com/PowerShell/PowerShell)
+[![Windows](https://img.shields.io/badge/Windows-Server_2016+-0078D6?style=for-the-badge&logo=windows&logoColor=white)](https://www.microsoft.com/windows-server)
+[![Linux](https://img.shields.io/badge/Linux-Compatible-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/PowerShell/PowerShell)
+[![macOS](https://img.shields.io/badge/macOS-Compatible-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/PowerShell/PowerShell)
 
-**[📚 Wiki Docs](../../wiki)** • **[🚀 Quick Start](../../wiki/Getting-Started)** • **[📋 Script Catalog](../../wiki/Script-Catalog)** • **[💡 Examples](../../wiki/Script-Examples)**
+[![License](https://img.shields.io/github/license/Carme99/bug-free-umbrella?style=for-the-badge)](LICENSE)
+[![Stars](https://img.shields.io/github/stars/Carme99/bug-free-umbrella?style=for-the-badge)](https://github.com/Carme99/bug-free-umbrella/stargazers)
+[![Issues](https://img.shields.io/github/issues/Carme99/bug-free-umbrella?style=for-the-badge)](https://github.com/Carme99/bug-free-umbrella/issues)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge)](CONTRIBUTING.md)
+
+[![Scripts](https://img.shields.io/badge/Scripts-260+-FF6B6B?style=for-the-badge&logo=files&logoColor=white)](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Catalog)
+[![Wiki](https://img.shields.io/badge/📚_Full_Documentation-Wiki-4A9EFF?style=for-the-badge)](https://github.com/Carme99/bug-free-umbrella/wiki)
+[![Claude Code](https://img.shields.io/badge/Built_with-Claude_Code-8B5CF6?style=for-the-badge&logo=anthropic&logoColor=white)](https://github.com/anthropics/claude-code)
+[![Last Commit](https://img.shields.io/github/last-commit/Carme99/bug-free-umbrella?style=for-the-badge)](https://github.com/Carme99/bug-free-umbrella/commits/main)
+
+---
+
+### 📚 **[→ Visit the Wiki for Complete Documentation](https://github.com/Carme99/bug-free-umbrella/wiki)** ⭐
+
+**[🚀 Quick Start](https://github.com/Carme99/bug-free-umbrella/wiki/Getting-Started)** • **[📋 Script Catalog](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Catalog)** • **[💡 Examples](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Examples)** • **[🔧 Troubleshooting](https://github.com/Carme99/bug-free-umbrella/wiki/Troubleshooting)**
 
 </div>
 
@@ -64,7 +77,7 @@ Get-Help .\Get-DeviceComplianceReport.ps1 -Detailed
 
 **Don't know where to start?** Check out our [**Command Recipes**](docs/RECIPES.md) - 80+ copy-paste commands organized by task. It's like Stack Overflow, but it actually works in your environment.
 
-**[→ Full getting started guide](../../wiki/Getting-Started)**
+**[→ Full getting started guide](https://github.com/Carme99/bug-free-umbrella/wiki/Getting-Started)**
 
 ---
 
@@ -83,7 +96,7 @@ This isn't just a random pile of scripts. Everything's organized into **7 techno
 └── 🗄️  data/           # Databases, APIs - where the magic happens
 ```
 
-**[→ Browse the full catalog](../../wiki/Script-Catalog)**
+**[→ Browse the full catalog](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Catalog)**
 
 ---
 
@@ -98,7 +111,7 @@ These are the scripts people actually use every week:
 - **☁️ Monitor-AzureResources.ps1** - Keep tabs on your Azure environment
 - **📦 Winget Update Templates** - Auto-update everything from Chrome to Zoom
 
-**[→ See real-world examples](../../wiki/Script-Examples)**
+**[→ See real-world examples](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Examples)**
 
 ---
 
@@ -112,7 +125,7 @@ These are the scripts people actually use every week:
 - ✅ DO have backups
 - ❌ DON'T YOLO it in production on Friday afternoon
 
-That said, many are running in real environments and getting better every day. When you find issues, [open an issue](../../issues) and let's fix it together!
+That said, many are running in real environments and getting better every day. When you find issues, [open an issue](https://github.com/Carme99/bug-free-umbrella/issues) and let's fix it together!
 
 ---
 
@@ -148,8 +161,8 @@ This repo exists because:
 
 Found a bug? Have a script to share? Want to make something better?
 
-- 🐛 **[Report Issues](../../issues)** - Bug reports make everyone's life better
-- ✨ **[Request Features](../../issues/new?template=feature_request.yml)** - Tell us what you need
+- 🐛 **[Report Issues](https://github.com/Carme99/bug-free-umbrella/issues)** - Bug reports make everyone's life better
+- ✨ **[Request Features](https://github.com/Carme99/bug-free-umbrella/issues/new?template=feature_request.yml)** - Tell us what you need
 - 🎉 **[Contribute](CONTRIBUTING.md)** - PRs welcome! (Code review by AI and human)
 - 💬 **[Get Support](SUPPORT.md)** - Stuck? We'll help when we can
 
@@ -163,12 +176,12 @@ Everything you need is in the wiki, organized by what you're trying to do:
 
 | If You Want To... | Go Here |
 |-------------------|---------|
-| 🆕 **Get started from scratch** | [Getting Started Guide](../../wiki/Getting-Started) |
-| 🔍 **Find a specific script** | [Script Catalog](../../wiki/Script-Catalog) |
-| 📖 **See how to use something** | [Script Examples](../../wiki/Script-Examples) |
-| 🎯 **Solve a specific problem** | [Common Use Cases](../../wiki/Common-Use-Cases) |
-| 🔥 **Fix something broken** | [Troubleshooting](../../wiki/Troubleshooting) |
-| ❓ **Answer a quick question** | [FAQ](../../wiki/FAQ) |
+| 🆕 **Get started from scratch** | [Getting Started Guide](https://github.com/Carme99/bug-free-umbrella/wiki/Getting-Started) |
+| 🔍 **Find a specific script** | [Script Catalog](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Catalog) |
+| 📖 **See how to use something** | [Script Examples](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Examples) |
+| 🎯 **Solve a specific problem** | [Common Use Cases](https://github.com/Carme99/bug-free-umbrella/wiki/Common-Use-Cases) |
+| 🔥 **Fix something broken** | [Troubleshooting](https://github.com/Carme99/bug-free-umbrella/wiki/Troubleshooting) |
+| ❓ **Answer a quick question** | [FAQ](https://github.com/Carme99/bug-free-umbrella/wiki/FAQ) |
 
 **Plus:** [CHANGELOG](CHANGELOG.md) • [SECURITY](SECURITY.md) • [CONTRIBUTING](CONTRIBUTING.md) • [CODE OF CONDUCT](CODE_OF_CONDUCT.md) • [GOVERNANCE](GOVERNANCE.md)
 
@@ -192,7 +205,7 @@ This entire repository is maintained by one human developer and [Claude Code](ht
 
 ### Ready to Automate Your World? 🚀
 
-**[Get Started →](../../wiki/Getting-Started)** | **[Browse Scripts →](../../wiki/Script-Catalog)** | **[See Examples →](../../wiki/Script-Examples)**
+**[Get Started →](https://github.com/Carme99/bug-free-umbrella/wiki/Getting-Started)** | **[Browse Scripts →](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Catalog)** | **[See Examples →](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Examples)**
 
 ---
 
