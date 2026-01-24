@@ -28,7 +28,7 @@ Before opening an issue, check if your question is answered in the documentation
 
 - **[Wiki](../../wiki)** - Comprehensive guides and documentation
 - **[README.md](README.md)** - Project overview and quick start
-- **[QUICK_START.md](QUICK_START.md)** - Role-based quick start guides
+- **[Getting Started Guide](../../wiki/Getting-Started)** - Role-based quick start guides
 - **[Troubleshooting Guide](../../wiki/Troubleshooting)** - Common issues and solutions
 - **[FAQ](../../wiki/FAQ)** - Frequently asked questions
 - **[Script Examples](../../wiki/Script-Examples)** - Real-world usage examples

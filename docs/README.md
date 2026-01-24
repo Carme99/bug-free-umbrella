@@ -4,7 +4,7 @@
 >
 > **All documentation has moved to:**
 > - **[📚 GitHub Wiki](../../wiki)** - Comprehensive, searchable documentation
-> - **[🚀 QUICK_START.md](../QUICK_START.md)** - Role-based quick start guide
+> - **[🚀 Getting Started Guide](../../wiki/Getting-Started)** - Role-based quick start guide
 > - **[💡 examples/](../examples/)** - Real-world workflow examples
 
 ---
@@ -13,7 +13,7 @@
 
 ### **For Current Documentation:**
 - **[📚 Open the Wiki](../../wiki)** ← Primary documentation
-- **[🚀 Quick Start Guide](../QUICK_START.md)** ← Find scripts by role
+- **[🚀 Getting Started Guide](../../wiki/Getting-Started)** ← Find scripts by role
 - **[💡 Practical Examples](../examples/)** ← Ready-to-use workflows
 
 ### **What You'll Find There:**
@@ -59,7 +59,7 @@
 
 **Repository:**
 - **[📖 Main README](../README.md)** - Repository overview
-- **[🌂 Changelog](../CHANGELOG.md)** - Version history (v2.1.0 "Rainbow" 🌈)
+- **[🌂 Changelog](../CHANGELOG.md)** - Version history (v3.7.0 "Shower" 🌧️)
 - **[🤝 Contributing](../CONTRIBUTING.md)** - Contribution guidelines
 - **[🔒 Security](../SECURITY.md)** - Security policy
 
@@ -95,6 +95,6 @@ The GitHub Wiki offers several advantages:
 
 ---
 
-**Last Updated:** 2025-12-30
-**Status:** ⛔ DEPRECATED - See [Wiki](../../wiki), [QUICK_START.md](../QUICK_START.md), and [examples/](../examples/)
-**Corresponds to:** v2.1.0 "Rainbow" 🌈 and later
+**Last Updated:** 2026-01-24
+**Status:** ⛔ DEPRECATED - See [Wiki](../../wiki), [Getting Started Guide](../../wiki/Getting-Started), and [examples/](../examples/)
+**Corresponds to:** v3.7.0 "Shower" 🌧️ and later
