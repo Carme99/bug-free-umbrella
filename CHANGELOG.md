@@ -1,9 +1,42 @@
 # Changelog
 
+![Version](https://img.shields.io/badge/version-3.7.0-blue)
+![Release Date](https://img.shields.io/badge/release-2026--01--21-green)
+![Total Scripts](https://img.shields.io/badge/scripts-260+-orange)
+![License](https://img.shields.io/badge/license-Apache%202.0-red)
+![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
+
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## 📑 Table of Contents
+
+- [🌂 About Our Release Names](#-about-our-release-names)
+- [Unreleased](#unreleased)
+- **Latest Releases:**
+  - [v3.7.0 (2026-01-21) 🌧️ Shower - Security & Maintenance](#370---2026-01-21-️-shower---security--maintenance-release)
+  - [v3.6.0 (2026-01-16) 🌧️ Shower - Intune Device Management](#360---2026-01-16-️-shower---intune-device-management-scripts)
+  - [v3.5.0 (2026-01-15) 🌧️ Shower - AVD Image Builder](#350---2026-01-15-️-shower---avd-image-builder-enhancement)
+  - [v3.4.0 (2026-01-09) 🌈 Rainbow - Documentation](#340---2026-01-09--rainbow---documentation--examples-enhancement)
+  - [v3.3.0 (2026-01-08) 🌧️ Rainfall - M365 User Management](#330---2026-01-08-️-rainfall---m365-user-management-toolkit)
+  - [v3.2.0 (2026-01-06) 🌧️ Sprinkle - M365 Apps](#320---2026-01-06-️-sprinkle---m365-apps-management)
+  - [v3.2.0 (2026-01-06) 🌧️ Monsoon - Device Health](#320---2026-01-06-️-monsoon---device-health--uptime-monitoring)
+  - [v3.1.0 (2026-01-05) 🌧️ Shower - Expanded Intune](#310---2026-01-05-️-shower---expanded-intune-operations)
+  - [v3.0.3 (2026-01-04) ☔ Drizzle - Wiki Version Fix](#303---2026-01-04--drizzle---wiki-version-reference-fix)
+  - [v3.0.2 (2026-01-03) ☔ Drizzle - Documentation Cleanup](#302---2026-01-03--drizzle---documentation-cleanup)
+  - [v3.0.1 (2025-12-31) ☔ Drizzle - Bug Fix](#301---2025-12-31--drizzle---bug-fix-release)
+  - [v3.0.0 (2025-12-30) 🌪️ Hurricane - Repository Restructure](#300---2025-12-30-️-hurricane---repository-restructure)
+  - [v2.2.0 (2025-12-30) 🌧️ Shower - Navigation & Usability](#220---2025-12-30-️-shower---navigation--usability-release)
+  - [v2.1.0 (2025-12-29) 🌈 Rainbow - Quality & Reliability](#210---2025-12-29--rainbow---quality--reliability-release)
+  - [v2.0.0 (2025-12-28) ⛈️ Thunderstorm - Regional Settings](#200---2025-12-28-️-thunderstorm---regional-settings-major-release)
+  - [v1.0.0 (2025-12-27) ⛈️ Thunderstorm - Initial Production](#100---2025-12-27-️-thunderstorm---initial-production-release)
+  - [v0.9.0 (2025-12-15) ☔ Drizzle - Initial Setup](#090---2025-12-15--drizzle---initial-setup)
+- [Version History Summary](#version-history-summary)
+- [Upgrade Notes](#upgrade-notes)
 
 ---
 
@@ -29,11 +62,14 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 > **Focus**: Winget security updates automation and critical .NET script bug fixes
 
+**📊 [Compare v3.6.0...v3.7.0](https://github.com/Carme99/bug-free-umbrella/compare/v3.6.0...v3.7.0)**
+
 ### Added
 
 #### 📱 Winget Security Updates - Check-OutdatedCriticalApps (NEW!)
 
-**Proactive Remediation Package** (`scripts/endpoints/devices/proactive-remediations/Check-OutdatedCriticalApps/`)
+**Proactive Remediation Package** ([`scripts/endpoints/devices/proactive-remediations/Check-OutdatedCriticalApps/`](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Check-OutdatedCriticalApps))
+
 - **Rapid Security Patching** - Automated updates for security-critical applications using winget
   - Priority app classification (browsers, VPN, security tools) vs standard apps
   - Dual deployment strategy: Priority updates every 4 hours, comprehensive updates daily
@@ -43,9 +79,9 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
   - Optional logging to %TEMP% for troubleshooting
 
 - **Three Script Variants**
-  - `detect.ps1` - Identifies outdated critical applications with priority filtering
-  - `remediate.ps1` - Standard remediation for all critical/standard apps
-  - `remediate_priority_only.ps1` - Emergency variant for highest-priority apps only
+  - [`detect.ps1`](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/endpoints/devices/proactive-remediations/Check-OutdatedCriticalApps/detect.ps1) - Identifies outdated critical applications with priority filtering
+  - [`remediate.ps1`](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/endpoints/devices/proactive-remediations/Check-OutdatedCriticalApps/remediate.ps1) - Standard remediation for all critical/standard apps
+  - [`remediate_priority_only.ps1`](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/endpoints/devices/proactive-remediations/Check-OutdatedCriticalApps/remediate_priority_only.ps1) - Emergency variant for highest-priority apps only
 
 - **Priority Applications** (Always Updated First)
   - Browsers: Chrome, Firefox, Edge, Brave
@@ -58,7 +94,7 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
   - Notepad++, 7-Zip, PowerToys
 
 - **Comprehensive Documentation**
-  - Complete README with 4 deployment scenarios
+  - Complete [`README.md`](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/endpoints/devices/proactive-remediations/Check-OutdatedCriticalApps/README.md) with 4 deployment scenarios
   - Quick start guide with recommended deployment (TWO remediations)
   - Configuration examples for customizing app lists
   - Monitoring and reporting guidance
@@ -73,7 +109,8 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 #### 🔧 .NET Runtime Maintenance Script v2.5 Upgrade (MAJOR UPDATE)
 
-**Update-DotNetRuntimes.ps1** (`scripts/utilities/`)
+[**`Update-DotNetRuntimes.ps1`**](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/utilities/Update-DotNetRuntimes.ps1) ([utilities folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/utilities))
+
 - **Interactive Menu System** - 8 maintenance options with user-friendly interface
   - Update all runtimes (patches only)
   - Remove EOL runtimes
@@ -122,15 +159,17 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ### Changed
 
-- **Update-DotNetRuntimes.ps1**: Upgraded from v1.0.0 to v2.5
+- [**`Update-DotNetRuntimes.ps1`**](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/utilities/Update-DotNetRuntimes.ps1): Upgraded from v1.0.0 to v2.5
   - Complete rewrite with dual-mode operation (interactive menu + CLI automation)
   - Parameter defaults changed for safer operations (require explicit approval)
   - Admin enforcement with user-friendly error messages
-  - Enhanced documentation in scripts/utilities/README.md
+  - Enhanced documentation in [`scripts/utilities/README.md`](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/utilities/README.md)
 
 #### 🔧 .NET Runtime Maintenance Script v2.6 Bug Fixes (8 CRITICAL FIXES)
 
-**Update-DotNetRuntimes.ps1** - Comprehensive bug fix release addressing all menu failures
+> **⚠️ CRITICAL FIXES**: All 8 menu options now functional (previously 5 failed)
+
+[**`Update-DotNetRuntimes.ps1`**](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/utilities/Update-DotNetRuntimes.ps1) - Comprehensive bug fix release addressing all menu failures
 
 **Bug #1: AspNetGroups Null Parameter Error** (Lines 495-507)
 - **CRITICAL**: Fixed null parameter binding error when no ASP.NET Core runtimes installed
@@ -187,6 +226,8 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ### Fixed
 
+> **🔒 SECURITY**: Critical security fix in v2.5
+
 - **SECURITY**: Signature validation bypass vulnerability in MSI installation (v2.5)
 - **PERFORMANCE**: Null reference errors in disk usage calculation (v2.5)
 - **BUG**: Cache invalidation not honoring Force parameter (v2.5)
@@ -203,7 +244,7 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 - **Standard Apps Tracked**: 7 (productivity applications)
 
 **.NET Runtime Script:**
-- **Updated Scripts**: 1 production-ready PowerShell script (Update-DotNetRuntimes.ps1)
+- **Updated Scripts**: 1 production-ready PowerShell script ([`Update-DotNetRuntimes.ps1`](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/utilities/Update-DotNetRuntimes.ps1))
 - **Version**: v2.5 → v2.6
 - **Lines Changed (v2.5)**: +1,100 / -1,246 (net -146 lines, more efficient code)
 - **Lines Changed (v2.6)**: Bug fixes across 8 locations (improved error handling)
@@ -212,17 +253,22 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 - **Critical Fixes (v2.6)**: 8 (5 critical, 2 high, 1 medium) - ALL menu options now functional
 - **Documentation**: Comprehensive README update with 15 best practices
 
+[⬆️ Back to top](#-table-of-contents)
+
 ---
 
 ## [3.6.0] - 2026-01-16 🌧️ **"Shower"** - Intune Device Management Scripts
 
 > **Focus**: Two powerful new Intune management scripts for device reporting and Lenovo device enrichment
 
+**📊 [Compare v3.5.0...v3.6.0](https://github.com/Carme99/bug-free-umbrella/compare/v3.5.0...v3.6.0)**
+
 ### Added
 
 #### 📱 Intune Device Primary Users Script (NEW!)
 
-**Get-IntuneDevicePrimaryUsers.ps1** (`scripts/endpoints/intune/reporting/`)
+[**`Get-IntuneDevicePrimaryUsers.ps1`**](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/endpoints/intune/reporting/Get-IntuneDevicePrimaryUsers.ps1) ([intune/reporting](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/intune/reporting))
+
 - Comprehensive device reporting tool for primary user resolution and hardware specs
 - **Primary User Detection**: Uses Graph API `managedDevice/users` (beta) with intelligent fallback chain
 - **Hardware Collection**: RAM, storage, CPU, model, serial, OS, last sync timestamp
@@ -240,7 +286,8 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 #### 🖥️ Lenovo Friendly Model Names Script (NEW!)
 
-**Add-LenovoFriendlyModelNames.ps1** (`scripts/endpoints/intune/maintenance/`)
+[**`Add-LenovoFriendlyModelNames.ps1`**](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/endpoints/intune/maintenance/Add-LenovoFriendlyModelNames.ps1) ([intune/maintenance](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/intune/maintenance))
+
 - Automates enrichment of Lenovo device records with human-readable model names
 - **MTM Code Mapping**: Maps 4-character codes to product families using official Lenovo dataset
 - **Dual Updates**: Intune Notes (append) + Entra extension attributes (set/overwrite)
@@ -260,8 +307,8 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 #### 📚 Comprehensive Documentation
 
 **New Documentation Files:**
-- `docs/intune/Get-IntuneDevicePrimaryUsers.md` - Complete usage guide (88KB)
-- `docs/intune/Add-LenovoFriendlyModelNames.md` - Enterprise deployment guide (95KB)
+- [`docs/intune/Get-IntuneDevicePrimaryUsers.md`](https://github.com/Carme99/bug-free-umbrella/blob/main/docs/intune/Get-IntuneDevicePrimaryUsers.md) - Complete usage guide (88KB)
+- [`docs/intune/Add-LenovoFriendlyModelNames.md`](https://github.com/Carme99/bug-free-umbrella/blob/main/docs/intune/Add-LenovoFriendlyModelNames.md) - Enterprise deployment guide (95KB)
 - `RELEASE_NOTES_Intune_Scripts_v2.0.md` - Detailed release notes (75KB)
 
 **Documentation Includes:**
@@ -290,7 +337,7 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 ### Migration Notes
 
 **Get-IntuneDevicePrimaryUsers.ps1** - New Script (No Migration)
-- Fresh installation, follow documentation in `docs/intune/`
+- Fresh installation, follow documentation in [`docs/intune/`](https://github.com/Carme99/bug-free-umbrella/tree/main/docs/intune)
 - Compatible with existing Intune management workflows
 - Can be integrated with scheduled tasks, Power BI, compliance reporting
 
@@ -310,11 +357,7 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 2. Run `-AuditOnly` to validate mapping coverage
 3. Deploy to production
 
-### Related
-
-- **Pull Request**: [Add Intune device management scripts](https://github.com/Carme99/bug-free-umbrella/pull/XX)
-- **Branch**: `claude/intune-primary-users-script-c5oLw`
-- **Documentation**: See `docs/intune/` for complete guides
+[⬆️ Back to top](#-table-of-contents)
 
 ---
 
@@ -322,11 +365,15 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 > **Focus**: Production-ready enhancements for Azure Virtual Desktop image building automation based on real-world feedback
 
+**📊 [Compare v3.4.0...v3.5.0](https://github.com/Carme99/bug-free-umbrella/compare/v3.4.0...v3.5.0)**
+
 ### Added
 
 #### 🖼️ AVD Image Builder v3.5 Enhancements
 
-**JSON Auto-Discovery** (scripts/cloud/azure/avd/New-AzureComputeGalleryImage.ps1)
+[**`New-AzureComputeGalleryImage.ps1`**](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/cloud/azure/avd/New-AzureComputeGalleryImage.ps1) ([cloud/azure/avd](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/cloud/azure/avd))
+
+**JSON Auto-Discovery**
 - Automatically detects `*-config.json` files in script directory
 - Interactive menu for configuration file selection
 - Displays available configurations with numbered selection
@@ -458,16 +505,7 @@ Get-Content image-build-*.log | Select-Object -Last 50
 - Saves on failed runs: 15-20 minutes
 - **Net time savings**: 10-15 minutes per configuration error
 
-### Dependencies
-
-- Azure PowerShell modules (Az.Accounts, Az.Compute, Az.Network, Az.Resources)
-- PowerShell 5.1+ (PowerShell 7+ recommended for best performance)
-- Azure RBAC permissions (Contributor or specific permissions for VM, Gallery, Network resources)
-
-### Credits
-
-- Feature requests and feedback from operations team
-- Thorough code review and recommendations from PR reviewers
+[⬆️ Back to top](#-table-of-contents)
 
 ---
 
@@ -475,110 +513,115 @@ Get-Content image-build-*.log | Select-Object -Last 50
 
 > **Focus**: Quick-win content additions for improved user experience and accessibility
 
+**📊 [Compare v3.3.0...v3.4.0](https://github.com/Carme99/bug-free-umbrella/compare/v3.3.0...v3.4.0)** | **📖 [Wiki: Getting Started](https://github.com/Carme99/bug-free-umbrella/wiki/Getting-Started)**
+
 ### Added
 
 #### 📚 Command Recipes Cookbook
-- **docs/RECIPES.md** - Comprehensive quick-reference guide with 80+ ready-to-run commands
-  - Organized by category: M365, Intune, Security, Server Monitoring, User Management, Azure, Backup, Active Directory
-  - Copy-paste ready commands with real-world examples
-  - Pro tips for combining scripts and scheduling tasks
-  - PowerShell pipeline filtering examples
-  - Task Scheduler integration guides
-  - Multiple export format examples (HTML, CSV, JSON)
-  - Verbose mode troubleshooting tips
-  - Links to full documentation and script catalog
+
+**RECIPES.md** - Comprehensive quick-reference guide with 80+ ready-to-run commands
+  - 🔗 [View Documentation](https://github.com/Carme99/bug-free-umbrella/blob/main/docs/RECIPES.md)
+
+Contents:
+- Organized by category: M365, Intune, Security, Server Monitoring, User Management, Azure, Backup, Active Directory
+- Copy-paste ready commands with real-world examples
+- Pro tips for combining scripts and scheduling tasks
+- PowerShell pipeline filtering examples
+- Task Scheduler integration guides
+- Multiple export format examples (HTML, CSV, JSON)
+- Verbose mode troubleshooting tips
+- Links to full documentation and script catalog
 
 #### 🚨 Incident Response Examples (2 workflows, 700+ lines)
-- **examples/incident-response/security-incident-response.ps1** - Complete security breach investigation workflow
-  - 8-step comprehensive investigation process
-  - User account information gathering
-  - Failed login attempt analysis (last 48 hours)
-  - Suspicious mail rule detection (forwarding, deletion, exfiltration)
-  - Mailbox permission auditing (unauthorized access)
-  - Threat detection review (Defender for Office 365)
-  - Device compliance verification
-  - Mail flow pattern analysis
-  - Account isolation capabilities (revoke sessions, disable, block sign-in)
-  - HTML incident report generation with severity indicators
-  - Email alerting with incident details
-  - Comprehensive logging for audit trails
-  - Recommendations engine for remediation actions
-  - Timeline tracking for incident response
 
-- **examples/incident-response/performance-degradation-investigation.ps1** - System performance diagnostics workflow
-  - 9-step diagnostic process for troubleshooting slow systems
-  - System information collection (OS, uptime, hardware specs)
-  - Real-time resource usage (CPU, memory, disk queue)
-  - Top CPU and memory consumer identification (top 5 processes)
-  - Disk space analysis with threshold warnings
-  - Performance metrics collection (configurable duration)
-  - Event log analysis (errors/critical events, last 24 hours)
-  - Comprehensive health check integration
-  - Windows Update status verification
-  - HTML report with performance metrics dashboard
-  - Color-coded severity indicators (red/yellow/green)
-  - Automated recommendations based on findings
-  - Email reporting for IT operations teams
-  - Performance issue tracking and documentation
+**security-incident-response.ps1** - Complete security breach investigation workflow
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/examples/incident-response/security-incident-response.ps1) | [Browse Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/examples/incident-response)
+
+Features:
+- 8-step comprehensive investigation process
+- User account information gathering
+- Failed login attempt analysis (last 48 hours)
+- Suspicious mail rule detection (forwarding, deletion, exfiltration)
+- Mailbox permission auditing (unauthorized access)
+- Threat detection review (Defender for Office 365)
+- Device compliance verification
+- Mail flow pattern analysis
+- Account isolation capabilities (revoke sessions, disable, block sign-in)
+- HTML incident report generation with severity indicators
+- Email alerting with incident details
+- Comprehensive logging for audit trails
+- Recommendations engine for remediation actions
+- Timeline tracking for incident response
+
+**performance-degradation-investigation.ps1** - System performance diagnostics workflow
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/examples/incident-response/performance-degradation-investigation.ps1) | [Browse Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/examples/incident-response)
+
+Features:
+- 9-step diagnostic process for troubleshooting slow systems
+- System information collection (OS, uptime, hardware specs)
+- Real-time resource usage (CPU, memory, disk queue)
+- Top CPU and memory consumer identification (top 5 processes)
+- Disk space analysis with threshold warnings
+- Performance metrics collection (configurable duration)
+- Event log analysis (errors/critical events, last 24 hours)
+- Comprehensive health check integration
+- Windows Update status verification
+- HTML report with performance metrics dashboard
+- Color-coded severity indicators (red/yellow/green)
+- Automated recommendations based on findings
+- Email reporting for IT operations teams
+- Performance issue tracking and documentation
 
 #### ⚙️ Automation Examples (2 workflows, 1,000+ lines)
-- **examples/automation/scheduled-daily-reporting.ps1** - Automated daily IT operations reporting
-  - 7 daily automated checks:
-    1. Device compliance report (Intune)
-    2. BitLocker encryption status
-    3. Windows Update compliance
-    4. Security compliance scan (CIS Framework)
-    5. Failed login attempts (last 24 hours)
-    6. Certificate expiration check (30-day warning)
-    7. Stale device identification (90+ days inactive)
-  - Executive summary dashboard with pass/fail metrics
-  - HTML email reports with detailed findings
-  - 30-day report retention policy with automatic cleanup
-  - Warning threshold tracking and escalation
-  - Comprehensive error handling and logging
-  - Designed for Task Scheduler execution (unattended)
-  - SMTP email delivery with configurable recipients
-  - Report archival and organization
-  - Success/failure tracking across all checks
 
-- **examples/automation/register-scheduled-tasks.ps1** - Bulk Task Scheduler registration
-  - Registers 7 automated monitoring tasks:
-    1. Daily IT Report (8:00 AM daily)
-    2. Weekly Health Check (Monday 7:00 AM)
-    3. Monthly Compliance Audit (1st of month, 6:00 AM)
-    4. Certificate Expiration Monitor (Wednesday 9:00 AM weekly)
-    5. Stale Device Cleanup Monitor (Friday 10:00 AM weekly)
-    6. Failed Login Monitor (11:00 PM daily)
-    7. Intune Connectivity Monitor (every 4 hours)
-  - SYSTEM account configuration with highest privileges
-  - Network-aware scheduling (run only if network available)
-  - Battery-friendly settings (continue on battery)
-  - Start when available (missed schedule recovery)
-  - Email configuration for all reports
-  - Customizable task prefix for organization
-  - Existing task removal and recreation
-  - Task management command reference
-  - Next run time display and tracking
-  - Administrator privilege enforcement
+**scheduled-daily-reporting.ps1** - Automated daily IT operations reporting
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/examples/automation/scheduled-daily-reporting.ps1) | [Browse Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/examples/automation)
+
+Features:
+- 7 daily automated checks:
+  1. Device compliance report (Intune)
+  2. BitLocker encryption status
+  3. Windows Update compliance
+  4. Security compliance scan (CIS Framework)
+  5. Failed login attempts (last 24 hours)
+  6. Certificate expiration check (30-day warning)
+  7. Stale device identification (90+ days inactive)
+- Executive summary dashboard with pass/fail metrics
+- HTML email reports with detailed findings
+- 30-day report retention policy with automatic cleanup
+- Warning threshold tracking and escalation
+- Comprehensive error handling and logging
+- Designed for Task Scheduler execution (unattended)
+- SMTP email delivery with configurable recipients
+- Report archival and organization
+- Success/failure tracking across all checks
+
+**register-scheduled-tasks.ps1** - Bulk Task Scheduler registration
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/examples/automation/register-scheduled-tasks.ps1) | [Browse Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/examples/automation)
+
+Features:
+- Registers 7 automated monitoring tasks
+- SYSTEM account configuration with highest privileges
+- Network-aware scheduling (run only if network available)
+- Battery-friendly settings (continue on battery)
+- Start when available (missed schedule recovery)
+- Email configuration for all reports
+- Customizable task prefix for organization
+- Existing task removal and recreation
+- Task management command reference
+- Next run time display and tracking
+- Administrator privilege enforcement
 
 #### 📖 Updated Documentation
-- **examples/README.md** - Updated with new script descriptions
-  - Added security-incident-response.ps1 to Incident Response section
-  - Added performance-degradation-investigation.ps1 to Incident Response section
-  - Added scheduled-daily-reporting.ps1 to Automation section
-  - Added register-scheduled-tasks.ps1 to Automation section
-  - Added link to new Command Recipes guide in Additional Resources section
 
-- **wiki/Home.md** - Three strategic RECIPES.md placements
-  - Added to Quick Start section (top of page) with ⭐ NEW! badge
-  - Added to Available Documentation table
-  - Added to "I Want To..." task navigation as first item
-  - Prominent visibility for quick command access
+**examples/README.md** - Updated with new script descriptions
+  - 🔗 [View Documentation](https://github.com/Carme99/bug-free-umbrella/blob/main/examples/README.md)
 
-- **wiki/_Sidebar.md** - Navigation enhancement
-  - Added Command Recipes to Script Reference section with ⭐ emoji
-  - Positioned at top of Script Reference for easy access
-  - Visible on every wiki page
+**wiki/Home.md** - Three strategic RECIPES.md placements
+  - 🔗 [View Wiki](https://github.com/Carme99/bug-free-umbrella/wiki/Home)
+
+**wiki/_Sidebar.md** - Navigation enhancement
+  - 🔗 [View Wiki](https://github.com/Carme99/bug-free-umbrella/wiki/_Sidebar)
 
 ### Benefits
 
@@ -612,402 +655,165 @@ Get-Content image-build-*.log | Select-Object -Last 50
 - **Example Workflows**: 4 production-ready scripts
 - **Documentation Enhancements**: Prominent wiki integration
 
+[⬆️ Back to top](#-table-of-contents)
+
 ---
 
 ## [3.3.0] - 2026-01-08 🌧️ **"Rainfall"** - M365 User Management Toolkit
 
-> **Focus**: Comprehensive user-centric tools for M365 troubleshooting and management
+_For complete details of this version, see the full sample we created._
 
-### Added
+**📊 [Compare v3.2.0...v3.3.0](https://github.com/Carme99/bug-free-umbrella/compare/v3.2.0...v3.3.0)** | **📖 [Wiki: M365 Scripts](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Catalog#microsoft-365-cloud-services)**
 
-#### 🆕 M365 User Management Toolkit (+5 scripts, 7 PowerShell files, 2,800+ lines)
+**Key Scripts Added:**
+- **Get-M365UserInfo.ps1** - Interactive user management toolkit
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/user-management/Get-M365UserInfo.ps1)
+- **Manage-QuarantinedEmails.ps1** - Quarantine management
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/exchange-online/Manage-QuarantinedEmails.ps1)
+- **Get-UserMailboxPermissions.ps1** - Permission auditing
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/exchange-online/Get-UserMailboxPermissions.ps1)
+- **Get-UserMailRules.ps1** - Mail rules investigation
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/exchange-online/Get-UserMailRules.ps1)
 
-**Master Toolkit** (1 script)
-- **Get-M365UserInfo.ps1** - Interactive menu-driven user information and management toolkit
-  - Consolidated user information dashboard (display name, email, job title, department, account status)
-  - Interactive menu with 9 operations (mailbox stats, licenses, quarantine, groups, devices, sign-in, summary, report, switch user)
-  - Quick view mode for rapid 30-second assessment
-  - HTML report generation for compliance and documentation
-  - Auto-connect to Exchange Online and Microsoft Graph
-  - Real-time mailbox statistics (size, quota, usage percentage, item count, last logon)
-  - License assignment tracking with service plan details
-  - Sign-in activity monitoring (last interactive, last non-interactive)
-  - Group membership visibility (first 10 groups with expand option)
-  - Mobile device associations (device name, model, OS, last sync)
-  - Integrated quarantine checking (last 7 days preview)
-  - Color-coded status indicators (green=healthy, yellow=warning, red=critical)
-  - Session management and service connection verification
-  - Support for switching between multiple users without restarting
+**Statistics**: 5 new scripts, 2,800+ lines, M365 scripts: 15 → 19 (+27%)
 
-**Quarantine Management** (1 script + 1 test suite)
-- **Manage-QuarantinedEmails.ps1** - Interactive quarantine viewing and release for end users
-  - Search quarantined messages for any user (1-30 days configurable)
-  - Formatted table display with message number, received date, sender, subject
-  - Detailed message information (sender, recipients, subject, quarantine reason, policy, size, direction)
-  - Interactive message selection by number
-  - Release to original recipient or alternate email address
-  - Release confirmation workflow with detailed message preview
-  - Auto-refresh quarantine list after successful release
-  - Support for all quarantine types (Spam, Phishing, Malware, HighConfPhish, Bulk, etc.)
-  - User mailbox verification before operations
-  - Exchange Online connection validation and auto-connect option
-  - Email format validation (regex-based)
-  - Security & Compliance Center permission checking
-  - Comprehensive error handling with actionable guidance
-
-- **Manage-QuarantinedEmails.Tests.ps1** - Comprehensive Pester test suite
-  - 240+ lines of automated tests
-  - Parameter validation tests (email format, days range 1-30)
-  - Connection handling tests (module check, existing connection, auto-connect)
-  - Email validation tests (valid formats, invalid formats, edge cases)
-  - User verification tests (mailbox existence, primary SMTP address)
-  - Message retrieval tests (date range, multiple messages, permissions)
-  - Release functionality tests (release confirmation, error handling)
-  - Interactive mode tests (user input validation)
-  - Function unit tests (Test-EmailAddress validation)
-
-**Permission Auditing** (1 script)
-- **Get-UserMailboxPermissions.ps1** - Comprehensive mailbox permission and delegate access audit
-  - Full Access permissions (who can open the mailbox)
-  - Send As permissions (who can send as the user)
-  - Send on Behalf permissions (delegates)
-  - Folder-level permissions (Calendar, Inbox, Contacts, Tasks) with `-IncludeFolderPermissions`
-  - Auto-mapping status detection
-  - Inherited vs. explicit permission identification
-  - Deny permissions highlighting
-  - HTML export for documentation and compliance reporting
-  - Security audit capabilities (unauthorized access detection)
-  - Exchange Online connection validation
-  - User existence verification
-  - Color-coded output (warnings for unusual permissions)
-
-**Mail Rules Investigation** (1 script)
-- **Get-UserMailRules.ps1** - Mail forwarding and inbox rule detection for troubleshooting
-  - Mailbox-level forwarding detection (internal forwarding address)
-  - External forwarding detection (ForwardingSmtpAddress) with security warnings
-  - DeliverToMailboxAndForward status checking
-  - Inbox rules enumeration with conditions and actions
-  - Rule status (enabled/disabled) with option to show disabled rules
-  - Rule priority analysis
-  - Forwarding action detection (ForwardTo, ForwardAsAttachmentTo, RedirectTo)
-  - Deletion rule detection with security warnings
-  - Move to folder action tracking
-  - Mark as read detection
-  - Auto-reply/Out of Office status checking (internal and external messages)
-  - Security warnings for suspicious rules (external forwarding, auto-delete, multiple forwarding)
-  - HTML report with detailed breakdown
-  - Summary statistics (forwarding status, active rules count, auto-reply status)
-  - Color-coded security alerts (red for external forwarding, yellow for suspicious patterns)
-
-**Comprehensive Documentation** (1 guide)
-- **USER-MANAGEMENT-TOOLKIT.md** - 500+ line comprehensive guide
-  - Complete feature descriptions for all 5 scripts
-  - Common workflows for help desk technicians
-    - Workflow 1: "I Can't Find My Email" (3-step process)
-    - Workflow 2: Security Investigation (4-step process)
-    - Workflow 3: VIP User Support (30-second resolution)
-    - Workflow 4: Mailbox Delegation Audit (batch operations)
-    - Workflow 5: Monthly User Account Review (reporting)
-  - Training guide for new technicians (Day 1 and Week 1 goals)
-  - Security investigation procedures with example commands
-  - VIP user support workflows
-  - Troubleshooting section with common issues and solutions
-  - Integration examples (Task Scheduler, email notifications)
-  - Best practices and tips & tricks
-  - Batch operation examples for multiple users
-  - Prerequisites and permission requirements
-  - Output examples with sample data
-  - Keyboard shortcuts and aliases for efficiency
-
-**Updated Documentation**
-- **scripts/collaboration/microsoft365/README.md** (v2.2)
-  - Added User Management Toolkit section at top with quick start
-  - Updated Exchange Online scripts from 4 to 7 (+75%)
-  - Added detailed documentation for all 4 new scripts
-  - Updated total M365 script count from 15 to 19 (+27%)
-  - Version bump to 2.2
-  - Quick start examples for each script
-  - Use cases and common workflows
-
-### Key Features
-
-**User-Centric Approach**
-- Single input: provide user email address, access all operations
-- Interactive menus reduce learning curve for technicians
-- Auto-connect functionality eliminates manual connection steps
-- Quick modes for rapid assessment (QuickView, summary reports)
-- Seamless switching between users without restarting scripts
-
-**Security Features**
-- Automatic detection of unauthorized external forwarding
-- Security warnings for suspicious inbox rules (auto-delete, external forward)
-- Permission auditing to identify unauthorized mailbox access
-- Comprehensive reporting for incident documentation and compliance
-- Audit trail through M365 unified audit logs
-- Built-in email and input validation
-
-**Reporting & Documentation**
-- HTML exports for all scripts (professional formatting with CSS)
-- Formatted console output with color-coded warnings and status
-- Detailed analysis with actionable insights
-- Compliance-ready documentation
-- Summary sections with key metrics
-
-**Performance**
-- Average resolution time: 5 minutes → 2 minutes (60% improvement)
-- VIP quarantine release: 30 seconds
-- Security investigation: 10 minutes (comprehensive)
-- Batch operations support for multiple users
-
-### Common Use Cases
-
-**For Help Desk:**
-- Troubleshoot "missing email" issues in 2 minutes
-- Release quarantined emails for users without escalation
-- Quick user account status checks
-- VIP user immediate support
-
-**For Administrators:**
-- Security incident investigation with audit trails
-- Permission auditing for compliance
-- Mail flow troubleshooting
-- Comprehensive user reporting
-
-**For Security Teams:**
-- Detect unauthorized forwarding rules
-- Audit mailbox access permissions
-- Investigate suspicious mail activity
-- Generate compliance reports
-
-### Statistics
-
-- **New Scripts**: 5
-- **New PowerShell Files**: 7 (includes test suite)
-- **Total M365 Scripts**: 15 → 19 (+27%)
-- **Exchange Online Scripts**: 4 → 7 (+75%)
-- **Lines of Code**: ~2,800+
-- **Documentation Files**: 6 updated/created
-- **Test Coverage**: 240+ lines of Pester tests
-
-### Technical Requirements
-
-**PowerShell Modules:**
-- ExchangeOnlineManagement (for Exchange operations)
-- Microsoft.Graph (for Azure AD, OneDrive, Teams)
-
-**Permissions Required:**
-- Exchange Administrator or Global Reader (mailbox operations)
-- Quarantine role in Security & Compliance Center (quarantine management)
-- User Administrator or Global Reader (Azure AD operations)
-- Reports.Read.All (Graph API for usage data)
+[⬆️ Back to top](#-table-of-contents)
 
 ---
 
 ## [3.2.0] - 2026-01-06 🌧️ **"Sprinkle"** - M365 Apps Management
 
+**📊 [Compare v3.1.0...v3.2.0](https://github.com/Carme99/bug-free-umbrella/compare/v3.1.0...v3.2.0)**
+
+### Added
+
 #### 📦 M365 Apps Management
-- **Update-M365Apps.ps1** - Comprehensive M365 Apps update manager for environments without Microsoft AutoUpdate
-  - Automatic detection of installed M365 Apps with version comparison against Microsoft CDN
-  - Real-time update checking using Microsoft Office Releases API
-  - Interactive update channel selection (Monthly, Enterprise, Semi-Annual, Beta, LTSB)
-  - Local update download using Office Deployment Tool
-  - Automated installation with progress tracking and exit code handling
-  - Post-installation cleanup to reclaim disk space
-  - Rotating log files with automatic retention management (30-day default)
-  - Support for fresh installations on new systems
-  - Color-coded console output for interactive technician workflows
-  - Channel switching with registry CDNBaseUrl updates
-  - User confirmations for download, install, and cleanup operations
-  - Available in both `scripts/collaboration/microsoft365/office-apps/` and `scripts/cloud/azure/avd/` (reference copy for AVD workflows)
 
-- **Example ODT Configuration Files** - 5 ready-to-use XML templates
-  - `example-install-monthly-enterprise.xml` - Recommended for most organizations (all apps)
-  - `example-install-semi-annual.xml` - Maximum stability for regulated industries (core apps only)
-  - `example-install-current-channel.xml` - Fastest updates for early adopters (all apps)
-  - `example-install-avd-shared.xml` - Azure Virtual Desktop with SharedComputerLicensing (REQUIRED for multi-session)
-  - `example-install-minimal.xml` - Minimal installation for limited disk space (Word, Excel, PowerPoint only)
-  - Fully commented with deployment guidance and customization examples
-  - Covers common deployment scenarios: enterprise, AVD, minimal, fast updates, stable updates
+**Update-M365Apps.ps1** - Comprehensive M365 Apps update manager for environments without Microsoft AutoUpdate
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/office-apps/Update-M365Apps.ps1) | [Browse Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/collaboration/microsoft365/office-apps)
 
-- **Comprehensive Troubleshooting Guide** (TROUBLESHOOTING.md)
-  - 10 major troubleshooting sections with detailed solutions
-  - Prerequisites issues (ODT not found, XML missing, permissions)
-  - Network & connectivity (proxy settings, firewall, CDN access)
-  - Complete ODT exit code reference (0, 1, 17, 30066, 30088, 30094, 30180, 30182)
-  - Installation failures (Office won't close, disk space, hanging)
-  - Channel switching issues (version mismatches, registry problems)
-  - Registry & detection (Office not detected, version unknown)
-  - Activation & licensing (SharedComputerLicensing for AVD, product keys)
-  - Performance & disk space (slow downloads, long installations)
-  - Log file analysis (finding errors, reading ODT logs)
-  - Common error messages with step-by-step solutions
-  - PowerShell diagnostic commands and troubleshooting workflows
+Features:
+- Automatic detection of installed M365 Apps with version comparison against Microsoft CDN
+- Real-time update checking using Microsoft Office Releases API
+- Interactive update channel selection (Monthly, Enterprise, Semi-Annual, Beta, LTSB)
+- Local update download using Office Deployment Tool
+- Automated installation with progress tracking and exit code handling
+- Post-installation cleanup to reclaim disk space
+- Rotating log files with automatic retention management (30-day default)
+- Support for fresh installations on new systems
+- Color-coded console output for interactive technician workflows
+- Channel switching with registry CDNBaseUrl updates
+- User confirmations for download, install, and cleanup operations
+- Available in both `scripts/collaboration/microsoft365/office-apps/` and `scripts/cloud/azure/avd/` (reference copy for AVD workflows)
 
-- **Enhanced Documentation** (README.md)
-  - Quick Start guide with ODT download instructions
-  - Configuration file comparison table with use cases
-  - "Which configuration should I use?" decision guide
-  - XML customization examples (exclude apps, add languages, adjust behavior)
-  - Quick troubleshooting PowerShell commands
-  - Complete file inventory for the directory
+**Example ODT Configuration Files** - 5 ready-to-use XML templates
+  - 🔗 [Browse Templates](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/collaboration/microsoft365/office-apps)
 
-- **Comprehensive Pester test suite** (Tests/Collaboration/Update-M365Apps.Tests.ps1)
-  - 100+ test cases covering script structure, documentation, functions, error handling, and security
-  - Validates all 11 primary functions and logging infrastructure
-  - Tests channel GUID mapping for 8 update channels
-  - Verifies registry operations, ODT integration, and API interactions
-  - Validates user interaction prompts and color-coded output
+Templates include:
+- `example-install-monthly-enterprise.xml` - Recommended for most organizations
+- `example-install-semi-annual.xml` - Maximum stability for regulated industries
+- `example-install-current-channel.xml` - Fastest updates for early adopters
+- `example-install-avd-shared.xml` - Azure Virtual Desktop with SharedComputerLicensing
+- `example-install-minimal.xml` - Minimal installation for limited disk space
 
-### In Progress
-- Phase 2 PowerShell best practices (Set-StrictMode implementation)
-- Parameter validation enhancements
-- Additional Pester test coverage
+**Comprehensive Troubleshooting Guide**
+  - 🔗 [View Documentation](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/office-apps/TROUBLESHOOTING.md)
+
+Includes:
+- 10 major troubleshooting sections with detailed solutions
+- Prerequisites issues (ODT not found, XML missing, permissions)
+- Network & connectivity (proxy settings, firewall, CDN access)
+- Complete ODT exit code reference
+- Installation failures handling
+- Channel switching issues
+- Registry & detection problems
+- Activation & licensing guidance
+- Performance & disk space optimization
+- Log file analysis
+- Common error messages with solutions
+
+**Enhanced Documentation**
+  - 🔗 [View Documentation](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/office-apps/README.md)
+
+**Comprehensive Pester test suite**
+  - 🔗 [View Tests](https://github.com/Carme99/bug-free-umbrella/blob/main/Tests/Collaboration/Update-M365Apps.Tests.ps1)
+
+Test coverage:
+- 100+ test cases covering script structure, documentation, functions, error handling, security
+- Validates all 11 primary functions and logging infrastructure
+- Tests channel GUID mapping for 8 update channels
+- Verifies registry operations, ODT integration, API interactions
+- Validates user interaction prompts and color-coded output
+
+[⬆️ Back to top](#-table-of-contents)
 
 ---
 
 ## [3.2.0] - 2026-01-06 🌧️ **"Monsoon"** - Device Health & Uptime Monitoring
 
-> **Focus**: Comprehensive device health monitoring, crash tracking, and reportable uptime metrics for proactive IT operations
+**📊 [Compare v3.1.0...v3.2.0](https://github.com/Carme99/bug-free-umbrella/compare/v3.1.0...v3.2.0)**
 
 ### Added
 
 #### 📊 Device Health & Uptime Monitoring (+8 remediations, 16 PowerShell files)
 
 **Comprehensive Health Reporting** (1 remediation)
-- **Check-DeviceHealthScore** - Calculate weighted 0-100 health score from 8 categories
-  - Uptime health (10% weight)
-  - Crash stability (20% weight)
-  - Application stability (10% weight)
-  - Service health (10% weight)
-  - System errors (15% weight)
-  - Hardware health (20% weight)
-  - Boot performance (5% weight)
-  - Security posture (10% weight)
-  - JSON export for reporting dashboards
-  - Prioritized improvement plans
+
+**Check-DeviceHealthScore** - Calculate weighted 0-100 health score from 8 categories
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Check-DeviceHealthScore)
+
+Categories:
+- Uptime health (10% weight)
+- Crash stability (20% weight)
+- Application stability (10% weight)
+- Service health (10% weight)
+- System errors (15% weight)
+- Hardware health (20% weight)
+- Boot performance (5% weight)
+- Security posture (10% weight)
+- JSON export for reporting dashboards
+- Prioritized improvement plans
 
 **Uptime & Reboot Tracking** (2 remediations)
-- **Check-DeviceUptime** - Monitor excessive uptime and pending reboots
-  - Configurable thresholds (14 days max, 7 days warning)
-  - Detect pending Windows Update reboots
-  - Detect pending Component Based Servicing reboots
-  - Recommend scheduled maintenance reboots
-- **Check-UnexpectedReboots** - Track crashes, blue screens, and system failures
-  - Event ID 41: Unexpected shutdowns (Kernel-Power)
-  - Event ID 1001: Bugcheck (BSOD) tracking
-  - Event ID 6008: Unexpected shutdown events
-  - Crash dump file analysis (MEMORY.DMP, minidumps)
-  - Application crash tracking
+
+**Check-DeviceUptime** - Monitor excessive uptime and pending reboots
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Check-DeviceUptime)
+
+**Check-UnexpectedReboots** - Track crashes, blue screens, and system failures
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Check-UnexpectedReboots)
 
 **System Stability & Performance** (3 remediations)
-- **Check-SystemStabilityIndex** - Windows Reliability Monitor scoring
-  - Calculate 1-10 stability score from event logs
-  - Track application failures, Windows failures, warnings
-  - 7-day historical analysis
-  - Stability trend reporting
-- **Check-BootPerformance** - Boot and shutdown time monitoring
-  - Event ID 100: Boot duration tracking
-  - Event ID 200: Shutdown duration analysis
-  - Startup program inventory
-  - Boot performance degradation detection (Event ID 101)
-- **Check-ServiceFailures** - Service crash and failure monitoring
-  - Event ID 7034: Service crash detection
-  - Event ID 7031: Service recovery tracking
-  - Event ID 7000: Service start failures
-  - Event ID 7011: Service timeout errors
-  - Critical service health checks (Windows Update, BITS, WMI, etc.)
+
+**Check-SystemStabilityIndex** - Windows Reliability Monitor scoring
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Check-SystemStabilityIndex)
+
+**Check-BootPerformance** - Boot and shutdown time monitoring
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Check-BootPerformance)
+
+**Check-ServiceFailures** - Service crash and failure monitoring
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Check-ServiceFailures)
 
 **Application & Event Monitoring** (2 remediations)
-- **Check-ApplicationCrashes** - Application failure tracking
-  - Event ID 1000: Application crashes
-  - Event ID 1002: Application hangs
-  - Windows Error Reporting fault analysis
-  - .NET Runtime error detection
-  - Microsoft Office crash tracking
-  - Crash dump file inventory
-- **Check-SystemEventErrors** - Critical system event monitoring
-  - Level 1 (Critical) system errors
-  - Disk errors (Event IDs 7, 11, 51, 153, 55)
-  - Kernel/Power errors (Event ID 41)
-  - BugCheck tracking (Event ID 1001)
-  - Security critical event detection
-  - Event log service health
+
+**Check-ApplicationCrashes** - Application failure tracking
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Check-ApplicationCrashes)
+
+**Check-SystemEventErrors** - Critical system event monitoring
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Check-SystemEventErrors)
 
 **Hardware Health** (1 remediation)
-- **Check-HardwareErrors** - Hardware failure detection
-  - WHEA (Windows Hardware Error Architecture) monitoring
-  - Disk SMART status validation
-  - Physical disk error tracking
-  - CPU/Processor error detection
-  - USB controller error monitoring
-  - Network adapter hardware issues
-  - Battery hardware errors (laptops)
-  - Thermal/overheating event detection (Event ID 37)
-  - PCI/PCIe bus error monitoring
 
-### Changed
-
-**Proactive Remediation Library**
-- Total remediations: 42 → 50 (+19%)
-- Added new category: Device Health & Uptime Monitoring (8 scripts)
-- Enhanced reportability with JSON health score exports
-- Improved crash and failure diagnostics across all device types
-
-**Documentation Updates**
-- Updated README.md to version 3.1 (50 total remediations)
-- Updated wiki/Proactive-Remediations.md to version 1.2.0
-- Added comprehensive Device Health & Uptime Monitoring section
-- Updated deployment schedules with new monitoring scripts
-- Added daily schedule recommendations for health monitoring
-
-### Improved
-
-**Device Health Visibility**
-- Comprehensive 0-100 health scoring system
-- Multi-category weighted health assessment
-- JSON-exportable metrics for reporting dashboards
-- Trend analysis capabilities across 8 health dimensions
-
-**Proactive Issue Detection**
-- Earlier detection of impending hardware failures
-- Crash pattern identification before widespread issues
-- Boot performance degradation tracking
-- Service instability early warning
-- Application failure trend analysis
-
-**IT Reporting Capabilities**
-- Uptime tracking for compliance reporting
-- Device health score aggregation
-- Crash/BSOD frequency metrics
-- Hardware error trending
-- Stability index reporting
-
-**Maintenance Optimization**
-- Data-driven reboot scheduling recommendations
-- Hardware replacement prioritization
-- Service stability improvement guidance
-- Application troubleshooting metrics
+**Check-HardwareErrors** - Hardware failure detection
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Check-HardwareErrors)
 
 ### Statistics
 
-**New Scripts**: 8 proactive remediations (16 PowerShell files)
-**Total Remediations**: 50 detect/remediate pairs (100 PowerShell files)
-**Lines of Code Added**: ~1,600
-**Documentation Updated**: 2 files (1 README, 1 wiki)
-**New Capabilities**: Comprehensive health scoring, uptime reporting, crash analytics
+- **New Scripts**: 8 proactive remediations (16 PowerShell files)
+- **Total Remediations**: 50 detect/remediate pairs (100 PowerShell files)
+- **Lines of Code Added**: ~1,600
+- **New Capabilities**: Comprehensive health scoring, uptime reporting, crash analytics
 
-### Deployment Recommendations
-
-**Priority Schedule** (Daily monitoring recommended):
-- **Critical**: Check-HardwareErrors (early failure detection)
-- **High**: Check-DeviceHealthScore (overall health tracking)
-- **High**: Check-UnexpectedReboots (crash monitoring)
-- **High**: Check-SystemEventErrors (critical error alerts)
-- **Medium**: Check-DeviceUptime (reboot compliance)
-- **Medium**: Check-SystemStabilityIndex (reliability trending)
-- **Medium**: Check-BootPerformance (performance optimization)
-- **Medium**: Check-ServiceFailures (service stability)
-- **Medium**: Check-ApplicationCrashes (app reliability)
+[⬆️ Back to top](#-table-of-contents)
 
 ---
 
@@ -1015,25 +821,44 @@ Get-Content image-build-*.log | Select-Object -Last 50
 
 > **Focus**: Comprehensive expansion of Intune management and proactive remediation capabilities
 
+**📊 [Compare v3.0.3...v3.1.0](https://github.com/Carme99/bug-free-umbrella/compare/v3.0.3...v3.1.0)**
+
 ### Added
 
 #### 🆕 Proactive Remediations (+10 scripts, 20 PowerShell files)
 
 **Performance & Reliability** (5 remediations)
-- **Fix-WindowsPerformanceRecorder** - Stop stuck WPR/ETW tracing sessions causing high CPU
-- **Fix-TaskSchedulerCorruption** - Repair Task Scheduler service and database issues
-- **Check-MicrosoftStoreAppsHealth** - Detect and fix AppX package registration errors
-- **Fix-SystemFileCorruption** - Run DISM RestoreHealth and SFC to repair corrupted system files
-- **Fix-WindowsUpdateRebootPending** - Clear stuck reboot pending flags (>7 days old)
+
+**Fix-WindowsPerformanceRecorder** - Stop stuck WPR/ETW tracing sessions causing high CPU
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Fix-WindowsPerformanceRecorder)
+
+**Fix-TaskSchedulerCorruption** - Repair Task Scheduler service and database issues
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Fix-TaskSchedulerCorruption)
+
+**Check-MicrosoftStoreAppsHealth** - Detect and fix AppX package registration errors
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Check-MicrosoftStoreAppsHealth)
+
+**Fix-SystemFileCorruption** - Run DISM RestoreHealth and SFC to repair corrupted system files
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Fix-SystemFileCorruption)
+
+**Fix-WindowsUpdateRebootPending** - Clear stuck reboot pending flags (>7 days old)
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Fix-WindowsUpdateRebootPending)
 
 **Hardware & Diagnostics** (3 remediations)
-- **Check-PageFileConfiguration** - Verify page file is enabled and properly sized
-- **Check-MemoryDiagnostics** - Detect RAM errors and schedule Windows Memory Diagnostic
-- **Check-BatteryHealth** - Monitor laptop battery degradation (<70% capacity threshold)
+
+**Check-PageFileConfiguration** - Verify page file is enabled and properly sized
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Check-PageFileConfiguration)
+
+**Check-MemoryDiagnostics** - Detect RAM errors and schedule Windows Memory Diagnostic
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Check-MemoryDiagnostics)
+
+**Check-BatteryHealth** - Monitor laptop battery degradation (<70% capacity threshold)
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Check-BatteryHealth)
 
 **Licensing & Activation** (2 remediations)
-- **Check-WindowsActivationGracePeriod** - Alert when activation expiring within 30 days
-- Trigger online activation before grace period expires
+
+**Check-WindowsActivationGracePeriod** - Alert when activation expiring within 30 days
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Check-WindowsActivationGracePeriod)
 
 ### Changed
 
@@ -1045,49 +870,13 @@ Get-Content image-build-*.log | Select-Object -Last 50
 - Enhanced hardware monitoring and diagnostics coverage
 - Added proactive activation monitoring
 
-**Documentation Updates**
-- Updated all READMEs to reflect 42 total remediations
-- Expanded deployment schedules and priority levels
-- Added detailed descriptions for advanced maintenance scripts
-- Updated wiki with comprehensive remediation catalog
-
-### Improved
-
-**System Reliability**
-- Enhanced detection of system file corruption
-- Improved Task Scheduler health monitoring
-- Better page file misconfiguration detection
-- Memory error tracking and diagnostics
-
-**Performance Monitoring**
-- Detection of orphaned WPR/ETW sessions
-- Store apps health and registration validation
-- Stuck reboot state identification
-
-**Hardware Health**
-- Battery capacity degradation tracking (laptops)
-- Memory diagnostic scheduling for RAM errors
-- Page file optimal configuration validation
-
-**Activation Management**
-- Grace period expiration warnings (30-day threshold)
-- Proactive activation before expiry
-
 ### Statistics
 
-**New Scripts**: 10 proactive remediations (20 PowerShell files)
-**Total Remediations**: 42 detect/remediate pairs (84 PowerShell files)
-**Lines of Code Added**: ~1,800
-**Documentation Updated**: 4 files (2 READMEs, 1 wiki, 1 CHANGELOG)
-**Categories Enhanced**: 3 (Storage & Performance, System Services, Apps & Licensing)
+- **New Scripts**: 10 proactive remediations (20 PowerShell files)
+- **Total Remediations**: 42 detect/remediate pairs (84 PowerShell files)
+- **Lines of Code Added**: ~1,800
 
-### Notes
-
-- All new scripts follow Intune proactive remediation best practices
-- Scripts run in SYSTEM context for full administrative access
-- Exit codes: 0 = compliant/success, 1 = issue detected/remediation needed
-- Comprehensive error handling and descriptive logging
-- Configurable thresholds in detect scripts (days, percentages, MB)
+[⬆️ Back to top](#-table-of-contents)
 
 ---
 
@@ -1095,45 +884,26 @@ Get-Content image-build-*.log | Select-Object -Last 50
 
 > **Focus**: Correct outdated version references in wiki documentation
 
+**📊 [Compare v3.0.2...v3.0.3](https://github.com/Carme99/bug-free-umbrella/compare/v3.0.2...v3.0.3)**
+
 ### Fixed
-- **Wiki Version References** - Updated outdated v2.1.0 "Rainbow" 🌈 references to correct v3.0.2 "Drizzle" ☔
-  - **wiki/Home.md**: Updated all version references to v3.0.2
-    - Latest Release banner: v2.1.0 → v3.0.2
-    - Repository Statistics table: v2.1.0 → v3.0.2
-    - "What's New" section: Updated to reflect v3.0.2 changes
-    - Recent Major Releases section: Corrected version ordering
-    - Project Information section: Updated changelog links
-    - Footer metadata: Now correctly shows v3.0.2
-  - **wiki/Script-Catalog.md**: Updated 3 version references to v3.0.2
-    - Repository Statistics table: Latest Release v2.1.0 → v3.0.2
-    - Latest Updates section: Changed from Rainbow to Drizzle with v3.0.2 release notes
-    - Featured Scripts section: Updated to reflect v3.0.2 changes
-  - **wiki/WIKI-SETUP.md**: Updated footer metadata to v3.0.2
-    - Wiki Version bumped to 1.1.0
-    - Corresponds to version: v2.1.0 → v3.0.2
-    - Added "Last Updated" timestamp (2026-01-04)
-  - **wiki/Getting-Started.md**: Updated footer metadata to v3.0.2
-    - Last Updated timestamp: 2026-01-04
-    - Corresponds to version: v2.1.0 → v3.0.2
 
-### Changed
-- **Wiki Version**: Incremented from 1.0.0 to 1.1.0 to track documentation updates
-- **CHANGELOG.md**: Added this release entry documenting the wiki reference corrections
+**Wiki Version References** - Updated outdated v2.1.0 references to correct v3.0.2
+  - 🔗 [View Wiki](https://github.com/Carme99/bug-free-umbrella/wiki)
 
-### Improved
-- All wiki pages now consistently reference the correct current release (v3.0.2 "Drizzle" ☔)
-- Eliminated confusion from outdated v2.1.0 "Rainbow" references that were still present in wiki
-- Better alignment between wiki documentation and actual repository state
+Files updated:
+- **wiki/Home.md**: Updated all version references to v3.0.2
+- **wiki/Script-Catalog.md**: Updated 3 version references to v3.0.2
+- **wiki/WIKI-SETUP.md**: Updated footer metadata to v3.0.2
+- **wiki/Getting-Started.md**: Updated footer metadata to v3.0.2
 
 ### Statistics
+
 - **Files Modified**: 5 (CHANGELOG.md + 4 wiki documentation files)
 - **Version References Updated**: 11+ references corrected across all wiki files
 - **Wiki Version**: 1.0.0 → 1.1.0
 
-### Notes
-- This is a documentation-only patch release
-- No code or functionality changes
-- Wiki now correctly reflects v3.0.2 as the current release (released 2026-01-03)
+[⬆️ Back to top](#-table-of-contents)
 
 ---
 
@@ -1141,32 +911,32 @@ Get-Content image-build-*.log | Select-Object -Last 50
 
 > **Focus**: Remove deprecated documentation and fix all broken links
 
+**📊 [Compare v3.0.1...v3.0.2](https://github.com/Carme99/bug-free-umbrella/compare/v3.0.1...v3.0.2)**
+
 ### Removed
-- **5 Deprecated Documentation Files** (~3,988 lines removed)
-  - `docs/NAVIGATION.md` - Migrated to `wiki/Script-Catalog.md`
-  - `docs/SCRIPT-EXAMPLES.md` - Migrated to `wiki/Script-Examples.md`
-  - `docs/WORKFLOWS.md` - Migrated to `wiki/Workflows.md`
-  - `docs/TROUBLESHOOTING.md` - Migrated to `wiki/Troubleshooting.md`
-  - `docs/INTUNE-SYNC-README.md` - Migrated to `wiki/Intune-Sync-Guide.md`
+
+**5 Deprecated Documentation Files** (~3,988 lines removed)
+- `docs/NAVIGATION.md` - Migrated to wiki
+- `docs/SCRIPT-EXAMPLES.md` - Migrated to wiki
+- `docs/WORKFLOWS.md` - Migrated to wiki
+- `docs/TROUBLESHOOTING.md` - Migrated to wiki
+- `docs/INTUNE-SYNC-README.md` - Migrated to wiki
 
 ### Fixed
-- **44 Broken or Outdated Documentation References**
-  - **28 Critical Broken Wiki Links**: Fixed all references in `wiki/Script-Catalog.md` (24), `wiki/Workflows.md` (3), `wiki/Script-Examples.md` (1) to use proper wiki-style links
-  - **14 Outdated References**: Updated `CHANGELOG.md` v1.0.0 references and `wiki/WIKI-SETUP.md` to reflect current file locations
-  - **2 Script READMEs**: Updated `scripts/security/monitoring/README.md` and `scripts/infrastructure/network/README.md` to point to wiki URLs
-  - Simplified `docs/README.md` by removing table of deleted files
 
-### Improved
-- All wiki internal links now use consistent wiki-style format: `[Display](Page-Name)`
-- All documentation references point to correct locations (wiki instead of deleted docs)
-- Cleaner docs folder with just deprecation notice
+**44 Broken or Outdated Documentation References**
+- **28 Critical Broken Wiki Links**: Fixed all references in wiki files
+- **14 Outdated References**: Updated to reflect current file locations
+- **2 Script READMEs**: Updated to point to wiki URLs
 
 ### Statistics
+
 - **Files Deleted**: 5
 - **Files Modified**: 10
 - **Lines Removed**: 3,988
 - **Broken Links Fixed**: 44
-- **Net Change**: ~4,000 lines of technical debt removed
+
+[⬆️ Back to top](#-table-of-contents)
 
 ---
 
@@ -1174,72 +944,55 @@ Get-Content image-build-*.log | Select-Object -Last 50
 
 > **Focus**: Critical bug fixes and code quality improvements
 
+**📊 [Compare v3.0.0...v3.0.1](https://github.com/Carme99/bug-free-umbrella/compare/v3.0.0...v3.0.1)**
+
 ### Fixed
 
 #### Security & Compliance Scripts
 
+> **⚠️ CRITICAL**: Complete rewrite to fix broken functionality
+
 **Test-CISBenchmark.ps1 v2.0.0** - Complete rewrite to fix broken functionality
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/security/compliance/frameworks/Test-CISBenchmark.ps1) | [Browse Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/security/compliance/frameworks)
+
+Critical fixes:
 - **CRITICAL**: Replaced non-existent `Get-LocalGroupPolicy` cmdlet with working alternatives
 - **NEW**: Implemented `Get-SecurityPolicy` helper function using `secedit.exe`
-  - Exports security policies to temporary file
-  - Parses INI-format output into PowerShell object
-  - Proper cleanup of temporary files
-  - Comprehensive error handling
 - **NEW**: Implemented `Test-CISControl` helper function for consistent test execution
-  - Level 1/Level 2 filtering support
-  - Status tracking (Pass/Fail/Error)
-  - Detailed recommendations for failures
-  - Error handling with graceful degradation
 
 **Expanded Test Coverage** (3 → 15+ CIS controls):
-- **Password Policies (6 controls)**:
-  - 1.1.1: Enforce password history (≥24 passwords)
-  - 1.1.2: Maximum password age (≤365 days, not 0)
-  - 1.1.3: Minimum password age (≥1 day)
-  - 1.1.4: Minimum password length (≥14 characters)
-  - 1.1.5: Password complexity requirements (enabled)
-  - 1.1.6: Reversible encryption (disabled)
+- Password Policies (6 controls)
+- Account Lockout Policies (3 controls)
+- Audit Policies (6+ controls)
 
-- **Account Lockout Policies (3 controls)**:
-  - 1.2.1: Account lockout duration (≥15 minutes)
-  - 1.2.2: Account lockout threshold (≤5 attempts, not 0)
-  - 1.2.3: Reset lockout counter (≥15 minutes)
-
-- **Audit Policies (6+ controls)**:
-  - 17.1.1: Audit Credential Validation
-  - 17.2.1: Audit Application Group Management (Level 2)
-  - 17.3.1: Audit Process Creation
-  - 17.5.1: Audit Account Lockout
-  - 17.5.2: Audit Logoff
-  - 17.5.3: Audit Logon
-  - 17.6.1: Audit Sensitive Privilege Use (Level 2)
-  - 17.9.1: Audit Security System Extension
-
-**Enhanced Features**:
+Enhanced features:
 - Added `#Requires -Version 5.1` directive
 - Added `#Requires -RunAsAdministrator` directive
-- Added comprehensive comment-based help with multiple examples
-- Added `-OutputPath` parameter for custom report locations
-- Enhanced HTML report with detailed control results and statistics
-- Improved console output formatting with color-coded results
-- Better error messages and logging
+- Added comprehensive comment-based help
+- Enhanced HTML report with detailed control results
 - Proper exit codes (0 for success, 1 for failures)
 - Increased from 61 lines to 481 lines of production-ready code
 
-**Impact**: Script is now fully functional and can perform actual CIS Benchmark compliance testing on Windows systems. Previous version would fail immediately due to non-existent cmdlets.
-
 ### Statistics
 
-**Files Modified**: 1
-**Lines Changed**: +461, -40
-**Version Bump**: Test-CISBenchmark.ps1 v1.0 → v2.0.0
-**CIS Controls Added**: 12 new controls tested
+- **Files Modified**: 1
+- **Lines Changed**: +461, -40
+- **Version Bump**: Test-CISBenchmark.ps1 v1.0 → v2.0.0
+- **CIS Controls Added**: 12 new controls tested
+
+### Related Changes
+
+See [v2.1.0](#210---2025-12-29--rainbow---quality--reliability-release) for related security improvements.
+
+[⬆️ Back to top](#-table-of-contents)
 
 ---
 
 ## [3.0.0] - 2025-12-30 🌪️ **"Hurricane"** - Repository Restructure
 
-> **BREAKING CHANGE**: Complete repository reorganization with technology-based hierarchy
+> **⚠️ BREAKING CHANGE**: Complete repository reorganization with technology-based hierarchy
+
+**📊 [Compare v2.2.0...v3.0.0](https://github.com/Carme99/bug-free-umbrella/compare/v2.2.0...v3.0.0)** | **📖 [Migration Guide](https://github.com/Carme99/bug-free-umbrella/wiki/Migration-Guide)**
 
 ### Restructuring Overview
 
@@ -1249,94 +1002,38 @@ Reorganized 260+ scripts from 20 flat categories into 7 technology-based domains
 
 **7 Technology Domains:**
 - **cloud/** - Cloud platforms (Azure, AWS, Containers)
+  - 🔗 [Browse Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/cloud)
 - **endpoints/** - Endpoint management (Intune, Devices)
+  - 🔗 [Browse Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints)
 - **infrastructure/** - On-premises systems (Windows, Linux, Network, Virtualization, Web, Print)
+  - 🔗 [Browse Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/infrastructure)
 - **security/** - Security & compliance (Compliance, Hardening, Monitoring)
+  - 🔗 [Browse Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/security)
 - **automation/** - DevOps & automation (CI/CD, IaC)
+  - 🔗 [Browse Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/automation)
 - **collaboration/** - M365 & communication (Microsoft 365, Email)
+  - 🔗 [Browse Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/collaboration)
 - **data/** - Data management (Databases, APIs)
+  - 🔗 [Browse Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/data)
 
 ### Migration Mapping
 
 | Old Location | New Location |
 |--------------|--------------|
-| `scripts/intune/` | `scripts/endpoints/intune/` |
-| `scripts/device-management/` | `scripts/endpoints/devices/` |
-| `scripts/server/` | `scripts/infrastructure/windows/` |
-| `scripts/linux-server/` | `scripts/infrastructure/linux/` |
-| `scripts/network-management/` | `scripts/infrastructure/network/` |
-| `scripts/virtualization/` | `scripts/infrastructure/virtualization/` |
-| `scripts/web-services/` | `scripts/infrastructure/web/` |
-| `scripts/print-management/` | `scripts/infrastructure/print/` |
-| `scripts/security-compliance/` | `scripts/security/compliance/frameworks/` |
-| `scripts/advanced-security/` | `scripts/security/hardening/` |
-| `scripts/monitoring/` | `scripts/security/monitoring/` |
-| `scripts/devops-cicd/` | `scripts/automation/cicd/` |
-| `scripts/infrastructure-as-code/` | `scripts/automation/iac/` |
-| `scripts/m365/` | `scripts/collaboration/microsoft365/` |
-| `scripts/email-services/` | `scripts/collaboration/email/` |
-| `scripts/database/` | `scripts/data/databases/` |
-| `scripts/api-management/` | `scripts/data/api/` |
-| `scripts/cloud-infrastructure/` | `scripts/cloud/` |
-| `scripts/container-management/` | `scripts/cloud/containers/` |
-| `AzureVirtualDesktop/` | `scripts/cloud/azure/avd/` |
+| `scripts/intune/` | [`scripts/endpoints/intune/`](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/intune) |
+| `scripts/device-management/` | [`scripts/endpoints/devices/`](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices) |
+| `scripts/server/` | [`scripts/infrastructure/windows/`](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/infrastructure/windows) |
+| `scripts/m365/` | [`scripts/collaboration/microsoft365/`](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/collaboration/microsoft365) |
+| `scripts/cloud-infrastructure/` | [`scripts/cloud/`](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/cloud) |
 
 ### Added
 
-#### Domain Documentation
-- **cloud/README.md** - Cloud platforms overview and quick start
-- **endpoints/README.md** - Endpoint management guide
-- **infrastructure/README.md** - Infrastructure administration guide
-- **security/README.md** - Security & compliance overview
-- **automation/README.md** - DevOps automation guide
-- **collaboration/README.md** - M365 & collaboration guide
-- **data/README.md** - Data management overview
-
-### Changed
-
-#### Repository Structure
-- Reorganized all 260+ scripts into hierarchical technology domains
-- All git history preserved via `git mv` commands
-- Updated README.md with new structure and navigation
-- Updated QUICK_START.md with new script paths
-- Updated example scripts with corrected paths
-- Updated compatibility matrix with new path references
-- Enhanced repository stats (7 domains vs 20 categories)
-
-#### Documentation Updates
-- Updated all script path references in documentation
-- Added domain-level navigation tables
-- Created migration guide in CHANGELOG
-- Added breaking change notices in README
-
-### Migration Guide for Users
-
-**Finding Scripts:**
-1. Identify your use case (cloud, endpoints, infrastructure, security, etc.)
-2. Navigate to the appropriate domain folder
-3. Browse categories within that domain
-
-**Updating Your Scripts:**
-If you reference scripts from this repository:
-```powershell
-# Old path
-.\scripts\intune\Get-IntuneDeviceCompliance.ps1
-
-# New path
-.\scripts\endpoints\intune\Get-IntuneDeviceCompliance.ps1
-```
-
-**Quick Reference:**
-- Intune → `endpoints/intune/`
-- Devices → `endpoints/devices/`
-- Windows Server → `infrastructure/windows/`
-- Linux → `infrastructure/linux/`
-- Security/Compliance → `security/compliance/frameworks/`
-- Azure → `cloud/azure/`
-- M365 → `collaboration/microsoft365/`
-- Databases → `data/databases/`
+**Domain Documentation** - 7 new README files
+  - 🔗 [View All Domains](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts)
 
 ### Breaking Changes
+
+> **⚠️ BREAKING**: All script paths have changed
 
 **All script paths have changed.** External references to scripts must be updated:
 - Documentation referencing old paths
@@ -1354,33 +1051,7 @@ If you reference scripts from this repository:
 - **Documentation updates:** 30+ files updated
 - **New READMEs:** 7 domain-level guides created
 
-### Post-Migration Testing
-
-**Validation Performed:**
-- ✅ All git moves completed successfully (verified with `git log --follow`)
-- ✅ Directory structure verified for all 7 domains
-- ✅ Sample scripts tested in new locations:
-  - `scripts/infrastructure/windows/monitoring/Monitor-ServerHealth.ps1` - Executes successfully
-  - `scripts/endpoints/intune/reporting/Get-BitLockerStatus.ps1` - Path verified
-  - `scripts/security/compliance/frameworks/` - Scripts accessible
-- ✅ Example workflow scripts updated and paths corrected:
-  - Fixed BitLocker script references to `endpoints/intune/reporting/`
-  - Updated disk space and event log checks to use built-in cmdlets
-  - All three example scripts (onboarding, maintenance, compliance) validated
-- ✅ Documentation links checked:
-  - QUICK_START.md paths verified
-  - README.md structure section validated
-  - Issue templates updated with new categories
-- ✅ No broken symlinks or orphaned files
-- ✅ Compatibility matrix synchronized with new structure
-
-**Known Limitations:**
-- Wiki pages (if present) may need manual updates
-- External documentation referencing old paths requires updating
-- Some example scripts call non-existent utilities and have been updated to use PowerShell built-in cmdlets instead
-
-**Recommendation:**
-Test any automation or scheduled tasks that reference repository scripts before deploying to production.
+[⬆️ Back to top](#-table-of-contents)
 
 ---
 
@@ -1388,222 +1059,91 @@ Test any automation or scheduled tasks that reference repository scripts before 
 
 > **Focus**: Improved repository navigation, discoverability, and user experience
 
+**📊 [Compare v2.1.0...v2.2.0](https://github.com/Carme99/bug-free-umbrella/compare/v2.1.0...v2.2.0)**
+
 ### Added
 
-#### New Documentation & Navigation
-- **QUICK_START.md**: Comprehensive role-based quick start guide
-  - 7 role-specific entry points (Intune admins, server admins, DevOps, security, M365, database, general IT)
-  - "I need to..." task-based navigation tables
-  - Common workflow examples by role
-  - First-time setup instructions with module installation guides
-  - Prerequisites checklist and testing guidelines
+**QUICK_START.md** - Comprehensive role-based quick start guide
+  - 🔗 [View Documentation](https://github.com/Carme99/bug-free-umbrella/blob/main/QUICK_START.md)
 
-#### Practical Examples Collection
-- **examples/**: New directory with real-world workflow examples
-  - **onboarding/**: New employee and device setup workflows
-    - `new-employee-setup.ps1` - Complete onboarding automation
-  - **maintenance/**: Regular operational procedures
-    - `weekly-health-check.ps1` - Comprehensive weekly health audit
-  - **compliance/**: Compliance audit workflows
-    - `monthly-compliance-audit.ps1` - Multi-framework compliance reporting
-  - **incident-response/**: Troubleshooting scenarios (planned)
-  - **automation/**: CI/CD and scheduled task examples (planned)
-  - Each example includes detailed comments, parameter descriptions, and usage notes
+Contents:
+- 7 role-specific entry points
+- "I need to..." task-based navigation tables
+- Common workflow examples by role
+- First-time setup instructions
+- Prerequisites checklist and testing guidelines
 
-#### Enhanced Issue Templates
-- **Bug Report Template** (YAML format)
-  - Structured fields for script category, name, reproduction steps
-  - Environment details (PowerShell version, OS, modules)
-  - Testing checklist for thorough reporting
-- **Feature Request Template** (YAML format)
-  - Feature type classification (enhancement, parameter, performance, etc.)
-  - Use case and priority fields
-  - Contribution willingness checkboxes
-- **Script Request Template** (YAML format)
-  - Detailed script specification fields
-  - Target platform selection
-  - Prerequisites and expected outputs
-  - Urgency level classification
-- **Issue Template Config**: Disabled blank issues, added help links
-- **Pull Request Template**: Comprehensive PR checklist
-  - Change type classification
-  - Testing requirements
-  - Documentation update checklist
-  - Code quality standards verification
+**examples/** - New directory with real-world workflow examples
+  - 🔗 [Browse Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/examples)
 
-#### Category Documentation
-- **device-management/README.md**: Added missing category README
-  - Overview, prerequisites, and quick start examples
-  - Completes README coverage across all 20 script categories
+**Enhanced Issue Templates** - 4 new templates
+  - 🔗 [View Templates](https://github.com/Carme99/bug-free-umbrella/tree/main/.github/ISSUE_TEMPLATE)
 
-### Changed
+### Statistics
 
-#### Repository Structure Documentation
-- **README.md**: Enhanced repository structure section
-  - Complete visual folder tree with emoji icons
-  - All 20 script categories with descriptions
-  - Subdirectory details (ProactiveRemediations, WingetUpdates, etc.)
-  - New examples/ folder structure
-  - Quick navigation links section
-  - References to new QUICK_START.md
+- **New files created**: 12
+- **Enhanced files**: 2
+- **Documentation quality**: Significantly improved
 
-#### Documentation Deprecation
-- **docs/README.md**: Enhanced deprecation notice
-  - Prominent warning about deprecated status
-  - Clear migration paths to Wiki, QUICK_START.md, and examples/
-  - Updated file status table with current locations
-  - Improved visual indicators (⚠️ ⛔ symbols)
-  - Last updated timestamp changed to 2025-12-30
-
-### Repository Stats (Updated)
-- **Quick wins implemented**: 8 major improvements
-- **New files created**: 12 (1 guide + 3 examples + 4 issue templates + 1 PR template + 1 category README + 2 configs)
-- **Enhanced files**: 2 (README.md, docs/README.md)
-- **Documentation quality**: Significantly improved discoverability and onboarding experience
-
-### Migration Notes
-- Existing users: New `QUICK_START.md` provides faster navigation to relevant scripts
-- Contributors: Use new issue templates for better bug reports and feature requests
-- New users: Start with `QUICK_START.md` for role-based guidance
+[⬆️ Back to top](#-table-of-contents)
 
 ---
 
 ## [2.1.0] - 2025-12-29 🌈 **"Rainbow"** - Quality & Reliability Release
 
-> **Focus**: Code quality, reliability improvements, and bug fixes across the repository
+> **Focus**: Code quality, reliability improvements, and bug fixes
+
+**📊 [Compare v2.0.0...v2.1.0](https://github.com/Carme99/bug-free-umbrella/compare/v2.0.0...v2.1.0)**
 
 ### Added
 
-#### Server Monitoring Enhancement
-- **Monitor-ServerHealth.ps1**: Massive expansion with 13 major new capabilities
-  - **Interactive Mode**: Menu-driven operation with 4 quick presets (Quick Check, Full Scan, Security Audit, Application Health)
-  - **Disk I/O Performance**: Monitor latency, IOPS, queue depth with multi-sample averaging
-  - **Windows Update Status**: Check pending/failed updates and reboot requirements
-  - **Security Monitoring**: Firewall profiles, Windows Defender status, failed login tracking
-  - **Network Connectivity**: Test gateway, DNS, and internet reachability
-  - **Certificate Monitoring**: Scan LocalMachine certificate stores for expiring certificates
-  - **Scheduled Tasks**: Detect failed and disabled tasks
-  - **Application Monitoring**: IIS (app pools/sites), SQL Server, Hyper-V (VMs)
-  - **Advanced Performance Metrics**: Page file usage, handles, threads
-  - **JSON Export**: Full report export for automation/integration
-  - **Email Reporting**: SMTP delivery with HTML-formatted reports
-  - **Progress Indicators**: Dynamic progress tracking for long-running operations
-  - **Enhanced Error Handling**: Graceful degradation for missing features
-  - Script grew from 541 to ~1,928 lines with backward compatibility maintained
+**Monitor-ServerHealth.ps1** - Massive expansion with 13 major new capabilities
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/infrastructure/windows/monitoring/Monitor-ServerHealth.ps1) | [Browse Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/infrastructure/windows/monitoring)
 
-#### Azure Virtual Desktop
-- **Remove-SysprepBlockers.ps1**: Improved Sysprep blocker detection and removal
-  - Better AppX package filtering
-  - Performance optimization (fixed array concatenation)
-  - Enhanced logging and error handling
+New features:
+- Interactive Mode with 4 quick presets
+- Disk I/O Performance monitoring
+- Windows Update Status checking
+- Security Monitoring
+- Network Connectivity tests
+- Certificate Monitoring
+- Scheduled Tasks monitoring
+- Application Monitoring (IIS, SQL Server, Hyper-V)
+- Advanced Performance Metrics
+- JSON Export
+- Email Reporting
+- Progress Indicators
+- Enhanced Error Handling
 
-#### Server Utilities
-- **Schedule-WeeklyReboot.ps1**: Weekly reboot scheduler for Windows Server
-  - Configurable day of week and time
-  - Notification support
-  - Maintenance window awareness
-
-### Changed
-
-#### PowerShell Best Practices - Phase 1 (Safe Changes)
-Applied zero-risk code quality improvements to 19 scripts:
-
-**✅ Performance Optimizations**
-- Fixed inefficient array concatenation in `Remove-SysprepBlockers.ps1`
-  - Eliminated `+=` in loops (creates new array each iteration)
-  - Replaced with collect-then-combine pattern (much faster)
-
-**✅ Documentation Enhancements** (6 scripts)
-Added comprehensive comment-based help to:
-- `Fix-DiskSpace` (detect + remediate)
-- `Fix-StaleProfiles` (detect + remediate)
-- `Fix-BitLockerNotEscrowedKeys` (detect + remediate)
-
-Each now includes:
-- `.SYNOPSIS` - Brief description
-- `.DESCRIPTION` - Detailed functionality
-- `.NOTES` - Exit codes, thresholds, configuration details
-- `.EXAMPLE` - Usage examples
-
-**✅ Named Constants** (4 scripts)
-Replaced magic numbers with descriptive constants:
-- `$DISK_SPACE_WARNING_PERCENT = 10`
-- `$DISK_SPACE_WARNING_GB = 10`
-- `$STALE_PROFILE_AGE_DAYS = 90`
-- `$PROFILE_REMOVAL_AGE_DAYS = 120`
-- `$TEMP_FILE_AGE_DAYS = 7`
-
-**✅ Consistent Formatting** (10 autopatch scripts)
-Standardized spacing and style in all V1 autopatch scripts:
-- Proper spacing after `if` statements
-- Consistent lowercase `exit` commands
-- Removed trailing whitespace
-- Uniform brace placement
-
-Files updated:
-- `DisableWindowsUpdateAccess` (Detect + Remediate)
-- `DoNotConnectToWindowsUpdateInternetLocations` (Detect + Remediate)
-- `NoAutoUpdate` (Detect + Remediate)
-- `UseWUServer` (Detect + Remediate)
-- `WUServer` (Detect + Remediate)
-
-**✅ Advanced Function Support** (6 scripts)
-Added `[CmdletBinding()]` attribute to documented scripts for:
-- `-Verbose`, `-Debug`, `-ErrorAction` common parameters support
-- Better integration with PowerShell pipeline
-- Professional cmdlet-like behavior
+Script grew from 541 to ~1,928 lines with backward compatibility maintained.
 
 ### Fixed
 
-#### Critical Syntax Errors
-- **Invoke-SecurityComplianceScan.ps1**: Renamed from `Invoke-SecurityCompliance Scan.ps1`
-  - Fixed: Space in filename prevented proper invocation
-  - Impact: Critical - script could not be dot-sourced or executed properly
+> **🔒 SECURITY**: Critical syntax and security fixes
 
-- **Get-KubernetesHealthCheck.ps1:184**: Fixed variable interpolation syntax error
-  - Fixed: `$($ results.Events.Count)` → `$($results.Events.Count)`
-  - Impact: Critical - script would fail at runtime when using -CheckEvents parameter
+**Critical Syntax Errors:**
+- **Invoke-SecurityComplianceScan.ps1**: Fixed space in filename
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/security/compliance/Invoke-SecurityComplianceScan.ps1)
+- **Get-KubernetesHealthCheck.ps1**: Fixed variable interpolation
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/cloud/containers/Get-KubernetesHealthCheck.ps1)
 
-#### High-Severity Improvements
-- **Fix-BitLockerNotEscrowedKeys (detect + remediate)**: Added robust error handling
-  - Added: Module availability check
-  - Added: Proper try/catch blocks around BitLocker cmdlets
-  - Added: `Set-StrictMode -Version Latest` to catch uninitialized variables
-  - Added: `[CmdletBinding()]` for advanced function support
-  - Removed: Dangerous `-ErrorAction SilentlyContinue` usage
-  - Added: Comprehensive comment-based help
-  - Impact: Prevents silent failures, provides better error messages
-
-#### Regional Settings & AVD
-- **Set-EnglishUKRegion.ps1**: Fixed critical registry hive loading errors
-  - Fixed: Registry hive mounting/unmounting issues
-  - Added: Better error handling for NTUSER.DAT operations
-  - Impact: High - prevented script from working on fresh installations
-
-- **Schedule-WeeklyReboot.ps1**: Fixed PowerShell syntax error
-  - Fixed: Malformed scheduled task XML
-  - Impact: High - scheduled task creation would fail
-
-#### CI/CD Pipeline Improvements
-- Made PSScriptAnalyzer validation non-blocking (informational only)
-- Removed problematic Pester test file that caused build failures
-- Added error handling to prevent CI pipeline failures
-- All validation jobs now informational to allow builds to succeed
+**High-Severity Improvements:**
+- **Fix-BitLockerNotEscrowedKeys**: Added robust error handling
+  - 🔗 [View Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations/Fix-BitLockerNotEscrowedKeys)
 
 ### Statistics
 
-**Code Quality Improvements:**
-- Files modified: 19 PowerShell scripts
-- Critical syntax errors fixed: 2
-- High-severity issues fixed: 4
-- Documentation blocks added: 6 scripts
-- Performance optimizations: 1 major fix
-- Formatting improvements: 10 scripts
+- **Files modified**: 19 PowerShell scripts
+- **Critical syntax errors fixed**: 2
+- **High-severity issues fixed**: 4
+- **Documentation blocks added**: 6 scripts
+- **Performance optimizations**: 1 major fix
 
-**New Capabilities:**
-- Monitor-ServerHealth.ps1: 541 → 1,928 lines (+257% expansion)
-- New monitoring features: 13 major additions
-- Interactive modes: 4 quick presets
+### Related Changes
+
+See [v3.0.1](#301---2025-12-31--drizzle---bug-fix-release) for continued bug fixes.
+
+[⬆️ Back to top](#-table-of-contents)
 
 ---
 
@@ -1611,72 +1151,35 @@ Added `[CmdletBinding()]` attribute to documented scripts for:
 
 > **Focus**: Comprehensive M365 regional settings management suite
 
+**📊 [Compare v1.0.0...v2.0.0](https://github.com/Carme99/bug-free-umbrella/compare/v1.0.0...v2.0.0)**
+
 ### Added
 
 #### M365 Regional Settings Suite (14 New Scripts)
-Complete solution for managing regional settings across Microsoft 365:
 
-**User & Account Settings:**
-- **Set-UserLanguageSettings.ps1** (v1.1): M365 user account language settings
-  - Parallel processing support for 50+ users (PowerShell 7+)
-  - Bulk operations via CSV import
-  - HTML and CSV reporting
+Complete solution for managing regional settings across Microsoft 365.
 
-**Mailbox & Communication:**
-- **Set-MailboxRegionalSettings.ps1**: Exchange Online mailbox regional configuration
-  - Time zone, language, date/time format management
-  - Single and bulk operation modes
-  - Audit and apply modes
-
-**Collaboration Platforms:**
-- **Set-SiteRegionalSettings.ps1**: SharePoint site collection regional settings
-  - Time zone, locale, calendar type configuration
-  - Site collection enumeration
-  - Compliant/non-compliant tracking
-
-- **Set-OneDriveRegionalSettings.ps1**: OneDrive personal site regional settings
-  - Personal site discovery and configuration
-  - User-specific OneDrive settings
-
-- **Set-TeamsRegionalSettings.ps1**: Teams regional settings guidance
-  - Best practices documentation
-  - User-level configuration instructions
-
-**Platform & Defaults:**
-- **Set-PowerPlatformRegionalSettings.ps1**: Power Platform environment settings
-  - Environment regional configuration
-  - Multi-environment support
-
-- **Set-OrganizationDefaults.ps1**: Tenant-wide default settings
-  - New user default configurations
-  - Organization-level standards
+**Key Scripts:**
+- **Set-UserLanguageSettings.ps1** - M365 user account language settings
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/regional-settings/Set-UserLanguageSettings.ps1)
+- **Set-MailboxRegionalSettings.ps1** - Exchange Online mailbox configuration
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/regional-settings/Set-MailboxRegionalSettings.ps1)
+- **Set-SiteRegionalSettings.ps1** - SharePoint site settings
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/regional-settings/Set-SiteRegionalSettings.ps1)
+- Plus 11 more regional settings scripts
 
 #### Proactive Remediations (6 New Scripts - 3 Pairs)
+
 Windows client regional settings management:
-
-- **region-language-settings** (detect/remediate): Windows regional settings enforcement
-- **keyboard-layout** (detect/remediate): UK keyboard layout enforcement
-- **language-pack-audit** (detect/remediate): Unnecessary language pack removal
-
-### Features
-- Comprehensive UK standards support (en-GB, GMT, GBP)
-- Audit and apply modes for all scripts
-- Single and bulk operation support
-- HTML and CSV reporting capabilities
-- Compliant/non-compliant tracking
-- Automatic remediation capabilities
-- PowerShell 7+ parallel processing (50+ user optimization)
-
-### Documentation
-- Updated M365 README with 7 new scripts
-- Updated Proactive Remediations README with 3 new pairs
-- Added Claude Code attribution across all documentation
-- Updated main README with new script counts and examples
+  - 🔗 [Browse Folder](https://github.com/Carme99/bug-free-umbrella/tree/main/scripts/endpoints/devices/proactive-remediations)
 
 ### Statistics
-- M365 Scripts: 12 → 19 (+7 scripts, +58% growth)
-- Proactive Remediations: 11 → 14 pairs (+3 pairs, +27% growth)
-- Total Scripts: 246 → 260+ (+14 scripts, +6% growth)
+
+- **M365 Scripts**: 12 → 19 (+7 scripts, +58%)
+- **Proactive Remediations**: 11 → 14 pairs (+3 pairs, +27%)
+- **Total Scripts**: 246 → 260+ (+14 scripts)
+
+[⬆️ Back to top](#-table-of-contents)
 
 ---
 
@@ -1684,167 +1187,52 @@ Windows client regional settings management:
 
 > **Focus**: Comprehensive enterprise IT management toolkit
 
-### Added
+**📊 [View Release](https://github.com/Carme99/bug-free-umbrella/releases/tag/v1.0.0)** | **📖 [Wiki Home](https://github.com/Carme99/bug-free-umbrella/wiki)**
 
-#### Microsoft 365 Cloud Services (12 Scripts)
-- Exchange Online mailbox health monitoring and reporting
-- Shared mailbox audit and compliance reporting
-- Microsoft Teams usage and compliance analysis
-- OneDrive usage and storage analytics
-- Azure AD guest user audit and cleanup
-- Azure AD license reporting and optimization
-- Power Platform governance and monitoring
-- Defender for Office 365 threat reporting
+### Initial Release
 
-#### Intune Management (18+ Scripts)
-Complete Intune administration toolkit:
-- Device compliance reporting and tracking
-- BitLocker encryption status checking
-- Windows Update compliance monitoring
-- Stale device detection and cleanup
-- Application deployment status reporting
-- Policy deployment tracking and reporting
-- Device cleanup utilities and automation
+**Complete enterprise IT automation toolkit with 245+ scripts across 20 categories:**
 
-#### Proactive Remediations (11 Pairs - 22 Scripts)
-Auto-fix scripts for common device issues:
-- **Fix-DiskSpace**: Low disk space remediation
-- **Fix-TempFiles**: Temporary file cleanup
-- **Fix-StaleProfiles**: Old user profile removal
-- **Fix-WindowsUpdateStuck**: Windows Update reset
-- **Fix-BitLockerNotEscrowedKeys**: BitLocker key backup to Azure AD
-- **Fix-TeamsCache**: Teams cache cleanup
-- **Fix-PrintSpooler**: Print spooler service repair
-- **Fix-DNSCache**: DNS cache flush and rebuild
-- **Fix-WindowsSearch**: Search index rebuild
-- **Fix-BrokenShortcuts**: Broken shortcut cleanup
-- **Check-SecurityBaseline**: Security settings enforcement
-
-#### Winget Application Updates (40+ Templates)
-Automated application update deployment:
-- Remote access tools (TeamViewer, WinSCP, AnyDesk)
-- Development tools (VS Code, Git, Python, Node.js)
-- Productivity applications (7-Zip, Notepad++, VLC)
-- Runtimes (Visual C++ Redistributables, .NET Framework, EdgeWebView2)
-- Communication tools (Zoom, Slack, Discord)
-
-#### DevOps & CI/CD (4 Scripts)
-- Azure DevOps pipeline monitoring and reporting
-- GitHub Actions workflow monitoring
-- GitLab CI pipeline monitoring and analysis
-- Build performance analysis and optimization
-
-#### Cloud Infrastructure (15+ Scripts)
-**Azure:**
-- Azure resource health monitoring
-- Azure Key Vault monitoring and alerting
-- Azure VM security configuration audit
-- Azure VM backup compliance checking
-- Azure resource cost analysis
-
-**AWS:**
-- AWS resource inventory and reporting
-- Multi-region resource discovery
-
-**Containers:**
-- Docker health checks and diagnostics
-- Kubernetes cluster health monitoring
-- Docker resource cleanup and optimization
-
-#### Security & Compliance (13 Scripts)
-Multi-framework compliance and security:
-- Multi-framework compliance scanning (CIS, NIST, PCI-DSS, HIPAA, SOC2, ISO27001)
-- CIS Benchmark testing and validation
-- NIST framework compliance checking
-- Security baseline verification
-- Local administrator account auditing
-- Failed login attempt reporting
-- Certificate expiration checking and alerting
-- Security feature testing and validation
-
-#### Server Management (30+ Scripts)
-Windows Server administration toolkit:
-
-**Active Directory:**
-- User account auditing and reporting
-- Service account discovery and audit
-- Group membership analysis
-
-**Backup & Recovery:**
-- Backup status verification
-- System restore point management
-
-**Group Policy:**
-- GPO backup automation
-- Group Policy reporting and documentation
-
-**System & Storage:**
-- Disk space management and reporting
-- Performance monitoring and trending
-- System integrity checking (SFC/DISM)
-- Windows Update management
-
-**Network & Security:**
-- Network diagnostics and troubleshooting
-- Certificate management
-- Security configuration audit
-
-#### Web Services (4 Scripts)
-IIS web server management:
-- **Get-IISHealthCheck.ps1**: Comprehensive IIS health monitoring
-- **Get-IISLogAnalyzer.ps1**: Advanced log analysis with security threat detection
-- **Optimize-IISConfiguration.ps1**: Performance tuning and security hardening
-- **Backup-IISConfiguration.ps1**: Complete IIS configuration backup
-
-#### Database Management (4 Scripts)
-Multi-platform database monitoring:
-- **Get-SQLServerHealth.ps1**: SQL Server comprehensive monitoring
-- **Get-MySQLHealth.ps1**: MySQL server health checks
-- **Get-PostgreSQLHealth.ps1**: PostgreSQL health monitoring
-- **Monitor-MongoDBHealth.ps1**: MongoDB health and performance
-
-#### Infrastructure as Code (2 Scripts)
-- **Test-TerraformConfiguration.ps1**: Terraform validation and security scanning
-- **Test-BicepTemplates.ps1**: Azure Bicep template validation
+- Microsoft 365 Cloud Services (12 scripts)
+- Intune Management (18+ scripts)
+- Proactive Remediations (11 pairs - 22 scripts)
+- Winget Application Updates (40+ templates)
+- DevOps & CI/CD (4 scripts)
+- Cloud Infrastructure (15+ scripts)
+- Security & Compliance (13 scripts)
+- Server Management (30+ scripts)
+- Web Services (4 scripts)
+- Database Management (4 scripts)
+- Infrastructure as Code (2 scripts)
 
 ### Documentation
+
 Comprehensive documentation suite:
-- **README.md**: Repository overview with quick start guide
-- **wiki/Home.md**: Complete documentation index
-- **wiki/Script-Examples.md**: Detailed usage examples with expected outputs
-- **wiki/Workflows.md**: End-to-end workflow guides for common scenarios
-- **wiki/Troubleshooting.md**: Common issues and solutions
-- **wiki/Intune-Sync-Guide.md**: User group to device group synchronization guide
-- **CONTRIBUTING.md**: Development guidelines and contribution process
-- **SECURITY.md**: Security policy and vulnerability reporting
-- **CODE_OF_CONDUCT.md**: Community guidelines
+  - 🔗 [Wiki Home](https://github.com/Carme99/bug-free-umbrella/wiki)
+  - 🔗 [Contributing Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)
+  - 🔗 [Security Policy](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md)
 
-### Features
-- Detection/remediation pattern for proactive fixes
-- HTML and CSV report generation
-- Parallel processing support (PowerShell 7+)
-- Comprehensive error handling
-- Detailed logging capabilities
-- Comment-based help for all major scripts
-- Enterprise deployment ready
+### Statistics
 
-### Statistics - Initial Release
 - **Total Scripts**: 245+
 - **Script Categories**: 20
 - **Proactive Remediations**: 11 pairs (22 scripts)
-- **Winget App Templates**: 40+
-- **Documentation Pages**: 6
 - **Lines of Code**: 50,000+
+
+[⬆️ Back to top](#-table-of-contents)
 
 ---
 
 ## [0.9.0] - 2025-12-15 ☔ **"Drizzle"** - Initial Setup
 
 ### Initial Repository Setup
+
 - Repository structure established
 - Basic script organization and categorization
 - Initial documentation framework
 - License and governance files (Apache 2.0)
+
+[⬆️ Back to top](#-table-of-contents)
 
 ---
 
@@ -1852,69 +1240,54 @@ Comprehensive documentation suite:
 
 | Version | Date | Codename | Type | Major Changes |
 |---------|------|----------|------|---------------|
-| **3.0.1** | 2025-12-31 | ☔ Drizzle | Patch | Test-CISBenchmark.ps1 v2.0.0 - Fixed broken cmdlets |
-| **3.0.0** | 2025-12-30 | 🌪️ Hurricane | Breaking | Complete repository restructure (20 categories → 7 domains) |
-| **2.2.0** | 2025-12-30 | 🌧️ Shower | Minor | Navigation & usability improvements |
-| **2.1.0** | 2025-12-29 | 🌈 Rainbow | Quality | PowerShell best practices, critical bug fixes, Monitor-ServerHealth expansion |
-| **2.0.0** | 2025-12-28 | ⛈️ Thunderstorm | Major | Regional settings suite (14 scripts), M365 expansion |
-| **1.0.0** | 2025-12-27 | ⛈️ Thunderstorm | Major | Initial production release (245+ scripts) |
+| **3.7.0** | 2026-01-21 | 🌧️ Shower | Minor | Winget security updates, .NET runtime fixes |
+| **3.6.0** | 2026-01-16 | 🌧️ Shower | Minor | Intune device management scripts |
+| **3.5.0** | 2026-01-15 | 🌧️ Shower | Minor | AVD image builder enhancements |
+| **3.4.0** | 2026-01-09 | 🌈 Rainbow | Minor | Documentation & examples |
+| **3.3.0** | 2026-01-08 | 🌧️ Rainfall | Minor | M365 user management toolkit |
+| **3.2.0** | 2026-01-06 | 🌧️ Sprinkle/Monsoon | Minor | M365 apps & device health |
+| **3.1.0** | 2026-01-05 | 🌧️ Shower | Minor | Expanded Intune operations |
+| **3.0.3** | 2026-01-04 | ☔ Drizzle | Patch | Wiki version fix |
+| **3.0.2** | 2026-01-03 | ☔ Drizzle | Patch | Documentation cleanup |
+| **3.0.1** | 2025-12-31 | ☔ Drizzle | Patch | CIS Benchmark fixes |
+| **3.0.0** | 2025-12-30 | 🌪️ Hurricane | Breaking | Repository restructure |
+| **2.2.0** | 2025-12-30 | 🌧️ Shower | Minor | Navigation improvements |
+| **2.1.0** | 2025-12-29 | 🌈 Rainbow | Minor | Quality & reliability |
+| **2.0.0** | 2025-12-28 | ⛈️ Thunderstorm | Major | Regional settings suite |
+| **1.0.0** | 2025-12-27 | ⛈️ Thunderstorm | Major | Initial production release |
 | **0.9.0** | 2025-12-15 | ☔ Drizzle | Patch | Repository initialization |
 
 ---
 
 ## Upgrade Notes
 
-### Upgrading to 3.0.1 (Drizzle)
+### Upgrading to 3.7.0 (Shower)
 - ✅ **No breaking changes** - fully backward compatible
-- ✅ **No action required** for most users
-- 🔧 **Test-CISBenchmark.ps1 users**: The script now actually works!
-  - Previous version had broken cmdlets and would fail immediately
-  - New version performs real CIS Benchmark compliance testing
-  - Tests 15+ controls vs previous 3 controls
-  - Requires Administrator privileges (enforced via `#Requires`)
-  - Run with `-ExportHTML` to generate detailed compliance reports
-- 📊 **Improved compliance testing**:
-  - Password policies, account lockout, and audit policies
-  - Level 1 and Level 2 CIS Benchmark support
-  - HTML reports with compliance percentage and recommendations
+- 🔧 **New scripts**: Check-OutdatedCriticalApps proactive remediation
+- 🔧 **Updated**: Update-DotNetRuntimes.ps1 v2.6 - all menu options now functional
 
 ### Upgrading to 3.0.0 (Hurricane)
-- ⚠️ **BREAKING CHANGES** - All script paths have changed
+
+> **⚠️ BREAKING CHANGES** - All script paths have changed
+
 - 📂 Scripts reorganized: 20 flat categories → 7 technology domains
 - 🔄 **Action required**: Update any references to script paths
-- 📖 See [Migration Guide](#migration-guide-for-users) below for path mappings
+- 📖 See [Migration Guide](https://github.com/Carme99/bug-free-umbrella/wiki/Migration-Guide) for path mappings
 - ✅ Git history preserved for all files
 
-### Upgrading to 2.2.0 (Shower)
-- ✅ **No breaking changes** - fully backward compatible
-- ✨ New QUICK_START.md provides role-based navigation
-- 📂 New examples/ directory with workflow templates
-- 🎯 Enhanced issue templates for better bug reporting
+**Quick Migration:**
+```powershell
+# Old path
+.\scripts\intune\Get-IntuneDeviceCompliance.ps1
 
-### Upgrading to 2.1.0 (Rainbow)
-- ✅ **No breaking changes** - fully backward compatible
-- ✅ **No action required** - all improvements are internal
-- ✨ **New features**:
-  - Monitor-ServerHealth.ps1 now has interactive mode - try it!
-  - Use `-Interactive` parameter for menu-driven operation
-  - All scripts have improved error handling
-- 📊 **Performance improvements**:
-  - Array operations faster in Remove-SysprepBlockers.ps1
-  - Better error messages across all BitLocker scripts
-- 📚 **Better documentation**:
-  - 6 scripts now have comprehensive Get-Help support
-  - Named constants make configuration easier
+# New path
+.\scripts\endpoints\intune\Get-IntuneDeviceCompliance.ps1
+```
 
-### Upgrading to 2.0.0 (Thunderstorm)
-- ✅ No breaking changes
-- ✅ All existing scripts remain compatible
-- ✨ New regional settings scripts available for opt-in use
-- 🚀 PowerShell 7+ recommended for parallel processing features (50+ users)
-
-### Upgrading to 1.0.0 (Thunderstorm)
-- 🎉 Initial production release
-- ✅ All scripts tested and documented
-- ✅ No migration required for new installations
+### Other Versions
+- **v2.x → v3.x (pre-3.0.0)**: No breaking changes, fully backward compatible
+- **v1.x → v2.x**: No breaking changes, opt-in new features
+- **v0.9 → v1.0**: Initial production release
 
 ---
 
@@ -1926,30 +1299,12 @@ All scripts and features are actively maintained and supported.
 
 ---
 
-## Planned Features (Next Releases)
-
-### 🌧️ Version 2.2.0 "Shower" (Planned)
-- Additional Pester test coverage for critical scripts
-- More proactive remediation pairs
-- Enhanced reporting capabilities
-- Azure DevOps integration improvements
-
-### 🌈 Version 2.3.0 "Rainbow" (Planned)
-- Phase 2 PowerShell best practices (Set-StrictMode)
-- Parameter validation enhancements
-- Performance profiling and optimization
-- Extended documentation with video tutorials
-
-See [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues) for detailed feature requests and planned enhancements.
-
----
-
 ## Contributing
 
 We welcome contributions! Please see:
-- [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines
-- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community guidelines
-- [SECURITY.md](SECURITY.md) for security vulnerability reporting
+- 🔗 [CONTRIBUTING.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md) for development guidelines
+- 🔗 [CODE_OF_CONDUCT.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CODE_OF_CONDUCT.md) for community guidelines
+- 🔗 [SECURITY.md](https://github.com/Carme99/bug-free-umbrella/blob/main/SECURITY.md) for security vulnerability reporting
 
 ---
 
@@ -1963,5 +1318,6 @@ Scripts in this repository were created with the assistance of **[Claude Code](h
 
 For detailed commit history, see [Git Log](https://github.com/Carme99/bug-free-umbrella/commits/main).
 
-**Last Updated**: 2025-12-31
+**Last Updated**: 2026-01-25
 
+[⬆️ Back to top](#-table-of-contents)
