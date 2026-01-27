@@ -20,9 +20,13 @@
 ### ☁️ Cloud & Infrastructure
 - [Azure Virtual Desktop](Azure-Virtual-Desktop)
   - [ACG Image Builder](Azure-Compute-Gallery-Image-Builder)
+- [AWS Management](AWS-Guide) 🆕
 
 ### 🔄 DevOps & Development
-Coming soon
+- [Integration Patterns](Integration-Patterns) 🆕
+
+### 🗃️ Data Management
+- [Database Administration](Database-Administration) 🆕
 
 ### 💼 Microsoft 365 & Enterprise
 - [Microsoft 365 Services](Microsoft-365-Cloud-Services)
@@ -34,6 +38,7 @@ Coming soon
 
 ### 🖥️ Server & Infrastructure
 - [Server Management](Server-Management)
+- [Backup & Disaster Recovery](Backup-and-Disaster-Recovery) 🆕
 
 ### 🖱️ Device Management
 - [Proactive Remediations](Proactive-Remediations)
@@ -48,6 +53,8 @@ Coming soon
 ---
 
 ### 📋 Project Info
+- [Release Notes](Release-Notes) 🆕
+- [Custom Development Guide](Custom-Development-Guide) 🆕
 - [💬 Support Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md)
 - [📜 Code of Conduct](https://github.com/Carme99/bug-free-umbrella/blob/main/CODE_OF_CONDUCT.md)
 - [🏛️ Governance](https://github.com/Carme99/bug-free-umbrella/blob/main/GOVERNANCE.md)

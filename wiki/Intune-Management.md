@@ -771,6 +771,36 @@ Other:
 
 ---
 
+## 💻 Quick Start Examples
+
+### Example 1: Check Device Compliance
+```powershell
+# Get non-compliant devices
+.\Get-IntuneDeviceCompliance.ps1 -ComplianceState NonCompliant -ExportHTML
+
+# Result: HTML report of all non-compliant devices
+```
+
+### Example 2: Get Device Primary Users
+```powershell
+# Interactive mode - search by device name
+.\Get-IntuneDevicePrimaryUsers.ps1 -Interactive
+
+# Specific device
+.\Get-IntuneDevicePrimaryUsers.ps1 -DeviceName "DESKTOP-ABC123" -ExportCSV
+```
+
+### Example 3: Sync Devices
+```powershell
+# Sync all devices
+.\Invoke-IntuneDeviceSync.ps1
+
+# Sync specific device
+.\Invoke-IntuneDeviceSync.ps1 -DeviceId "abc123-def456-ghi789"
+```
+
+---
+
 ## Related Resources
 
 ### Internal Documentation

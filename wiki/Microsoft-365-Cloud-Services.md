@@ -894,6 +894,37 @@ Get-OrganizationConfig | Select-Object Name
 
 ---
 
+## 💻 Quick Start Examples
+
+### Example 1: User Information Lookup
+```powershell
+# Interactive user management
+.\Get-M365UserInfo.ps1 -Interactive
+
+# Specific user with all details
+.\Get-M365UserInfo.ps1 -UserPrincipalName "user@company.com" -IncludeAllDetails
+```
+
+### Example 2: Mailbox Permission Audit
+```powershell
+# Check mailbox permissions
+.\Get-UserMailboxPermissions.ps1 -UserPrincipalName "executive@company.com" -ExportHTML
+
+# Find all delegated mailboxes
+.\Get-UserMailboxPermissions.ps1 -FindAllDelegated
+```
+
+### Example 3: Quarantined Email Management
+```powershell
+# List quarantined emails (last 7 days)
+.\Manage-QuarantinedEmails.ps1 -Days 7 -Action List
+
+# Release specific email
+.\Manage-QuarantinedEmails.ps1 -MessageId "abc123" -Action Release
+```
+
+---
+
 ## Related Resources
 
 ### Internal Documentation

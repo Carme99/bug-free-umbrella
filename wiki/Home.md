@@ -26,6 +26,32 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 
 ---
 
+## 🎉 What's New
+
+> **v3.7.0 "Shower" 🌧️** (2026-01-21) - Latest Release!
+>
+> ![New](https://img.shields.io/badge/NEW-Winget_Security_Updates-success)
+> ![Fixed](https://img.shields.io/badge/FIXED-.NET_Runtime_Bugs-critical)
+> ![Scripts](https://img.shields.io/badge/scripts-260+-orange)
+>
+> **Highlights:**
+> - 🔐 Automated Winget security updates for critical apps
+> - 🔧 .NET Runtime v2.6 - All 8 menu options now working
+> - 📱 New proactive remediation: Check-OutdatedCriticalApps
+>
+> [View Full Release Notes →](Release-Notes) | [CHANGELOG.md →](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)
+
+### Recent Releases
+| Version | Date | Codename | Highlights |
+|---------|------|----------|------------|
+| 3.7.0 | 2026-01-21 | 🌧️ Shower | Winget security, .NET fixes |
+| 3.6.0 | 2026-01-16 | 🌧️ Shower | Intune device management |
+| 3.5.0 | 2026-01-15 | 🌧️ Shower | AVD image builder |
+
+[See All Releases →](Release-Notes)
+
+---
+
 ## 🌟 Available Documentation
 
 | Page | Description |

@@ -1,22 +1,80 @@
 # Prerequisites
 
+![PowerShell](https://img.shields.io/badge/PowerShell-5.1+_|_7.0+-5391FE?logo=powershell&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-10/11_|_Server_2016--2025-0078D6?logo=windows&logoColor=white)
+![License](https://img.shields.io/badge/license-Apache%202.0-red)
+
+> **Quick Tip:** PowerShell 7+ recommended for best compatibility and performance! 🚀
+
 Before using Bug-Free Umbrella scripts, ensure you have the following prerequisites installed and configured.
 
 ## System Requirements
 
 ### Operating System
-- **Windows 10/11** or **Windows Server 2016+** (for most scripts)
-- **Linux** (for scripts in `scripts/infrastructure/linux/`)
-- **macOS** (limited support, mainly for cross-platform tools)
 
-### PowerShell Version
-- **PowerShell 5.1** (minimum for most scripts)
-- **PowerShell 7+** (recommended for best compatibility)
+![Desktop](https://img.shields.io/badge/Windows_10/11-supported-success)
+![Server](https://img.shields.io/badge/Server_2016--2025-supported-success)
+![Linux](https://img.shields.io/badge/Linux-partial-yellow)
 
-Check your PowerShell version:
+- **Windows 10/11** - Full support (primary target)
+- **Windows Server 2016** - Supported, PowerShell 5.1+
+- **Windows Server 2019** - Supported, PowerShell 5.1+ or 7+
+- **Windows Server 2022** - Supported, PowerShell 5.1+ or 7+
+- **Windows Server 2025** - Fully supported, PowerShell 7+ recommended
+- **Linux** - Partial support (scripts in `scripts/infrastructure/linux/`)
+- **macOS** - Limited support (cross-platform tools only)
+
+### PowerShell Version Guide
+
+#### PowerShell 5.1 (Windows PowerShell)
+![Status](https://img.shields.io/badge/status-supported-success)
+![Platform](https://img.shields.io/badge/platform-Windows_only-blue)
+
+- Built into Windows 10/11 and Windows Server 2016+
+- **Limitation**: Windows-only, cannot run on Linux/macOS
+- **Use when**: Managing Windows-only environments
+- **Note**: Some modern scripts may require PowerShell 7+ features
+
+Check version:
 ```powershell
+# PowerShell 5.1
 $PSVersionTable.PSVersion
+$PSVersionTable.PSEdition  # Output: Desktop
 ```
+
+#### PowerShell 7+ (PowerShell Core)
+![Status](https://img.shields.io/badge/status-recommended-brightgreen)
+![Platform](https://img.shields.io/badge/platform-cross--platform-success)
+
+- **Cross-platform**: Windows, Linux, macOS
+- **Better performance** and modern features
+- **Recommended** for all new deployments
+- Latest version: PowerShell 7.4+
+
+Check version:
+```powershell
+# PowerShell 7+
+$PSVersionTable.PSVersion
+$PSVersionTable.PSEdition  # Output: Core
+
+# Install from: https://github.com/PowerShell/PowerShell/releases
+```
+
+**⚠️ Important**: Some scripts require PowerShell 7+ features. Check individual script requirements.
+
+### Windows Server Support
+
+![Server 2016](https://img.shields.io/badge/2016-supported-success)
+![Server 2019](https://img.shields.io/badge/2019-supported-success)
+![Server 2022](https://img.shields.io/badge/2022-supported-success)
+![Server 2025](https://img.shields.io/badge/2025-supported-brightgreen)
+
+**Supported Versions:**
+- ✅ Windows Server 2025 (Latest)
+- ✅ Windows Server 2022
+- ✅ Windows Server 2019
+- ✅ Windows Server 2016
+- ⚠️ Windows Server 2012 R2 (Limited support, PowerShell 5.1 required)
 
 ## Required Modules
 
@@ -173,12 +231,13 @@ Different categories have specific requirements:
 ## Verification Checklist
 
 Before running scripts, verify:
-- ✅ PowerShell 5.1+ installed
+- ✅ PowerShell 5.1+ installed (5.1 or 7.0+, prefer 7.0+)
 - ✅ Execution policy set appropriately
 - ✅ Required modules installed
 - ✅ Proper permissions/credentials configured
 - ✅ Network connectivity to cloud services (if applicable)
 - ✅ Administrator privileges (if required)
+- ✅ Windows Server 2016+ (or Windows 10/11)
 
 ## Next Steps
 
@@ -208,5 +267,6 @@ For more help, see **[Troubleshooting](Troubleshooting)**, **[Support Guide](htt
 
 ---
 
-**Last Updated:** 2026-01-05
-**Version:** 1.1.0
+**Last Updated:** 2026-01-27
+**Wiki Version:** 1.2.0
+**Recommended PowerShell:** 7.4+ (Core)
