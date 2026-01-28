@@ -1,5 +1,7 @@
 # Intune Management
 
+![Tier](https://img.shields.io/badge/Tier-2-blue) ![Category](https://img.shields.io/badge/Category-Integration-blueviolet) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen)
+
 Comprehensive scripts for Microsoft Intune device management, application deployment, compliance reporting, and maintenance. These scripts help you manage and monitor endpoints enrolled in Microsoft Endpoint Manager.
 
 **⭐ NEW in v3.6.0:** Two powerful new scripts for device primary user reporting and Lenovo device enrichment!
@@ -787,5 +789,18 @@ Other:
 
 ---
 
-**Last Updated:** 2026-01-16
-**Version:** 1.1.0
+## See Also
+
+- [Microsoft 365 Management](M365-Management) - M365 and Exchange management
+- [Proactive Remediations](Proactive-Remediations) - Device remediation scripts
+- [Security & Compliance](Security-Compliance) - Security auditing and compliance
+- [Prerequisites](Prerequisites) - Required modules and permissions
+- [FAQ](FAQ) - Common questions and answers
+- [Support Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md) - Get help
+
+---
+
+**Last Updated:** 2026-01-28  
+**Wiki Version:** 1.2.0  
+**Status:** Current with v3.7.0 Release  
+**Maintained by:** Carme99 with [Claude Code](https://claude.com/claude-code)
