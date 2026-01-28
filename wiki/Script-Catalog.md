@@ -1,6 +1,25 @@
 # 📍 Bug-Free Umbrella - Documentation Navigation Guide
 
+![Tier](https://img.shields.io/badge/Tier-1-green) ![Category](https://img.shields.io/badge/Category-Foundation-blue) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen)
+
 > **Your roadmap to finding exactly what you need, fast!**
+
+---
+
+## Table of Contents
+
+- [Quick Start](#quick-start---i-want-to)
+- [Quick Start Paths](#quick-start-paths)
+- [Complete Documentation Index](#complete-documentation-index)
+- [Script Index by Category](#script-index-by-category)
+- [Learning Paths](#learning-paths)
+- [Repository Statistics](#repository-statistics)
+- [Latest Updates](#latest-updates-v307-shower)
+- [Tips for Navigation](#tips-for-navigation)
+- [External Links](#external-links)
+- [Featured Scripts](#featured-scripts)
+- [Need Help](#need-help)
+- [See Also](#see-also)
 
 ---
 
@@ -416,17 +435,17 @@ Organized by category:
 | **Proactive Remediations** | 14 pairs (28 scripts) |
 | **Winget App Templates** | 40+ |
 | **Documentation Files** | 10 |
-| **Latest Release** | 3.0.2 "Drizzle" ☔ |
+| **Latest Release** | 3.7.0 "Shower" 🌧️ |
 
 ---
 
-## ☔ Latest Updates (v3.0.2 "Drizzle")
+## ☔ Latest Updates (v3.7.0 "Shower")
 
 **What's New:**
-- 🗑️ **Removed 5 Deprecated Files:** Deleted ~3,988 lines of outdated documentation
-- 🔗 **Fixed 44 Broken Links:** All documentation references now work correctly
-- 📚 **Cleaner Documentation:** Simplified docs folder, consistent wiki link format
-- ✨ **Better UX:** All internal wiki links now use proper wiki-style navigation
+- 📚 **Comprehensive Tier 3 Documentation**: Advanced operations and optimization guides for expert users
+- 🎨 **Enhanced Wiki Standards**: Consistent formatting with badges, TOCs, and cross-references
+- 🔗 **Improved Navigation**: Standardized "See Also" sections linking related pages
+- ✨ **Better UX**: All internal wiki links now use proper wiki-style navigation
 
 **See full details:** [CHANGELOG.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)
 
@@ -462,12 +481,11 @@ Organized by category:
 
 ## 🌟 Featured Scripts
 
-### 🆕 Recently Enhanced (v3.0.2 Drizzle ☔)
-- **Documentation Cleanup** - Removed technical debt
-  - 5 deprecated documentation files removed (~3,988 lines)
-  - 44 broken links fixed across all wiki pages
-  - Consistent wiki-style link format throughout
-  - All content successfully migrated to comprehensive wiki
+### 🆕 Recently Enhanced (v3.7.0 Shower 🌧️)
+- **Comprehensive Documentation Enhancements**
+  - 9 new Tier 3 documentation pages for advanced topics
+  - Critical fixes for version inconsistencies and duplicate content
+  - Standardized wiki formatting across all pages
 
 ### 🔥 Most Popular
 - **Get-DeviceComplianceReport.ps1** - Intune compliance reporting
@@ -496,7 +514,18 @@ Organized by category:
 
 ---
 
-**Last Updated**: 2026-01-03 (v3.0.2 "Drizzle" ☔)
+## See Also
 
-**Maintained by**: The Bug-Free Umbrella Team
-**Created with**: [Claude Code](https://github.com/anthropics/claude-code)
+- [Getting Started](Getting-Started) - Step-by-step onboarding
+- [Prerequisites](Prerequisites) - System requirements and setup
+- [Home](Home) - Wiki homepage and complete overview
+- [Workflows](Workflows) - End-to-end process guides
+- [Troubleshooting](Troubleshooting) - Solve common problems
+- [Support Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md) - Get help
+
+---
+
+**Last Updated:** 2026-01-28  
+**Wiki Version:** 1.2.0  
+**Status:** Current with v3.7.0 Release  
+**Maintained by:** Carme99 with [Claude Code](https://claude.com/claude-code)
