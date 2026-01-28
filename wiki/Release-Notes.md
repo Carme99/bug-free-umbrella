@@ -174,8 +174,17 @@ Found a bug? Please report it on GitHub:
 - 🔗 [GitHub Repo](https://github.com/Carme99/bug-free-umbrella)
 - 🔗 [Contributing Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)
 
+## See Also
+
+- [Home](Home) - Wiki home page
+- [Prerequisites](Prerequisites) - System requirements
+- [Getting Started](Getting-Started) - First steps
+- [Troubleshooting](Troubleshooting) - Common issues
+- [Support Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md) - Get help
+
 ---
 
-**Last Updated:** 2026-01-27
-**Wiki Version:** 1.2.0
-**Latest Release:** v3.7.0 (2026-01-21)
+**Last Updated:** 2026-01-28  
+**Wiki Version:** 1.2.0  
+**Latest Release:** v3.7.0 (2026-01-21)  
+**Maintained by:** Carme99 with [Claude Code](https://claude.com/claude-code)
