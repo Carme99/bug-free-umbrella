@@ -46,6 +46,46 @@
 
 ---
 
+### 🎯 Advanced Topics (Tier 3) 🔥
+- [Advanced Scripting Patterns](Advanced-Scripting-Patterns) 🔶
+  - Error Handling & Retry Logic
+  - Logging Frameworks
+  - Parallel Execution & State Management
+- [Performance Tuning](Performance-Tuning) 🔶
+  - Script Optimization
+  - Resource Management
+  - Batch Processing
+- [Performance Diagnostics](Performance-Diagnostics) 🔶
+  - Bottleneck Identification
+  - Profiling Techniques
+  - Diagnostic Tools
+- [Security Troubleshooting](Security-Troubleshooting) 🔶
+  - Certificate Issues
+  - Authentication & Permissions
+  - Audit Logging
+- [Advanced Monitoring](Advanced-Monitoring) 🔶
+  - Custom Alerting
+  - Metric Collection
+  - Dashboard Integration
+- [Migration Strategy](Migration-Strategy) 🔶
+  - Version Upgrades
+  - Environment Migration
+  - Validation & Rollback
+- [Scaling & Load Balancing](Scaling-&-Load-Balancing) 🔶
+  - Horizontal Scaling
+  - Job Distribution
+  - High-Volume Operations
+- [API Reference](API-Reference) 🔶
+  - Function Documentation
+  - Integration Modules
+  - Data Types & Error Codes
+- [Best Practices Checklist](Best-Practices-Checklist) 🔶
+  - Development & Deployment
+  - Security & Governance
+  - Compliance & Operations
+
+---
+
 ### 📚 Workflows & Guides
 - [All Workflows](Workflows)
 - [Troubleshooting](Troubleshooting)
@@ -69,3 +109,7 @@
 - [GitHub Repo](https://github.com/Carme99/bug-free-umbrella)
 - [Issues](https://github.com/Carme99/bug-free-umbrella/issues)
 - [Pull Requests](https://github.com/Carme99/bug-free-umbrella/pulls)
+
+---
+
+**Legend:** 🆕 = Tier 1 (Critical) | 🔶 = Tier 3 (Advanced)
