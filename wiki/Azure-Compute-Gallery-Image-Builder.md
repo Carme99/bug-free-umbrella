@@ -1,5 +1,7 @@
 # Azure Compute Gallery Image Builder
 
+![Tier](https://img.shields.io/badge/Tier-3-red) ![Category](https://img.shields.io/badge/Category-Advanced-ff69b4) ![Status](https://img.shields.io/badge/Status-New-orange)
+
 ## Overview
 
 The **New-AzureComputeGalleryImage.ps1** script is a comprehensive, interactive tool for creating versioned Azure Compute Gallery (ACG) images from gold VMs. It automates the entire end-to-end workflow of cloning, sysprep'ing, and publishing Windows images to an Azure Compute Gallery.
@@ -16,6 +18,7 @@ The **New-AzureComputeGalleryImage.ps1** script is a comprehensive, interactive 
 - [Troubleshooting](#troubleshooting)
 - [Best Practices](#best-practices)
 - [FAQ](#faq)
+- [See Also](#see-also)
 
 ## Features
 
@@ -744,6 +747,18 @@ For issues or questions:
 
 ---
 
-**Script Version:** 3.0
-**Last Updated:** 2025-01-15
-**Author:** Jack Lee
+## See Also
+
+- [Azure Virtual Desktop](Azure-Virtual-Desktop) - AVD management and optimization
+- [Cloud Infrastructure](Cloud-Infrastructure) - Azure and cloud resources
+- [Advanced-Scripting-Patterns](Advanced-Scripting-Patterns) - Expert scripting techniques
+- [Performance-Tuning](Performance-Tuning) - Optimization strategies
+- [Prerequisites](Prerequisites) - Required modules and setup
+- [Support Guide](https://github.com/Carme99/bug-free-umbrella/blob/main/SUPPORT.md) - Get help
+
+---
+
+**Last Updated:** 2026-01-28  
+**Wiki Version:** 1.2.0  
+**Status:** Current with v3.7.0 Release  
+**Maintained by:** Carme99 with [Claude Code](https://claude.com/claude-code)
