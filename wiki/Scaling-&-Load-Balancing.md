@@ -168,8 +168,9 @@ function Adjust-ProcessingCapacity {
         [int]$TargetMemoryUsage = 80
     )
     
-    $cpuUsage = (Get-WmiObject Win32_PerfFormattedData_PerfOS_Processor -Filter 'Name="_Total"').PercentProcessorTime
-    $os = Get-WmiObject Win32_OperatingSystem
+    # Using Get-CimInstance instead of deprecated Get-WmiObject (PS 7+ compatible)
+    $cpuUsage = (Get-CimInstance Win32_PerfFormattedData_PerfOS_Processor -Filter 'Name="_Total"').PercentProcessorTime
+    $os = Get-CimInstance Win32_OperatingSystem
     $memUsage = ($os.TotalVisibleMemorySize - $os.FreePhysicalMemory) / $os.TotalVisibleMemorySize * 100
     
     $adjustments = @{
@@ -201,6 +202,8 @@ function Adjust-ProcessingCapacity {
 
 ## High-Volume Operations
 
+> ⚠️ **PowerShell Version Requirement:** `ForEach-Object -Parallel` requires **PowerShell 7.0 or later**. If using PowerShell 5.1, use traditional `ForEach-Object` or `Invoke-Command -AsJob` instead.
+
 ### Bulk Processing Framework
 
 ```powershell
@@ -228,7 +231,8 @@ function Invoke-BulkOperation {
             
             if ($batch.Count -ge $BatchSize) {
                 Write-Progress -Activity "Processing" -Status "Items: $totalProcessed" -PercentComplete 0
-                
+
+                # PS 7.0+ only: ForEach-Object -Parallel. For PS 5.1, use Invoke-Command -AsJob instead
                 $batchResults = $batch | ForEach-Object -Parallel $Operation -ThrottleLimit $MaxDegreeOfParallelism
                 $batchResults
                 
@@ -240,6 +244,7 @@ function Invoke-BulkOperation {
     
     end {
         if ($batch.Count -gt 0) {
+            # PS 7.0+ only: ForEach-Object -Parallel. For PS 5.1, use Invoke-Command -AsJob instead
             $batch | ForEach-Object -Parallel $Operation -ThrottleLimit $MaxDegreeOfParallelism
             $totalProcessed += $batch.Count
         }

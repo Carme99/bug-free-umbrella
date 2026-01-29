@@ -16,7 +16,9 @@
 
 ## Overview
 
-This reference documents all public APIs in Bug-Free Umbrella.
+This reference documents available functions and modules in Bug-Free Umbrella. Functions are provided as individual scripts in the `scripts/` directory organized by category (cloud, infrastructure, automation, security, etc.) rather than as a monolithic module.
+
+> **Note:** Not all functions listed here are provided as a single cohesive API module. Each category has dedicated scripts. Import specific scripts as needed for your use case.
 
 ## Core Functions
 
@@ -60,105 +62,93 @@ PSCustomObject with properties:
   - Disks: object[] (if -IncludeStorage)
 ```
 
-### Invoke-RemoteScript
+### Invoke-Command (Native PowerShell)
 
-```
-INVOKE-REMOTESCRIPT
+For remote script execution, use the native PowerShell `Invoke-Command` cmdlet instead of a custom function:
 
-SYNOPSIS
-Execute script on remote computer with error handling.
-
-SYNTAX
-Invoke-RemoteScript -ComputerName <string> -FilePath <string> [-ArgumentList <object[]>] [-TimeoutSeconds <int>] [<CommonParameters>]
-
-PARAMETERS
--ComputerName <string>
-    Target computer
-    Required: True
-
--FilePath <string>
-    Script file path
-    Required: True
-
--ArgumentList <object[]>
-    Arguments to pass to script
-    Required: False
-
--TimeoutSeconds <int>
-    Execution timeout
-    Required: False
-    Default value: 600
-
-RETURN VALUE
-PSCustomObject with properties:
-  - Success: bool
-  - Output: object
-  - ExecutionTime: TimeSpan
-  - Error: string (if failed)
+```powershell
+Invoke-Command -ComputerName $server -FilePath $scriptPath `
+    -ArgumentList $args -ErrorAction Stop
 ```
 
-## Integration Modules
+See [Remote Execution Patterns](Advanced-Scripting-Patterns.md) for examples and best practices.
 
-### Azure Integration
+## Available Script Categories
 
-```
-MODULE: AzureIntegration
+Bug-Free Umbrella provides scripts organized in the following categories:
 
-FUNCTIONS
-Connect-AzureAccount
-Get-AzureVMs
-Start-AzureVM
-Stop-AzureVM
-Get-AzureStorageAccount
+### Cloud Platforms
 
-DEPENDENCIES
-- Az.Accounts
-- Az.Compute
-- Az.Storage
-```
+**Azure Scripts:** `/scripts/cloud/azure/`
+- AVD (Azure Virtual Desktop) management
+- Compute resources (VMs, galleries)
+- Core operations (health, resource monitoring)
+- Key Vault operations
+- API Management
 
-### Microsoft 365 Integration
+**AWS Scripts:** `/scripts/cloud/aws/`
+- Resource inventory
+- EC2 management
+- S3 operations
+- Cost optimization
 
-```
-MODULE: M365Integration
+### Infrastructure & Monitoring
 
-FUNCTIONS
-Connect-M365Service
-Get-M365Users
-Set-M365UserLicense
-Get-M365MailboxPermissions
-Enable-M365Compliance
+**Windows Infrastructure:** `/scripts/infrastructure/windows/`
+- Server health monitoring
+- Performance metrics
+- System diagnostics
 
-DEPENDENCIES
-- ExchangeOnlineManagement
-- MSOnline
-```
+**Network Operations:** `/scripts/infrastructure/network/`
+- DNS management
+- Network diagnostics
+
+### Collaboration & Microsoft 365
+
+**Microsoft 365 Scripts:** `/scripts/collaboration/microsoft365/`
+- Azure AD management
+- User information retrieval
+- Mailbox operations
+- License reporting
+
+### Security & Compliance
+
+**Security Scripts:** `/scripts/security/`
+- Vulnerability scanning
+- Compliance auditing
+- Access management
+
+### Data & API
+
+**API Management:** `/scripts/data/api/`
+- Azure API Management monitoring
+- API health checks
+
+**Database Operations:** `/scripts/data/databases/`
+- SQL Server management
+- Database maintenance
 
 ## Utility Functions
 
-### ConvertTo-SecureCredential
+### Creating PSCredential Objects
 
+Use the native PowerShell `New-Object` cmdlet or `Get-Credential` for secure credential handling:
+
+```powershell
+# Interactive prompt (recommended)
+$cred = Get-Credential
+
+# Programmatic creation (only with SecureString)
+$securePassword = ConvertTo-SecureString -String "Password" -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential("username", $securePassword)
 ```
-CONVERTTO-SECURECREDENTIAL
 
-SYNOPSIS
-Convert plaintext to PSCredential object safely.
-
-SYNTAX
-ConvertTo-SecureCredential -Username <string> -Password <string> [<CommonParameters>]
-
-PARAMETERS
--Username <string>
-    Username
-    Required: True
-
--Password <string>
-    Password (will be converted to SecureString)
-    Required: True
-
-EXAMPLES
-$cred = ConvertTo-SecureCredential -Username "user@domain.com" -Password "P@ssw0rd!"
-```
+⚠️ **Security Note:** Never hardcode plaintext passwords in scripts. Use:
+- Azure Key Vault
+- Windows Credential Manager
+- Certificate-based authentication
+- Managed Identity (Azure)
+- Environment variables (for CI/CD)
 
 ## Data Types
 
@@ -202,11 +192,19 @@ class SystemMetrics {
 
 ## Version Compatibility
 
-| Function | PS 5.1 | PS 7.0+ | Notes |
-|----------|--------|---------|-------|
-| Get-SystemInfo | ✓ | ✓ | Cross-platform in PS7+ |
-| Invoke-RemoteScript | ✓ | ✓ | Requires WinRM |
-| ConvertTo-SecureCredential | ✓ | ✓ | Native support |
+Most scripts in Bug-Free Umbrella are compatible with:
+- **PowerShell 5.1** (Windows, with WMF 5.1)
+- **PowerShell 7.0+** (Windows, Linux, macOS)
+
+Key compatibility notes:
+
+| Feature | PS 5.1 | PS 7.0+ | Notes |
+|---------|--------|---------|-------|
+| `Get-CimInstance` | ✓ | ✓ | Preferred over deprecated `Get-WmiObject` |
+| `ForEach-Object -Parallel` | ✗ | ✓ | Requires PS 7.0+; use `Invoke-Command -AsJob` for PS 5.1 |
+| Azure CLI/SDK | ✓ | ✓ | Requires Az module |
+| Cross-platform paths | ✗ | ✓ | Use `[System.IO.Path]::Combine()` for compatibility |
+| `Invoke-RestMethod` | ✓ | ✓ | Native support |
 
 ---
 

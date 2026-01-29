@@ -36,10 +36,13 @@ function Test-CertificateValidity {
         $tcpClient = [System.Net.Sockets.TcpClient]::new()
         $tcpClient.Connect($ServerName, $Port)
         
+        # ⚠️ WARNING: This callback disables SSL validation for diagnostic purposes ONLY
+        # NEVER use in production! This exposes you to MITM attacks.
+        # For production, omit this parameter or use proper certificate validation
         $sslStream = [System.Net.Security.SslStream]::new(
             $tcpClient.GetStream(),
             $false,
-            { $true }  # Accept any certificate (for testing)
+            { $true }  # Accept any certificate (DIAGNOSTIC TESTING ONLY)
         )
         
         $sslStream.AuthenticateAsClient($ServerName)
@@ -128,6 +131,13 @@ function Test-AuthenticationMethod {
     try {
         switch ($AuthType) {
             "Basic" {
+                # ⚠️ SECURITY WARNING: This converts SecureString to plaintext in memory
+                # This is FOR DIAGNOSTIC TESTING ONLY - NEVER use in production scripts
+                # SAFER ALTERNATIVES:
+                #   1. Use -UseDefaultCredentials with Negotiate/NTLM
+                #   2. Use certificate-based authentication
+                #   3. Use Azure Managed Identity or Key Vault
+                #   4. Use session tokens (Bearer tokens with short expiry)
                 $bytes = [Text.Encoding]::ASCII.GetBytes("$Username:$([Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToCoTaskMemUnicode($Password)))")
                 $headers = @{
                     Authorization = "Basic " + [Convert]::ToBase64String($bytes)
