@@ -25,6 +25,64 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ---
 
+## [3.7.1] - 2026-01-29 🌂 **"Drizzle"** - Documentation & Security Hardening Update
+
+> **Focus**: Critical security documentation improvements, code quality updates, and accuracy corrections
+
+### Security Improvements 🔒
+
+#### Documentation Security Hardening
+- **Security-Troubleshooting.md**: Added prominent security warnings for diagnostic code patterns
+  - ⚠️ Bold warnings for SSL certificate bypass (diagnostic testing ONLY)
+  - Explicit MITM attack risk disclosure
+  - Recommended safer alternatives: `-UseDefaultCredentials`, certificate-based auth, Azure Key Vault, managed identity
+  - Comprehensive security guidance for plaintext credential handling
+  - Clear documentation of when to use vs. when NOT to use diagnostic patterns
+
+### Code Quality Improvements 📝
+
+#### PowerShell Compatibility & Modernization
+- **Scaling-&-Load-Balancing.md**: Replaced deprecated `Get-WmiObject` with `Get-CimInstance`
+  - Full PowerShell 7.0+ compatibility
+  - Future-proof CIM-based approach
+  - Added migration notes for maintainers
+
+#### Version Compatibility Warnings
+- **Scaling-&-Load-Balancing.md**: Added prominent PS 7.0+ requirement notices
+  - `ForEach-Object -Parallel` now clearly marked as PS 7.0+ only
+  - Suggested `Invoke-Command -AsJob` workaround for PowerShell 5.1
+  - Helps users avoid runtime errors
+
+### Documentation Accuracy Fixes 📚
+
+#### API Reference Corrections
+- **API-Reference.md**: Removed references to non-existent internal functions
+  - Removed hypothetical `Invoke-RemoteScript` (replaced with native `Invoke-Command` guidance)
+  - Removed hypothetical `ConvertTo-SecureCredential` (replaced with security best practices)
+  - Clarified that functions are distributed by category, not provided as monolithic module
+
+#### Script Organization Documentation
+- **API-Reference.md**: Added accurate available script categories and locations
+  - Cloud Platforms: Azure, AWS integration scripts
+  - Infrastructure & Monitoring: Windows, network operations
+  - Collaboration & Microsoft 365: AD, mailbox, licensing
+  - Security & Compliance: Vulnerability, audit scripts
+  - Data & API: Management and monitoring
+
+#### Improved Security Guidance in API Docs
+- Added best practices for credential handling (Key Vault, Managed Identity, env vars)
+- Updated version compatibility table with accurate feature support matrix
+- Cross-references to security documentation from utility function sections
+
+### Resolved Issues
+- ✅ **HIGH**: Credential Handling security warnings (Security-Troubleshooting.md:131)
+- ✅ **HIGH**: SSL Certificate Bypass security warnings (Security-Troubleshooting.md:42)
+- ✅ **MEDIUM**: Deprecated WMI Usage (Scaling-&-Load-Balancing.md:171)
+- ✅ **MEDIUM**: PowerShell Version Compatibility (Scaling-&-Load-Balancing.md:232, 243)
+- ✅ **MEDIUM**: Incomplete API Reference (API-Reference.md - full accuracy review)
+
+---
+
 ## [3.7.0] - 2026-01-21 🌧️ **"Shower"** - Security & Maintenance Release
 
 > **Focus**: Winget security updates automation and critical .NET script bug fixes
