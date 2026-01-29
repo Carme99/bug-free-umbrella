@@ -959,6 +959,35 @@ Get-Service -Name ADWS -ComputerName "DC01.company.local"
 
 ---
 
+## 💻 Quick Start Examples
+
+### Example 1: Comprehensive Server Health Check
+```powershell
+# Full health check with all metrics
+.\Monitor-ServerHealth.ps1 -IncludeDiskIO `
+    -CheckWindowsUpdate `
+    -CheckSecurity `
+    -EmailReport `
+    -EmailTo "ops@company.com"
+```
+
+### Example 2: Backup Status Verification
+```powershell
+# Check backup status (last 7 days)
+.\Get-BackupStatus.ps1 -Days 7 -ExportHTML
+
+# Alert if no backup in 2+ days
+.\Get-BackupStatus.ps1 -Days 2 -EmailIfNoBackup -EmailTo "backup-team@company.com"
+```
+
+### Example 3: Event Log Monitoring
+```powershell
+# Get critical errors (last 24 hours)
+.\Get-EventLogReport.ps1 -LogName System -Level Error -Hours 24 -ExportHTML
+```
+
+---
+
 ## Related Resources
 
 ### Internal Documentation

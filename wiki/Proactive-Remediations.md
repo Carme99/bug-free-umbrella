@@ -850,6 +850,37 @@ if ($LASTEXITCODE -eq 1) {
 
 ---
 
+## 💻 Quick Start Examples
+
+### Example 1: Test Remediation Locally
+```powershell
+# Test detection script
+.\Check-DiskSpace\detect.ps1
+
+# If detection fails, test remediation
+.\Check-DiskSpace\remediate.ps1
+```
+
+### Example 2: Deploy to Intune
+```powershell
+# Create remediation package
+New-IntuneProactiveRemediation `
+    -Name "Disk Space Monitor" `
+    -DetectionScript (Get-Content .\Check-DiskSpace\detect.ps1 -Raw) `
+    -RemediationScript (Get-Content .\Check-DiskSpace\remediate.ps1 -Raw) `
+    -RunAs32Bit $false `
+    -EnforceSignatureCheck $false `
+    -Schedule Daily
+```
+
+### Example 3: Monitor Results
+```powershell
+# Get remediation results from Intune
+Get-IntuneProactiveRemediationStatus -RemediationName "Disk Space Monitor"
+```
+
+---
+
 ## Related Resources
 
 ### Internal Documentation

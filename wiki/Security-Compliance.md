@@ -481,6 +481,33 @@ secedit /export /cfg C:\temp\secpol.cfg
 
 ---
 
+## 💻 Quick Start Examples
+
+### Example 1: CIS Benchmark Audit
+```powershell
+# Run CIS Level 1 audit
+.\Test-CISBenchmark.ps1 -Level 1 -ExportHTML
+
+# Result: HTML compliance report
+```
+
+### Example 2: Security Compliance Scan
+```powershell
+# Full security scan with all checks
+.\Invoke-SecurityComplianceScan.ps1 -Verbose -ExportHTML
+
+# Quick scan (basic checks only)
+.\Invoke-SecurityComplianceScan.ps1 -QuickScan
+```
+
+### Example 3: Certificate Monitoring
+```powershell
+# Check for expiring certificates (30 days)
+.\Get-ExpiringCertificates.ps1 -DaysUntilExpiration 30 -ExportHTML
+```
+
+---
+
 ## Related Resources
 
 ### Internal Documentation
