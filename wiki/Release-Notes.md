@@ -1,15 +1,15 @@
 # 📋 Release Notes & Changelog
 
-![Version](https://img.shields.io/badge/version-3.7.0-blue)
-![Release Date](https://img.shields.io/badge/release-2026--01--21-green)
+![Version](https://img.shields.io/badge/version-4.0.0-blue)
+![Release Date](https://img.shields.io/badge/release-2026--03--03-green)
 ![Total Scripts](https://img.shields.io/badge/scripts-260+-orange)
 ![License](https://img.shields.io/badge/license-Apache%202.0-red)
 
-> **Latest Release:** v3.7.0 "Shower" 🌧️ - Security & Maintenance Release
+> **Latest Release:** v4.0.0 "Hurricane" 🌪️ - Security Hardening Release
 
 ## 🎯 Quick Links
 - [📖 Full Changelog (GitHub)](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)
-- [🚀 Latest Release](https://github.com/Carme99/bug-free-umbrella/releases/tag/v3.7.0)
+- [🚀 Latest Release](https://github.com/Carme99/bug-free-umbrella/releases/tag/v4.0.0)
 - [📦 All Releases](https://github.com/Carme99/bug-free-umbrella/releases)
 
 ---
@@ -184,7 +184,7 @@ Found a bug? Please report it on GitHub:
 
 ---
 
-**Last Updated:** 2026-01-28  
-**Wiki Version:** 1.2.0  
-**Latest Release:** v3.7.0 (2026-01-21)  
+**Last Updated:** 2026-03-03  
+**Wiki Version:** 1.3.0  
+**Latest Release:** v4.0.0 (2026-03-03)  
 **Maintained by:** Carme99 with [Claude Code](https://claude.com/claude-code)

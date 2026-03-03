@@ -325,7 +325,7 @@ No pull request needed! (But changes are tracked in Git history)
 ---
 
 **Created:** 2025-12-29
-**Last Updated:** 2026-01-04
-**Wiki Version:** 1.1.0
-**Corresponds to:** v3.0.2 "Drizzle" ☔
+**Last Updated:** 2026-03-03
+**Wiki Version:** 1.3.0
+**Corresponds to:** v4.0.0 "Hurricane" 🌪️
 **Created by:** [Claude Code](https://github.com/anthropics/claude-code)

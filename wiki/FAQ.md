@@ -440,7 +440,7 @@ Yes, use:
 
 ---
 
-**Last Updated:** 2026-01-28  
-**Wiki Version:** 1.2.0  
-**Status:** Current with v3.7.0 Release  
+**Last Updated:** 2026-03-03  
+**Wiki Version:** 1.3.0  
+**Status:** Current with v4.0.0 Release  
 **Maintained by:** Carme99 with [Claude Code](https://claude.com/claude-code)

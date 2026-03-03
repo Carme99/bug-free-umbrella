@@ -435,17 +435,17 @@ Organized by category:
 | **Proactive Remediations** | 14 pairs (28 scripts) |
 | **Winget App Templates** | 40+ |
 | **Documentation Files** | 10 |
-| **Latest Release** | 3.7.0 "Shower" 🌧️ |
+| **Latest Release** | 4.0.0 "Hurricane" 🌪️ |
 
 ---
 
-## ☔ Latest Updates (v3.7.0 "Shower")
+## 🌪️ Latest Updates (v4.0.0 "Hurricane")
 
 **What's New:**
-- 📚 **Comprehensive Tier 3 Documentation**: Advanced operations and optimization guides for expert users
-- 🎨 **Enhanced Wiki Standards**: Consistent formatting with badges, TOCs, and cross-references
-- 🔗 **Improved Navigation**: Standardized "See Also" sections linking related pages
-- ✨ **Better UX**: All internal wiki links now use proper wiki-style navigation
+- 🛡️ **Security Hardening**: Replaced dangerous Invoke-Expression with secure ProcessStartInfo in 75+ winget scripts
+- 🔐 **Credential Security**: SecureString implementation for MongoDB, MySQL, PostgreSQL database scripts
+- ✅ **Safety Features**: WhatIf/Confirm support added to Reset-NetworkStack.ps1
+- 📝 **Error Handling**: Fixed empty catch blocks with proper error logging
 
 **See full details:** [CHANGELOG.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)
 
@@ -525,7 +525,7 @@ Organized by category:
 
 ---
 
-**Last Updated:** 2026-01-28  
-**Wiki Version:** 1.2.0  
-**Status:** Current with v3.7.0 Release  
+**Last Updated:** 2026-03-03  
+**Wiki Version:** 1.3.0  
+**Status:** Current with v4.0.0 Release  
 **Maintained by:** Carme99 with [Claude Code](https://claude.com/claude-code)

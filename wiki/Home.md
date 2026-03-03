@@ -2,7 +2,7 @@
 
 Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection of 260+ PowerShell scripts for enterprise IT management!
 
-> **Latest Release:** [v3.7.0 "Shower" 🌧️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#370---2026-01-21--shower---security--maintenance-release) - Security Updates & Bug Fixes! ⭐
+> **Latest Release:** [v4.0.0 "Hurricane" 🌪️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#400---2026-03-03-️-hurricane---security-hardening-release) - Security Hardening Release! ⭐
 >
 > 📋 **[View Full Changelog →](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)** | 📦 **[GitHub Releases](https://github.com/Carme99/bug-free-umbrella/releases)**
 
@@ -28,22 +28,23 @@ Welcome to the comprehensive documentation for Bug-Free Umbrella - a collection 
 
 ## 🎉 What's New
 
-> **v3.7.0 "Shower" 🌧️** (2026-01-21) - Latest Release!
+> **v4.0.0 "Hurricane" 🌪️** (2026-03-03) - Latest Release!
 >
-> ![New](https://img.shields.io/badge/NEW-Winget_Security_Updates-success)
-> ![Fixed](https://img.shields.io/badge/FIXED-.NET_Runtime_Bugs-critical)
+> ![Security](https://img.shields.io/badge/SECURITY-Hardening-critical)
 > ![Scripts](https://img.shields.io/badge/scripts-260+-orange)
 >
 > **Highlights:**
-> - 🔐 Automated Winget security updates for critical apps
-> - 🔧 .NET Runtime v2.6 - All 8 menu options now working
-> - 📱 New proactive remediation: Check-OutdatedCriticalApps
+> - 🛡️ **Security Hardening**: Replaced dangerous Invoke-Expression with secure ProcessStartInfo in 75+ winget scripts
+> - 🔐 **Credential Security**: SecureString implementation for MongoDB, MySQL, PostgreSQL scripts
+> - ✅ **Safety Features**: WhatIf/Confirm support added to Reset-NetworkStack.ps1
+> - 📝 **Error Handling**: Fixed empty catch blocks with proper logging
 >
 > [View Full Release Notes →](Release-Notes) | [CHANGELOG.md →](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)
 
 ### Latest Releases
 | Version | Date | Codename | Highlights |
 |---------|------|----------|------------|
+| 4.0.0 | 2026-03-03 | 🌪️ Hurricane | Security hardening |
 | 3.7.0 | 2026-01-21 | 🌧️ Shower | Winget security, .NET fixes |
 | 3.6.0 | 2026-01-16 | 🌧️ Shower | Intune device management |
 | 3.5.0 | 2026-01-15 | 🌧️ Shower | AVD image builder |
@@ -186,12 +187,12 @@ This repository uses automated GitHub workflows to maintain quality and organiza
 
 #### 📚 Version History
 - **[📋 Full Changelog (CHANGELOG.md)](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)** - Complete version history
-  - [v3.7.0 "Shower" 🌧️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#370---2026-01-21--shower---security--maintenance-release) - Latest release (2026-01-21)
+  - [v4.0.0 "Hurricane" 🌪️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#400---2026-03-03-️-hurricane---security-hardening-release) - Security hardening (Latest, 2026-03-03)
+  - [v3.7.0 "Shower" 🌧️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#370---2026-01-21--shower---security--maintenance-release) - Security & maintenance
   - [v3.6.0 "Shower" 🌧️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#360---2026-01-16--shower---intune-device-management) - Intune enhancements
-  - [v3.5.0 "Shower" 🌧️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#350---2026-01-15--shower---avd-image-builder)
+  - [v3.5.0 "Shower" 🌧️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#350---2026-01-15--shower---avd-image-builder) - AVD image builder
   - [v3.0.3 "Drizzle" ☔](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#303---2026-01-04--drizzle---wiki-version-reference-fix) - Wiki version fix
   - [v3.0.0 "Hurricane" 🌪️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#300---2025-12-30--hurricane---repository-restructure) - Repository restructure
-  - [v2.2.0 "Shower" 🌧️](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md#220---2025-12-28--shower---navigation--usability-improvements) - Navigation improvements
 - **[GitHub Repository](https://github.com/Carme99/bug-free-umbrella)** - Source code and issues
 
 ---
@@ -281,10 +282,10 @@ Bug-Free Umbrella is a comprehensive collection of PowerShell scripts for enterp
 
 ---
 
-**Last Updated:** 2026-01-28
+**Last Updated:** 2026-03-03
 
-**Wiki Version:** 1.2.0
+**Wiki Version:** 1.3.0
 
-**Corresponds to Release:** v3.7.0 "Shower" 🌧️
+**Corresponds to Release:** v4.0.0 "Hurricane" 🌪️
 
 **[📋 View Full Changelog →](https://github.com/Carme99/bug-free-umbrella/blob/main/CHANGELOG.md)
