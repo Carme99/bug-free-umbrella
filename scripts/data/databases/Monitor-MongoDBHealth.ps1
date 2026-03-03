@@ -101,15 +101,27 @@ $results = @{
 
 Write-Host "Monitoring MongoDB: $MongoDBServer:$Port" -ForegroundColor Cyan
 
-# Build connection string
+# Build connection string with secure password handling
 $connString = "mongodb://$MongoDBServer:$Port"
 if ($Credential) {
     $username = $Credential.UserName
-    $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($Credential.Password))
-    $connString = "mongodb://$([Uri]::EscapeDataString($username))`:$password@$MongoDBServer:$Port"
+    $bstrPtr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Credential.Password)
+    try {
+        $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstrPtr)
+        $connString = "mongodb://$([Uri]::EscapeDataString($username))`:$([Uri]::EscapeDataString($password))@$MongoDBServer:$Port"
+    }
+    finally {
+        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstrPtr)
+    }
 } elseif ($Username -and $Password) {
-    $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password))
-    $connString = "mongodb://$([Uri]::EscapeDataString($Username))`:$password@$MongoDBServer:$Port"
+    $bstrPtr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password)
+    try {
+        $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstrPtr)
+        $connString = "mongodb://$([Uri]::EscapeDataString($Username))`:$([Uri]::EscapeDataString($password))@$MongoDBServer:$Port"
+    }
+    finally {
+        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstrPtr)
+    }
 }
 
 # Note: This script provides a framework. Actual implementation would require

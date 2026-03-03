@@ -18,16 +18,21 @@ param(
     [switch]$ExportHTML
 )
 
-# SecureString handling
+# SecureString handling - get BSTR pointer once, use it, then free the SAME pointer
 $SecurePassword = Read-Host "Enter password" -AsSecureString
-$Password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword))
-
-# Cleanup secure memory
-$SecurePassword.MakeReadOnly()
-[Runtime.InteropServices.Marshal]::ZeroFreeBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword))
-
-# Export to environment variable for psql
-$env:PGPASSWORD = $Password
+$bstrPtr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)
+try {
+    # Convert to plain text
+    $Password = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstrPtr)
+    
+    # Export to environment variable for psql
+    # Note: This exposes password to other processes - acknowledge this security trade-off
+    $env:PGPASSWORD = $Password
+}
+finally {
+    # Zero and free the BSTR - THIS is the same pointer we've been using
+    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstrPtr)
+}
 
 Write-Host "`n=== PostgreSQL Health Check ===" -ForegroundColor Cyan
 
