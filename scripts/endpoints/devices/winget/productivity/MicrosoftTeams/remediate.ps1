@@ -117,7 +117,7 @@ try {
         $verInstalled, $verAvailable = (-split $packageInfo[-1])[-3,-2]
         Write-Host "Installing $name update ($verInstalled -> $verAvailable)..."
 
-        $upgradeResult = Invoke-WingetWithRetry -Arguments "upgrade --accept-package-agreements --accept-source-agreements -e --id $ID --silent --accept-package-agreements --accept-source-agreements"
+        $upgradeResult = Invoke-WingetWithRetry -Arguments "upgrade -e --id $ID --silent --accept-package-agreements --accept-source-agreements"
         Start-Sleep -Seconds $VerifyWaitSeconds
 
         $verifyInfo = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"

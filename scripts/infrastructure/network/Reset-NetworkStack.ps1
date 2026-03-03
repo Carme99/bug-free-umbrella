@@ -186,6 +186,7 @@ try {
     # Reset IPv6
     Write-Host "`nResetting IPv6 configuration..." -ForegroundColor Yellow
 
+    if ($PSCmdlet.ShouldProcess("IPv6 configuration", "Reset")) {
     try {
         $ipv6Reset = netsh int ipv6 reset 2>&1
         Write-Host "✓ IPv6 reset successful" -ForegroundColor Green
@@ -205,9 +206,10 @@ try {
         }
         $failCount++
     }
+    }
 
     # Flush DNS cache
-    if ($FlushDNS) {
+    if ($FlushDNS -and $PSCmdlet.ShouldProcess("DNS resolver cache", "Flush")) {
         Write-Host "`nFlushing DNS resolver cache..." -ForegroundColor Yellow
 
         try {
@@ -232,7 +234,7 @@ try {
     }
 
     # Reset proxy settings
-    if ($ResetProxy) {
+    if ($ResetProxy -and $PSCmdlet.ShouldProcess("Proxy settings", "Reset")) {
         Write-Host "`nResetting proxy settings..." -ForegroundColor Yellow
 
         try {
@@ -312,7 +314,7 @@ try {
     }
 
     # Reset network adapters
-    if ($ResetAdapters) {
+    if ($ResetAdapters -and $PSCmdlet.ShouldProcess("Network adapters", "Reset")) {
         Write-Host "`nResetting network adapters..." -ForegroundColor Yellow
 
         $adapters = Get-NetAdapter | Where-Object { $_.Status -ne 'Disabled' }
@@ -346,6 +348,7 @@ try {
     }
 
     # Release and renew DHCP
+    if ($PSCmdlet.ShouldProcess("DHCP leases", "Renew")) {
     Write-Host "`nRenewing DHCP leases..." -ForegroundColor Yellow
 
     try {
@@ -368,6 +371,7 @@ try {
             Message = $_.Exception.Message
         }
         $failCount++
+    }
     }
 
     # Display summary

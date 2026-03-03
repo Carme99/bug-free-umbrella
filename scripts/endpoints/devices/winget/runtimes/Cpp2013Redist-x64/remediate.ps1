@@ -65,7 +65,7 @@ try {
         }
 
         Write-Host "Installing $name update ($($v[0]) -> $($v[1]))..."
-        Invoke-WingetWithRetry -Arguments "upgrade --accept-package-agreements --accept-source-agreements -e --id $ID --silent --accept-package-agreements --accept-source-agreements" | Out-Null
+        Invoke-WingetWithRetry -Arguments "upgrade -e --id $ID --silent --accept-package-agreements --accept-source-agreements" | Out-Null
         Start-Sleep -Seconds $VerifyWaitSeconds
 
         $verify = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"
