@@ -96,7 +96,7 @@ try {
 
     $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
     if ($wingetexe.Count -gt 1) { $SystemContext = $wingetexe[-1].Path } else { $SystemContext = $wingetexe.Path }
-    New-Alias -Name sysget -Value "$SystemContext" -Force
+    
     Write-Log "Found winget: $SystemContext" -Level Info
 
     $packageInfo = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"
@@ -127,7 +127,7 @@ try {
         Write-Log "Update available: $verInstalled -> $verAvailable" -Level Info
         Write-Host "Installing $name update..."
 
-        $upgradeResult = Invoke-WingetWithRetry -Arguments "upgrade -e --id $ID --silent --accept-package-agreements --accept-source-agreements"
+        $upgradeResult = Invoke-WingetWithRetry -Arguments "upgrade --accept-package-agreements --accept-source-agreements -e --id $ID --silent --accept-package-agreements --accept-source-agreements"
         Start-Sleep -Seconds $VerifyWaitSeconds
 
         $verifyInfo = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"

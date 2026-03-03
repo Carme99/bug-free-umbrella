@@ -46,7 +46,7 @@
     WARNING: This script makes significant system changes. Create a restore point first!
 #>
 
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory = $false)]
     [switch]$ResetFirewall,
@@ -134,6 +134,7 @@ try {
     # Reset Winsock
     Write-Host "`nResetting Winsock catalog..." -ForegroundColor Yellow
 
+    if ($PSCmdlet.ShouldProcess("Winsock catalog", "Reset")) {
     try {
         $winsockReset = netsh winsock reset 2>&1
         Write-Host "✓ Winsock reset successful" -ForegroundColor Green
@@ -154,10 +155,12 @@ try {
         }
         $failCount++
     }
+    }
 
     # Reset TCP/IP stack
     Write-Host "`nResetting TCP/IP stack..." -ForegroundColor Yellow
 
+    if ($PSCmdlet.ShouldProcess("TCP/IP stack", "Reset")) {
     try {
         $tcpipReset = netsh int ip reset 2>&1
         Write-Host "✓ TCP/IP stack reset successful" -ForegroundColor Green
@@ -177,6 +180,7 @@ try {
             Message = $_.Exception.Message
         }
         $failCount++
+    }
     }
 
     # Reset IPv6

@@ -18,6 +18,17 @@ param(
     [switch]$ExportHTML
 )
 
+# SecureString handling
+$SecurePassword = Read-Host "Enter password" -AsSecureString
+$Password = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword))
+
+# Cleanup secure memory
+$SecurePassword.MakeReadOnly()
+[Runtime.InteropServices.Marshal]::ZeroFreeBSTR([Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword))
+
+# Export to environment variable for psql
+$env:PGPASSWORD = $Password
+
 Write-Host "`n=== PostgreSQL Health Check ===" -ForegroundColor Cyan
 
 # Check psql availability
@@ -25,8 +36,6 @@ if (-not (Get-Command psql -ErrorAction SilentlyContinue)) {
     Write-Host "[!] psql client not found in PATH" -ForegroundColor Red
     exit 1
 }
-
-$env:PGPASSWORD = Read-Host "Enter password" -AsSecureString | ConvertFrom-SecureString
 
 Write-Host "[*] Connecting to PostgreSQL: $Server`:$Port/$Database" -ForegroundColor Cyan
 

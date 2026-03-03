@@ -156,7 +156,7 @@ try {
         Write-Log "Found winget: $SystemContext" -Level Info
     }
 
-    New-Alias -Name sysget -Value "$SystemContext" -Force
+    
 
     # Get package information with retry logic
     Write-Log "Querying package information for: $ID" -Level Info

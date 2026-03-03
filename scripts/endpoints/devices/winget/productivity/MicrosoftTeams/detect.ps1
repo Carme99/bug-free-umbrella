@@ -53,7 +53,7 @@ try {
 
     $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
     $SystemContext = if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }
-    New-Alias -Name sysget -Value "$SystemContext" -Force
+    
 
     $packageInfo = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"
     $nameMatch = $packageInfo | Select-String -Pattern "^($ID)\s+(.+?)\s+\d"

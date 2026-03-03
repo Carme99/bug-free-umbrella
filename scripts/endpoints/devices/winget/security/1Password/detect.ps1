@@ -85,7 +85,7 @@ try {
     } else {
         $SystemContext = $wingetexe.Path
     }
-    New-Alias -Name sysget -Value "$SystemContext" -Force
+    
     Write-Log "Querying package information for: $ID" -Level Info
     $packageInfo = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"
     if (-not $name) {

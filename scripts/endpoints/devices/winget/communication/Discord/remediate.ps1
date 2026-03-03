@@ -188,7 +188,7 @@ try {
         $SystemContext = $wingetexe.Path
     }
 
-    New-Alias -Name sysget -Value "$SystemContext" -Force
+    
     Write-Log "Found winget: $SystemContext" -Level Info
 
     # Get package information
@@ -265,7 +265,7 @@ try {
         Write-Log "Installing $name update ($verInstalled -> $verAvailable)..." -Level Info
         Write-Host "Installing $name update..."
 
-        $upgradeResult = Invoke-WingetWithRetry -Arguments "upgrade -e --id $ID --silent --accept-package-agreements --accept-source-agreements"
+        $upgradeResult = Invoke-WingetWithRetry -Arguments "upgrade --accept-package-agreements --accept-source-agreements -e --id $ID --silent --accept-package-agreements --accept-source-agreements"
 
         # Wait for installation to complete
         Write-Log "Waiting $VerifyWaitSeconds seconds for installation to complete..." -Level Info

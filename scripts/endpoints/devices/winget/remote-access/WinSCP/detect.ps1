@@ -20,7 +20,7 @@ function Invoke-WingetWithRetry { param([string]$Arguments); $attempt = 1; while
 try {
     if (-not (Test-NetworkConnectivity)) { exit 0 }
     $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
-    New-Alias -Name sysget -Value $(if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }) -Force
+    
     $packageInfo = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"
     $name = if ($packageInfo | Select-String -Pattern "^($ID)\s+(.+?)\s+\d") { $Matches[2].Trim() } else { $ID }
     if ($packageInfo -match "No installed package found") { Write-Host "$name not installed."; exit 0 }
