@@ -34,10 +34,11 @@ function Invoke-WingetWithRetry {
             $p.StartInfo = $psi
             $p.Start() | Out-Null
             $stdout = $p.StandardOutput.ReadToEnd()
-            $stderr = $p.StandardError.ReadToEnd()
             $p.WaitForExit()
             if ($stdout) { return $stdout }
-        } catch { }
+        } catch {
+            Write-Verbose "Winget command failed on attempt $a: $($_.Exception.Message)" -Verbose:$false
+        }
         Start-Sleep -Seconds 2
         $a++
     }
@@ -47,9 +48,6 @@ function Invoke-WingetWithRetry {
 
 #region Script
 try {
-    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
-    
-
     $packageInfo = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"
     $name = if ($packageInfo | Select-String -Pattern "^($ID)\s+(.+?)\s+\d") { $Matches[2].Trim() } else { "Mozilla Firefox" }
 

@@ -189,8 +189,7 @@ try {
         Write-Output "Something went wrong: $errorMsg"
         Stop-Transcript | Out-Null
         Throw $errorMsg
-    } else {
-#        Write-Output "No errors detected"
+} else {
         Stop-Transcript | Out-Null
     }
 }

@@ -19,12 +19,13 @@ $VerifyWaitSeconds = 5
 #endregion
 
 #region Functions
-function Invoke-WingetWithRetry { param([string]$Arguments, [int]$MaxAttempts = 3); $attempt = 1; while ($attempt -le $MaxAttempts) { try { $result = Invoke-Expression "sysget $Arguments 2>&1"; if ($result -and -not ($result -match "error|failed")) { return $result } } catch { }; if ($attempt -lt $MaxAttempts) { Start-Sleep -Seconds 2 }; $attempt++ }; throw "Failed" }
+        } catch {
+            Write-Verbose "Winget command failed on attempt $a: $($_.Exception.Message)" -Verbose:$false
+        }
 #endregion
 
 #region Script
 try {
-    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
     $SystemContext = if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }
     
 

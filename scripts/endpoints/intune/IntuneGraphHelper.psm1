@@ -74,52 +74,6 @@ function Disconnect-IntuneGraph {
     }
 }
 
-function Invoke-IntuneGraphRequest {
-    <#
-    .SYNOPSIS
-        Makes a request to Microsoft Graph API with error handling.
-
-    .PARAMETER Uri
-        The Graph API endpoint URI.
-
-    .PARAMETER Method
-        HTTP method (GET, POST, PATCH, DELETE).
-
-    .PARAMETER Body
-        Request body for POST/PATCH requests.
-    #>
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory=$true)]
-        [string]$Uri,
-
-        [Parameter(Mandatory=$false)]
-        [ValidateSet('GET', 'POST', 'PATCH', 'DELETE')]
-        [string]$Method = 'GET',
-
-        [Parameter(Mandatory=$false)]
-        [object]$Body
-    )
-
-    try {
-        $params = @{
-            Uri = $Uri
-            Method = $Method
-        }
-
-        if ($Body) {
-            $params.Add('Body', ($Body | ConvertTo-Json -Depth 10))
-        }
-
-        $response = Invoke-MgGraphRequest @params
-        return $response
-    }
-    catch {
-        Write-Host "✗ Graph API Error: $($_.Exception.Message)" -ForegroundColor Red
-        return $null
-    }
-}
-
 function Get-AllIntuneDevices {
     <#
     .SYNOPSIS
@@ -297,7 +251,6 @@ function Export-IntuneReportToCSV {
 Export-ModuleMember -Function @(
     'Connect-IntuneGraph',
     'Disconnect-IntuneGraph',
-    'Invoke-IntuneGraphRequest',
     'Get-AllIntuneDevices',
     'Export-IntuneReportToHTML',
     'Export-IntuneReportToCSV'

@@ -1,7 +1,7 @@
 # Changelog
 
-![Version](https://img.shields.io/badge/version-3.7.0-blue)
-![Release Date](https://img.shields.io/badge/release-2026--01--21-green)
+![Version](https://img.shields.io/badge/version-4.0.0-blue)
+![Release Date](https://img.shields.io/badge/release-2026--03--03-green)
 ![Total Scripts](https://img.shields.io/badge/scripts-260+-orange)
 ![License](https://img.shields.io/badge/license-Apache%202.0-red)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [🌂 About Our Release Names](#-about-our-release-names)
 - [Unreleased](#unreleased)
 - **Latest Releases:**
+  - [v4.0.0 (2026-03-03) 🌪️ Hurricane - Security Hardening](#400---2026-03-03-️-hurricane---security-hardening-release)
   - [v3.7.1 (2026-01-29) 🌂 Drizzle - Documentation & Security Hardening](#371---2026-01-29-️-drizzle---documentation--security-hardening-update)
   - [v3.7.0 (2026-01-21) 🌧️ Shower - Security & Maintenance](#370---2026-01-21-️-shower---security--maintenance-release)
   - [v3.6.0 (2026-01-16) 🌧️ Shower - Intune Device Management](#360---2026-01-16-️-shower---intune-device-management-scripts)
@@ -116,6 +117,103 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 - ✅ **MEDIUM**: Deprecated WMI Usage (Scaling-&-Load-Balancing.md:171)
 - ✅ **MEDIUM**: PowerShell Version Compatibility (Scaling-&-Load-Balancing.md:232, 243)
 - ✅ **MEDIUM**: Incomplete API Reference (API-Reference.md - full accuracy review)
+
+---
+
+## [4.0.0] - 2026-03-03 🌪️ **"Hurricane"** - Security Hardening Release
+
+> **Focus**: Comprehensive security hardening across database, network, and winget scripts
+
+**📊 [Compare v3.7.1...v4.0.0](https://github.com/Carme99/bug-free-umbrella/compare/v3.7.1...v4.0.0)**
+
+### 🛡️ Security Hardening Initiative
+
+#### Winget Script Security (75+ scripts)
+- **Replaced `Invoke-Expression` with `ProcessStartInfo`**: Eliminated code injection vulnerabilities across all winget detect/remediate scripts
+- **Removed dangerous patterns**: `Invoke-Expression "sysget $Arguments 2>&1"` patterns replaced with secure process execution
+- **Standardized security**: Consistent secure execution pattern across all application categories (browsers, development tools, productivity, communication, remote access, runtimes, utilities, vendor-specific)
+
+#### Database Script Security
+- **MongoDB Health Monitor**: Implemented `SecureString` with proper `ZeroFreeBSTR` memory cleanup and `Uri.EscapeDataString` encoding
+- **MySQL Health Script**: Converted plaintext credentials to `SecureString` implementation
+- **PostgreSQL Health Script**: Fixed BSTR memory leaks by storing pointer once, using it, and freeing the same pointer
+- **Credential Security**: All database scripts now handle credentials securely in memory
+
+#### Network & Infrastructure Security
+- **Reset-NetworkStack.ps1**: Added comprehensive `-WhatIf` and `-Confirm` support for safe operation
+- **IPv6, DNS, Proxy, Adapters, DHCP**: All network reset operations now support dry-run and confirmation
+- **Safety Features**: Prevents accidental network disruption with user confirmation prompts
+
+#### Error Handling & Code Quality
+- **Update-DotNetRuntimes.ps1**: Fixed empty catch blocks with proper error logging and handling
+- **Duplicate flag removal**: Eliminated duplicate `--accept-*` flags in 33 remediate.ps1 files
+- **Consistency improvements**: Standardized error handling patterns across scripts
+
+### 🧹 Code Quality & Cleanup
+
+#### Dead Code Removal
+- **Removed redundant `Resolve-Path` calls**: Eliminated 34+ instances of unused winget executable resolution in main script body
+- **Fixed unused variables**: Removed `$stderr` capture that was never used in `Invoke-WingetWithRetry` functions
+- **Cleaned commented code**: Removed obsolete commented-out code in Adobe RUM scripts
+- **Addressed unused functions**: Handled `Invoke-IntuneGraphRequest` function defined but never called
+
+#### Error Handling Improvements
+- **Empty catch blocks**: Fixed silent error swallowing in `Invoke-WingetWithRetry` functions with proper error logging
+- **Consistent patterns**: Standardized try-catch-error handling across all modified scripts
+
+### 📚 Documentation Updates
+
+#### Version References
+- **Updated all wiki documentation**: Changed version references from v3.7.0/v3.0.2 to v4.0.0
+- **Home.md, Release-Notes.md, Script-Catalog.md, FAQ.md, Intune-Management.md, Prerequisites.md, Azure-Compute-Gallery-Image-Builder.md, Getting-Started.md, WIKI-SETUP.md**: All updated to reflect v4.0.0 release
+
+#### Documentation Accuracy
+- **CHANGELOG alignment**: Ensured all security hardening work is properly documented
+- **Version badges**: Updated README.md and documentation badges to v4.0.0
+- **British English spelling**: Applied EN GB spelling corrections to CONTRIBUTING.md
+
+### 🧪 Testing & Validation
+
+#### Security Validation
+- **Created security tests**: `tests/Security.Tests.ps1` for Pester-based security validation
+- **Helper functions module**: `scripts/.shared/WARP-HelperFunctions.psm1` with security utilities
+- **Comprehensive coverage**: Tests validate secure execution patterns and credential handling
+
+### 🔄 Breaking Changes & Migration Notes
+
+#### Security Pattern Changes
+- **Winget execution**: All scripts now use `System.Diagnostics.ProcessStartInfo` instead of `Invoke-Expression`
+- **Credential handling**: Database scripts require `SecureString` or proper credential management
+- **Network operations**: `Reset-NetworkStack.ps1` now requires `-Confirm` for destructive operations
+
+#### Backward Compatibility
+- **API remains unchanged**: Function signatures and parameters unchanged
+- **Behavior identical**: Same functionality with enhanced security
+- **Migration path**: Existing scripts continue working with improved security
+
+### 📈 Performance & Reliability
+
+#### Execution Stability
+- **Reduced attack surface**: Eliminated code injection vectors
+- **Memory safety**: Proper credential handling and memory cleanup
+- **Error resilience**: Improved error handling prevents silent failures
+
+#### Maintenance Benefits
+- **Code consistency**: Standardized patterns across all scripts
+- **Security auditing**: Clear security patterns for future development
+- **Testing framework**: Established security testing baseline
+
+### Resolved Issues
+- ✅ **CRITICAL**: Code injection vulnerabilities in winget scripts (75+ files)
+- ✅ **HIGH**: Plaintext credentials in database scripts (MongoDB, MySQL, PostgreSQL)
+- ✅ **HIGH**: Empty catch blocks swallowing errors (Update-DotNetRuntimes.ps1)
+- ✅ **MEDIUM**: Missing safety controls in network scripts (Reset-NetworkStack.ps1)
+- ✅ **MEDIUM**: Dead code and unused variables (34+ winget scripts)
+- ✅ **LOW**: Documentation version mismatches (11 wiki files)
+
+**Upgrade Instructions**: This is a **security hardening release** with no breaking API changes. All existing functionality works with enhanced security. Review network script usage as `-Confirm` is now required for safety.
+
+**Security Advisory**: This release addresses critical security vulnerabilities and should be deployed as soon as possible.
 
 ---
 

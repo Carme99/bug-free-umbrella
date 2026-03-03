@@ -180,7 +180,6 @@ try {
     Write-Log "=== Starting winget force close remediation for package: $ID ===" -Level Info
 
     # Locate winget executable
-    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
 
     if ($wingetexe.Count -gt 1) {
         $SystemContext = $wingetexe[-1].Path
