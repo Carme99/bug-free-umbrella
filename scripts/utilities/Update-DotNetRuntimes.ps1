@@ -368,7 +368,7 @@ function Start-TypedTranscript {
 }
 
 function Stop-TypedTranscript {
-    try { Stop-Transcript | Out-Null } catch {}
+    try { Stop-Transcript | Out-Null } catch { Write-Log -Level Debug -Message "Transcript stop failed" -Context @{ Error=$_.Exception.Message } }
 }
 
 function Test-Admin {
@@ -598,7 +598,7 @@ function Get-HostingBundleDownload {
         if ($Release.'aspnetcore-runtime' -and $Release.'aspnetcore-runtime'.files) { $candidates += $Release.'aspnetcore-runtime'.files }
         if ($Release.runtime -and $Release.runtime.files) { $candidates += $Release.runtime.files }
         if ($Release.files) { $candidates += $Release.files }
-    } catch {}
+    } catch { Write-Log -Level Debug -Message "Hosting bundle candidates collection failed" -Context @{ Error=$_.Exception.Message } }
     $candidates = $candidates | Where-Object { $_ -and $_.url }
     $candidates | Where-Object {
         $_.url -match '\.exe$' -and ($_.rid -eq 'win-x64' -or -not $_.rid) -and ($_.url -match 'dotnet-hosting' -or $_.url -match 'hosting')
@@ -638,7 +638,7 @@ function Install-Exe {
     # FIX: Add timeout to prevent indefinite hangs
     $timeoutMs = $TimeoutMinutes * 60 * 1000
     if (-not $proc.WaitForExit($timeoutMs)) {
-        try { $proc.Kill() } catch {}
+        try { $proc.Kill() } catch { Write-Log -Level Debug -Message "Process kill failed" -Context @{ Error=$_.Exception.Message } }
         throw "Installer timed out after $TimeoutMinutes minutes"
     }
 
@@ -657,7 +657,7 @@ function Get-DotnetUninstallToolPath {
         "dotnet-core-uninstall.exe"
     )
     foreach ($p in $candidates) {
-        try { $cmd = Get-Command $p -ErrorAction Stop; if ($cmd -and $cmd.Source) { return $cmd.Source } } catch {}
+        try { $cmd = Get-Command $p -ErrorAction Stop; if ($cmd -and $cmd.Source) { return $cmd.Source } } catch { Write-Log -Level Debug -Message "Command lookup failed" -Context @{ Path=$p; Error=$_.Exception.Message } }
     }
     return $null
 }
@@ -724,7 +724,7 @@ function Install-DotnetUninstallTool {
             $timeoutMs = 10 * 60 * 1000  # 10 minutes
             if (-not $proc.WaitForExit($timeoutMs)) {
                 Write-Log -Level Warn -Message "MSI installer timed out after 10 minutes"
-                try { $proc.Kill() } catch {}
+                try { $proc.Kill() } catch { Write-Log -Level Debug -Message "MSI process kill failed" -Context @{ Error=$_.Exception.Message } }
                 return $false
             }
             if ($proc.ExitCode -eq 3010) { $script:RebootRequired = $true }
@@ -742,7 +742,7 @@ function Install-DotnetUninstallTool {
         Write-Log -Level Warn -Message "Tool install failed" -Context @{ Error=$_.Exception.Message }
         return $false
     } finally {
-        try { Remove-Item -Path $temp -Force -ErrorAction SilentlyContinue } catch {}
+        try { Remove-Item -Path $temp -Force -ErrorAction SilentlyContinue } catch { Write-Log -Level Debug -Message "Temp file cleanup failed" -Context @{ Path=$temp; Error=$_.Exception.Message } }
     }
 }
 
@@ -764,7 +764,7 @@ function Remove-AspNetCoreChannel {
             $timeoutMs = 10 * 60 * 1000  # 10 minutes
             if (-not $p.WaitForExit($timeoutMs)) {
                 Write-Log -Level Warn -Message "Uninstall tool timed out after 10 minutes" -Context @{ Target=$label }
-                try { $p.Kill() } catch {}
+                try { $p.Kill() } catch { Write-Log -Level Debug -Message "Uninstall process kill failed" -Context @{ Error=$_.Exception.Message } }
                 return $false
             }
             Add-Action -Type 'EOL-Removed' -Product 'AspNetCore' -Channel $MajorMinor -Arch $a -Detail "Removed" -ExitCode $p.ExitCode -Method 'UninstallTool'
@@ -811,7 +811,7 @@ function Get-PatchObjectsFromShared {
             $v = [version]$pf.Name
             $bytes = Get-FolderSizeBytes -Path $pf.FullName
             [PSCustomObject]@{ Root=$SharedRoot; Product=$ProductFolderName; Version=$pf.Name; MajorMinor="$($v.Major).$($v.Minor)"; Patch=[int]$v.Build; Bytes=[long]$bytes; Path=$pf.FullName }
-        } catch {}
+        } catch { Write-Log -Level Debug -Message "Patch object creation failed" -Context @{ Path=$pf.FullName; Error=$_.Exception.Message } }
     }
 }
 
@@ -887,7 +887,7 @@ function Invoke-PostPatchCleanup {
             $timeoutMs = 10 * 60 * 1000  # 10 minutes
             if (-not $p.WaitForExit($timeoutMs)) {
                 Write-Log -Level Warn -Message "Cleanup operation timed out after 10 minutes" -Context @{ Target=$label }
-                try { $p.Kill() } catch {}
+                try { $p.Kill() } catch { Write-Log -Level Debug -Message "Cleanup process kill failed" -Context @{ Error=$_.Exception.Message } }
                 $results += [PSCustomObject]@{ Label=$label; ExitCode=-1; Product=$t.Product; Arch=$ArchToClean }
                 continue
             }

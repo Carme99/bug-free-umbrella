@@ -18,6 +18,22 @@ param(
     [switch]$ExportHTML
 )
 
+# SecureString handling - get BSTR pointer once, use it, then free the SAME pointer
+$SecurePassword = Read-Host "Enter password" -AsSecureString
+$bstrPtr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)
+try {
+    # Convert to plain text
+    $Password = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstrPtr)
+    
+    # Export to environment variable for psql
+    # Note: This exposes password to other processes - acknowledge this security trade-off
+    $env:PGPASSWORD = $Password
+}
+finally {
+    # Zero and free the BSTR - THIS is the same pointer we've been using
+    [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstrPtr)
+}
+
 Write-Host "`n=== PostgreSQL Health Check ===" -ForegroundColor Cyan
 
 # Check psql availability
@@ -25,8 +41,6 @@ if (-not (Get-Command psql -ErrorAction SilentlyContinue)) {
     Write-Host "[!] psql client not found in PATH" -ForegroundColor Red
     exit 1
 }
-
-$env:PGPASSWORD = Read-Host "Enter password" -AsSecureString | ConvertFrom-SecureString
 
 Write-Host "[*] Connecting to PostgreSQL: $Server`:$Port/$Database" -ForegroundColor Cyan
 

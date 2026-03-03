@@ -25,7 +25,10 @@
     MongoDB username for authentication
 
 .PARAMETER Password
-    MongoDB password (use SecureString in production)
+    MongoDB password as SecureString
+
+.PARAMETER Credential
+    PSCredential object containing username and password
 
 .PARAMETER IncludeSlowQueries
     Analyze slow query log
@@ -70,7 +73,10 @@ param(
     [string]$Username,
 
     [Parameter(Mandatory = $false)]
-    [string]$Password,
+    [SecureString]$Password,
+
+    [Parameter(Mandatory = $false)]
+    [PSCredential]$Credential,
 
     [Parameter(Mandatory = $false)]
     [switch]$IncludeSlowQueries,
@@ -95,10 +101,27 @@ $results = @{
 
 Write-Host "Monitoring MongoDB: $MongoDBServer:$Port" -ForegroundColor Cyan
 
-# Build connection string
+# Build connection string with secure password handling
 $connString = "mongodb://$MongoDBServer:$Port"
-if ($Username) {
-    $connString = "mongodb://$Username`:$Password@$MongoDBServer:$Port"
+if ($Credential) {
+    $username = $Credential.UserName
+    $bstrPtr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Credential.Password)
+    try {
+        $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstrPtr)
+        $connString = "mongodb://$([Uri]::EscapeDataString($username))`:$([Uri]::EscapeDataString($password))@$MongoDBServer:$Port"
+    }
+    finally {
+        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstrPtr)
+    }
+} elseif ($Username -and $Password) {
+    $bstrPtr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password)
+    try {
+        $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstrPtr)
+        $connString = "mongodb://$([Uri]::EscapeDataString($Username))`:$([Uri]::EscapeDataString($password))@$MongoDBServer:$Port"
+    }
+    finally {
+        [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstrPtr)
+    }
 }
 
 # Note: This script provides a framework. Actual implementation would require
