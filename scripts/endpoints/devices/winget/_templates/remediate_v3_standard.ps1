@@ -83,17 +83,32 @@ function Invoke-WingetWithRetry {
         [int]$MaxAttempts = $MaxRetries
     )
 
+    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
+    $wingetPath = if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }
+    
     $attempt = 1
     $delay = $RetryDelaySeconds
 
     while ($attempt -le $MaxAttempts) {
         try {
-            Write-Log "Executing winget command (Attempt $attempt/$MaxAttempts): sysget $Arguments" -Level Info
-            $result = Invoke-Expression "sysget $Arguments 2>&1"
-
-            if ($result -and -not ($result -match "error|failed|exception")) {
+            Write-Log "Executing winget command (Attempt $attempt/$MaxAttempts): $wingetPath $Arguments" -Level Info
+            
+            $psi = New-Object System.Diagnostics.ProcessStartInfo
+            $psi.FileName = $wingetPath
+            $psi.Arguments = $Arguments
+            $psi.RedirectStandardOutput = $true
+            $psi.RedirectStandardError = $true
+            $psi.UseShellExecute = $false
+            $psi.CreateNoWindow = $true
+            $p = New-Object System.Diagnostics.Process
+            $p.StartInfo = $psi
+            $p.Start() | Out-Null
+            $stdout = $p.StandardOutput.ReadToEnd()
+            $p.WaitForExit()
+            
+            if ($stdout -and -not ($stdout -match "error|failed|exception")) {
                 Write-Log "Winget command succeeded on attempt $attempt" -Level Info
-                return $result
+                return $stdout
             }
 
             Write-Log "Winget command returned invalid result on attempt $attempt" -Level Warning
