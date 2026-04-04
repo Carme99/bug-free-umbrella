@@ -1,0 +1,33 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "instructions": [
+    "./CONTRIBUTING.md",
+    "./README.md",
+    "./AGENTS.md"
+  ],
+  "agent": {
+    "powershell": {
+      "description": "PowerShell specialist for bug-free-umbrella",
+      "mode": "primary",
+      "temperature": 0.1,
+      "permission": {
+        "edit": "ask",
+        "bash": {
+          "*": "ask",
+          "Invoke-ScriptAnalyzer*": "allow",
+          "Invoke-Pester*": "allow"
+        }
+      }
+    }
+  },
+  "command": {
+    "lint": {
+      "template": "Run PSScriptAnalyzer on all .ps1 files and report violations",
+      "description": "Lint PowerShell code"
+    },
+    "test": {
+      "template": "Run Pester test suite with coverage and report results",
+      "description": "Run PowerShell tests"
+    }
+  }
+}
