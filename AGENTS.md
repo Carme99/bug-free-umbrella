@@ -163,6 +163,30 @@ Tests/             # Pester tests
 
 ---
 
+## Required Modules
+
+| Module | Purpose |
+|--------|---------|
+| Microsoft.Graph | M365, Intune, Teams APIs |
+| Az | Azure management |
+| ExchangeOnlineManagement | Exchange Online admin |
+| MicrosoftTeams | Teams management |
+| Pester 5.5+ | Unit testing |
+| PSScriptAnalyzer | Linting |
+| AWSPowerShell | AWS management |
+| dbatools | SQL Server automation |
+| ImportExcel | Excel reporting |
+| Posh-SSH | Linux/SSH automation |
+| Kubernetes | K8s cluster management |
+
+---
+
+## GitHub Issue Format
+
+For the standard issue format, see the [root AGENTS.md](../AGENTS.md#github-issue-format).
+
+---
+
 ## Key Notes
 
 - Run PSScriptAnalyzer before committing
