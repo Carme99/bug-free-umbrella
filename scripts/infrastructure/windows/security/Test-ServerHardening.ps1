@@ -69,7 +69,7 @@ param(
 
 #Requires -RunAsAdministrator
 
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
 Write-Host "`n=== Server Hardening Compliance Check ===" -ForegroundColor Cyan

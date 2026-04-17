@@ -74,7 +74,7 @@ param(
     [switch]$ExportCSV
 )
 
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
 Write-Host "`n=== OneDrive Personal Site Regional Settings ===" -ForegroundColor Cyan

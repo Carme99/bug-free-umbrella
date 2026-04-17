@@ -66,7 +66,7 @@ param(
 
 #Requires -RunAsAdministrator
 
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
 Write-Host "`n=== Print Server Health Check ===" -ForegroundColor Cyan

@@ -82,7 +82,7 @@ param(
 
 #Requires -Modules ActiveDirectory
 
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $cutoffDate = (Get-Date).AddDays(-$DaysInactive)
 

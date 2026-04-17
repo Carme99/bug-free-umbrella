@@ -103,7 +103,7 @@ param(
 # Requires elevation
 #Requires -RunAsAdministrator
 
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
 # Initialize results

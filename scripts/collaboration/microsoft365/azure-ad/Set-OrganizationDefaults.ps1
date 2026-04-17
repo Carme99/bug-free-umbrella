@@ -58,7 +58,7 @@ param(
     [switch]$ExportHTML
 )
 
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
 Write-Host "`n=== Microsoft 365 Organization Default Settings ===" -ForegroundColor Cyan
