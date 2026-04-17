@@ -21,7 +21,26 @@ try {
     $totalCacheSize = 0
 
     # Get user profiles to find Teams cache (works in SYSTEM context)
-    $userProfiles = Get-CimInstance Win32_UserProfile | Where-Object { $_.Special -eq $false -and $_.LocalPath -notmatch 'systemprofile|defaultuser' }
+    # Prefer loaded / active profiles and cap the number of profiles scanned to reduce overhead on multi-user/RDS systems.
+    $allUserProfiles = Get-CimInstance Win32_UserProfile | Where-Object {
+        $_.Special -eq $false -and $_.LocalPath -notmatch 'systemprofile|defaultuser'
+    }
+
+    # First, prefer loaded profiles (currently logged on / in use)
+    $userProfiles = $allUserProfiles | Where-Object { $_.Loaded -eq $true }
+
+    # If no loaded profiles were found (e.g., no interactive logons), fall back to all non-special profiles
+    if (-not $userProfiles -or $userProfiles.Count -eq 0) {
+        $userProfiles = $allUserProfiles
+    }
+
+    # Limit to the most recently used profiles to avoid scanning excessive profiles on RDS/multi-user machines
+    $maxProfilesToScan = 20
+    if ($userProfiles.Count -gt $maxProfilesToScan) {
+        $userProfiles = $userProfiles |
+            Sort-Object -Property LastUseTime -Descending |
+            Select-Object -First $maxProfilesToScan
+    }
 
     $teamsFound = $false
     foreach ($profile in $userProfiles) {

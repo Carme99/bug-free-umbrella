@@ -266,7 +266,7 @@ try {
 Write-Host "`nChecking recent event log errors..." -ForegroundColor Yellow
 try {
     $startTime = (Get-Date).AddDays(-1)
-    $criticalErrors = Get-WinEvent -LogName System -FilterHashtable @{Level=2;StartTime=$startTime} -MaxEvents 100 -ErrorAction SilentlyContinue
+    $criticalErrors = Get-WinEvent -FilterHashtable @{LogName='System'; Level=2; StartTime=$startTime} -MaxEvents 100 -ErrorAction SilentlyContinue
     $errorCount = ($criticalErrors | Measure-Object).Count
 
     $healthCheck.EventLogErrors = @{

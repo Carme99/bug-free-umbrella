@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [🌂 About Our Release Names](#-about-our-release-names)
 - [Unreleased](#unreleased)
 - **Latest Releases:**
-  - [v4.1.0 (2026-04-17) ☔ Drizzle - Bug Fix Release](#410---2026-04-17-️-drizzle---bug-fix-release)
+  - [v4.1.0 (2026-04-17) ☔ Drizzle - Bug Fix Release](#410-drizzle-bug-fix-release)
   - [v4.0.0 (2026-03-03) 🌪️ Hurricane - Security Hardening](#400---2026-03-03-️-hurricane---security-hardening-release)
   - [v3.7.1 (2026-01-29) 🌂 Drizzle - Documentation & Security Hardening](#371---2026-01-29-️-drizzle---documentation--security-hardening-update)
   - [v3.7.0 (2026-01-21) 🌧️ Shower - Security & Maintenance](#370---2026-01-21-️-shower---security--maintenance-release)
@@ -61,6 +61,7 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ---
 
+<a id="410-drizzle-bug-fix-release"></a>
 ## [4.1.0] - 2026-04-17 ☔ **"Drizzle"** - Bug Fix Release
 
 > **Focus**: Critical bug fixes, error handling standardization, and deprecated cmdlet updates

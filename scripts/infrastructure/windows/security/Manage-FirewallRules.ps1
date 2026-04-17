@@ -128,11 +128,15 @@ if ($Profile -ne 'Any') {
 }
 
 try {
-    $rules = Get-NetFirewallRule @filterParams | Where-Object {
+    $rules = @(Get-NetFirewallRule @filterParams -ErrorAction SilentlyContinue | Where-Object {
         $ShowDisabled -or $_.Enabled -eq $true
-    }
+    })
 
     Write-Host "[+] Found $($rules.Count) matching rules" -ForegroundColor Green
+
+    if ($rules.Count -eq 0) {
+        Write-Host "[!] No firewall rules matched the supplied criteria" -ForegroundColor Yellow
+    }
 
     # Process each rule
     foreach ($rule in $rules) {
