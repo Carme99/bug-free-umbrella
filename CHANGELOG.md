@@ -73,7 +73,7 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 - **SCCM detect/remediate**: Fixed inverted exit codes (exit 0 when compliant)
 - **Fix-TeamsCache**: Use Win32_UserProfile to find Teams cache in SYSTEM context
 - **Check-HardwareErrors**: Fixed malformed string (removed extra quotes)
-- **Export-IntuneConfiguration**: Fixed double closing parenthesis in filename
+- **Export-IntuneConfiguration**: Fixed double closing parentheses in filename
 
 #### Collaboration Scripts
 - **Get-ExchangeServerHealth**: Added \$ErrorActionPreference = 'Stop'

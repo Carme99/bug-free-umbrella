@@ -220,7 +220,7 @@ try {
 Write-Host "`nChecking system uptime..." -ForegroundColor Yellow
 try {
     $os = Get-CimInstance -ClassName Win32_OperatingSystem
-    $lastBootTime = $os.LastBootUpTime | ConvertTo-DateTime
+    $lastBootTime = $os.LastBootUpTime
     $uptime = (Get-Date) - $lastBootTime
 
     $healthCheck.Uptime = @{
