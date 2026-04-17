@@ -95,10 +95,10 @@ try {
             $avStatus.Issues += "Real-Time Protection is DISABLED"
         }
         if ($defenderStatus.AntivirusSignatureAge -gt 7) {
-            $avStatus.Issues += "Antivirus signatures are OUTDATED ($($ defenderStatus.AntivirusSignatureAge) days old)"
+            $avStatus.Issues += "Antivirus signatures are OUTDATED ($($defenderStatus.AntivirusSignatureAge) days old)"
         }
         if ($defenderStatus.QuickScanAge -gt 7) {
-            $avStatus.Issues += "Quick scan hasn't run in $($ defenderStatus.QuickScanAge) days"
+            $avStatus.Issues += "Quick scan hasn't run in $($defenderStatus.QuickScanAge) days"
         }
 
         # Get threat history
