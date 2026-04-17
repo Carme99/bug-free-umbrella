@@ -17,44 +17,76 @@
 try {
     Write-Host "Checking Microsoft Teams cache..."
 
-    # Define Teams cache paths
-    $teamsAppData = "$env:APPDATA\Microsoft\Teams"
-    $teamsCacheLocations = @(
-        "$teamsAppData\Application Cache",
-        "$teamsAppData\Cache",
-        "$teamsAppData\GPUCache",
-        "$teamsAppData\IndexedDB",
-        "$teamsAppData\Local Storage",
-        "$teamsAppData\tmp"
-    )
-
     $cacheIssues = @()
     $totalCacheSize = 0
 
-    # Check if Teams is installed
-    if (-not (Test-Path $teamsAppData)) {
-        Write-Host "Microsoft Teams not installed or not used by current user"
-        exit 0  # No remediation needed
-    }
+    # Get user profiles to find Teams cache (works in SYSTEM context)
+    $userProfiles = Get-CimInstance Win32_UserProfile | Where-Object { $_.Special -eq $false -and $_.LocalPath -notmatch 'systemprofile|defaultuser' }
 
-    # Calculate total cache size
-    foreach ($cachePath in $teamsCacheLocations) {
-        if (Test-Path $cachePath) {
-            try {
-                $cacheSize = (Get-ChildItem -Path $cachePath -Recurse -ErrorAction SilentlyContinue |
-                    Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
+    $teamsFound = $false
+    foreach ($profile in $userProfiles) {
+        $userPath = $profile.LocalPath
+        $teamsAppData = Join-Path $userPath "AppData\Roaming\Microsoft\Teams"
 
-                $totalCacheSize += $cacheSize
+        if (Test-Path $teamsAppData) {
+            $teamsFound = $true
+            $userName = $profile.LocalPath.Split('\')[-1]
 
-                # Check for excessively large individual caches
-                $cacheSizeMB = [math]::Round($cacheSize / 1MB, 2)
-                if ($cacheSizeMB -gt 500) {
-                    $cacheIssues += "Large cache detected in $(Split-Path $cachePath -Leaf): $cacheSizeMB MB"
+            Write-Host "Found Teams for user: $userName"
+
+            $teamsCacheLocations = @(
+                "$teamsAppData\Application Cache",
+                "$teamsAppData\Cache",
+                "$teamsAppData\GPUCache",
+                "$teamsAppData\IndexedDB",
+                "$teamsAppData\Local Storage",
+                "$teamsAppData\tmp"
+            )
+
+            # Calculate cache size for this user
+            foreach ($cachePath in $teamsCacheLocations) {
+                if (Test-Path $cachePath) {
+                    try {
+                        $cacheSize = (Get-ChildItem -Path $cachePath -Recurse -ErrorAction SilentlyContinue |
+                            Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
+
+                        if ($null -ne $cacheSize) {
+                            $totalCacheSize += $cacheSize
+                            $cacheSizeMB = [math]::Round($cacheSize / 1MB, 2)
+                            if ($cacheSizeMB -gt 500) {
+                                $cacheIssues += "Large cache in $userName at $(Split-Path $cachePath -Leaf): $cacheSizeMB MB"
+                            }
+                        }
+                    } catch {
+                        Write-Host "Could not calculate size for $cachePath"
+                    }
                 }
-            } catch {
-                Write-Host "Could not calculate size for $cachePath"
+            }
+
+            # Check for .tmp files that weren't cleaned up
+            if (Test-Path "$teamsAppData\tmp") {
+                $tmpFiles = Get-ChildItem -Path "$teamsAppData\tmp" -Recurse -ErrorAction SilentlyContinue
+                if ($tmpFiles.Count -gt 100) {
+                    $cacheIssues += "Excessive temporary files in $userName : $($tmpFiles.Count)"
+                }
+            }
+
+            # Check for old log files
+            if (Test-Path "$teamsAppData\logs") {
+                $oldLogs = Get-ChildItem -Path "$teamsAppData\logs" -Recurse -ErrorAction SilentlyContinue |
+                    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) }
+
+                if ($oldLogs.Count -gt 50) {
+                    $cacheIssues += "Many old log files in $userName : $($oldLogs.Count) files older than 30 days"
+                }
             }
         }
+    }
+
+    # Check if Teams is installed
+    if (-not $teamsFound) {
+        Write-Host "Microsoft Teams not installed or not used by any user"
+        exit 0
     }
 
     $totalCacheSizeMB = [math]::Round($totalCacheSize / 1MB, 2)
@@ -65,34 +97,16 @@ try {
         $cacheIssues += "Total Teams cache is very large: $totalCacheSizeMB MB"
     }
 
-    # Check for .tmp files that weren't cleaned up
-    if (Test-Path "$teamsAppData\tmp") {
-        $tmpFiles = Get-ChildItem -Path "$teamsAppData\tmp" -Recurse -ErrorAction SilentlyContinue
-        if ($tmpFiles.Count -gt 100) {
-            $cacheIssues += "Excessive temporary files found: $($tmpFiles.Count)"
-        }
-    }
-
-    # Check for old log files
-    if (Test-Path "$teamsAppData\logs") {
-        $oldLogs = Get-ChildItem -Path "$teamsAppData\logs" -Recurse -ErrorAction SilentlyContinue |
-            Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) }
-
-        if ($oldLogs.Count -gt 50) {
-            $cacheIssues += "Many old log files found: $($oldLogs.Count) files older than 30 days"
-        }
-    }
-
     if ($cacheIssues.Count -gt 0) {
         Write-Host "Teams cache issues detected:"
         $cacheIssues | ForEach-Object { Write-Host "  - $_" }
-        exit 1  # Trigger remediation
+        exit 1
     } else {
         Write-Host "Teams cache is healthy (Size: $totalCacheSizeMB MB)"
-        exit 0  # No remediation needed
+        exit 0
     }
 
 } catch {
     Write-Host "Error checking Teams cache: $($_.Exception.Message)"
-    exit 0  # Don't trigger remediation on error
+    exit 0
 }

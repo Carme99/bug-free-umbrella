@@ -120,7 +120,7 @@ foreach ($Location in $StoreLocations) {
                     Issuer = $Cert.Issuer
                     Thumbprint = $Cert.Thumbprint
                     FriendlyName = $Cert.FriendlyName
-                    NotBefore = $Cert.NotAfter.ToString("yyyy-MM-dd")
+                    NotBefore = $Cert.NotBefore.ToString("yyyy-MM-dd")
                     NotAfter = $Cert.NotAfter.ToString("yyyy-MM-dd")
                     DaysUntilExpiry = $DaysUntilExpiry
                     Status = $Status
