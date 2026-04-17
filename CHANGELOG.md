@@ -1,7 +1,7 @@
 # Changelog
 
-![Version](https://img.shields.io/badge/version-4.0.0-blue)
-![Release Date](https://img.shields.io/badge/release-2026--03--03-green)
+![Version](https://img.shields.io/badge/version-4.1.0-blue)
+![Release Date](https://img.shields.io/badge/release-2026--04--17-green)
 ![Total Scripts](https://img.shields.io/badge/scripts-260+-orange)
 ![License](https://img.shields.io/badge/license-Apache%202.0-red)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [🌂 About Our Release Names](#-about-our-release-names)
 - [Unreleased](#unreleased)
 - **Latest Releases:**
+  - [v4.1.0 (2026-04-17) ☔ Drizzle - Bug Fix Release](#410---2026-04-17-️-drizzle---bug-fix-release)
   - [v4.0.0 (2026-03-03) 🌪️ Hurricane - Security Hardening](#400---2026-03-03-️-hurricane---security-hardening-release)
   - [v3.7.1 (2026-01-29) 🌂 Drizzle - Documentation & Security Hardening](#371---2026-01-29-️-drizzle---documentation--security-hardening-update)
   - [v3.7.0 (2026-01-21) 🌧️ Shower - Security & Maintenance](#370---2026-01-21-️-shower---security--maintenance-release)
@@ -57,6 +58,57 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 ---
 
 ## [Unreleased]
+
+---
+
+## [4.1.0] - 2026-04-17 ☔ **"Drizzle"** - Bug Fix Release
+
+> **Focus**: Critical bug fixes, error handling standardization, and deprecated cmdlet updates
+
+**📊 [Compare v4.0.0...v4.1.0](https://github.com/Carme99/bug-free-umbrella/compare/v4.0.0...v4.1.0)**
+
+### Critical Bug Fixes 🐛
+
+#### Proactive Remediations
+- **SCCM detect/remediate**: Fixed inverted exit codes (exit 0 when compliant)
+- **Fix-TeamsCache**: Use Win32_UserProfile to find Teams cache in SYSTEM context
+- **Check-HardwareErrors**: Fixed malformed string (removed extra quotes)
+- **Export-IntuneConfiguration**: Fixed double closing parenthesis in filename
+
+#### Collaboration Scripts
+- **Get-ExchangeServerHealth**: Added \$ErrorActionPreference = 'Stop'
+- **Get-DistributionListAudit**: Added \$ErrorActionPreference = 'Stop'
+- **Get-MailFlowAnalysis**: Added \$ErrorActionPreference = 'Stop'
+- **Get-DefenderO365ThreatReport**: Added \$ErrorActionPreference = 'Stop'
+
+#### Security Scripts
+- **Get-ExpiredCertificates**: Fixed NotBefore/NotAfter mapping error
+- **Get-SoftwareLicenseCompliance**: Sanitized registry path components to prevent invalid paths
+- **Get-MDEDeviceHealth**: Added framework disclaimer (requires API implementation)
+
+### Error Handling Standardization 🔧
+
+Changed \$ErrorActionPreference from 'Continue' to 'Stop' in 25 scripts:
+- Utilities: Get-SoftwareInventory, Optimize-WindowsServices
+- Collaboration: Get-OneDriveUsageReport, Set-OneDriveRegionalSettings, Set-SiteRegionalSettings, Set-PowerPlatformRegionalSettings, Get-TeamsReport, Set-TeamsRegionalSettings, Set-MailboxRegionalSettings, Set-UserLanguageSettings, Get-SharedMailboxReport, Get-MailboxHealth, Get-AzureADGuestAudit, Set-OrganizationDefaults, Get-AzureADLicenseReport
+- Infrastructure: Get-InactiveUserReport, Get-UserLockoutReport, Test-ServerHardening, Manage-FirewallRules, Get-SecurityEventAudit, Test-BackupIntegrity, Get-HyperVHealth, Get-IISHealthCheck, Get-PrintServerHealth
+- Data: Get-SQLServerHealth
+
+### Deprecated Cmdlet Updates 🔄
+
+- **Get-SystemHealthCheck**: Replaced Get-WmiObject with Get-CimInstance
+- **Get-SystemHealthCheck**: Replaced Get-EventLog with Get-WinEvent using proper FilterHashtable
+- Fixed event log property names (TimeCreated, ProviderName) for Get-WinEvent compatibility
+
+### Medium Priority Fixes 🔧
+
+- **Get-AntivirusStatus**: Fixed space in string interpolation
+- **Test-APIHealth**: Added clarification comment on SSL validation approach
+
+### Documentation Updates 📚
+
+- Updated version badge from 4.0.0 to 4.1.0
+- Updated release date to 2026-04-17
 
 ---
 
