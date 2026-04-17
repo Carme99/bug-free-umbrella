@@ -68,7 +68,7 @@ param(
 #Requires -RunAsAdministrator
 #Requires -Modules Hyper-V
 
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
 Write-Host "`n=== Hyper-V Health Check ===" -ForegroundColor Cyan

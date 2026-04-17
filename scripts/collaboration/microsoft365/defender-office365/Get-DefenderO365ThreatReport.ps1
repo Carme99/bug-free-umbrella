@@ -66,6 +66,8 @@ param(
     [string]$OutputPath = [Environment]::GetFolderPath('Desktop')
 )
 
+$ErrorActionPreference = 'Stop'
+
 # Check for required module
 if (-not (Get-Module -ListAvailable -Name ExchangeOnlineManagement)) {
     Write-Error "ExchangeOnlineManagement module required. Install with: Install-Module ExchangeOnlineManagement"

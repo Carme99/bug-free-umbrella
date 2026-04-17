@@ -11,6 +11,8 @@
 [CmdletBinding()]
 param([switch]$ExportHTML, [switch]$CheckDatabaseHealth, [switch]$CheckMailQueues)
 
+$ErrorActionPreference = 'Stop'
+
 Write-Host "`n=== Exchange Server Health Check ===" -ForegroundColor Cyan
 
 # Check Exchange PowerShell

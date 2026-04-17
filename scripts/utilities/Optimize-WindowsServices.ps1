@@ -73,7 +73,7 @@ param(
 
 #Requires -RunAsAdministrator
 
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
 Write-Host "`n=== Windows Service Optimizer ===" -ForegroundColor Cyan

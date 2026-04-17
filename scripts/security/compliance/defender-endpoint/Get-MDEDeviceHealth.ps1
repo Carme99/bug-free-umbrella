@@ -85,25 +85,26 @@ $results = @{
 
 Write-Host "Monitoring Microsoft Defender for Endpoint devices..." -ForegroundColor Cyan
 
-# Note: This script provides framework. Full implementation requires:
-# - Microsoft Graph API access with SecurityEvents.Read.All permission
-# - Or WindowsDefenderATP API with Machine.Read.All permission
+# WARNING: This script is a FRAMEWORK TEMPLATE and requires implementation of actual MDE API calls
+# It will NOT produce real data without Microsoft Graph API or WindowsDefenderATP API integration
+#
+# Required implementation:
+# - Microsoft Graph API: DeviceManagement.Read.All permission
+# - Or Windows Defender ATP API: Machine.Read.All permission
+#
+# Example API call:
+# $headers = @{ Authorization = "Bearer $token" }
+# $devices = Invoke-RestMethod -Uri "https://api.securitycenter.microsoft.com/api/machines" -Headers $headers
 
 try {
+    Write-Host "`nWARNING: This script is a framework template - no live API data available" -ForegroundColor Yellow
     Write-Host "`nAuthenticating to Microsoft Defender API..." -ForegroundColor Yellow
     Write-Host "Note: Full implementation requires Microsoft Graph or WindowsDefenderATP API access" -ForegroundColor Gray
-
-    # Sample device data structure (would come from API)
-    # Get-MDATPDevice equivalent:
-    # Invoke-RestMethod -Uri "https://api.securitycenter.microsoft.com/api/machines" -Headers $headers
 
     # Simulated device health analysis
     Write-Host "`nRetrieving device inventory..." -ForegroundColor Yellow
 
-    # In production, this would call MDE API:
-    # $devices = Invoke-RestMethod -Uri "https://api.securitycenter.microsoft.com/api/machines" -Headers $headers
-
-    # Sample structure for device data
+    # Sample structure for device data - REPLACE with actual API calls
     $sampleDevice = @{
         ComputerDnsName = "Example-Device"
         OsPlatform = "Windows10"
@@ -121,7 +122,7 @@ try {
     }
 
     Write-Host "MDE API framework ready" -ForegroundColor Green
-    Write-Host "Note: Connect to MDE API for live data. Sample structure included." -ForegroundColor Yellow
+    Write-Host "WARNING: Running with sample data only. Implement API calls for production use." -ForegroundColor Red
 
     # Alert analysis structure
     $sampleAlert = @{

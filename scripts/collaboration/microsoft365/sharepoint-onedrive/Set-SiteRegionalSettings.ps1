@@ -125,7 +125,7 @@ param(
     [switch]$ExportCSV
 )
 
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
 Write-Host "`n=== SharePoint Online Site Regional Settings ===" -ForegroundColor Cyan

@@ -96,7 +96,7 @@ if('All' -in $ConfigTypes -or 'DeviceConfig' -in $ConfigTypes) {
         New-Item -ItemType Directory -Path $policyPath -Force | Out-Null
         
         foreach($policy in $policies.value) {
-            $fileName = "$($policy.displayName -replace '[^\w\s]','')).json"
+            $fileName = "$($policy.displayName -replace '[^\w\s]','').json"
             $policy | ConvertTo-Json -Depth 10 | Out-File (Join-Path $policyPath $fileName) -Encoding UTF8
             $exportSummary.ItemsExported++
         }

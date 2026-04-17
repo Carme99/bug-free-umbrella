@@ -188,6 +188,7 @@ function Test-Endpoint {
                 $uri = [System.Uri]$Endpoint.Url
                 $tcpClient = New-Object System.Net.Sockets.TcpClient
                 $tcpClient.Connect($uri.Host, 443)
+                # Note: Manual certificate validation is performed below after SslStream authentication
                 $sslStream = New-Object System.Net.Security.SslStream($tcpClient.GetStream(), $false)
                 $sslStream.AuthenticateAsClient($uri.Host)
 

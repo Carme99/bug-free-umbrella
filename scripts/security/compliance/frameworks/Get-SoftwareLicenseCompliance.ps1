@@ -115,9 +115,13 @@ foreach ($path in $registryPaths) {
 
                 # For other software, check common registry locations
                 if ($licenseKey -eq "N/A" -and $app.DisplayName) {
+                    # Sanitize registry path components to prevent invalid paths
+                    $safePublisher = ($app.Publisher -replace '[\\/:*?"<>|]', '_') -replace '\s', '_'
+                    $safeDisplayName = ($app.DisplayName -replace '[\\/:*?"<>|]', '_') -replace '\s', '_'
+
                     $possibleKeyPaths = @(
-                        "HKLM:\SOFTWARE\$($app.Publisher)\$($app.DisplayName)",
-                        "HKCU:\SOFTWARE\$($app.Publisher)\$($app.DisplayName)"
+                        "HKLM:\SOFTWARE\$safePublisher\$safeDisplayName",
+                        "HKCU:\SOFTWARE\$safePublisher\$safeDisplayName"
                     )
 
                     foreach ($keyPath in $possibleKeyPaths) {

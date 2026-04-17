@@ -59,7 +59,7 @@ param(
     [switch]$ExportCSV
 )
 
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
 Write-Host "`n=== Shared Mailbox Audit Report ===" -ForegroundColor Cyan

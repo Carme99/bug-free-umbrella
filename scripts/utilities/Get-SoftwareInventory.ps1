@@ -75,7 +75,7 @@ param(
     [switch]$ExportJSON
 )
 
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
 Write-Host "`n=== Software Inventory Report ===" -ForegroundColor Cyan

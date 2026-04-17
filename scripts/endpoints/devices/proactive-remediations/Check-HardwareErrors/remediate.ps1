@@ -67,7 +67,7 @@ try {
     Write-Host "  - Contact manufacturer for hardware replacement"
     Write-Host "  - Document all errors for warranty claim"
     Write-Host ""
-    Write-Host "========================================
+    Write-Host "========================================"
     Write-Host "CRITICAL ALERT: This device requires immediate IT attention"
     Write-Host "Device: $env:COMPUTERNAME"
     Write-Host "Priority: URGENT - Hardware failure risk"

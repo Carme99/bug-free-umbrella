@@ -116,9 +116,28 @@ Install-Module Microsoft.Graph.Intune -Scope CurrentUser -Force
 ### AWS Management
 
 ```powershell
-# Install AWS Tools
-Install-Module AWS.Tools.Common -Scope CurrentUser -Force
-Install-Module AWS.Tools.EC2 -Scope CurrentUser -Force
+# Install AWS PowerShell Module
+Install-Module AWSPowerShell -Scope CurrentUser -Force
+```
+
+### Database & Reporting
+
+```powershell
+# Install dbatools (SQL Server automation)
+Install-Module dbatools -Scope CurrentUser -Force
+
+# Install ImportExcel (Excel reporting)
+Install-Module ImportExcel -Scope CurrentUser -Force
+```
+
+### Infrastructure & Automation
+
+```powershell
+# Install Posh-SSH (Linux/SSH automation)
+Install-Module Posh-SSH -Scope CurrentUser -Force
+
+# Install Kubernetes module
+Install-Module Kubernetes -Scope CurrentUser -Force
 ```
 
 ## Permissions & Access

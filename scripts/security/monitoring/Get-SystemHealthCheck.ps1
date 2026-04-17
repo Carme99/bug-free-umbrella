@@ -86,7 +86,7 @@ $healthCheck = @{
 #region CPU Check
 Write-Host "`nChecking CPU usage..." -ForegroundColor Yellow
 try {
-    $cpu = Get-WmiObject -Class Win32_Processor
+    $cpu = Get-CimInstance -ClassName Win32_Processor
     $cpuLoad = (Get-Counter '\Processor(_Total)\% Processor Time' -SampleInterval 2 -MaxSamples 3 |
         Select-Object -ExpandProperty CounterSamples |
         Measure-Object -Property CookedValue -Average).Average
@@ -117,7 +117,7 @@ try {
 #region Memory Check
 Write-Host "Checking memory usage..." -ForegroundColor Yellow
 try {
-    $os = Get-WmiObject -Class Win32_OperatingSystem
+    $os = Get-CimInstance -ClassName Win32_OperatingSystem
     $totalMemoryGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
     $freeMemoryGB = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
     $usedMemoryGB = $totalMemoryGB - $freeMemoryGB
@@ -148,7 +148,7 @@ try {
 #region Disk Check
 Write-Host "Checking disk usage..." -ForegroundColor Yellow
 try {
-    $disks = Get-WmiObject -Class Win32_LogicalDisk -Filter "DriveType=3"
+    $disks = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DriveType=3"
 
     foreach ($disk in $disks) {
         $diskSizeGB = [math]::Round($disk.Size / 1GB, 2)
@@ -219,8 +219,8 @@ try {
 #region Uptime Check
 Write-Host "`nChecking system uptime..." -ForegroundColor Yellow
 try {
-    $lastBoot = (Get-WmiObject -Class Win32_OperatingSystem).LastBootUpTime
-    $lastBootTime = [Management.ManagementDateTimeConverter]::ToDateTime($lastBoot)
+    $os = Get-CimInstance -ClassName Win32_OperatingSystem
+    $lastBootTime = $os.LastBootUpTime | ConvertTo-DateTime
     $uptime = (Get-Date) - $lastBootTime
 
     $healthCheck.Uptime = @{
@@ -265,15 +265,16 @@ try {
 #region Event Log Errors
 Write-Host "`nChecking recent event log errors..." -ForegroundColor Yellow
 try {
-    $criticalErrors = Get-EventLog -LogName System -EntryType Error -Newest 100 -After (Get-Date).AddDays(-1) -ErrorAction SilentlyContinue
+    $startTime = (Get-Date).AddDays(-1)
+    $criticalErrors = Get-WinEvent -LogName System -FilterHashtable @{Level=2;StartTime=$startTime} -MaxEvents 100 -ErrorAction SilentlyContinue
     $errorCount = ($criticalErrors | Measure-Object).Count
 
     $healthCheck.EventLogErrors = @{
         Last24Hours = $errorCount
         RecentErrors = $criticalErrors | Select-Object -First 5 | ForEach-Object {
             @{
-                TimeGenerated = $_.TimeGenerated
-                Source = $_.Source
+                TimeGenerated = $_.TimeCreated
+                Source = $_.ProviderName
                 Message = $_.Message.Substring(0, [Math]::Min(100, $_.Message.Length))
             }
         }

@@ -1,4 +1,4 @@
-# dectection script for SCCM 
+# Remediation script for SCCM
 
 # Define the path to ccmsetup.exe
 $ccmSetupPath = "$env:windir\ccmsetup\ccmsetup.exe"
@@ -7,10 +7,10 @@ $ccmSetupPath = "$env:windir\ccmsetup\ccmsetup.exe"
 if (Test-Path $ccmSetupPath) {
     Write-Output " SCCM client is installed. Removing...."
     Start-Process -FilePath $ccmSetupPath -ArgumentList "/uninstall" -Wait -NoNewWindow
-    Write-Output "Congratulations!! The SCCM client uninstalled successfully."
-    Exit 1
+    Write-Output "The SCCM client uninstalled successfully."
+    Exit 0
 }
 else {
-    Write-Output " SCCM client is not installed or the path to ccmsetup.exe is incorrect. Please specify a valid path."
+    Write-Output " SCCM client is not installed or the path to ccmsetup.exe is incorrect."
     Exit 0
 }

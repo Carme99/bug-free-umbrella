@@ -79,7 +79,7 @@ param(
 #Requires -RunAsAdministrator
 
 # Initialize
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $computerName = $env:COMPUTERNAME
 $results = @{

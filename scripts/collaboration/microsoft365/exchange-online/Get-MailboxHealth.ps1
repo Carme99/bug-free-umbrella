@@ -77,7 +77,7 @@ param(
     [switch]$ExportCSV
 )
 
-$ErrorActionPreference = "Continue"
+$ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
 Write-Host "`n=== Exchange Online Mailbox Health Report ===" -ForegroundColor Cyan
