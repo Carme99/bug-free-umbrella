@@ -94,9 +94,13 @@ if('All' -in $ConfigTypes -or 'DeviceConfig' -in $ConfigTypes) {
         $policies = Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/beta/deviceManagement/deviceConfigurations" -Method GET
         $policyPath = Join-Path $OutputPath "DeviceConfigurations"
         New-Item -ItemType Directory -Path $policyPath -Force | Out-Null
-        
+
         foreach($policy in $policies.value) {
-            $fileName = "$($policy.displayName -replace '[^\w\s]','').json"
+            $safeName = ($policy.displayName -replace '[\\/:*?"<>|]', '_').Trim()
+            if ([string]::IsNullOrWhiteSpace($safeName)) {
+                $safeName = "DeviceConfiguration"
+            }
+            $fileName = "{0}_{1}.json" -f $safeName, $policy.id
             $policy | ConvertTo-Json -Depth 10 | Out-File (Join-Path $policyPath $fileName) -Encoding UTF8
             $exportSummary.ItemsExported++
         }
@@ -113,9 +117,13 @@ if('All' -in $ConfigTypes -or 'Compliance' -in $ConfigTypes) {
         $policies = Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/beta/deviceManagement/deviceCompliancePolicies" -Method GET
         $policyPath = Join-Path $OutputPath "CompliancePolicies"
         New-Item -ItemType Directory -Path $policyPath -Force | Out-Null
-        
+
         foreach($policy in $policies.value) {
-            $fileName = "$($policy.displayName -replace '[^\w\s]','').json"
+            $safeName = ($policy.displayName -replace '[\\/:*?"<>|]', '_').Trim()
+            if ([string]::IsNullOrWhiteSpace($safeName)) {
+                $safeName = "CompliancePolicy"
+            }
+            $fileName = "{0}_{1}.json" -f $safeName, $policy.id
             $policy | ConvertTo-Json -Depth 10 | Out-File (Join-Path $policyPath $fileName) -Encoding UTF8
             $exportSummary.ItemsExported++
         }

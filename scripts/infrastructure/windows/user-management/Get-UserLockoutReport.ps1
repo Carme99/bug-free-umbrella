@@ -120,7 +120,15 @@ foreach ($dc in $dcs) {
 </QueryList>
 "@
 
-        $events = Get-WinEvent -ComputerName $dc.HostName -FilterXml $filterXml -ErrorAction SilentlyContinue
+        $eventErrors = @()
+        $events = Get-WinEvent -ComputerName $dc.HostName -FilterXml $filterXml -ErrorAction SilentlyContinue -ErrorVariable eventErrors
+
+        $unexpectedErrors = $eventErrors | Where-Object {
+            $_.FullyQualifiedErrorId -notlike 'NoMatchingEventsFound*'
+        }
+        if ($unexpectedErrors) {
+            throw $unexpectedErrors[0]
+        }
 
         if ($events) {
             Write-Host "[+] Found $($events.Count) events on $($dc.HostName)" -ForegroundColor Green

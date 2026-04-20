@@ -21,16 +21,41 @@ try {
     $totalCacheSize = 0
 
     # Get user profiles to find Teams cache (works in SYSTEM context)
-    $userProfiles = Get-CimInstance Win32_UserProfile | Where-Object { $_.Special -eq $false -and $_.LocalPath -notmatch 'systemprofile|defaultuser' }
+    # Prefer loaded / active profiles and cap the number of profiles scanned to reduce overhead on multi-user/RDS systems.
+    $allUserProfiles = Get-CimInstance Win32_UserProfile | Where-Object {
+        $_.Special -eq $false -and $_.LocalPath -notmatch 'systemprofile|defaultuser'
+    }
+
+    # Early exit if no eligible profiles found
+    if (-not $allUserProfiles -or $allUserProfiles.Count -eq 0) {
+        Write-Host "No eligible user profiles found"
+        exit 0
+    }
+
+    # First, prefer loaded profiles (currently logged on / in use)
+    $userProfiles = $allUserProfiles | Where-Object { $_.Loaded -eq $true }
+
+    # If no loaded profiles were found (e.g., no interactive logons), fall back to all non-special profiles
+    if (-not $userProfiles -or $userProfiles.Count -eq 0) {
+        $userProfiles = $allUserProfiles
+    }
+
+    # Limit to the most recently used profiles to avoid scanning excessive profiles on RDS/multi-user machines
+    $maxProfilesToScan = 20
+    if ($userProfiles.Count -gt $maxProfilesToScan) {
+        $userProfiles = $userProfiles |
+            Sort-Object -Property LastUseTime -Descending |
+            Select-Object -First $maxProfilesToScan
+    }
 
     $teamsFound = $false
-    foreach ($profile in $userProfiles) {
-        $userPath = $profile.LocalPath
+    foreach ($userProfile in $userProfiles) {
+        $userPath = $userProfile.LocalPath
         $teamsAppData = Join-Path $userPath "AppData\Roaming\Microsoft\Teams"
 
         if (Test-Path $teamsAppData) {
             $teamsFound = $true
-            $userName = $profile.LocalPath.Split('\')[-1]
+            $userName = Split-Path $userPath -Leaf
 
             Write-Host "Found Teams for user: $userName"
 
@@ -65,19 +90,19 @@ try {
 
             # Check for .tmp files that weren't cleaned up
             if (Test-Path "$teamsAppData\tmp") {
-                $tmpFiles = Get-ChildItem -Path "$teamsAppData\tmp" -Recurse -ErrorAction SilentlyContinue
+                $tmpFiles = @(Get-ChildItem -Path "$teamsAppData\tmp" -Recurse -ErrorAction SilentlyContinue)
                 if ($tmpFiles.Count -gt 100) {
-                    $cacheIssues += "Excessive temporary files in $userName : $($tmpFiles.Count)"
+                    $cacheIssues += "Excessive temporary files in ${userName}: $($tmpFiles.Count)"
                 }
             }
 
             # Check for old log files
             if (Test-Path "$teamsAppData\logs") {
-                $oldLogs = Get-ChildItem -Path "$teamsAppData\logs" -Recurse -ErrorAction SilentlyContinue |
-                    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) }
+                $oldLogs = @(Get-ChildItem -Path "$teamsAppData\logs" -Recurse -ErrorAction SilentlyContinue |
+                    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) })
 
                 if ($oldLogs.Count -gt 50) {
-                    $cacheIssues += "Many old log files in $userName : $($oldLogs.Count) files older than 30 days"
+                    $cacheIssues += "Many old log files in ${userName}: $($oldLogs.Count) files older than 30 days"
                 }
             }
         }

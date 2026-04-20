@@ -118,30 +118,36 @@ foreach ($mailbox in $sharedMailboxes) {
     $totalPermissions = 0
 
     if ($IncludePermissions) {
-        # Full Access
-        $fullAccess = Get-EXOMailboxPermission -Identity $mailbox.UserPrincipalName |
-            Where-Object { $_.AccessRights -contains "FullAccess" -and $_.User -notlike "NT AUTHORITY\*" -and $_.IsInherited -eq $false }
+        try {
+            # Full Access
+            $fullAccess = Get-EXOMailboxPermission -Identity $mailbox.UserPrincipalName -ErrorAction Stop |
+                Where-Object { $_.AccessRights -contains "FullAccess" -and $_.User -notlike "NT AUTHORITY\*" -and $_.IsInherited -eq $false }
 
-        $fullAccessUsers = $fullAccess | ForEach-Object { $_.User }
-        $totalPermissions += $fullAccessUsers.Count
+            $fullAccessUsers = $fullAccess | ForEach-Object { $_.User }
+            $totalPermissions += $fullAccessUsers.Count
 
-        # Send As
-        $sendAs = Get-EXORecipientPermission -Identity $mailbox.UserPrincipalName |
-            Where-Object { $_.Trustee -notlike "NT AUTHORITY\*" -and $_.AccessRights -contains "SendAs" }
+            # Send As
+            $sendAs = Get-EXORecipientPermission -Identity $mailbox.UserPrincipalName -ErrorAction Stop |
+                Where-Object { $_.Trustee -notlike "NT AUTHORITY\*" -and $_.AccessRights -contains "SendAs" }
 
-        $sendAsUsers = $sendAs | ForEach-Object { $_.Trustee }
-        $totalPermissions += $sendAsUsers.Count
+            $sendAsUsers = $sendAs | ForEach-Object { $_.Trustee }
+            $totalPermissions += $sendAsUsers.Count
 
-        # Send on Behalf
-        $mailboxDetail = Get-EXOMailbox -Identity $mailbox.UserPrincipalName -Properties GrantSendOnBehalfTo
-        if ($mailboxDetail.GrantSendOnBehalfTo) {
-            $sendOnBehalfUsers = $mailboxDetail.GrantSendOnBehalfTo
-            $totalPermissions += $sendOnBehalfUsers.Count
+            # Send on Behalf
+            $mailboxDetail = Get-EXOMailbox -Identity $mailbox.UserPrincipalName -Properties GrantSendOnBehalfTo -ErrorAction Stop
+            if ($mailboxDetail.GrantSendOnBehalfTo) {
+                $sendOnBehalfUsers = $mailboxDetail.GrantSendOnBehalfTo
+                $totalPermissions += $sendOnBehalfUsers.Count
+            }
+
+            if ($totalPermissions -eq 0) {
+                $noPermissions++
+                $issueCount++
+            }
         }
-
-        if ($totalPermissions -eq 0) {
-            $noPermissions++
+        catch {
             $issueCount++
+            $fullAccessUsers = @("Permission lookup failed: $($_.Exception.Message)")
         }
     }
 

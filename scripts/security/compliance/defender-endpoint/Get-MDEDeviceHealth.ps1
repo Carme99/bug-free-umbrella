@@ -186,7 +186,7 @@ switch ($OutputFormat) {
         Write-Host "Status: MDE monitoring framework ready" -ForegroundColor Green
         Write-Host "`nNext Steps:" -ForegroundColor Yellow
         Write-Host "1. Configure Microsoft Graph API access" -ForegroundColor White
-        Write-Host "2. Grant SecurityEvents.Read.All permission" -ForegroundColor White
+        Write-Host "2. Grant DeviceManagement.Read.All permission (or Machine.Read.All for WindowsDefenderATP API)" -ForegroundColor White
         Write-Host "3. Implement API authentication" -ForegroundColor White
         Write-Host "4. Connect to https://api.securitycenter.microsoft.com" -ForegroundColor White
     }
@@ -222,7 +222,7 @@ switch ($OutputFormat) {
         <p>This script provides the framework for MDE device monitoring. To enable live data:</p>
         <ol>
             <li>Register an Azure AD application</li>
-            <li>Grant <strong>SecurityEvents.Read.All</strong> and <strong>Machine.Read.All</strong> permissions</li>
+            <li>Grant <strong>DeviceManagement.Read.All</strong> (Microsoft Graph) or <strong>Machine.Read.All</strong> (WindowsDefenderATP API) permission</li>
             <li>Implement OAuth2 authentication</li>
             <li>Connect to Microsoft Defender ATP API: <code>https://api.securitycenter.microsoft.com</code></li>
         </ol>

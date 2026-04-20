@@ -115,9 +115,9 @@ foreach ($path in $registryPaths) {
 
                 # For other software, check common registry locations
                 if ($licenseKey -eq "N/A" -and $app.DisplayName) {
-                    # Sanitize registry path components to prevent invalid paths
-                    $safePublisher = ($app.Publisher -replace '[\\/:*?"<>|]', '_') -replace '\s', '_'
-                    $safeDisplayName = ($app.DisplayName -replace '[\\/:*?"<>|]', '_') -replace '\s', '_'
+                    # Sanitize registry path components to prevent invalid paths (spaces are valid in registry keys)
+                    $safePublisher = $app.Publisher -replace '[\\/:*?"<>|]', '_'
+                    $safeDisplayName = $app.DisplayName -replace '[\\/:*?"<>|]', '_'
 
                     $possibleKeyPaths = @(
                         "HKLM:\SOFTWARE\$safePublisher\$safeDisplayName",
@@ -126,8 +126,8 @@ foreach ($path in $registryPaths) {
 
                     foreach ($keyPath in $possibleKeyPaths) {
                         try {
-                            if (Test-Path $keyPath) {
-                                $regProps = Get-ItemProperty $keyPath -ErrorAction SilentlyContinue
+                            if (Test-Path -LiteralPath $keyPath) {
+                                $regProps = Get-ItemProperty -LiteralPath $keyPath -ErrorAction SilentlyContinue
                                 $keyProps = $regProps.PSObject.Properties | Where-Object {
                                     $_.Name -match "Key|License|Serial|Product.*Key"
                                 }
