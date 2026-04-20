@@ -111,6 +111,14 @@ Changed \$ErrorActionPreference from 'Continue' to 'Stop' in 25 scripts:
 - Updated version badge from 4.0.0 to 4.1.0
 - Updated release date to 2026-04-17
 
+### Test Improvements 🧪
+
+- **region-language-settings.Tests.ps1**: Fixed test path (device-management → endpoints/devices)
+- **region-language-settings.Tests.ps1**: Added platform-aware cmdlet availability detection for cross-platform compatibility
+- **Fix-TeamsCache/detect.ps1**: Renamed `$profile` to `$userProfile` to avoid shadowing built-in variable
+- **Fix-TeamsCache/detect.ps1**: Added early-exit when no eligible profiles found
+- **Fix-TeamsCache/detect.ps1**: Wrapped Get-ChildItem results in `@()` for null protection
+
 ---
 
 ## [3.7.1] - 2026-01-29 🌂 **"Drizzle"** - Documentation & Security Hardening Update
