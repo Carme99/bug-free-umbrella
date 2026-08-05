@@ -112,12 +112,12 @@ try {
         $counter++
         Write-Progress -Activity "Analyzing devices" -Status "$counter of $($devices.Count)" -PercentComplete (($counter / $devices.Count) * 100)
 
-        $isWindows = $device.OperatingSystem -like "Windows*"
+        $osIsWindows = $device.OperatingSystem -like "Windows*"
         $encryptionStatus = "N/A"
         $recoveryKeyStatus = "N/A"
         $encryptionMethod = "N/A"
 
-        if ($isWindows) {
+        if ($osIsWindows) {
             # Get BitLocker encryption state from device
             $deviceId = $device.Id
 

@@ -677,8 +677,8 @@ function Write-InstallationSummary {
     if ($script:InstallErrors.Count -gt 0) {
         Write-Log ""
         Write-Log "Errors Encountered:" -Level Error
-        foreach ($error in $script:InstallErrors) {
-            Write-Log "  • $error" -Level Error
+        foreach ($err in $script:InstallErrors) {
+            Write-Log "  • $err" -Level Error
         }
     }
 

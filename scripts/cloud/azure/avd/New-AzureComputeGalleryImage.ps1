@@ -954,8 +954,8 @@ if ($ConfigFile) {
     $validationErrors = Test-ConfigurationSchema -Config $configData
     if ($validationErrors) {
         Write-ErrorMsg "Configuration validation failed:"
-        foreach ($error in $validationErrors) {
-            Write-Host "  • $error" -ForegroundColor Red
+        foreach ($err in $validationErrors) {
+            Write-Host "  • $err" -ForegroundColor Red
         }
         Write-Log "Configuration validation failed: $($validationErrors -join '; ')" "ERROR"
         exit 1

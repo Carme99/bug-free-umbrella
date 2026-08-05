@@ -40,14 +40,19 @@ jobs:
             Write-Host "Failed to get module version: $($_.Exception.Message)" -ForegroundColor Yellow
           }
 
-          # Run analyzer with DEFAULT rules only (no custom settings)
-          # This is lenient and focuses on critical issues
-          Write-Host "Running PSScriptAnalyzer with default rules (no custom settings)..." -ForegroundColor Cyan
+          # Run analyzer with curated settings from .vscode
+          Write-Host "Running PSScriptAnalyzer with curated settings (.vscode/PSScriptAnalyzerSettings.psd1)..." -ForegroundColor Cyan
+
+          $settingsPath = './.vscode/PSScriptAnalyzerSettings.psd1'
+          if (-not (Test-Path $settingsPath)) {
+            Write-Host "Settings file '$settingsPath' not found. Cannot run analyzer." -ForegroundColor Red
+            exit 1
+          }
 
           $invokeArgs = @{
             Path = $scriptsPath
             Recurse = $true
-            Severity = @('Error', 'Warning')
+            Settings = $settingsPath
           }
 
           try {
@@ -63,7 +68,7 @@ jobs:
             foreach ($f in $files) {
               try {
                 Write-Host "Analyzing: $($f.FullName)" -ForegroundColor Gray
-                $r = Invoke-ScriptAnalyzer -Path $f.FullName -Severity Error,Warning -ErrorAction Stop
+                $r = Invoke-ScriptAnalyzer -Path $f.FullName -Settings $settingsPath -ErrorAction Stop
                 if ($r) { $allResults += $r }
               } catch {
                 Write-Host "ERROR analyzing $($f.FullName): $($_.Exception.Message)" -ForegroundColor Red
@@ -74,7 +79,7 @@ jobs:
             $results = $allResults
           }
 
-          # Handle results (null/empty-safe) - INFORMATIONAL ONLY, DO NOT FAIL
+          # Handle results (null/empty-safe) - GATING: fail on any Error severity
           if ($null -ne $results -and $results.Count -gt 0) {
             $results | Format-Table -AutoSize
             Write-Host "`nPSScriptAnalyzer found $($results.Count) issue(s)" -ForegroundColor Yellow
@@ -86,16 +91,14 @@ jobs:
             Write-Host "Warnings: $($warnings.Count)" -ForegroundColor Yellow
 
             if ($errors.Count -gt 0) {
-              Write-Host "`nShowing first 10 errors (informational only):" -ForegroundColor Yellow
+              Write-Host "`nShowing errors:" -ForegroundColor Yellow
               $errors | Select-Object -First 10 | Format-Table RuleName, ScriptName, Line, Message -AutoSize
-              Write-Host "NOTE: PSScriptAnalyzer errors are informational and do not block the pipeline" -ForegroundColor Cyan
+              Write-Host "PSScriptAnalyzer found $($errors.Count) error(s). Failing the pipeline." -ForegroundColor Red
+              exit 1
             }
           } else {
             Write-Host "No issues found by PSScriptAnalyzer!" -ForegroundColor Green
           }
-
-          # Always exit success - PSScriptAnalyzer is informational only
-          exit 0
 
       - name: Upload Analysis Results
         if: always()
@@ -132,15 +135,13 @@ jobs:
           }
 
           if ($errors.Count -gt 0) {
-            Write-Host "`nFound $($errors.Count) syntax error(s) (informational):" -ForegroundColor Yellow
+            Write-Host "`nFound $($errors.Count) syntax error(s):" -ForegroundColor Yellow
             $errors | ForEach-Object { Write-Host "  $_" }
-            Write-Host "`nNOTE: Syntax errors are informational and do not block the pipeline" -ForegroundColor Cyan
+            Write-Host "`nSyntax validation found $($errors.Count) error(s). Failing the pipeline." -ForegroundColor Red
+            exit 1
           } else {
             Write-Host "`nAll scripts have valid PowerShell syntax!" -ForegroundColor Green
           }
-
-          # Always exit success - syntax check is informational
-          exit 0
 
   summary:
     name: Validation Summary
@@ -152,10 +153,7 @@ jobs:
       - name: Check job statuses
         run: |
           echo "=== Validation Summary ==="
-          echo "PSScriptAnalyzer: ${{ needs.analyze.result }} (informational only)"
-          echo "Syntax Check: ${{ needs.syntax-check.result }} (informational only)"
+          echo "PSScriptAnalyzer: ${{ needs.analyze.result }} (gating - fails on errors)"
+          echo "Syntax Check: ${{ needs.syntax-check.result }} (gating - fails on errors)"
           echo ""
           echo "✓ All validation jobs completed!"
-          echo ""
-          echo "NOTE: All checks are informational and do not block the pipeline."
-          echo "Check individual job logs for details on any issues found."
