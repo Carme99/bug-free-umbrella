@@ -142,9 +142,11 @@ Describe "WARP.md Documentation Validation" {
         }
 
         It "WhatIf parameter guidance should be valid PowerShell syntax" {
-            # Verify that -WhatIf is a valid common parameter
+            # Verify that -WhatIf is a valid common parameter (it is an optional common parameter)
             $commonParams = [System.Management.Automation.PSCmdlet]::CommonParameters
-            $commonParams | Should -Contain 'WhatIf'
+            $optionalCommonParams = [System.Management.Automation.PSCmdlet]::OptionalCommonParameters
+            $allCommon = @($commonParams) + @($optionalCommonParams)
+            $allCommon | Should -Contain 'WhatIf'
         }
     }
 

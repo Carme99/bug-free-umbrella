@@ -51,10 +51,10 @@
 START HERE → Main README → M365 Scripts Section
            ↓
     Choose your focus:
-    • Intune device management     → scripts/intune/
-    • Exchange mailboxes           → scripts/m365/exchange-online/
-    • Teams & SharePoint           → scripts/m365/teams/ or sharepoint-onedrive/
-    • Regional settings            → scripts/m365/ (7 new scripts!)
+    • Intune device management     → scripts/endpoints/intune/
+    • Exchange mailboxes           → scripts/collaboration/microsoft365/exchange-online/
+    • Teams & SharePoint           → scripts/collaboration/microsoft365/teams/ or scripts/collaboration/microsoft365/sharepoint-onedrive/
+    • Regional settings            → scripts/collaboration/microsoft365/ (7 new scripts!)
            ↓
     See examples → Script-Examples
            ↓
@@ -66,10 +66,10 @@ START HERE → Main README → M365 Scripts Section
 START HERE → Main README → Server Management Section
            ↓
     Choose your need:
-    • Health monitoring           → scripts/server/monitoring/
-    • Active Directory            → scripts/server/active-directory/
-    • Group Policy                → scripts/server/group-policy/
-    • Backup verification         → scripts/server/backup-recovery/
+    • Health monitoring           → scripts/infrastructure/windows/monitoring/
+    • Active Directory            → scripts/infrastructure/windows/active-directory/
+    • Group Policy                → scripts/infrastructure/windows/group-policy/
+    • Backup verification         → scripts/infrastructure/windows/backup-recovery/
            ↓
     See examples → Script-Examples
            ↓
@@ -81,11 +81,11 @@ START HERE → Main README → Server Management Section
 START HERE → Main README → Cloud & DevOps Section
            ↓
     Choose your platform:
-    • Azure DevOps / GitHub       → scripts/devops-cicd/
-    • Azure infrastructure        → scripts/cloud-infrastructure/azure/
-    • AWS infrastructure          → scripts/cloud-infrastructure/aws/
-    • Kubernetes / Docker         → scripts/container-management/
-    • Terraform / Bicep           → scripts/infrastructure-as-code/
+    • Azure DevOps / GitHub       → scripts/automation/cicd/
+    • Azure infrastructure        → scripts/cloud/azure/
+    • AWS infrastructure          → scripts/cloud/aws/
+    • Kubernetes / Docker         → scripts/cloud/containers/
+    • Terraform / Bicep           → scripts/automation/iac/
            ↓
     See examples → Script-Examples
            ↓
@@ -96,7 +96,7 @@ START HERE → Main README → Cloud & DevOps Section
 ```
 START HERE → Main README → Proactive Remediations
            ↓
-    scripts/device-management/proactive-remediations/
+    scripts/endpoints/devices/proactive-remediations/
            ↓
     Choose what to fix:
     • Low disk space              → Fix-DiskSpace/
@@ -113,7 +113,7 @@ START HERE → Main README → Proactive Remediations
 ```
 START HERE → Main README → Winget Updates Section
            ↓
-    scripts/device-management/winget-updates/
+    scripts/endpoints/devices/winget/
            ↓
     40+ app templates organized by category:
     • browsers/                   → Chrome, Firefox, Edge
@@ -156,7 +156,7 @@ START HERE → Main README → Winget Updates Section
 - Test-APIHealth.ps1 - Universal API endpoint testing
 
 #### Cloud Infrastructure (15+ scripts)
-**Location:** `scripts/cloud-infrastructure/`
+**Location:** `scripts/cloud/`
 
 **Azure** (`azure/`)
 - Get-AzureResourceHealth.ps1 - Multi-subscription monitoring
@@ -170,13 +170,13 @@ START HERE → Main README → Winget Updates Section
 - Get-AWSResourceInventory.ps1 - Multi-region inventory
 
 #### Container Management (3 scripts)
-**Location:** `scripts/container-management/`
+**Location:** `scripts/cloud/containers/`
 - Get-DockerHealthCheck.ps1 - Docker environment health
 - Get-KubernetesHealthCheck.ps1 - K8s cluster monitoring
 - Optimize-DockerCleanup.ps1 - Docker resource cleanup
 
 #### Infrastructure as Code (2 scripts)
-**Location:** `scripts/infrastructure-as-code/`
+**Location:** `scripts/automation/iac/`
 - Test-TerraformConfiguration.ps1 - Terraform validation & security
 - Test-BicepTemplates.ps1 - Azure Bicep validation
 
@@ -185,7 +185,7 @@ START HERE → Main README → Winget Updates Section
 ### 🔄 DevOps & Development (8 scripts)
 
 #### DevOps CI/CD (4 scripts)
-**Location:** `scripts/devops-cicd/`
+**Location:** `scripts/automation/cicd/`
 - Monitor-AzureDevOpsPipelines.ps1 - Azure DevOps monitoring
 - Monitor-GitHubActions.ps1 - GitHub Actions workflows
 - Monitor-GitLabCI.ps1 - GitLab CI/CD pipelines
@@ -203,7 +203,7 @@ START HERE → Main README → Winget Updates Section
 ### 💼 Microsoft 365 & Enterprise (45+ scripts)
 
 #### Microsoft 365 Cloud Services (19 scripts)
-**Location:** `scripts/m365/`
+**Location:** `scripts/collaboration/microsoft365/`
 
 **Exchange Online** (`exchange-online/`)
 - Get-MailboxHealth.ps1 - Mailbox health monitoring
@@ -235,7 +235,7 @@ START HERE → Main README → Winget Updates Section
 - Threat reporting and monitoring
 
 #### Intune Management (18+ scripts)
-**Location:** `scripts/intune/`
+**Location:** `scripts/endpoints/intune/`
 
 **Reporting** (`reporting/`)
 - Get-DeviceComplianceReport.ps1 - Compliance status
@@ -280,7 +280,7 @@ START HERE → Main README → Winget Updates Section
 ### 🖥️ Server & Infrastructure (40+ scripts)
 
 #### Server Management (30+ scripts)
-**Location:** `scripts/server/`
+**Location:** `scripts/infrastructure/windows/`
 
 **Active Directory** (`active-directory/`)
 - Get-ADUserAudit.ps1 - User account auditing
@@ -323,7 +323,7 @@ START HERE → Main README → Winget Updates Section
 ### 🖱️ Device Management (60+ scripts)
 
 #### Proactive Remediations (14 pairs = 28 scripts)
-**Location:** `scripts/device-management/proactive-remediations/`
+**Location:** `scripts/endpoints/devices/proactive-remediations/`
 
 Each has `detect.ps1` and `remediate.ps1`:
 - **Fix-DiskSpace** - Low disk space cleanup
@@ -342,7 +342,7 @@ Each has `detect.ps1` and `remediate.ps1`:
 - **language-pack-audit** - Language pack cleanup
 
 #### Winget Application Updates (40+ apps)
-**Location:** `scripts/device-management/winget-updates/`
+**Location:** `scripts/endpoints/devices/winget/`
 
 Organized by category:
 - `browsers/` - Chrome, Firefox, Edge
@@ -355,7 +355,7 @@ Organized by category:
 - `utilities/` - Various system utilities
 
 #### Other Device Management
-**Location:** `scripts/device-management/`
+**Location:** `scripts/endpoints/devices/`
 - `autopatch/` - Windows Update policy management (V1-V5)
 - `bitlocker-backup/` - BitLocker key backup scripts
 - `device-uptime/` - Uptime monitoring

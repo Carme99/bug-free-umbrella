@@ -27,7 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - [v3.4.0 (2026-01-09) 🌈 Rainbow - Documentation](#340---2026-01-09--rainbow---documentation--examples-enhancement)
   - [v3.3.0 (2026-01-08) 🌧️ Rainfall - M365 User Management](#330---2026-01-08-️-rainfall---m365-user-management-toolkit)
   - [v3.2.0 (2026-01-06) 🌧️ Sprinkle - M365 Apps](#320---2026-01-06-️-sprinkle---m365-apps-management)
-  - [v3.2.0 (2026-01-06) 🌧️ Monsoon - Device Health](#320---2026-01-06-️-monsoon---device-health--uptime-monitoring)
+  - [v3.2.1 (2026-01-06) 🌧️ Monsoon - Device Health](#321---2026-01-06-️-monsoon---device-health--uptime-monitoring)
   - [v3.1.0 (2026-01-05) 🌧️ Shower - Expanded Intune](#310---2026-01-05-️-shower---expanded-intune-operations)
   - [v3.0.3 (2026-01-04) ☔ Drizzle - Wiki Version Fix](#303---2026-01-04--drizzle---wiki-version-reference-fix)
   - [v3.0.2 (2026-01-03) ☔ Drizzle - Documentation Cleanup](#302---2026-01-03--drizzle---documentation-cleanup)
@@ -236,9 +236,8 @@ Changed \$ErrorActionPreference from 'Continue' to 'Stop' in 25 scripts:
 ### 🧪 Testing & Validation
 
 #### Security Validation
-- **Created security tests**: `tests/Security.Tests.ps1` for Pester-based security validation
-- **Helper functions module**: `scripts/.shared/WARP-HelperFunctions.psm1` with security utilities
-- **Comprehensive coverage**: Tests validate secure execution patterns and credential handling
+- **Security validation guidance**: Documented secure execution patterns and credential handling guidance for contributors in `WARP.md` and `AGENTS.md` (no standalone security test module or helper module is shipped)
+- **Comprehensive coverage**: Security reviews validate secure execution patterns and credential handling
 
 ### 🔄 Breaking Changes & Migration Notes
 
@@ -883,7 +882,7 @@ Features:
 
 _For complete details of this version, see the full sample we created._
 
-**📊 [Compare v3.2.0...v3.3.0](https://github.com/Carme99/bug-free-umbrella/compare/v3.2.0...v3.3.0)** | **📖 [Wiki: M365 Scripts](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Catalog#microsoft-365-cloud-services)**
+**📊 [Compare v3.2.1...v3.3.0](https://github.com/Carme99/bug-free-umbrella/compare/v3.2.1...v3.3.0)** | **📖 [Wiki: M365 Scripts](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Catalog#microsoft-365-cloud-services)**
 
 **Key Scripts Added:**
 - **Get-M365UserInfo.ps1** - Interactive user management toolkit
@@ -969,9 +968,9 @@ Test coverage:
 
 ---
 
-## [3.2.0] - 2026-01-06 🌧️ **"Monsoon"** - Device Health & Uptime Monitoring
+## [3.2.1] - 2026-01-06 🌧️ **"Monsoon"** - Device Health & Uptime Monitoring
 
-**📊 [Compare v3.1.0...v3.2.0](https://github.com/Carme99/bug-free-umbrella/compare/v3.1.0...v3.2.0)**
+**📊 [Compare v3.1.0...v3.2.1](https://github.com/Carme99/bug-free-umbrella/compare/v3.1.0...v3.2.1)**
 
 ### Added
 
@@ -1465,7 +1464,8 @@ Comprehensive documentation suite:
 | **3.5.0** | 2026-01-15 | 🌧️ Shower | Minor | AVD image builder enhancements |
 | **3.4.0** | 2026-01-09 | 🌈 Rainbow | Minor | Documentation & examples |
 | **3.3.0** | 2026-01-08 | 🌧️ Rainfall | Minor | M365 user management toolkit |
-| **3.2.0** | 2026-01-06 | 🌧️ Sprinkle/Monsoon | Minor | M365 apps & device health |
+| **3.2.1** | 2026-01-06 | 🌧️ Monsoon | Minor | Device health & uptime monitoring |
+| **3.2.0** | 2026-01-06 | 🌧️ Sprinkle | Minor | M365 apps management |
 | **3.1.0** | 2026-01-05 | 🌧️ Shower | Minor | Expanded Intune operations |
 | **3.0.3** | 2026-01-04 | ☔ Drizzle | Patch | Wiki version fix |
 | **3.0.2** | 2026-01-03 | ☔ Drizzle | Patch | Documentation cleanup |
