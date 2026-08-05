@@ -110,6 +110,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
 
 Write-Host "`n=== Microsoft 365 Language & Region Settings ===" -ForegroundColor Cyan
 Write-Host "Mode: $(if ($Apply) { 'APPLY SETTINGS' } else { 'AUDIT ONLY' })" -ForegroundColor $(if ($Apply) { 'Yellow' } else { 'Green' })
@@ -486,7 +490,7 @@ if ($nonCompliantCount -gt 0 -and -not $Apply) {
 
 # Export results
 if ($ExportHTML) {
-    $htmlPath = "$env:USERPROFILE\Desktop\LanguageSettings_$timestamp.html"
+    $htmlPath = (Join-Path $ReportDir "LanguageSettings_$timestamp.html")
 
     $html = @"
 <!DOCTYPE html>
@@ -550,13 +554,13 @@ if ($ExportHTML) {
 
         $html += @"
         <tr>
-            <td>$($result.DisplayName)</td>
-            <td>$($result.UserPrincipalName)</td>
-            <td>$($result.CurrentDisplayLanguage)</td>
-            <td>$($result.CurrentTimeZone)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.DisplayName)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.UserPrincipalName)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.CurrentDisplayLanguage)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.CurrentTimeZone)"))</td>
             <td><span class="$statusClass">$($result.Status)</span></td>
-            <td>$($result.Issues)</td>
-            $(if ($Apply) { "<td>$($result.ActionTaken)</td>" })
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Issues)"))</td>
+            $(if ($Apply) { "<td>$([System.Net.WebUtility]::HtmlEncode("$($result.ActionTaken)"))</td>" })
         </tr>
 "@
     }
@@ -572,7 +576,7 @@ if ($ExportHTML) {
 }
 
 if ($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\LanguageSettings_$timestamp.csv"
+    $csvPath = (Join-Path $ReportDir "LanguageSettings_$timestamp.csv")
     $results | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
 }

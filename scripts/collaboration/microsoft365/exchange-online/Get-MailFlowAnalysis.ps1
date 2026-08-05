@@ -29,7 +29,7 @@
     Output format: 'Console', 'HTML', 'CSV', or 'JSON'. Default: 'HTML'
 
 .PARAMETER OutputPath
-    Path for output files. Default: Desktop
+    Path for output files. Default: MyDocuments\Reports
 
 .EXAMPLE
     Connect-ExchangeOnline
@@ -70,10 +70,22 @@ param(
     [string]$OutputFormat = 'HTML',
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = [Environment]::GetFolderPath('Desktop')
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
 )
 
 $ErrorActionPreference = 'Stop'
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
+
 
 if (-not (Get-Module -ListAvailable -Name ExchangeOnlineManagement)) {
     Write-Error "ExchangeOnlineManagement module required. Install: Install-Module ExchangeOnlineManagement"
@@ -276,6 +288,8 @@ $results.Summary = @{
 }
 
 # Output results
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
 switch ($OutputFormat) {
     'Console' {
         Write-Host "`n=== Mail Flow Analysis Summary ===" -ForegroundColor Cyan
@@ -302,7 +316,7 @@ switch ($OutputFormat) {
     }
 
     'HTML' {
-        $htmlFile = Join-Path $OutputPath "Exchange-MailFlow-$(Get-Date -Format 'yyyyMMdd-HHmmss').html"
+        $htmlFile = Join-Path $OutputPath "Exchange-MailFlow-${RunTimestamp}_${RunId}.html"
 
         $html = @"
 <!DOCTYPE html>
@@ -377,7 +391,7 @@ switch ($OutputFormat) {
             foreach ($sender in $results.TopSenders) {
                 $html += @"
         <tr>
-            <td>$($sender.Sender)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($sender.Sender)"))</td>
             <td>$($sender.MessageCount)</td>
             <td>$($sender.PercentOfTotal)%</td>
         </tr>
@@ -400,10 +414,10 @@ switch ($OutputFormat) {
             foreach ($failure in $results.DeliveryFailures) {
                 $html += @"
         <tr>
-            <td>$($failure.FailureTime)</td>
-            <td>$($failure.Sender)</td>
-            <td>$($failure.Recipient)</td>
-            <td>$($failure.Subject)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($failure.FailureTime)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($failure.Sender)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($failure.Recipient)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($failure.Subject)"))</td>
         </tr>
 "@
             }
@@ -421,17 +435,16 @@ switch ($OutputFormat) {
 
         $html | Out-File -FilePath $htmlFile -Encoding UTF8
         Write-Host "`nHTML report saved to: $htmlFile" -ForegroundColor Green
-        Start-Process $htmlFile
     }
 
     'CSV' {
-        $csvFile = Join-Path $OutputPath "MailFlow-TopSenders-$(Get-Date -Format 'yyyyMMdd-HHmmss').csv"
+        $csvFile = Join-Path $OutputPath "MailFlow-TopSenders-${RunTimestamp}_${RunId}.csv"
         $results.TopSenders | Export-Csv -Path $csvFile -NoTypeInformation
         Write-Host "`nCSV report saved to: $csvFile" -ForegroundColor Green
     }
 
     'JSON' {
-        $jsonFile = Join-Path $OutputPath "MailFlow-Analysis-$(Get-Date -Format 'yyyyMMdd-HHmmss').json"
+        $jsonFile = Join-Path $OutputPath "MailFlow-Analysis-${RunTimestamp}_${RunId}.json"
         $results | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonFile
         Write-Host "`nJSON report saved to: $jsonFile" -ForegroundColor Green
     }

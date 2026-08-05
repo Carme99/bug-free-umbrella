@@ -29,7 +29,7 @@
     Output format: 'Console', 'HTML', 'CSV', or 'JSON'. Default: 'HTML'
 
 .PARAMETER OutputPath
-    Path for output files. Default: Desktop
+    Path for output files. Default: MyDocuments\Reports
 
 .EXAMPLE
     Connect-AzAccount
@@ -70,8 +70,20 @@ param(
     [string]$OutputFormat = 'HTML',
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = [Environment]::GetFolderPath('Desktop')
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
 )
+
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
 
 # Check for required module
 if (-not (Get-Module -ListAvailable -Name Microsoft.PowerApps.Administration.PowerShell)) {
@@ -244,6 +256,8 @@ $results.Summary = @{
 }
 
 # Output results
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
 switch ($OutputFormat) {
     'Console' {
         Write-Host "`n=== Power Platform Governance Summary ===" -ForegroundColor Cyan
@@ -262,7 +276,7 @@ switch ($OutputFormat) {
     }
 
     'HTML' {
-        $htmlFile = Join-Path $OutputPath "PowerPlatform-Governance-$(Get-Date -Format 'yyyyMMdd-HHmmss').html"
+        $htmlFile = Join-Path $OutputPath "PowerPlatform-Governance-${RunTimestamp}_${RunId}.html"
 
         $html = @"
 <!DOCTYPE html>
@@ -289,7 +303,7 @@ switch ($OutputFormat) {
 <body>
     <h1>Power Platform Governance Report</h1>
     <div class="summary">
-        <strong>Tenant ID:</strong> $TenantId<br>
+        <strong>Tenant ID:</strong> $([System.Net.WebUtility]::HtmlEncode("$TenantId"))<br>
         <strong>Generated:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
 
         <div class="summary-grid">
@@ -330,10 +344,10 @@ switch ($OutputFormat) {
         foreach ($env in $results.Environments) {
             $html += @"
         <tr>
-            <td>$($env.Name)</td>
-            <td>$($env.Type)</td>
-            <td>$($env.Location)</td>
-            <td>$($env.CreatedTime)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($env.Name)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($env.Type)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($env.Location)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($env.CreatedTime)"))</td>
             <td>$(if ($env.IsDefault) { 'Yes' } else { 'No' })</td>
         </tr>
 "@
@@ -355,10 +369,10 @@ switch ($OutputFormat) {
             foreach ($orphan in $results.OrphanedResources) {
                 $html += @"
         <tr>
-            <td class="orphaned">$($orphan.Type)</td>
-            <td>$($orphan.Name)</td>
-            <td>$($orphan.Environment)</td>
-            <td>$($orphan.Reason)</td>
+            <td class="orphaned">$([System.Net.WebUtility]::HtmlEncode("$($orphan.Type)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($orphan.Name)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($orphan.Environment)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($orphan.Reason)"))</td>
         </tr>
 "@
             }
@@ -376,17 +390,16 @@ switch ($OutputFormat) {
 
         $html | Out-File -FilePath $htmlFile -Encoding UTF8
         Write-Host "`nHTML report saved to: $htmlFile" -ForegroundColor Green
-        Start-Process $htmlFile
     }
 
     'CSV' {
-        $csvFile = Join-Path $OutputPath "PowerPlatform-Apps-$(Get-Date -Format 'yyyyMMdd-HHmmss').csv"
+        $csvFile = Join-Path $OutputPath "PowerPlatform-Apps-${RunTimestamp}_${RunId}.csv"
         $results.PowerApps | Export-Csv -Path $csvFile -NoTypeInformation
         Write-Host "`nCSV report saved to: $csvFile" -ForegroundColor Green
     }
 
     'JSON' {
-        $jsonFile = Join-Path $OutputPath "PowerPlatform-Governance-$(Get-Date -Format 'yyyyMMdd-HHmmss').json"
+        $jsonFile = Join-Path $OutputPath "PowerPlatform-Governance-${RunTimestamp}_${RunId}.json"
         $results | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonFile
         Write-Host "`nJSON report saved to: $jsonFile" -ForegroundColor Green
     }

@@ -26,7 +26,7 @@
     Output format: 'Console', 'HTML', 'CSV', or 'JSON'. Default: 'HTML'
 
 .PARAMETER OutputPath
-    Path for output files. Default: Desktop
+    Path for output files. Default: MyDocuments\Reports
 
 .EXAMPLE
     Connect-IPPSSession
@@ -63,10 +63,22 @@ param(
     [string]$OutputFormat = 'HTML',
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = [Environment]::GetFolderPath('Desktop')
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
 )
 
 $ErrorActionPreference = 'Stop'
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
+
 
 # Check for required module
 if (-not (Get-Module -ListAvailable -Name ExchangeOnlineManagement)) {
@@ -250,6 +262,8 @@ $results.Summary = @{
 }
 
 # Output results
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
 switch ($OutputFormat) {
     'Console' {
         Write-Host "`n=== Defender for Office 365 Threat Summary ===" -ForegroundColor Cyan
@@ -275,7 +289,7 @@ switch ($OutputFormat) {
     }
 
     'HTML' {
-        $htmlFile = Join-Path $OutputPath "Defender-O365-Threats-$(Get-Date -Format 'yyyyMMdd-HHmmss').html"
+        $htmlFile = Join-Path $OutputPath "Defender-O365-Threats-${RunTimestamp}_${RunId}.html"
 
         $html = @"
 <!DOCTYPE html>
@@ -351,9 +365,9 @@ switch ($OutputFormat) {
                 $riskClass = $user.RiskLevel.ToLower() + "-risk"
                 $html += @"
         <tr>
-            <td>$($user.UserEmail)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($user.UserEmail)"))</td>
             <td>$($user.ThreatCount)</td>
-            <td class="$riskClass">$($user.RiskLevel)</td>
+            <td class="$riskClass">$([System.Net.WebUtility]::HtmlEncode("$($user.RiskLevel)"))</td>
         </tr>
 "@
             }
@@ -372,7 +386,7 @@ switch ($OutputFormat) {
             foreach ($sender in $results.TopThreatSenders) {
                 $html += @"
         <tr>
-            <td>$($sender.SenderAddress)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($sender.SenderAddress)"))</td>
             <td>$($sender.ThreatCount)</td>
         </tr>
 "@
@@ -391,17 +405,16 @@ switch ($OutputFormat) {
 
         $html | Out-File -FilePath $htmlFile -Encoding UTF8
         Write-Host "`nHTML report saved to: $htmlFile" -ForegroundColor Green
-        Start-Process $htmlFile
     }
 
     'CSV' {
-        $csvFile = Join-Path $OutputPath "Defender-Threats-$(Get-Date -Format 'yyyyMMdd-HHmmss').csv"
+        $csvFile = Join-Path $OutputPath "Defender-Threats-${RunTimestamp}_${RunId}.csv"
         $results.ThreatDetections | Export-Csv -Path $csvFile -NoTypeInformation
         Write-Host "`nCSV report saved to: $csvFile" -ForegroundColor Green
     }
 
     'JSON' {
-        $jsonFile = Join-Path $OutputPath "Defender-Threats-$(Get-Date -Format 'yyyyMMdd-HHmmss').json"
+        $jsonFile = Join-Path $OutputPath "Defender-Threats-${RunTimestamp}_${RunId}.json"
         $results | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonFile
         Write-Host "`nJSON report saved to: $jsonFile" -ForegroundColor Green
     }

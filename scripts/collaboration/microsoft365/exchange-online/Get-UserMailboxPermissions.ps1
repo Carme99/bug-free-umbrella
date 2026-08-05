@@ -227,7 +227,11 @@ if ($ExportReport) {
 
     # Use safe filename
     $safeEmail = Get-SafeFileName $UserEmail
-    $reportPath = "$env:USERPROFILE\Desktop\MailboxPermissions_${safeEmail}_$timestamp.html"
+    $reportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+    if (-not (Test-Path -LiteralPath $reportDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $reportDir -Force | Out-Null
+    }
+    $reportPath = Join-Path $reportDir "MailboxPermissions_${safeEmail}_$timestamp.html"
 
     # Encode user data
     $safeDisplayName = ConvertTo-HtmlSafe $mailbox.DisplayName
@@ -282,7 +286,6 @@ if ($ExportReport) {
 
     $html | Out-File -FilePath $reportPath -Encoding UTF8
     Write-Host "`n[+] Report saved to: $reportPath" -ForegroundColor Green
-    Start-Process $reportPath
 }
 
 Write-Host "`n[+] Permission check completed!" -ForegroundColor Green

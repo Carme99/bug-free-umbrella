@@ -21,6 +21,7 @@
 .PARAMETER SingleEndpoint
     Single API endpoint URL to test (alternative to EndpointsFile)
 
+
 .PARAMETER Method
     HTTP method for single endpoint test. Default: GET
 
@@ -34,7 +35,7 @@
     Output format: 'Console', 'HTML', or 'JSON'. Default: 'HTML'
 
 .PARAMETER OutputPath
-    Path for HTML/JSON output file. Default: Desktop
+    Path for HTML/JSON output file. Default: MyDocuments\Reports
 
 .PARAMETER RunContinuous
     Run tests continuously with specified interval
@@ -99,7 +100,7 @@ param(
     [string]$OutputFormat = 'HTML',
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = [Environment]::GetFolderPath('Desktop'),
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'),
 
     [Parameter(Mandatory = $false)]
     [switch]$RunContinuous,
@@ -107,6 +108,18 @@ param(
     [Parameter(Mandatory = $false)]
     [int]$IntervalSeconds = 60
 )
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
+
 
 # Function to test a single endpoint
 function Test-Endpoint {
@@ -324,6 +337,8 @@ do {
     $testResults = Run-Tests
 
     # Output results
+    $RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+    $RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
     switch ($OutputFormat) {
         'Console' {
             Write-Host "`n=== API Health Test Summary ===" -ForegroundColor Cyan
@@ -334,7 +349,7 @@ do {
         }
 
         'HTML' {
-            $htmlFile = Join-Path $OutputPath "API-Health-Test-$(Get-Date -Format 'yyyyMMdd-HHmmss').html"
+            $htmlFile = Join-Path $OutputPath "API-Health-Test-${RunTimestamp}_${RunId}.html"
 
             $html = @"
 <!DOCTYPE html>
@@ -407,8 +422,8 @@ do {
 
                 $html += @"
         <tr>
-            <td>$($result.Name)</td>
-            <td>$($result.Url)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Name)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Url)"))</td>
             <td>$($result.StatusCode)</td>
             <td>$($result.ResponseTime)</td>
             <td>$(if ($result.Url -like 'https://*') { if ($result.SSLValid) { '✓' } else { '✗' } } else { 'N/A' })</td>
@@ -422,10 +437,10 @@ do {
             <td colspan="6">
 "@
                     if ($result.Errors.Count -gt 0) {
-                        $html += "<div class='errors'>Errors: $($result.Errors -join '; ')</div>"
+                        $html += "<div class='errors'>Errors: $([System.Net.WebUtility]::HtmlEncode('$($result.Errors -join '; ')'))</div>"
                     }
                     if ($result.Warnings.Count -gt 0) {
-                        $html += "<div class='warnings'>Warnings: $($result.Warnings -join '; ')</div>"
+                        $html += "<div class='warnings'>Warnings: $([System.Net.WebUtility]::HtmlEncode('$($result.Warnings -join '; ')'))</div>"
                     }
                     $html += @"
             </td>
@@ -446,13 +461,10 @@ do {
 
             $html | Out-File -FilePath $htmlFile -Encoding UTF8
             Write-Host "`nHTML report saved to: $htmlFile" -ForegroundColor Green
-            if (-not $RunContinuous) {
-                Start-Process $htmlFile
-            }
         }
 
         'JSON' {
-            $jsonFile = Join-Path $OutputPath "API-Health-Test-$(Get-Date -Format 'yyyyMMdd-HHmmss').json"
+            $jsonFile = Join-Path $OutputPath "API-Health-Test-${RunTimestamp}_${RunId}.json"
             $testResults | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonFile
             Write-Host "`nJSON report saved to: $jsonFile" -ForegroundColor Green
         }

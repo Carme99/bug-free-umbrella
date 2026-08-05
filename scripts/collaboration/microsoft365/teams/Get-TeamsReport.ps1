@@ -62,6 +62,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
 
 Write-Host "`n=== Microsoft Teams Usage Report ===" -ForegroundColor Cyan
 Write-Host "Timestamp: $(Get-Date)" -ForegroundColor Gray
@@ -217,7 +221,7 @@ $results | Sort-Object TotalUsers -Descending |
 
 # Export
 if ($ExportHTML) {
-    $htmlPath = "$env:USERPROFILE\Desktop\TeamsReport_$timestamp.html"
+    $htmlPath = (Join-Path $ReportDir "TeamsReport_$timestamp.html")
 
     $html = @"
 <!DOCTYPE html>
@@ -265,13 +269,13 @@ if ($ExportHTML) {
         $rowClass = if ($result.OwnerCount -eq 0) { "issue" } else { "" }
         $html += @"
         <tr class="$rowClass">
-            <td>$($result.TeamName)</td>
-            <td>$($result.Visibility)</td>
-            <td>$($result.Archived)</td>
-            <td>$($result.OwnerCount)</td>
-            <td>$($result.MemberCount)</td>
-            <td>$($result.GuestCount)</td>
-            <td>$($result.ChannelCount)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.TeamName)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Visibility)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Archived)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.OwnerCount)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.MemberCount)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.GuestCount)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.ChannelCount)"))</td>
         </tr>
 "@
     }
@@ -282,7 +286,7 @@ if ($ExportHTML) {
 }
 
 if ($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\TeamsReport_$timestamp.csv"
+    $csvPath = (Join-Path $ReportDir "TeamsReport_$timestamp.csv")
     $results | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
 }

@@ -28,7 +28,7 @@
     Output format: 'Console', 'HTML', or 'JSON'. Default: 'HTML'
 
 .PARAMETER OutputPath
-    Path for output files. Default: Desktop
+    Path for output files. Default: MyDocuments\Reports
 
 .EXAMPLE
     Connect-AzAccount
@@ -62,8 +62,19 @@ param(
     [string]$OutputFormat = 'HTML',
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = [Environment]::GetFolderPath('Desktop')
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
 )
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
 
 if (-not (Get-Module -ListAvailable -Name Az.Accounts)) {
     Write-Error "Az.Accounts module required. Install: Install-Module Az"
@@ -178,6 +189,8 @@ foreach ($sub in $subscriptions) {
 Write-Host "`nAnalysis complete!" -ForegroundColor Green
 
 # Output
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
 switch ($OutputFormat) {
     'Console' {
         Write-Host "`n=== Azure Resources Summary ===" -ForegroundColor Cyan
@@ -192,7 +205,7 @@ switch ($OutputFormat) {
     }
 
     'HTML' {
-        $htmlFile = Join-Path $OutputPath "Azure-Resources-$(Get-Date -Format 'yyyyMMdd-HHmmss').html"
+        $htmlFile = Join-Path $OutputPath "Azure-Resources-${RunTimestamp}_${RunId}.html"
         $html = @"
 <!DOCTYPE html>
 <html>
@@ -214,14 +227,14 @@ switch ($OutputFormat) {
         <tr><th>Subscription</th><th>Total Resources</th><th>VMs</th><th>Resource Groups</th></tr>
 "@
         foreach ($sub in $results.Subscriptions) {
-            $html += "<tr><td>$($sub.Name)</td><td>$($sub.TotalResources)</td><td>$($sub.VirtualMachines.Count)</td><td>$($sub.ResourceGroups.Count)</td></tr>"
+            $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($sub.Name)"))</td><td>$($sub.TotalResources)</td><td>$($sub.VirtualMachines.Count)</td><td>$($sub.ResourceGroups.Count)</td></tr>"
         }
         $html += "</table>"
 
         if ($results.OrphanedResources.Count -gt 0) {
             $html += "<h2>Orphaned Resources</h2><table><tr><th>Type</th><th>Name</th><th>Resource Group</th><th>Subscription</th></tr>"
             foreach ($orphan in $results.OrphanedResources) {
-                $html += "<tr><td>$($orphan.Type)</td><td>$($orphan.Name)</td><td>$($orphan.ResourceGroup)</td><td>$($orphan.Subscription)</td></tr>"
+                $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($orphan.Type)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($orphan.Name)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($orphan.ResourceGroup)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($orphan.Subscription)"))</td></tr>"
             }
             $html += "</table>"
         }
@@ -229,11 +242,10 @@ switch ($OutputFormat) {
         $html += "<p style='margin-top: 30px; text-align: center; color: #666; font-size: 12px;'><strong>Note:</strong> This report has not been thoroughly tested.</p></body></html>"
         $html | Out-File -FilePath $htmlFile -Encoding UTF8
         Write-Host "`nHTML saved to: $htmlFile" -ForegroundColor Green
-        Start-Process $htmlFile
     }
 
     'JSON' {
-        $jsonFile = Join-Path $OutputPath "Azure-Resources-$(Get-Date -Format 'yyyyMMdd-HHmmss').json"
+        $jsonFile = Join-Path $OutputPath "Azure-Resources-${RunTimestamp}_${RunId}.json"
         $results | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonFile
         Write-Host "`nJSON saved to: $jsonFile" -ForegroundColor Green
     }
