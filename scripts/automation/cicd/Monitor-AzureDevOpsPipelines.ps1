@@ -19,10 +19,6 @@
 .PARAMETER Project
     Project name to monitor. Use '*' for all projects.
 
-.PARAMETER PersonalAccessToken
-    Personal Access Token (PAT) with Build (Read) and Release (Read) permissions.
-    Can also be provided via environment variable AZURE_DEVOPS_PAT
-
 .PARAMETER DaysToAnalyze
     Number of days of history to analyze. Default: 7
 
@@ -30,7 +26,7 @@
     Output format: 'Console', 'HTML', 'CSV', or 'JSON'. Default: 'HTML'
 
 .PARAMETER OutputPath
-    Path for HTML/CSV/JSON output file. Default: Desktop
+    Path for HTML/CSV/JSON output file. Default: <MyDocuments>\Reports
 
 .PARAMETER IncludeAgentPools
     Include agent pool health and utilization analysis
@@ -39,11 +35,12 @@
     Include release pipeline monitoring
 
 .EXAMPLE
-    .\Monitor-AzureDevOpsPipelines.ps1 -Organization "mycompany" -Project "MyProject" -PersonalAccessToken "pat123"
+    # Supply the PAT via the AZURE_DEVOPS_PAT environment variable (never as a CLI argument)
+    .\Monitor-AzureDevOpsPipelines.ps1 -Organization "mycompany" -Project "MyProject"
 
 .EXAMPLE
-    $pat = $env:AZURE_DEVOPS_PAT
-    .\Monitor-AzureDevOpsPipelines.ps1 -Organization "mycompany" -Project "*" -PersonalAccessToken $pat -DaysToAnalyze 30 -IncludeReleases
+    $env:AZURE_DEVOPS_PAT = "your-pat-here"
+    .\Monitor-AzureDevOpsPipelines.ps1 -Organization "mycompany" -Project "*" -DaysToAnalyze 30 -IncludeReleases
 
 .NOTES
     Author: IT Operations
@@ -63,9 +60,6 @@ param(
     [string]$Project,
 
     [Parameter(Mandatory = $false)]
-    [string]$PersonalAccessToken = $env:AZURE_DEVOPS_PAT,
-
-    [Parameter(Mandatory = $false)]
     [int]$DaysToAnalyze = 7,
 
     [Parameter(Mandatory = $false)]
@@ -73,7 +67,7 @@ param(
     [string]$OutputFormat = 'HTML',
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = [Environment]::GetFolderPath('Desktop'),
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'),
 
     [Parameter(Mandatory = $false)]
     [switch]$IncludeAgentPools,
@@ -94,21 +88,72 @@ $results = @{
     Summary = @{}
 }
 
-# Validate PAT
+# Capture a single timestamp and run ID so all generated filenames are unique per run
+$RunTimestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$RunId = [guid]::NewGuid().ToString('N').Substring(0, 8)
+
+# Read the PAT ONLY from the environment. It is deliberately NOT accepted as a
+# CLI parameter, because a command-line argument would leak the secret via the
+# process list, shell history, and logs.
+$PersonalAccessToken = $env:AZURE_DEVOPS_PAT
 if ([string]::IsNullOrWhiteSpace($PersonalAccessToken)) {
-    Write-Error "Personal Access Token is required. Provide via -PersonalAccessToken or AZURE_DEVOPS_PAT environment variable"
+    Write-Error "Personal Access Token is required. Set the AZURE_DEVOPS_PAT environment variable before running this script, for example:
+    `$env:AZURE_DEVOPS_PAT = 'your-pat-here'
+    .\Monitor-AzureDevOpsPipelines.ps1 -Organization 'mycompany' -Project 'MyProject'
+Never pass the token as a command-line argument."
     exit 1
 }
 
-# Create authentication header
+# Azure DevOps PATs use HTTP Basic authentication (base64-encoded username:token).
+# This is the official, supported authentication scheme for Azure DevOps. The
+# credentials are only ever transmitted over HTTPS/TLS, which provides the
+# confidentiality of the bearer token in transit, so this is safe.
+$baseUrl = "https://dev.azure.com/$Organization"
+
+# Enforce TLS: the Basic auth header must never be sent over plain HTTP.
+if (-not $baseUrl.StartsWith('https://', [System.StringComparison]::OrdinalIgnoreCase)) {
+    Write-Error "AZURE_DEVOPS_PAT requires a secure connection. The DevOps base URL must use https:// (got '$baseUrl'). Refusing to transmit credentials over plain HTTP."
+    exit 1
+}
+
 $base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$PersonalAccessToken"))
 $headers = @{
     Authorization = "Basic $base64AuthInfo"
     'Content-Type' = 'application/json'
 }
 
-$baseUrl = "https://dev.azure.com/$Organization"
 $startDate = (Get-Date).AddDays(-$DaysToAnalyze).ToString('yyyy-MM-ddTHH:mm:ssZ')
+
+# HTML-encode any dynamic value before interpolating it into the report.
+# Prevents HTML/script injection via subscription, resource, or project names.
+function ConvertTo-HtmlEncoded {
+    param([AllowNull()][AllowEmptyString()][string]$Value)
+    if ($null -eq $Value) { return '' }
+    return [System.Net.WebUtility]::HtmlEncode($Value)
+}
+
+# Validate and normalize the output path: reject path traversal ('..') and
+# UNC (remote) paths on the user-supplied value FIRST (before any resolution
+# collapses or rewrites '..'), then resolve to a full path and ensure it exists.
+$rawOutputPath = $OutputPath
+$traversalSegments = ($rawOutputPath -split '[\\/]+') | Where-Object { $_ -eq '..' }
+if ($traversalSegments) {
+    Write-Error "Invalid output path: path traversal ('..') is not permitted. Got: $rawOutputPath"
+    exit 1
+}
+if ($rawOutputPath.StartsWith('\\', [System.StringComparison]::Ordinal) -or $rawOutputPath.StartsWith('//', [System.StringComparison]::Ordinal)) {
+    Write-Error "Invalid output path: UNC (remote) paths are not permitted. Got: $rawOutputPath"
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+    try {
+        New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+    } catch {
+        Write-Error "Failed to create output directory '$OutputPath': $($_.Exception.Message)"
+        exit 1
+    }
+}
 
 Write-Host "Analyzing Azure DevOps pipelines for $Organization/$Project (Last $DaysToAnalyze days)..." -ForegroundColor Cyan
 
@@ -301,7 +346,7 @@ switch ($OutputFormat) {
     }
 
     'HTML' {
-        $htmlFile = Join-Path $OutputPath "AzureDevOps-Pipeline-Health-$(Get-Date -Format 'yyyyMMdd-HHmmss').html"
+        $htmlFile = Join-Path $OutputPath "AzureDevOps-Pipeline-Health-${RunTimestamp}_${RunId}.html"
 
         $html = @"
 <!DOCTYPE html>
@@ -331,28 +376,28 @@ switch ($OutputFormat) {
 <body>
     <h1>Azure DevOps Pipeline Health Report</h1>
     <div class="summary">
-        <strong>Organization:</strong> $Organization | <strong>Analysis Period:</strong> Last $DaysToAnalyze days<br>
-        <strong>Generated:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+        <strong>Organization:</strong> $(ConvertTo-HtmlEncoded $Organization) | <strong>Analysis Period:</strong> Last $(ConvertTo-HtmlEncoded $DaysToAnalyze) days<br>
+        <strong>Generated:</strong> $(ConvertTo-HtmlEncoded $RunTimestamp)
 
         <div class="summary-grid">
             <div class="summary-item">
-                <div class="value">$totalPipelines</div>
+                <div class="value">$(ConvertTo-HtmlEncoded $totalPipelines)</div>
                 <div class="label">Total Pipelines</div>
             </div>
             <div class="summary-item">
-                <div class="value" style="color: #107c10;">$healthyPipelines</div>
+                <div class="value" style="color: #107c10;">$(ConvertTo-HtmlEncoded $healthyPipelines)</div>
                 <div class="label">Healthy (≥90%)</div>
             </div>
             <div class="summary-item">
-                <div class="value" style="color: #ff8c00;">$warningPipelines</div>
+                <div class="value" style="color: #ff8c00;">$(ConvertTo-HtmlEncoded $warningPipelines)</div>
                 <div class="label">Warning (70-89%)</div>
             </div>
             <div class="summary-item">
-                <div class="value" style="color: #d13438;">$criticalPipelines</div>
+                <div class="value" style="color: #d13438;">$(ConvertTo-HtmlEncoded $criticalPipelines)</div>
                 <div class="label">Critical (<70%)</div>
             </div>
             <div class="summary-item">
-                <div class="value">$avgSuccessRate%</div>
+                <div class="value">$(ConvertTo-HtmlEncoded $avgSuccessRate)%</div>
                 <div class="label">Avg Success Rate</div>
             </div>
         </div>
@@ -375,13 +420,13 @@ switch ($OutputFormat) {
             $statusClass = "status-$($pipeline.Status.ToLower())"
             $html += @"
         <tr>
-            <td>$($pipeline.Project)</td>
-            <td>$($pipeline.PipelineName)</td>
-            <td>$($pipeline.TotalRuns)</td>
-            <td>$($pipeline.SuccessRate)%</td>
-            <td>$($pipeline.FailedRuns)</td>
-            <td>$($pipeline.AverageDurationMinutes)</td>
-            <td class="$statusClass">$($pipeline.Status)</td>
+            <td>$(ConvertTo-HtmlEncoded $pipeline.Project)</td>
+            <td>$(ConvertTo-HtmlEncoded $pipeline.PipelineName)</td>
+            <td>$(ConvertTo-HtmlEncoded $pipeline.TotalRuns)</td>
+            <td>$(ConvertTo-HtmlEncoded $pipeline.SuccessRate)%</td>
+            <td>$(ConvertTo-HtmlEncoded $pipeline.FailedRuns)</td>
+            <td>$(ConvertTo-HtmlEncoded $pipeline.AverageDurationMinutes)</td>
+            <td class="$statusClass">$(ConvertTo-HtmlEncoded $pipeline.Status)</td>
         </tr>
 "@
         }
@@ -404,11 +449,11 @@ switch ($OutputFormat) {
                 $statusClass = "status-$($agent.HealthStatus.ToLower())"
                 $html += @"
         <tr>
-            <td>$($agent.PoolName)</td>
-            <td>$($agent.TotalAgents)</td>
-            <td>$($agent.OnlineAgents)</td>
-            <td>$($agent.OfflineAgents)</td>
-            <td class="$statusClass">$($agent.HealthStatus)</td>
+            <td>$(ConvertTo-HtmlEncoded $agent.PoolName)</td>
+            <td>$(ConvertTo-HtmlEncoded $agent.TotalAgents)</td>
+            <td>$(ConvertTo-HtmlEncoded $agent.OnlineAgents)</td>
+            <td>$(ConvertTo-HtmlEncoded $agent.OfflineAgents)</td>
+            <td class="$statusClass">$(ConvertTo-HtmlEncoded $agent.HealthStatus)</td>
         </tr>
 "@
             }
@@ -425,20 +470,19 @@ switch ($OutputFormat) {
 "@
 
         $html | Out-File -FilePath $htmlFile -Encoding UTF8
-        Write-Host "`nHTML report saved to: $htmlFile" -ForegroundColor Green
-        Start-Process $htmlFile
+        Write-Host "[+] Report saved: $htmlFile" -ForegroundColor Green
     }
 
     'CSV' {
-        $csvFile = Join-Path $OutputPath "AzureDevOps-Pipelines-$(Get-Date -Format 'yyyyMMdd-HHmmss').csv"
+        $csvFile = Join-Path $OutputPath "AzureDevOps-Pipelines-${RunTimestamp}_${RunId}.csv"
         $results.Pipelines | Export-Csv -Path $csvFile -NoTypeInformation
-        Write-Host "`nCSV report saved to: $csvFile" -ForegroundColor Green
+        Write-Host "[+] Report saved: $csvFile" -ForegroundColor Green
     }
 
     'JSON' {
-        $jsonFile = Join-Path $OutputPath "AzureDevOps-Pipelines-$(Get-Date -Format 'yyyyMMdd-HHmmss').json"
+        $jsonFile = Join-Path $OutputPath "AzureDevOps-Pipelines-${RunTimestamp}_${RunId}.json"
         $results | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonFile
-        Write-Host "`nJSON report saved to: $jsonFile" -ForegroundColor Green
+        Write-Host "[+] Report saved: $jsonFile" -ForegroundColor Green
     }
 }
 
