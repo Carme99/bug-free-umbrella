@@ -317,8 +317,21 @@ Write-Host "Health Score: $healthScore%" -ForegroundColor $(if ($healthScore -ge
 Write-Host ""
 
 # Export results
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+# Validate report directory: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report directory: $ReportDir. Report directory must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 if ($ExportHTML) {
-    $htmlPath = "$env:USERPROFILE\Desktop\SQLHealthCheck_$timestamp.html"
+    $htmlPath = Join-Path $ReportDir "SQLHealthCheck_$timestamp.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -373,7 +386,7 @@ if ($ExportHTML) {
 }
 
 if ($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\SQLHealthCheck_$timestamp.csv"
+    $csvPath = Join-Path $ReportDir "SQLHealthCheck_$timestamp.csv"
     $results | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
 }

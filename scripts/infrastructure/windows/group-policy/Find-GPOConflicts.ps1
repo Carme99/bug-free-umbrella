@@ -60,6 +60,17 @@ param(
     [Parameter(Mandatory = $false)]
     [switch]$CheckDuplicateSettings
 )
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
 
 #Requires -Module GroupPolicy
 #Requires -Module ActiveDirectory
@@ -315,8 +326,11 @@ try {
     # Combine all findings
     $allFindings = $issues + $warnings
 
+    $RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+    $RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
+
     # Export results to CSV
-    $csvPath = Join-Path -Path $OutputPath -ChildPath "GPOConflicts_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+    $csvPath = Join-Path -Path $OutputPath -ChildPath "GPOConflicts_${RunTimestamp}_${RunId}.csv"
     $allFindings | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "`nResults exported to: $csvPath" -ForegroundColor Green
 
@@ -414,9 +428,6 @@ try {
     Write-Host "  Medium Severity: $(($allFindings | Where-Object Severity -eq 'Medium').Count)" -ForegroundColor Yellow
     Write-Host "  Warnings: $(($allFindings | Where-Object Severity -eq 'Warning').Count)" -ForegroundColor Yellow
     Write-Host "  Low Priority: $(($allFindings | Where-Object Severity -eq 'Low').Count)" -ForegroundColor Cyan
-
-    # Open report
-    Start-Process $htmlPath
 
 }
 catch {

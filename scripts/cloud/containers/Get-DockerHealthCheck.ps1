@@ -238,7 +238,19 @@ if ($results.Containers.Count -gt 0) {
 
 # Export HTML
 if ($ExportHTML) {
-    $reportPath = "$env:USERPROFILE\Desktop\Docker_HealthCheck_${timestamp}.html"
+    $ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+    # Validate report directory: reject '..' traversal and UNC remote paths before resolution
+    if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+        $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+        $ReportDir -match '^(\\\\|//)') {
+        Write-Error "Unsafe report directory: $ReportDir. Report directory must be a local absolute path without '..' traversal."
+        exit 1
+    }
+    $ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+    if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+    }
+    $reportPath = Join-Path $ReportDir "Docker_HealthCheck_${timestamp}.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -262,8 +274,8 @@ if ($ExportHTML) {
     <h1>Docker Health Check Report</h1>
     <div class="summary">
         <strong>Generated:</strong> $(Get-Date)<br>
-        <strong>Computer:</strong> $($results.ComputerName)<br>
-        <strong>Docker Version:</strong> $($results.DockerVersion)<br>
+        <strong>Computer:</strong> $([System.Net.WebUtility]::HtmlEncode("$($results.ComputerName)"))<br>
+        <strong>Docker Version:</strong> $([System.Net.WebUtility]::HtmlEncode("$($results.DockerVersion)"))<br>
         <strong>Containers Running:</strong> $($results.SystemInfo.ContainersRunning)<br>
         <strong>Containers Stopped:</strong> $($results.SystemInfo.ContainersStopped)<br>
         <strong>Total Images:</strong> $($results.Images.Count)<br>
@@ -274,14 +286,14 @@ if ($ExportHTML) {
     if ($results.Issues.Count -gt 0) {
         $html += "<h2>Issues</h2>"
         foreach ($issue in $results.Issues) {
-            $html += "<div class='issue'>$issue</div>"
+            $html += "<div class='issue'>$([System.Net.WebUtility]::HtmlEncode("$issue"))</div>"
         }
     }
 
     $html += "<h2>Containers</h2><table><tr><th>Name</th><th>Image</th><th>State</th><th>CPU</th><th>Memory</th></tr>"
     foreach ($container in $results.Containers) {
         $stateClass = if ($container.State -eq "running") {"state-running"} else {"state-exited"}
-        $html += "<tr><td>$($container.Name)</td><td>$($container.Image)</td><td class='$stateClass'>$($container.State)</td><td>$($container.CPUPercent)</td><td>$($container.MemoryPercent)</td></tr>"
+        $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($container.Name)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($container.Image)"))</td><td class='$stateClass'>$([System.Net.WebUtility]::HtmlEncode("$($container.State)"))</td><td>$($container.CPUPercent)</td><td>$($container.MemoryPercent)</td></tr>"
     }
 
     $html += "</table></body></html>"

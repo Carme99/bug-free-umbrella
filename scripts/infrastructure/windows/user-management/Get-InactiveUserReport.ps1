@@ -86,6 +86,20 @@ $ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $cutoffDate = (Get-Date).AddDays(-$DaysInactive)
 
+# Reports directory (internal output location)
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+# Validate report directory: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report directory: $ReportDir. Report directory must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 Write-Host "`n=== Inactive User Account Report ===" -ForegroundColor Cyan
 Write-Host "Inactivity Threshold: $DaysInactive days (since $($cutoffDate.ToShortDateString()))" -ForegroundColor Yellow
 Write-Host "Domain: $env:USERDNSDOMAIN" -ForegroundColor Yellow
@@ -243,7 +257,7 @@ try {
 
     # Export results
     if ($ExportHTML) {
-        $htmlPath = "$env:USERPROFILE\Desktop\InactiveUsers_$timestamp.html"
+        $htmlPath = Join-Path $ReportDir "InactiveUsers_$timestamp.html"
 
         $html = @"
 <!DOCTYPE html>
@@ -291,14 +305,14 @@ try {
             $rowClass = if ($result.IsPrivileged) { "privileged" } elseif (-not $result.Enabled) { "disabled" } else { "" }
             $html += @"
         <tr class="$rowClass">
-            <td>$($result.SamAccountName)</td>
-            <td>$($result.Name)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.SamAccountName)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Name)"))</td>
             <td>$($result.Enabled)</td>
             <td>$($result.LastLogon)</td>
             <td>$($result.DaysSinceLogon)</td>
             <td>$($result.IsPrivileged)</td>
-            <td>$($result.PrivilegedGroups)</td>
-            <td>$($result.Description)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.PrivilegedGroups)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Description)"))</td>
         </tr>
 "@
         }
@@ -310,7 +324,7 @@ try {
     }
 
     if ($ExportCSV) {
-        $csvPath = "$env:USERPROFILE\Desktop\InactiveUsers_$timestamp.csv"
+        $csvPath = Join-Path $ReportDir "InactiveUsers_$timestamp.csv"
         $results | Export-Csv -Path $csvPath -NoTypeInformation
         Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
     }

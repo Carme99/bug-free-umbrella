@@ -16,7 +16,7 @@
     Export results to an HTML report on the desktop.
 
 .PARAMETER OutputPath
-    Custom output path for HTML report. Default: Desktop
+    Custom output path for HTML report. Default: MyDocuments\Reports
 
 .EXAMPLE
     .\Test-CISBenchmark.ps1
@@ -48,7 +48,7 @@ param(
     [switch]$ExportHTML,
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = [Environment]::GetFolderPath('Desktop')
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
 )
 
 # Helper function to parse secedit output

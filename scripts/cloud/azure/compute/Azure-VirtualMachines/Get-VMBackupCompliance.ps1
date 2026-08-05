@@ -29,7 +29,7 @@
     Output format: 'Console', 'HTML', or 'JSON'. Default: 'HTML'
 
 .PARAMETER OutputPath
-    Path for output files. Default: Desktop
+    Path for output files. Default: MyDocuments\Reports
 
 .EXAMPLE
     Connect-AzAccount
@@ -69,8 +69,19 @@ param(
     [string]$OutputFormat = 'HTML',
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = [Environment]::GetFolderPath('Desktop')
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
 )
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
 
 if (-not (Get-Module -ListAvailable -Name Az.RecoveryServices)) {
     Write-Error "Az.RecoveryServices module required. Install: Install-Module Az"
@@ -278,6 +289,10 @@ $results.Summary = @{
     BackupJobsAnalyzed = $results.BackupJobs.Count
 }
 
+# Run-scoped stamp to avoid filename collisions on rapid re-runs
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
+
 # Output
 switch ($OutputFormat) {
     'Console' {
@@ -303,7 +318,7 @@ switch ($OutputFormat) {
     }
 
     'HTML' {
-        $htmlFile = Join-Path $OutputPath "Azure-VM-Backup-Compliance-$(Get-Date -Format 'yyyyMMdd-HHmmss').html"
+        $htmlFile = Join-Path $OutputPath "Azure-VM-Backup-Compliance-${RunTimestamp}_${RunId}.html"
 
         $html = @"
 <!DOCTYPE html>
@@ -367,12 +382,12 @@ switch ($OutputFormat) {
 
             $html += @"
         <tr class="$rowClass">
-            <td>$($vm.VMName)</td>
-            <td>$($vm.ResourceGroup)</td>
-            <td>$($vm.VaultName)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($vm.VMName)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($vm.ResourceGroup)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($vm.VaultName)"))</td>
             <td>$($vm.LastBackupTime)</td>
             <td>$($vm.BackupAge)</td>
-            <td>$($vm.ComplianceStatus)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($vm.ComplianceStatus)"))</td>
         </tr>
 "@
         }
@@ -380,11 +395,10 @@ switch ($OutputFormat) {
         $html += "</table><p style='margin-top: 30px; text-align: center; color: #666; font-size: 12px;'><strong>Note:</strong> This report has not been thoroughly tested.</p></body></html>"
         $html | Out-File -FilePath $htmlFile -Encoding UTF8
         Write-Host "`nHTML saved to: $htmlFile" -ForegroundColor Green
-        Start-Process $htmlFile
     }
 
     'JSON' {
-        $jsonFile = Join-Path $OutputPath "Azure-VM-Backup-Compliance-$(Get-Date -Format 'yyyyMMdd-HHmmss').json"
+        $jsonFile = Join-Path $OutputPath "Azure-VM-Backup-Compliance-${RunTimestamp}_${RunId}.json"
         $results | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonFile
         Write-Host "`nJSON saved to: $jsonFile" -ForegroundColor Green
     }

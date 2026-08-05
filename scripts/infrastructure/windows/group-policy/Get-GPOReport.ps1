@@ -39,7 +39,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = "$env:TEMP\GPOReports_$(Get-Date -Format 'yyyyMMdd_HHmmss')",
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'),
 
     [Parameter(Mandatory = $false)]
     [ValidateSet('HTML', 'XML', 'Both')]
@@ -54,6 +54,17 @@ param(
     [Parameter(Mandatory = $false)]
     [switch]$ExportToCSV
 )
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
 
 # Requires GroupPolicy module
 #Requires -Module GroupPolicy
@@ -69,6 +80,9 @@ if (-not (Test-Path -Path $OutputPath)) {
         exit 1
     }
 }
+
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
 
 Write-Host "`n=== Group Policy Object Report Generator ===" -ForegroundColor Cyan
 Write-Host "Start Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Gray
@@ -182,7 +196,7 @@ try {
     # Export CSV summary
     if ($ExportToCSV) {
         Write-Host "`nExporting CSV summary..." -ForegroundColor Yellow
-        $csvPath = Join-Path -Path $OutputPath -ChildPath "GPO_Summary_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+        $csvPath = Join-Path -Path $OutputPath -ChildPath "GPO_Summary_${RunTimestamp}_${RunId}.csv"
         $gpoSummary | Export-Csv -Path $csvPath -NoTypeInformation
         Write-Host "CSV exported to: $csvPath" -ForegroundColor Green
     }
@@ -195,7 +209,7 @@ try {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Group Policy Report - $domainName</title>
+    <title>Group Policy Report - $([System.Net.WebUtility]::HtmlEncode("$domainName"))</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
         h1 { color: #0066cc; }
@@ -214,7 +228,7 @@ try {
 <body>
     <h1>Group Policy Object Report</h1>
     <div class="info">
-        <strong>Domain:</strong> $domainName<br>
+        <strong>Domain:</strong> $([System.Net.WebUtility]::HtmlEncode("$domainName"))<br>
         <strong>Report Generated:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')<br>
         <strong>Total GPOs:</strong> $totalGPOs
     </div>
@@ -247,8 +261,8 @@ try {
 
         $html += @"
         <tr>
-            <td>$($gpo.Name)</td>
-            <td class="$statusClass">$statusText</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($gpo.Name)"))</td>
+            <td class="$statusClass">$([System.Net.WebUtility]::HtmlEncode("$statusText"))</td>
             <td>$($gpo.LinkCount)</td>
             <td>$($gpo.Modified.ToString('yyyy-MM-dd HH:mm'))</td>
             <td>
@@ -274,7 +288,7 @@ try {
     if ($unlinkedGPOs.Count -gt 0) {
         $html += "<h3>Unlinked GPOs ($($unlinkedGPOs.Count))</h3><ul>"
         foreach ($gpo in $unlinkedGPOs | Sort-Object DisplayName) {
-            $html += "<li>$($gpo.DisplayName)</li>"
+            $html += "<li>$([System.Net.WebUtility]::HtmlEncode("$($gpo.DisplayName)"))</li>"
         }
         $html += "</ul>"
     }
@@ -282,7 +296,7 @@ try {
     if ($emptyGPOs.Count -gt 0) {
         $html += "<h3>Empty GPOs ($($emptyGPOs.Count))</h3><ul>"
         foreach ($gpo in $emptyGPOs | Sort-Object DisplayName) {
-            $html += "<li>$($gpo.DisplayName)</li>"
+            $html += "<li>$([System.Net.WebUtility]::HtmlEncode("$($gpo.DisplayName)"))</li>"
         }
         $html += "</ul>"
     }
@@ -290,7 +304,7 @@ try {
     if ($disabledGPOs.Count -gt 0) {
         $html += "<h3>Disabled GPOs ($($disabledGPOs.Count))</h3><ul>"
         foreach ($gpo in $disabledGPOs | Sort-Object DisplayName) {
-            $html += "<li>$($gpo.DisplayName) - $($gpo.GpoStatus)</li>"
+            $html += "<li>$([System.Net.WebUtility]::HtmlEncode("$($gpo.DisplayName) - $($gpo.GpoStatus)"))</li>"
         }
         $html += "</ul>"
     }
@@ -315,9 +329,6 @@ try {
     if ($emptyGPOs.Count -gt 0) {
         Write-Host "WARNING: $($emptyGPOs.Count) empty GPOs found. Consider removing these to reduce clutter." -ForegroundColor Yellow
     }
-
-    # Open index file
-    Start-Process $indexPath
 
 }
 catch {
