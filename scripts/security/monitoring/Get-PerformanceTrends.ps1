@@ -45,7 +45,7 @@ param(
     [int]$SampleInterval = 30,
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = "$env:TEMP\PerformanceTrends_$(Get-Date -Format 'yyyyMMdd_HHmmss')",
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'),
 
     [Parameter(Mandatory = $false)]
     [switch]$MonitorProcesses,
@@ -58,6 +58,18 @@ param(
     }
 )
 
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
+
 Write-Host "`n=== Performance Trend Monitor ===" -ForegroundColor Cyan
 Write-Host "Computer: $env:COMPUTERNAME" -ForegroundColor Gray
 Write-Host "Duration: $DurationMinutes minutes" -ForegroundColor Cyan
@@ -65,7 +77,7 @@ Write-Host "Sample Interval: $SampleInterval seconds" -ForegroundColor Cyan
 Write-Host "Start Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Gray
 
 # Create output directory
-if (-not (Test-Path -Path $OutputPath)) {
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
     New-Item -Path $OutputPath -ItemType Directory -Force | Out-Null
 }
 
@@ -215,31 +227,31 @@ try {
     # Export data
     Write-Host "`nExporting data..." -ForegroundColor Yellow
 
-    $csvPath = Join-Path -Path $OutputPath -ChildPath "PerformanceData.csv"
+    $csvPath = Join-Path -Path $OutputPath -ChildPath "PerformanceData_${RunTimestamp}_${RunId}.csv"
     $performanceData | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "Performance data exported to: $csvPath" -ForegroundColor Green
 
     if ($alerts.Count -gt 0) {
-        $alertsPath = Join-Path -Path $OutputPath -ChildPath "Alerts.csv"
+        $alertsPath = Join-Path -Path $OutputPath -ChildPath "Alerts_${RunTimestamp}_${RunId}.csv"
         $alerts | Export-Csv -Path $alertsPath -NoTypeInformation
         Write-Host "Alerts exported to: $alertsPath" -ForegroundColor Green
     }
 
     if ($MonitorProcesses -and $processData.Count -gt 0) {
-        $processPath = Join-Path -Path $OutputPath -ChildPath "ProcessData.csv"
+        $processPath = Join-Path -Path $OutputPath -ChildPath "ProcessData_${RunTimestamp}_${RunId}.csv"
         $processData | Export-Csv -Path $processPath -NoTypeInformation
         Write-Host "Process data exported to: $processPath" -ForegroundColor Green
     }
 
     # Generate HTML report
     Write-Host "`nGenerating HTML report..." -ForegroundColor Yellow
-    $htmlPath = Join-Path -Path $OutputPath -ChildPath "PerformanceTrendReport.html"
+    $htmlPath = Join-Path -Path $OutputPath -ChildPath "PerformanceTrendReport_${RunTimestamp}_${RunId}.html"
 
     $alertsHtml = ""
     if ($alerts.Count -gt 0) {
         $alertsHtml = "<h2>Alerts ($($alerts.Count))</h2><table><tr><th>Time</th><th>Type</th><th>Value</th><th>Threshold</th></tr>"
         foreach ($alert in $alerts) {
-            $alertsHtml += "<tr class='warning'><td>$($alert.Timestamp.ToString('HH:mm:ss'))</td><td>$($alert.Type)</td><td>$($alert.Value)%</td><td>$($alert.Threshold)%</td></tr>"
+            $alertsHtml += "<tr class='warning'><td>$([System.Net.WebUtility]::HtmlEncode("$($alert.Timestamp.ToString('HH:mm:ss'))"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($alert.Type)"))</td><td>$($alert.Value)%</td><td>$($alert.Threshold)%</td></tr>"
         }
         $alertsHtml += "</table>"
     }
@@ -267,10 +279,10 @@ try {
 <body>
     <h1>Performance Trend Report</h1>
     <div class="info">
-        <strong>Computer:</strong> $env:COMPUTERNAME<br>
+        <strong>Computer:</strong> $([System.Net.WebUtility]::HtmlEncode("$env:COMPUTERNAME"))<br>
         <strong>Monitoring Duration:</strong> $DurationMinutes minutes<br>
         <strong>Samples Collected:</strong> $currentSample<br>
-        <strong>Report Generated:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+        <strong>Report Generated:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | <strong>Run ID:</strong> $RunId
     </div>
 
     <h2>Performance Statistics</h2>
@@ -355,15 +367,15 @@ try {
 
     <h2>Data Files</h2>
     <ul>
-        <li><a href="PerformanceData.csv">Performance Data (CSV)</a></li>
+        <li><a href="PerformanceData_${RunTimestamp}_${RunId}.csv">Performance Data (CSV)</a></li>
 "@
 
     if ($alerts.Count -gt 0) {
-        $html += "<li><a href='Alerts.csv'>Alert Log (CSV)</a></li>"
+        $html += "<li><a href='Alerts_${RunTimestamp}_${RunId}.csv'>Alert Log (CSV)</a></li>"
     }
 
     if ($MonitorProcesses) {
-        $html += "<li><a href='ProcessData.csv'>Process Data (CSV)</a></li>"
+        $html += "<li><a href='ProcessData_${RunTimestamp}_${RunId}.csv'>Process Data (CSV)</a></li>"
     }
 
     $html += @"
@@ -374,9 +386,6 @@ try {
 
     $html | Out-File -FilePath $htmlPath -Encoding UTF8
     Write-Host "HTML report saved to: $htmlPath" -ForegroundColor Green
-
-    # Open report
-    Start-Process $htmlPath
 
 }
 catch {

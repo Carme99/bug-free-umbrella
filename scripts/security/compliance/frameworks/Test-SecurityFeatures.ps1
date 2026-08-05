@@ -351,16 +351,30 @@ if ($ShowRecommendations -or $DisabledFeatures -gt 0) {
 
 # Export reports if requested
 if ($ExportReport) {
-    $ReportPath = [Environment]::GetFolderPath('Desktop')
+    $ReportPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
+    # Validate report directory: reject '..' traversal and UNC remote paths before resolution
+    if ([string]::IsNullOrWhiteSpace($ReportPath) -or
+        $ReportPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+        $ReportPath -match '^(\\\\|//)') {
+        Write-Error "Unsafe report directory: $ReportPath. Report directory must be a local absolute path without '..' traversal."
+        exit 1
+    }
+    $ReportPath = [System.IO.Path]::GetFullPath($ReportPath)
+    if (-not (Test-Path -LiteralPath $ReportPath -PathType Container)) {
+        New-Item -ItemType Directory -Path $ReportPath -Force | Out-Null
+    }
+
     $Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    $RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
+    $TimestampRunId = "${Timestamp}_${RunId}"
 
     # CSV Export
-    $CSVPath = Join-Path $ReportPath "SecurityFeatures_$Timestamp.csv"
+    $CSVPath = Join-Path $ReportPath "SecurityFeatures_${TimestampRunId}.csv"
     $Results | Export-Csv -Path $CSVPath -NoTypeInformation
     Write-Host "`nCSV Report: $CSVPath" -ForegroundColor Green
 
     # HTML Export
-    $HTMLPath = Join-Path $ReportPath "SecurityFeatures_$Timestamp.html"
+    $HTMLPath = Join-Path $ReportPath "SecurityFeatures_${TimestampRunId}.html"
     $HTML = @"
 <!DOCTYPE html>
 <html>
@@ -387,8 +401,8 @@ if ($ExportReport) {
 </head>
 <body>
     <h1>Security Features Assessment Report</h1>
-    <p><strong>Generated:</strong> $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")</p>
-    <p><strong>Computer:</strong> $env:COMPUTERNAME</p>
+    <p><strong>Generated:</strong> $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") | <strong>Run ID:</strong> $RunId</p>
+    <p><strong>Computer:</strong> $([System.Net.WebUtility]::HtmlEncode("$env:COMPUTERNAME"))</p>
 
     <div class="summary">
         <div class="summary-item"><strong>Total Features:</strong> $TotalFeatures</div>
@@ -419,10 +433,10 @@ if ($ExportReport) {
 
         $HTML += @"
         <tr>
-            <td><strong>$($Result.Feature)</strong></td>
-            <td class="$StatusClass">$($Result.Status)</td>
-            <td>$($Result.Details)</td>
-            <td>$($Result.Recommendation)</td>
+            <td><strong>$([System.Net.WebUtility]::HtmlEncode("$($Result.Feature)"))</strong></td>
+            <td class="$StatusClass">$([System.Net.WebUtility]::HtmlEncode("$($Result.Status)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($Result.Details)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($Result.Recommendation)"))</td>
         </tr>
 "@
     }

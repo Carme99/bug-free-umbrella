@@ -40,7 +40,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = "$env:TEMP\ServiceAccountAudit_$(Get-Date -Format 'yyyyMMdd_HHmmss')",
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'),
 
     [Parameter(Mandatory = $false)]
     [switch]$IncludeSPNAnalysis,
@@ -54,11 +54,23 @@ param(
 
 #Requires -Module ActiveDirectory
 
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
+
 Write-Host "`n=== Service Account Audit ===" -ForegroundColor Cyan
 Write-Host "Start Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Gray
 
 # Create output directory
-if (-not (Test-Path -Path $OutputPath)) {
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
     New-Item -Path $OutputPath -ItemType Directory -Force | Out-Null
 }
 
@@ -304,16 +316,16 @@ try {
 
         foreach ($category in $auditResults.Keys) {
             if ($auditResults[$category].Count -gt 0) {
-                $csvPath = Join-Path -Path $OutputPath -ChildPath "$category.csv"
+                $csvPath = Join-Path -Path $OutputPath -ChildPath "${category}_${RunTimestamp}_${RunId}.csv"
                 $auditResults[$category] | Export-Csv -Path $csvPath -NoTypeInformation
-                Write-Host "  Exported: $category.csv" -ForegroundColor Green
+                Write-Host "  Exported: ${category}_${RunTimestamp}_${RunId}.csv" -ForegroundColor Green
             }
         }
     }
 
     # Generate HTML report
     Write-Host "`nGenerating HTML report..." -ForegroundColor Yellow
-    $htmlPath = Join-Path -Path $OutputPath -ChildPath "ServiceAccountAuditReport.html"
+    $htmlPath = Join-Path -Path $OutputPath -ChildPath "ServiceAccountAuditReport_${RunTimestamp}_${RunId}.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -337,8 +349,8 @@ try {
 <body>
     <h1>Service Account Audit Report</h1>
     <div class="info">
-        <strong>Domain:</strong> $domainName<br>
-        <strong>Report Date:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')<br>
+        <strong>Domain:</strong> $([System.Net.WebUtility]::HtmlEncode("$domainName"))<br>
+        <strong>Report Date:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | <strong>Run ID:</strong> $RunId<br>
         <strong>Total Service Accounts:</strong> $($auditResults.StandardServiceAccounts.Count)
     </div>
 
@@ -358,7 +370,7 @@ try {
         $html += "<h2>Privileged Service Accounts (HIGH RISK)</h2><table><tr><th>Account</th><th>Display Name</th><th>Privileged Groups</th><th>Enabled</th><th>Issues</th></tr>"
         foreach ($account in $auditResults.PrivilegedServiceAccounts) {
             $rowClass = if ($account.Enabled) { "critical" } else { "warning" }
-            $html += "<tr class='$rowClass'><td>$($account.SamAccountName)</td><td>$($account.DisplayName)</td><td>$($account.PrivilegedGroups)</td><td>$($account.Enabled)</td><td>$($account.Issues)</td></tr>"
+            $html += "<tr class='$rowClass'><td>$([System.Net.WebUtility]::HtmlEncode("$($account.SamAccountName)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($account.DisplayName)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($account.PrivilegedGroups)"))</td><td>$($account.Enabled)</td><td>$([System.Net.WebUtility]::HtmlEncode("$($account.Issues)"))</td></tr>"
         }
         $html += "</table>"
     }
@@ -367,7 +379,7 @@ try {
     if ($auditResults.SecurityIssues.Count -gt 0) {
         $html += "<h2>Service Accounts with Security Issues</h2><table><tr><th>Account</th><th>Description</th><th>Password Age</th><th>Issues</th></tr>"
         foreach ($account in ($auditResults.SecurityIssues | Select-Object -First 50)) {
-            $html += "<tr class='warning'><td>$($account.SamAccountName)</td><td>$($account.Description)</td><td>$($account.PasswordAge) days</td><td>$($account.Issues)</td></tr>"
+            $html += "<tr class='warning'><td>$([System.Net.WebUtility]::HtmlEncode("$($account.SamAccountName)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($account.Description)"))</td><td>$($account.PasswordAge) days</td><td>$([System.Net.WebUtility]::HtmlEncode("$($account.Issues)"))</td></tr>"
         }
         $html += "</table>"
     }
@@ -376,7 +388,7 @@ try {
     if ($auditResults.GroupManagedServiceAccounts.Count -gt 0) {
         $html += "<h2>Group Managed Service Accounts (Recommended)</h2><table><tr><th>Name</th><th>Enabled</th><th>Created</th><th>SPNs</th></tr>"
         foreach ($gmsa in $auditResults.GroupManagedServiceAccounts) {
-            $html += "<tr><td>$($gmsa.Name)</td><td>$($gmsa.Enabled)</td><td>$($gmsa.Created)</td><td>$($gmsa.SPNs)</td></tr>"
+            $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($gmsa.Name)"))</td><td>$($gmsa.Enabled)</td><td>$([System.Net.WebUtility]::HtmlEncode("$($gmsa.Created)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($gmsa.SPNs)"))</td></tr>"
         }
         $html += "</table>"
     }
@@ -398,9 +410,6 @@ try {
 
     $html | Out-File -FilePath $htmlPath -Encoding UTF8
     Write-Host "HTML report saved to: $htmlPath" -ForegroundColor Green
-
-    # Open report
-    Start-Process $htmlPath
 
 }
 catch {

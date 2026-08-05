@@ -31,7 +31,7 @@
     Output format: 'Console', 'HTML', or 'JSON'. Default: 'HTML'
 
 .PARAMETER OutputPath
-    Path for HTML/JSON output file. Default: Desktop
+    Path for HTML/JSON output file. Default: MyDocuments\Reports
 
 .EXAMPLE
     .\Test-BicepTemplates.ps1 -TemplatePath ".\main.bicep"
@@ -73,8 +73,23 @@ param(
     [string]$OutputFormat = 'HTML',
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = [Environment]::GetFolderPath('Desktop')
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
 )
+
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
+
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
 
 $results = @{
     Timestamp = Get-Date
@@ -208,7 +223,7 @@ switch ($OutputFormat) {
     }
 
     'HTML' {
-        $htmlFile = Join-Path $OutputPath "Bicep-Validation-$(Get-Date -Format 'yyyyMMdd-HHmmss').html"
+        $htmlFile = Join-Path $OutputPath "Bicep-Validation-${RunTimestamp}_${RunId}.html"
         $html = @"
 <!DOCTYPE html>
 <html>
@@ -227,7 +242,7 @@ switch ($OutputFormat) {
 </head>
 <body>
     <h1>Bicep Template Validation Report</h1>
-    <p><strong>Generated:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')</p>
+    <p><strong>Generated:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | <strong>Run ID:</strong> $RunId</p>
     <h2>Summary</h2>
     <p>Total Templates: $($templates.Count) | Passed: $passedValidation | Failed: $failedValidation</p>
     <p>Security Issues: $totalSecurityIssues | Best Practice Issues: $totalBestPracticeIssues</p>
@@ -238,7 +253,7 @@ switch ($OutputFormat) {
         foreach ($result in $results.ValidationResults) {
             $statusClass = if ($result.SyntaxValid) { 'pass' } else { 'fail' }
             $issues = ($result.SecurityIssues + $result.BestPracticeIssues + $result.Warnings) -join '<br>'
-            $html += "<tr><td>$($result.FileName)</td><td class='$statusClass'>$($result.SyntaxValid)</td><td>$issues</td></tr>"
+            $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($result.FileName)"))</td><td class='$statusClass'>$($result.SyntaxValid)</td><td>$([System.Net.WebUtility]::HtmlEncode("$issues"))</td></tr>"
         }
         $html += @"
     </table>
@@ -250,11 +265,10 @@ switch ($OutputFormat) {
 "@
         $html | Out-File -FilePath $htmlFile -Encoding UTF8
         Write-Host "`nHTML report saved to: $htmlFile" -ForegroundColor Green
-        Start-Process $htmlFile
     }
 
     'JSON' {
-        $jsonFile = Join-Path $OutputPath "Bicep-Validation-$(Get-Date -Format 'yyyyMMdd-HHmmss').json"
+        $jsonFile = Join-Path $OutputPath "Bicep-Validation-${RunTimestamp}_${RunId}.json"
         $results | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonFile
         Write-Host "`nJSON saved to: $jsonFile" -ForegroundColor Green
     }

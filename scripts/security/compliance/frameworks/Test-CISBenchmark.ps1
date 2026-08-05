@@ -51,6 +51,21 @@ param(
     [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
 )
 
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
+
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
+
 # Helper function to parse secedit output
 function Get-SecurityPolicy {
     [CmdletBinding()]
@@ -365,7 +380,7 @@ Write-Host "==================================================================`n
 
 # Export HTML report if requested
 if ($ExportHTML) {
-    $htmlFile = Join-Path $OutputPath "CIS-Benchmark-Report_Level$($Level)_$(Get-Date -Format 'yyyyMMdd-HHmmss').html"
+    $htmlFile = Join-Path $OutputPath "CIS-Benchmark-Report_Level$($Level)_${RunTimestamp}_${RunId}.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -395,9 +410,9 @@ if ($ExportHTML) {
     <div class="container">
         <h1>CIS Microsoft Windows Server Benchmark Report</h1>
         <div class="summary">
-            <strong>System:</strong> $env:COMPUTERNAME<br>
-            <strong>Level:</strong> $Level<br>
-            <strong>Generated:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+            <strong>System:</strong> $([System.Net.WebUtility]::HtmlEncode("$env:COMPUTERNAME"))<br>
+            <strong>Level:</strong> $([System.Net.WebUtility]::HtmlEncode("$Level"))<br>
+            <strong>Generated:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | <strong>Run ID:</strong> $RunId
 
             <div class="summary-grid">
                 <div class="summary-item">
@@ -437,10 +452,10 @@ if ($ExportHTML) {
         $statusClass = $result.Status.ToLower()
         $html += @"
             <tr>
-                <td>$($result.ControlID)</td>
-                <td>$($result.Description)</td>
-                <td class="$statusClass">$($result.Status)</td>
-                <td>$($result.Recommendation)</td>
+                <td>$([System.Net.WebUtility]::HtmlEncode("$($result.ControlID)"))</td>
+                <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Description)"))</td>
+                <td class="$statusClass">$([System.Net.WebUtility]::HtmlEncode("$($result.Status)"))</td>
+                <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Recommendation)"))</td>
             </tr>
 "@
     }
@@ -460,11 +475,6 @@ if ($ExportHTML) {
     try {
         $html | Out-File -FilePath $htmlFile -Encoding UTF8 -ErrorAction Stop
         Write-Host "HTML report saved to: $htmlFile" -ForegroundColor Green
-
-        # Open report in browser
-        if (Test-Path $htmlFile) {
-            Start-Process $htmlFile
-        }
     }
     catch {
         Write-Warning "Failed to save HTML report: $($_.Exception.Message)"

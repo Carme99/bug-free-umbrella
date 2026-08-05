@@ -45,7 +45,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = "$env:TEMP\NetworkDiag_$(Get-Date -Format 'yyyyMMdd_HHmmss')",
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'),
 
     [Parameter(Mandatory = $false)]
     [switch]$TestInternetConnectivity,
@@ -60,12 +60,24 @@ param(
     [switch]$ScanPorts
 )
 
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
+
 Write-Host "`n=== Network Diagnostics Tool ===" -ForegroundColor Cyan
 Write-Host "Computer: $env:COMPUTERNAME" -ForegroundColor Gray
 Write-Host "Start Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Gray
 
 # Create output directory
-if (-not (Test-Path -Path $OutputPath)) {
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
     New-Item -Path $OutputPath -ItemType Directory -Force | Out-Null
 }
 
@@ -341,18 +353,18 @@ try {
     # Export results
     Write-Host "`nExporting results..." -ForegroundColor Yellow
 
-    $jsonPath = Join-Path -Path $OutputPath -ChildPath "NetworkDiagnostics.json"
+    $jsonPath = Join-Path -Path $OutputPath -ChildPath "NetworkDiagnostics_${RunTimestamp}_${RunId}.json"
     $diagnosticResults | ConvertTo-Json -Depth 5 | Out-File -FilePath $jsonPath -Encoding UTF8
     Write-Host "Results saved to: $jsonPath" -ForegroundColor Green
 
     # Generate HTML report
-    $htmlPath = Join-Path -Path $OutputPath -ChildPath "NetworkDiagnosticReport.html"
+    $htmlPath = Join-Path -Path $OutputPath -ChildPath "NetworkDiagnosticReport_${RunTimestamp}_${RunId}.html"
 
     $issuesHtml = ""
     if ($diagnosticResults.Issues.Count -gt 0) {
         $issuesHtml = "<h2>Issues Detected</h2><ul>"
         foreach ($issue in $diagnosticResults.Issues) {
-            $issuesHtml += "<li>$issue</li>"
+            $issuesHtml += "<li>$([System.Net.WebUtility]::HtmlEncode("$issue"))</li>"
         }
         $issuesHtml += "</ul>"
     } else {
@@ -381,8 +393,8 @@ try {
 <body>
     <h1>Network Diagnostic Report</h1>
     <div class="info">
-        <strong>Computer:</strong> $env:COMPUTERNAME<br>
-        <strong>Report Time:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')<br>
+        <strong>Computer:</strong> $([System.Net.WebUtility]::HtmlEncode("$env:COMPUTERNAME"))<br>
+        <strong>Report Time:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | <strong>Run ID:</strong> $RunId<br>
         <strong>Active Adapters:</strong> $($adapters.Count)<br>
         <strong>Issues Found:</strong> $($diagnosticResults.Issues.Count)
     </div>
@@ -403,12 +415,12 @@ try {
         $statusClass = if ($adapter.Status -eq 'Up') { 'success' } else { 'failed' }
         $html += @"
         <tr>
-            <td>$($adapter.Name)</td>
-            <td class="$statusClass">$($adapter.Status)</td>
-            <td>$($adapter.IPAddress)</td>
-            <td>$($adapter.Gateway)</td>
-            <td>$($adapter.DNSServers)</td>
-            <td>$($adapter.Speed)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($adapter.Name)"))</td>
+            <td class="$statusClass">$([System.Net.WebUtility]::HtmlEncode("$($adapter.Status)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($adapter.IPAddress)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($adapter.Gateway)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($adapter.DNSServers)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($adapter.Speed)"))</td>
         </tr>
 "@
     }
@@ -420,7 +432,7 @@ try {
         $html += "<h2>Connectivity Tests</h2><table><tr><th>Target</th><th>Status</th><th>Avg Latency</th><th>Packet Loss</th></tr>"
         foreach ($test in $diagnosticResults.ConnectivityTests) {
             $statusClass = if ($test.Status -eq 'Reachable') { 'success' } else { 'failed' }
-            $html += "<tr><td>$($test.Target)</td><td class='$statusClass'>$($test.Status)</td><td>$($test.AverageLatency) ms</td><td>$($test.PacketLoss)%</td></tr>"
+            $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($test.Target)"))</td><td class='$statusClass'>$([System.Net.WebUtility]::HtmlEncode("$($test.Status)"))</td><td>$($test.AverageLatency) ms</td><td>$($test.PacketLoss)%</td></tr>"
         }
         $html += "</table>"
     }
@@ -434,9 +446,6 @@ try {
 
     $html | Out-File -FilePath $htmlPath -Encoding UTF8
     Write-Host "HTML report saved to: $htmlPath" -ForegroundColor Green
-
-    # Open report
-    Start-Process $htmlPath
 
 }
 catch {

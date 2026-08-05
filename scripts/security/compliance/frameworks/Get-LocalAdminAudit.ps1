@@ -244,8 +244,22 @@ if ($HighRisk -gt 0 -or $MediumRisk -gt 0) {
 
 # Export reports if requested
 if ($ExportReport) {
-    $ReportPath = [Environment]::GetFolderPath('Desktop')
+    $ReportPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
+    # Validate report directory: reject '..' traversal and UNC remote paths before resolution
+    if ([string]::IsNullOrWhiteSpace($ReportPath) -or
+        $ReportPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+        $ReportPath -match '^(\\\\|//)') {
+        Write-Error "Unsafe report directory: $ReportPath. Report directory must be a local absolute path without '..' traversal."
+        exit 1
+    }
+    $ReportPath = [System.IO.Path]::GetFullPath($ReportPath)
+    if (-not (Test-Path -LiteralPath $ReportPath -PathType Container)) {
+        New-Item -ItemType Directory -Path $ReportPath -Force | Out-Null
+    }
+
     $Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    $RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
+    $TimestampRunId = "${Timestamp}_${RunId}"
 
     # Prepare export data
     $ExportData = $Results | Select-Object Name, SID, AccountType, PrincipalSource, Enabled, LastLogon, PasswordExpires, PasswordLastSet, Risk, @{
@@ -254,12 +268,12 @@ if ($ExportReport) {
     }
 
     # CSV Export
-    $CSVPath = Join-Path $ReportPath "LocalAdminAudit_$Timestamp.csv"
+    $CSVPath = Join-Path $ReportPath "LocalAdminAudit_${TimestampRunId}.csv"
     $ExportData | Export-Csv -Path $CSVPath -NoTypeInformation
     Write-Host "`nCSV Report: $CSVPath" -ForegroundColor Green
 
     # HTML Export
-    $HTMLPath = Join-Path $ReportPath "LocalAdminAudit_$Timestamp.html"
+    $HTMLPath = Join-Path $ReportPath "LocalAdminAudit_${TimestampRunId}.html"
     $HTML = @"
 <!DOCTYPE html>
 <html>
@@ -283,8 +297,8 @@ if ($ExportReport) {
 </head>
 <body>
     <h1>Local Administrator Audit Report</h1>
-    <p><strong>Generated:</strong> $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")</p>
-    <p><strong>Computer:</strong> $env:COMPUTERNAME</p>
+    <p><strong>Generated:</strong> $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") | <strong>Run ID:</strong> $RunId</p>
+    <p><strong>Computer:</strong> $([System.Net.WebUtility]::HtmlEncode("$env:COMPUTERNAME"))</p>
 
     <div class="summary">
         <div class="summary-item"><strong>Total Administrators:</strong> $($Results.Count)</div>
@@ -315,13 +329,13 @@ if ($ExportReport) {
         $NotesText = ($Result.Notes -join '; ')
         $HTML += @"
         <tr>
-            <td>$($Result.Name)</td>
-            <td>$($Result.AccountType)</td>
-            <td>$($Result.Enabled)</td>
-            <td>$($Result.LastLogon)</td>
-            <td>$($Result.PasswordExpires)</td>
-            <td class="$RiskClass">$($Result.Risk)</td>
-            <td>$NotesText</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($Result.Name)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($Result.AccountType)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($Result.Enabled)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($Result.LastLogon)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($Result.PasswordExpires)"))</td>
+            <td class="$RiskClass">$([System.Net.WebUtility]::HtmlEncode("$($Result.Risk)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$NotesText"))</td>
         </tr>
 "@
     }
