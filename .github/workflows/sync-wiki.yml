@@ -17,6 +17,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify wiki repository exists
+        env:
+          GH_TOKEN: ${{ secrets.WIKI_TOKEN }}
+        run: |
+          gh api repos/${{ github.repository }}.wiki >/dev/null 2>&1 || { echo "::error::wiki repository does not exist"; exit 1; }
+
       - name: Checkout wiki repository
         uses: actions/checkout@v4
         with:

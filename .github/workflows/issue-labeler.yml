@@ -103,7 +103,7 @@ jobs:
 
             // Critical/High Priority
             if (combined.match(/\b(critical|urgent|emergency|security vulnerability|broken)\b/)) {
-              labels.push('priority:high');
+              labels.push('priority-high');
             }
 
             // Good first issue (for contributors)
@@ -129,7 +129,7 @@ jobs:
               // Add comment if multiple categories detected
               if (uniqueLabels.length >= 3) {
                 const categoryLabels = uniqueLabels.filter(l =>
-                  !['bug', 'enhancement', 'documentation', 'question', 'performance', 'testing', 'priority:high', 'good-first-issue'].includes(l)
+                  !['bug', 'enhancement', 'documentation', 'question', 'performance', 'testing', 'priority-high', 'good-first-issue'].includes(l)
                 );
 
                 if (categoryLabels.length > 1) {
