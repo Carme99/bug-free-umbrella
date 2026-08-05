@@ -51,6 +51,8 @@ function Write-Log {
 function Stop-ApplicationProcess {
     param([string]$ProcessName, [int]$MaxAttempts = $MaxProcessCloseAttempts)
     $attempt = 1
+    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
+    $wingetPath = if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }
     while ($attempt -le $MaxAttempts) {
         $process = Get-Process -Name $ProcessName -ErrorAction SilentlyContinue
         if (-not $process) {
@@ -77,13 +79,6 @@ function Invoke-WingetWithRetry {
     while ($attempt -le $MaxAttempts) {
         try {
             Write-Log "Executing: sysget $Arguments (Attempt $attempt/$MaxAttempts)" -Level Info
-function Invoke-WingetWithRetry {
-    param([string]$Arguments)
-    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
-    $wingetPath = if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }
-    $a = 1
-    while ($a -le 3) {
-        try {
             $psi = New-Object System.Diagnostics.ProcessStartInfo
             $psi.FileName = $wingetPath
             $psi.Arguments = $Arguments
@@ -96,15 +91,8 @@ function Invoke-WingetWithRetry {
             $p.Start() | Out-Null
             $stdout = $p.StandardOutput.ReadToEnd()
             $p.WaitForExit()
-            if ($stdout) { return $stdout }
-        } catch {
-            Write-Verbose "Winget command failed on attempt $a: $($_.Exception.Message)" -Verbose:$false
-        }
-        Start-Sleep -Seconds 2
-        $a++
-    }
-    throw "Failed after 3 attempts"
-}
+            $result = $stdout
+
             if ($result -and -not ($result -match "error|failed|exception")) { return $result }
             Write-Log "Invalid result on attempt $attempt" -Level Warning
         } catch {
