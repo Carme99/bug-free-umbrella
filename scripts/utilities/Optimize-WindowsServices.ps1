@@ -76,7 +76,19 @@ param(
 $ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
-Write-Host "`n=== Windows Service Optimizer ===" -ForegroundColor Cyan
+# Reports directory (internal output location)
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+# Validate report directory: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report directory: $ReportDir. Report directory must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
 Write-Host "Mode: $Mode" -ForegroundColor Yellow
 Write-Host "Profile: $Profile" -ForegroundColor Yellow
 Write-Host ""
@@ -187,7 +199,7 @@ elseif ($Mode -eq 'Optimize') {
 
     # Create backup first
     if (-not $BackupPath) {
-        $BackupPath = "$env:USERPROFILE\Desktop\ServiceBackup_$timestamp.xml"
+        $BackupPath = Join-Path $ReportDir "ServiceBackup_$timestamp.xml"
     }
 
     Write-Host "[*] Creating backup at: $BackupPath" -ForegroundColor Cyan
@@ -299,7 +311,7 @@ elseif ($Mode -eq 'Restore') {
 
 # Export results
 if ($ExportHTML -and $results.Count -gt 0) {
-    $htmlPath = "$env:USERPROFILE\Desktop\ServiceOptimization_$timestamp.html"
+    $htmlPath = Join-Path $ReportDir "ServiceOptimization_$timestamp.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -319,7 +331,7 @@ if ($ExportHTML -and $results.Count -gt 0) {
 <body>
     <h1>Service Optimization Report</h1>
     <div class="summary">
-        <strong>Computer:</strong> $env:COMPUTERNAME<br>
+        <strong>Computer:</strong> $([System.Net.WebUtility]::HtmlEncode("$env:COMPUTERNAME"))<br>
         <strong>Generated:</strong> $(Get-Date)<br>
         <strong>Mode:</strong> $Mode<br>
         <strong>Profile:</strong> $Profile<br>
@@ -332,7 +344,7 @@ if ($ExportHTML -and $results.Count -gt 0) {
 "@
 
     foreach ($result in $results) {
-        $html += "<tr><td>$($result.ServiceName)</td><td>$($result.DisplayName)</td><td>$($result.CurrentStartup)$($result.OldStartup)</td><td>$($result.RecommendedStartup)$($result.NewStartup)</td></tr>`n"
+        $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($result.ServiceName)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($result.DisplayName)"))</td><td>$($result.CurrentStartup)$($result.OldStartup)</td><td>$($result.RecommendedStartup)$($result.NewStartup)</td></tr>`n"
     }
 
     $html += "</table></body></html>"
@@ -342,7 +354,7 @@ if ($ExportHTML -and $results.Count -gt 0) {
 }
 
 if ($ExportCSV -and $results.Count -gt 0) {
-    $csvPath = "$env:USERPROFILE\Desktop\ServiceOptimization_$timestamp.csv"
+    $csvPath = Join-Path $ReportDir "ServiceOptimization_$timestamp.csv"
     $results | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
 }

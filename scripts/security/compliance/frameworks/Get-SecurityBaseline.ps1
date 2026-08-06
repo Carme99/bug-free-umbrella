@@ -400,16 +400,30 @@ Write-Host "`nCompliance Score: $CompliancePercent%" -ForegroundColor $(if ($Com
 
 # Export reports if requested
 if ($ExportReport) {
-    $ReportPath = [Environment]::GetFolderPath('Desktop')
+    $ReportPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
+    # Validate report directory: reject '..' traversal and UNC remote paths before resolution
+    if ([string]::IsNullOrWhiteSpace($ReportPath) -or
+        $ReportPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+        $ReportPath -match '^(\\\\|//)') {
+        Write-Error "Unsafe report directory: $ReportPath. Report directory must be a local absolute path without '..' traversal."
+        exit 1
+    }
+    $ReportPath = [System.IO.Path]::GetFullPath($ReportPath)
+    if (-not (Test-Path -LiteralPath $ReportPath -PathType Container)) {
+        New-Item -ItemType Directory -Path $ReportPath -Force | Out-Null
+    }
+
     $Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    $RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
+    $TimestampRunId = "${Timestamp}_${RunId}"
 
     # CSV Export
-    $CSVPath = Join-Path $ReportPath "SecurityBaseline_$Timestamp.csv"
+    $CSVPath = Join-Path $ReportPath "SecurityBaseline_${TimestampRunId}.csv"
     $Results | Export-Csv -Path $CSVPath -NoTypeInformation
     Write-Host "`nCSV Report: $CSVPath" -ForegroundColor Green
 
     # HTML Export
-    $HTMLPath = Join-Path $ReportPath "SecurityBaseline_$Timestamp.html"
+    $HTMLPath = Join-Path $ReportPath "SecurityBaseline_${TimestampRunId}.html"
     $HTML = @"
 <!DOCTYPE html>
 <html>
@@ -437,9 +451,9 @@ if ($ExportReport) {
 </head>
 <body>
     <h1>Security Baseline Verification Report</h1>
-    <p><strong>Generated:</strong> $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")</p>
-    <p><strong>Computer:</strong> $env:COMPUTERNAME</p>
-    <p><strong>Baseline Type:</strong> $BaselineType</p>
+    <p><strong>Generated:</strong> $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") | <strong>Run ID:</strong> $RunId</p>
+    <p><strong>Computer:</strong> $([System.Net.WebUtility]::HtmlEncode("$env:COMPUTERNAME"))</p>
+    <p><strong>Baseline Type:</strong> $([System.Net.WebUtility]::HtmlEncode("$BaselineType"))</p>
 
     <div class="summary">
         <div class="summary-item"><strong>Total Checks:</strong> $TotalChecks</div>
@@ -467,11 +481,11 @@ if ($ExportReport) {
         $StatusClass = $Result.Status.ToLower()
         $HTML += @"
         <tr>
-            <td>$($Result.Category)</td>
-            <td>$($Result.Setting)</td>
-            <td>$($Result.Expected)</td>
-            <td>$($Result.Actual)</td>
-            <td class="$StatusClass">$($Result.Status)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($Result.Category)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($Result.Setting)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($Result.Expected)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($Result.Actual)"))</td>
+            <td class="$StatusClass">$([System.Net.WebUtility]::HtmlEncode("$($Result.Status)"))</td>
         </tr>
 "@
     }
@@ -486,7 +500,7 @@ if ($ExportReport) {
     # Add recommendations for failed items
     $FailedItems = $Results | Where-Object { $_.Status -eq 'FAIL' }
     foreach ($Item in $FailedItems) {
-        $HTML += "<li><strong>$($Item.Category) - $($Item.Setting):</strong> Configure to meet baseline requirement: $($Item.Expected)</li>"
+        $HTML += "<li><strong>$([System.Net.WebUtility]::HtmlEncode("$($Item.Category)")) - $([System.Net.WebUtility]::HtmlEncode("$($Item.Setting)")):</strong> Configure to meet baseline requirement: $([System.Net.WebUtility]::HtmlEncode("$($Item.Expected)"))</li>"
     }
 
     if ($FailedItems.Count -eq 0) {

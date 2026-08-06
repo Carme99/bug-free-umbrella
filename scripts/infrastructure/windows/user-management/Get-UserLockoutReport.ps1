@@ -79,6 +79,20 @@ param(
 $ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
+# Reports directory (internal output location)
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+# Validate report directory: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report directory: $ReportDir. Report directory must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 # Calculate time range
 if ($Days) {
     $startTime = (Get-Date).AddDays(-$Days)
@@ -255,7 +269,7 @@ if ($DetectBruteForce) {
 
 # Export results
 if ($ExportHTML) {
-    $htmlPath = "$env:USERPROFILE\Desktop\UserLockoutReport_$timestamp.html"
+    $htmlPath = Join-Path $ReportDir "UserLockoutReport_$timestamp.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -288,7 +302,7 @@ if ($ExportHTML) {
 "@
 
     foreach ($lockout in ($lockouts | Sort-Object TimeCreated -Descending)) {
-        $html += "<tr><td>$($lockout.TimeCreated)</td><td>$($lockout.Username)</td><td>$($lockout.SourceComputer)</td><td>$($lockout.DomainController)</td></tr>`n"
+        $html += "<tr><td>$($lockout.TimeCreated)</td><td>$([System.Net.WebUtility]::HtmlEncode("$($lockout.Username)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($lockout.SourceComputer)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($lockout.DomainController)"))</td></tr>`n"
     }
 
     $html += "</table></body></html>"
@@ -298,7 +312,7 @@ if ($ExportHTML) {
 }
 
 if ($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\UserLockoutReport_$timestamp.csv"
+    $csvPath = Join-Path $ReportDir "UserLockoutReport_$timestamp.csv"
     $lockouts | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
 }

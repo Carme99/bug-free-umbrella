@@ -36,7 +36,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = "$env:TEMP\BatteryHealth_$(Get-Date -Format 'yyyyMMdd_HHmmss')",
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'),
 
     [Parameter(Mandatory = $false)]
     [switch]$GenerateDetailedReport,
@@ -48,12 +48,24 @@ param(
     [switch]$ExportToCSV
 )
 
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
+
 Write-Host "`n=== Battery Health Monitor ===" -ForegroundColor Cyan
 Write-Host "Computer: $env:COMPUTERNAME" -ForegroundColor Gray
 Write-Host "Start Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Gray
 
 # Create output directory
-if (-not (Test-Path -Path $OutputPath)) {
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
     New-Item -Path $OutputPath -ItemType Directory -Force | Out-Null
 }
 
@@ -177,7 +189,7 @@ try {
     if ($GenerateDetailedReport) {
         Write-Host "`nGenerating detailed battery report..." -ForegroundColor Yellow
 
-        $batteryReportPath = Join-Path -Path $OutputPath -ChildPath "battery-report.html"
+        $batteryReportPath = Join-Path -Path $OutputPath -ChildPath "battery-report_${RunTimestamp}_${RunId}.html"
 
         try {
             $result = Start-Process -FilePath "powercfg" -ArgumentList "/batteryreport", "/output", "`"$batteryReportPath`"" -Wait -NoNewWindow -PassThru
@@ -212,14 +224,14 @@ try {
 
     # Export to CSV
     if ($ExportToCSV) {
-        $csvPath = Join-Path -Path $OutputPath -ChildPath "BatteryHealth_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+        $csvPath = Join-Path -Path $OutputPath -ChildPath "BatteryHealth_${RunTimestamp}_${RunId}.csv"
         $batteryRecord | Export-Csv -Path $csvPath -NoTypeInformation -Append
         Write-Host "`nData exported to: $csvPath" -ForegroundColor Green
     }
 
     # Generate HTML report
     Write-Host "`nGenerating summary report..." -ForegroundColor Yellow
-    $htmlPath = Join-Path -Path $OutputPath -ChildPath "BatteryHealthReport.html"
+    $htmlPath = Join-Path -Path $OutputPath -ChildPath "BatteryHealthReport_${RunTimestamp}_${RunId}.html"
 
     $healthColor = if ([int]$batteryHealth -ge 80) { "green" } elseif ([int]$batteryHealth -ge 60) { "orange" } else { "red" }
     $statusIcon = if ([int]$batteryHealth -ge 80) { "✓" } elseif ([int]$batteryHealth -ge 60) { "⚠" } else { "✗" }
@@ -246,9 +258,9 @@ try {
 <body>
     <h1>Battery Health Report</h1>
     <div class="info">
-        <strong>Computer:</strong> $env:COMPUTERNAME<br>
-        <strong>Report Date:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')<br>
-        <strong>Battery:</strong> $($battery.Name)
+        <strong>Computer:</strong> $([System.Net.WebUtility]::HtmlEncode("$env:COMPUTERNAME"))<br>
+        <strong>Report Date:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | <strong>Run ID:</strong> $RunId<br>
+        <strong>Battery:</strong> $([System.Net.WebUtility]::HtmlEncode("$($battery.Name)"))
     </div>
 
     <div class="status-icon">$statusIcon</div>
@@ -257,11 +269,11 @@ try {
 
     <h2>Battery Information</h2>
     <table>
-        <tr><td><strong>Name</strong></td><td>$($battery.Name)</td></tr>
-        <tr><td><strong>Chemistry</strong></td><td>$batteryChemistry</td></tr>
-        <tr><td><strong>Status</strong></td><td>$batteryStatus</td></tr>
+        <tr><td><strong>Name</strong></td><td>$([System.Net.WebUtility]::HtmlEncode("$($battery.Name)"))</td></tr>
+        <tr><td><strong>Chemistry</strong></td><td>$([System.Net.WebUtility]::HtmlEncode("$batteryChemistry"))</td></tr>
+        <tr><td><strong>Status</strong></td><td>$([System.Net.WebUtility]::HtmlEncode("$batteryStatus"))</td></tr>
         <tr><td><strong>Current Charge</strong></td><td>$currentCapacity%</td></tr>
-        <tr><td><strong>Estimated Runtime</strong></td><td>$estimatedRunTimeText</td></tr>
+        <tr><td><strong>Estimated Runtime</strong></td><td>$([System.Net.WebUtility]::HtmlEncode("$estimatedRunTimeText"))</td></tr>
     </table>
 
     <h2>Health Metrics</h2>
@@ -299,10 +311,10 @@ try {
 "@
     }
 
-    if ($GenerateDetailedReport -and (Test-Path (Join-Path -Path $OutputPath -ChildPath "battery-report.html"))) {
+    if ($GenerateDetailedReport -and (Test-Path (Join-Path -Path $OutputPath -ChildPath "battery-report_${RunTimestamp}_${RunId}.html"))) {
         $html += @"
     <h2>Additional Reports</h2>
-    <p><a href="battery-report.html">View Detailed Windows Battery Report</a></p>
+    <p><a href="battery-report_${RunTimestamp}_${RunId}.html">View Detailed Windows Battery Report</a></p>
 "@
     }
 
@@ -313,9 +325,6 @@ try {
 
     $html | Out-File -FilePath $htmlPath -Encoding UTF8
     Write-Host "Summary report saved to: $htmlPath" -ForegroundColor Green
-
-    # Open report
-    Start-Process $htmlPath
 
 }
 catch {

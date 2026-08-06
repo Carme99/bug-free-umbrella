@@ -328,18 +328,32 @@ if ($FailedLogins.Count -gt 0 -or $Lockouts.Count -gt 0) {
 
 # Export reports if requested
 if ($ExportReport) {
-    $ReportPath = [Environment]::GetFolderPath('Desktop')
+    $ReportPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
+    # Validate report directory: reject '..' traversal and UNC remote paths before resolution
+    if ([string]::IsNullOrWhiteSpace($ReportPath) -or
+        $ReportPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+        $ReportPath -match '^(\\\\|//)') {
+        Write-Error "Unsafe report directory: $ReportPath. Report directory must be a local absolute path without '..' traversal."
+        exit 1
+    }
+    $ReportPath = [System.IO.Path]::GetFullPath($ReportPath)
+    if (-not (Test-Path -LiteralPath $ReportPath -PathType Container)) {
+        New-Item -ItemType Directory -Path $ReportPath -Force | Out-Null
+    }
+
     $Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+    $RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
+    $TimestampRunId = "${Timestamp}_${RunId}"
 
     # CSV Export - Failed Logins
     if ($FailedLogins.Count -gt 0) {
-        $CSVPath = Join-Path $ReportPath "FailedLogins_$Timestamp.csv"
+        $CSVPath = Join-Path $ReportPath "FailedLogins_${TimestampRunId}.csv"
         $FailedLogins | Export-Csv -Path $CSVPath -NoTypeInformation
         Write-Host "`nCSV Report: $CSVPath" -ForegroundColor Green
     }
 
     # HTML Export
-    $HTMLPath = Join-Path $ReportPath "FailedLoginReport_$Timestamp.html"
+    $HTMLPath = Join-Path $ReportPath "FailedLoginReport_${TimestampRunId}.html"
     $HTML = @"
 <!DOCTYPE html>
 <html>
@@ -364,9 +378,9 @@ if ($ExportReport) {
 </head>
 <body>
     <h1>Failed Login Analysis Report</h1>
-    <p><strong>Generated:</strong> $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")</p>
-    <p><strong>Computer:</strong> $env:COMPUTERNAME</p>
-    <p><strong>Time Range:</strong> $($StartTime.ToString('yyyy-MM-dd HH:mm')) to $((Get-Date).ToString('yyyy-MM-dd HH:mm'))</p>
+    <p><strong>Generated:</strong> $(Get-Date -Format "yyyy-MM-dd HH:mm:ss") | <strong>Run ID:</strong> $RunId</p>
+    <p><strong>Computer:</strong> $([System.Net.WebUtility]::HtmlEncode("$env:COMPUTERNAME"))</p>
+    <p><strong>Time Range:</strong> $([System.Net.WebUtility]::HtmlEncode("$($StartTime.ToString('yyyy-MM-dd HH:mm'))")) to $([System.Net.WebUtility]::HtmlEncode("$((Get-Date).ToString('yyyy-MM-dd HH:mm'))"))</p>
 
     <div class="summary">
         <div class="summary-item"><strong>Total Failed Login Attempts:</strong> <span style="color: #c62828;">$($FailedLogins.Count)</span></div>
@@ -411,7 +425,7 @@ if ($ExportReport) {
             $HTML += @"
         <tr>
             <td>$Rank</td>
-            <td><strong>$($User.Name)</strong></td>
+            <td><strong>$([System.Net.WebUtility]::HtmlEncode("$($User.Name)"))</strong></td>
             <td>$($User.Count)</td>
             <td class="$RiskClass">$RiskText</td>
         </tr>

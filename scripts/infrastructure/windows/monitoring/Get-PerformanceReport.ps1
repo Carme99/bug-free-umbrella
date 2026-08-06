@@ -70,6 +70,18 @@ param(
     [switch]$ExportCSV
 )
 
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 #Requires -RunAsAdministrator
 
 $script:report = @{
@@ -367,7 +379,7 @@ function Show-Summary {
 }
 
 function Export-HTMLReport {
-    $reportPath = "$env:USERPROFILE\Desktop\PerformanceReport_$($env:COMPUTERNAME)_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+    $reportPath = "$ReportDir\PerformanceReport_$($env:COMPUTERNAME)_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
 
     # Generate CPU chart data
     $cpuChartData = ($script:report.CPU.Samples | ForEach-Object { $_ }) -join ','
@@ -481,7 +493,7 @@ function Export-HTMLReport {
 }
 
 function Export-CSVReport {
-    $reportPath = "$env:USERPROFILE\Desktop\PerformanceData_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+    $reportPath = "$ReportDir\PerformanceData_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 
     $csvData = @()
     for($i = 0; $i -lt $script:report.CPU.Samples.Count; $i++) {

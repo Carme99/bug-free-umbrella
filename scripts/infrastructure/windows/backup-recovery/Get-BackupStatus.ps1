@@ -65,6 +65,17 @@ param(
     [Parameter(Mandatory = $false)]
     [string]$SMTPServer
 )
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
 
 Write-Host "`n=== Windows Server Backup Status Report ===" -ForegroundColor Cyan
 Write-Host "Start Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Gray
@@ -287,7 +298,7 @@ try {
     $issuesHtml = if ($report.Issues.Count -gt 0) {
         "<h2>Issues Detected</h2><ul>"
         foreach ($issue in $report.Issues) {
-            $issuesHtml += "<li>$issue</li>"
+            $issuesHtml += "<li>$([System.Net.WebUtility]::HtmlEncode("$issue"))</li>"
         }
         $issuesHtml += "</ul>"
     } else {
@@ -300,7 +311,7 @@ try {
         foreach ($bk in $report.RecentBackups) {
             $statusClass = if ($bk.Success) { "success" } else { "failed" }
             $statusText = if ($bk.Success) { "Success" } else { "Failed" }
-            $backupsTableHtml += "<tr><td>$($bk.BackupTime)</td><td class='$statusClass'>$statusText</td><td>$($bk.BackupTarget)</td></tr>"
+            $backupsTableHtml += "<tr><td>$($bk.BackupTime)</td><td class='$statusClass'>$statusText</td><td>$([System.Net.WebUtility]::HtmlEncode("$($bk.BackupTarget)"))</td></tr>"
         }
         $backupsTableHtml += "</table>"
     }
@@ -309,7 +320,7 @@ try {
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Backup Status Report - $env:COMPUTERNAME</title>
+    <title>Backup Status Report - $([System.Net.WebUtility]::HtmlEncode("$env:COMPUTERNAME"))</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
         h1 { color: #0066cc; }
@@ -328,9 +339,9 @@ try {
 <body>
     <h1>Windows Server Backup Status</h1>
     <div class="info">
-        <strong>Server:</strong> $env:COMPUTERNAME<br>
+        <strong>Server:</strong> $([System.Net.WebUtility]::HtmlEncode("$env:COMPUTERNAME"))<br>
         <strong>Report Time:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')<br>
-        <strong>Status:</strong> $($report.Status)
+        <strong>Status:</strong> $([System.Net.WebUtility]::HtmlEncode("$($report.Status)"))
     </div>
 
     <h2>Configuration</h2>
@@ -356,7 +367,7 @@ try {
     # Email report if requested
     if ($EmailReport -and $EmailTo -and $SMTPServer) {
         try {
-            $emailSubject = "Backup Status Report - $env:COMPUTERNAME - $($report.Status)"
+            $emailSubject = "Backup Status Report - $($env:COMPUTERNAME) - $($report.Status)"
             $emailBody = Get-Content -Path $htmlPath -Raw
 
             Send-MailMessage -To $EmailTo -Subject $emailSubject -Body $emailBody -BodyAsHtml `
@@ -368,9 +379,6 @@ try {
             Write-Warning "Failed to send email: $_"
         }
     }
-
-    # Open report
-    Start-Process $htmlPath
 
 }
 catch {

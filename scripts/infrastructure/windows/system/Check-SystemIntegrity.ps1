@@ -246,7 +246,24 @@ function Get-CriticalEventLogErrors {
 }
 
 function New-IntegrityReport {
-    $reportPath = "$env:USERPROFILE\Desktop\SystemIntegrityReport_$($env:COMPUTERNAME)_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+    $RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+    $RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
+
+    # Reports directory (internal output location)
+    $reportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+    # Validate report directory: reject '..' traversal and UNC remote paths before resolution
+    if ([string]::IsNullOrWhiteSpace($reportDir) -or
+        $reportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+        $reportDir -match '^(\\\\|//)') {
+        Write-Error "Unsafe report directory: $reportDir. Report directory must be a local absolute path without '..' traversal."
+        exit 1
+    }
+    $reportDir = [System.IO.Path]::GetFullPath($reportDir)
+    if (-not (Test-Path -LiteralPath $reportDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $reportDir -Force | Out-Null
+    }
+
+    $reportPath = Join-Path $reportDir "SystemIntegrityReport_$($env:COMPUTERNAME)_${RunTimestamp}_${RunId}.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -271,17 +288,17 @@ function New-IntegrityReport {
     <div class="container">
         <h1>System Integrity Report</h1>
         <table class="info-table">
-            <tr><th>Server Name</th><td>$($script:results.ServerName)</td></tr>
-            <tr><th>Scan Date</th><td>$($script:results.ScanDate)</td></tr>
-            <tr><th>OS Version</th><td>$($script:results.OSVersion)</td></tr>
+            <tr><th>Server Name</th><td>$([System.Net.WebUtility]::HtmlEncode("$($script:results.ServerName)"))</td></tr>
+            <tr><th>Scan Date</th><td>$($script:results.ScanDate) | Run ID: $RunId</td></tr>
+            <tr><th>OS Version</th><td>$([System.Net.WebUtility]::HtmlEncode("$($script:results.OSVersion)"))</td></tr>
         </table>
 
         <h2>Integrity Check Results</h2>
         <table class="info-table">
             <tr><th>Check Type</th><th>Result</th></tr>
-            <tr><td>System File Checker (SFC)</td><td class="$(if($script:results.SFCResult -match 'PASSED|REPAIRED'){'passed'}elseif($script:results.SFCResult -match 'FAILED'){'failed'}else{'warning'})">$($script:results.SFCResult)</td></tr>
-            <tr><td>DISM Component Store</td><td class="$(if($script:results.DISMResult -match 'PASSED|REPAIRED'){'passed'}elseif($script:results.DISMResult -match 'FAILED'){'failed'}else{'warning'})">$($script:results.DISMResult)</td></tr>
-            <tr><td>Disk Health</td><td class="$(if($script:results.CHKDSKResult -match 'healthy'){'passed'}else{'warning'})">$($script:results.CHKDSKResult)</td></tr>
+            <tr><td>System File Checker (SFC)</td><td class="$(if($script:results.SFCResult -match 'PASSED|REPAIRED'){'passed'}elseif($script:results.SFCResult -match 'FAILED'){'failed'}else{'warning'})">$([System.Net.WebUtility]::HtmlEncode("$($script:results.SFCResult)"))</td></tr>
+            <tr><td>DISM Component Store</td><td class="$(if($script:results.DISMResult -match 'PASSED|REPAIRED'){'passed'}elseif($script:results.DISMResult -match 'FAILED'){'failed'}else{'warning'})">$([System.Net.WebUtility]::HtmlEncode("$($script:results.DISMResult)"))</td></tr>
+            <tr><td>Disk Health</td><td class="$(if($script:results.CHKDSKResult -match 'healthy'){'passed'}else{'warning'})">$([System.Net.WebUtility]::HtmlEncode("$($script:results.CHKDSKResult)"))</td></tr>
         </table>
 
         <h2>Critical Event Log Errors (Last 24 Hours)</h2>
@@ -290,8 +307,8 @@ function New-IntegrityReport {
 "@
 
     if ($script:results.EventLogErrors.Count -gt 0) {
-        foreach ($err in $script:results.EventLogErrors) {
-            $html += "<tr><td>$($err.Time)</td><td>$($err.Log)</td><td>$($err.Source)</td><td>$($err.EventID)</td><td>$($err.Message)</td></tr>"
+foreach ($err in $script:results.EventLogErrors) {
+            $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($err.Time)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($err.Log)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($err.Source)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($err.EventID)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($err.Message)"))</td></tr>"
         }
     }
     else {
@@ -307,9 +324,7 @@ function New-IntegrityReport {
 
     $html | Out-File -FilePath $reportPath -Encoding UTF8
     Write-Log "Report generated: $reportPath" "SUCCESS"
-
-    # Open report in default browser
-    Start-Process $reportPath
+    Write-Host "[+] HTML report saved to: $reportPath" -ForegroundColor Green
 }
 
 # Main execution

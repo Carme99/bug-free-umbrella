@@ -29,7 +29,7 @@
     Output format: 'Console', 'HTML', 'CSV', or 'JSON'. Default: 'HTML'
 
 .PARAMETER OutputPath
-    Path for HTML/CSV/JSON output file. Default: Desktop
+    Path for HTML/CSV/JSON output file. Default: MyDocuments\Reports
 
 .PARAMETER IncludeAPIDetails
     Include per-API performance metrics
@@ -79,7 +79,7 @@ param(
     [string]$OutputFormat = 'HTML',
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = [Environment]::GetFolderPath('Desktop'),
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'),
 
     [Parameter(Mandatory = $false)]
     [switch]$IncludeAPIDetails,
@@ -87,6 +87,17 @@ param(
     [Parameter(Mandatory = $false)]
     [switch]$IncludeBackendHealth
 )
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
 
 # Check Az module
 if (-not (Get-Module -ListAvailable -Name Az.ApiManagement)) {
@@ -302,6 +313,8 @@ $results.Summary = @{
 }
 
 # Output results
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
 switch ($OutputFormat) {
     'Console' {
         Write-Host "`n=== Azure API Management Health Summary ===" -ForegroundColor Cyan
@@ -326,7 +339,7 @@ switch ($OutputFormat) {
     }
 
     'HTML' {
-        $htmlFile = Join-Path $OutputPath "Azure-APIM-Health-$(Get-Date -Format 'yyyyMMdd-HHmmss').html"
+        $htmlFile = Join-Path $OutputPath "Azure-APIM-Health-${RunTimestamp}_${RunId}.html"
 
         $html = @"
 <!DOCTYPE html>
@@ -356,8 +369,8 @@ switch ($OutputFormat) {
 <body>
     <h1>Azure API Management Health Report</h1>
     <div class="summary">
-        <strong>Service:</strong> $ServiceName | <strong>Location:</strong> $($results.ServiceHealth.Location) | <strong>SKU:</strong> $($results.ServiceHealth.Sku)<br>
-        <strong>Gateway URL:</strong> $($results.ServiceHealth.GatewayUrl)<br>
+        <strong>Service:</strong> $([System.Net.WebUtility]::HtmlEncode("$ServiceName")) | <strong>Location:</strong> $([System.Net.WebUtility]::HtmlEncode("$($results.ServiceHealth.Location)")) | <strong>SKU:</strong> $([System.Net.WebUtility]::HtmlEncode("$($results.ServiceHealth.Sku)"))<br>
+        <strong>Gateway URL:</strong> $([System.Net.WebUtility]::HtmlEncode("$($results.ServiceHealth.GatewayUrl)"))<br>
         <strong>Analysis Period:</strong> Last $DaysToAnalyze days | <strong>Generated:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
 
         <div class="summary-grid">
@@ -404,11 +417,11 @@ switch ($OutputFormat) {
             foreach ($api in $results.APIs) {
                 $html += @"
         <tr>
-            <td>$($api.Name)</td>
-            <td>$($api.Path)</td>
-            <td>$($api.Protocols)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($api.Name)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($api.Path)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($api.Protocols)"))</td>
             <td>$($api.OperationCount)</td>
-            <td>$($api.ServiceUrl)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($api.ServiceUrl)"))</td>
         </tr>
 "@
             }
@@ -429,10 +442,10 @@ switch ($OutputFormat) {
             foreach ($backend in $results.Backends) {
                 $html += @"
         <tr>
-            <td>$($backend.Title)</td>
-            <td>$($backend.Url)</td>
-            <td>$($backend.Protocol)</td>
-            <td>$($backend.Description)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($backend.Title)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($backend.Url)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($backend.Protocol)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($backend.Description)"))</td>
         </tr>
 "@
             }
@@ -450,17 +463,16 @@ switch ($OutputFormat) {
 
         $html | Out-File -FilePath $htmlFile -Encoding UTF8
         Write-Host "`nHTML report saved to: $htmlFile" -ForegroundColor Green
-        Start-Process $htmlFile
     }
 
     'CSV' {
-        $csvFile = Join-Path $OutputPath "Azure-APIM-APIs-$(Get-Date -Format 'yyyyMMdd-HHmmss').csv"
+        $csvFile = Join-Path $OutputPath "Azure-APIM-APIs-${RunTimestamp}_${RunId}.csv"
         $results.APIs | Export-Csv -Path $csvFile -NoTypeInformation
         Write-Host "`nCSV report saved to: $csvFile" -ForegroundColor Green
     }
 
     'JSON' {
-        $jsonFile = Join-Path $OutputPath "Azure-APIM-Health-$(Get-Date -Format 'yyyyMMdd-HHmmss').json"
+        $jsonFile = Join-Path $OutputPath "Azure-APIM-Health-${RunTimestamp}_${RunId}.json"
         $results | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonFile
         Write-Host "`nJSON report saved to: $jsonFile" -ForegroundColor Green
     }

@@ -14,7 +14,7 @@
     - Autopilot profiles
 
 .PARAMETER OutputPath
-    Where to save exported configuration (default: Desktop).
+    Where to save exported configuration (default: MyDocuments\Reports).
 
 .PARAMETER ConfigTypes
     Comma-separated list: DeviceConfig,Compliance,Apps,Scripts,Autopilot,All (default: All).
@@ -27,7 +27,7 @@
 
 .EXAMPLE
     .\Export-IntuneConfiguration.ps1
-    Exports all configuration to desktop.
+    Exports all configuration to MyDocuments\Reports.
 
 .EXAMPLE
     .\Export-IntuneConfiguration.ps1 -ConfigTypes "DeviceConfig,Compliance" -IncludeAssignments
@@ -41,7 +41,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$false)]
-    [string]$OutputPath = "$env:USERPROFILE\Desktop\IntuneBackup_$(Get-Date -Format 'yyyyMMdd_HHmmss')",
+    [string]$OutputPath,
 
     [Parameter(Mandatory=$false)]
     [string[]]$ConfigTypes = @('All'),
@@ -76,6 +76,23 @@ try {
 catch {
     Write-ColorOutput "  Failed: $($_.Exception.Message)" -Level Error
     exit 1
+}
+
+
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
+if (-not $OutputPath) {
+    $OutputPath = Join-Path $ReportDir "IntuneBackup_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
 }
 
 if(-not (Test-Path $OutputPath)) {

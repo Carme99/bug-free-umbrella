@@ -212,7 +212,19 @@ if ($results.Nodes.Count -gt 0) {
 
 # Export HTML
 if ($ExportHTML) {
-    $reportPath = "$env:USERPROFILE\Desktop\K8s_HealthCheck_${timestamp}.html"
+    $ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+    # Validate report directory: reject '..' traversal and UNC remote paths before resolution
+    if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+        $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+        $ReportDir -match '^(\\\\|//)') {
+        Write-Error "Unsafe report directory: $ReportDir. Report directory must be a local absolute path without '..' traversal."
+        exit 1
+    }
+    $ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+    if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+    }
+    $reportPath = Join-Path $ReportDir "K8s_HealthCheck_${timestamp}.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -236,7 +248,7 @@ if ($ExportHTML) {
     <h1>Kubernetes Health Check Report</h1>
     <div class="summary">
         <strong>Generated:</strong> $(Get-Date)<br>
-        <strong>Cluster:</strong> $($results.Cluster)<br>
+        <strong>Cluster:</strong> $([System.Net.WebUtility]::HtmlEncode("$($results.Cluster)"))<br>
         <strong>Nodes:</strong> $($results.Nodes.Count)<br>
         <strong>Pods:</strong> $($results.Pods.Count)<br>
         <strong>Deployments:</strong> $($results.Deployments.Count)
@@ -246,19 +258,19 @@ if ($ExportHTML) {
     if ($results.Issues.Count -gt 0) {
         $html += "<h2>Issues ($($results.Issues.Count))</h2>"
         foreach ($issue in $results.Issues) {
-            $html += "<div class='issue'>$issue</div>"
+            $html += "<div class='issue'>$([System.Net.WebUtility]::HtmlEncode("$issue"))</div>"
         }
     }
 
     $html += "<h2>Nodes</h2><table><tr><th>Name</th><th>Status</th><th>Version</th><th>CPU</th><th>Memory</th></tr>"
     foreach ($node in $results.Nodes) {
         $statusClass = if ($node.Status -eq "True") {"status-ready"} else {"status-notready"}
-        $html += "<tr><td>$($node.Name)</td><td class='$statusClass'>$(if ($node.Status -eq 'True') {'Ready'} else {'NotReady'})</td><td>$($node.Version)</td><td>$($node.CPUCapacity)</td><td>$($node.MemoryCapacity)</td></tr>"
+        $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($node.Name)"))</td><td class='$statusClass'>$(if ($node.Status -eq 'True') {'Ready'} else {'NotReady'})</td><td>$([System.Net.WebUtility]::HtmlEncode("$($node.Version)"))</td><td>$($node.CPUCapacity)</td><td>$($node.MemoryCapacity)</td></tr>"
     }
 
     $html += "</table><h2>Pods (showing first 50)</h2><table><tr><th>Namespace</th><th>Name</th><th>Status</th><th>Restarts</th></tr>"
     foreach ($pod in $results.Pods | Select-Object -First 50) {
-        $html += "<tr><td>$($pod.Namespace)</td><td>$($pod.Name)</td><td>$($pod.Status)</td><td>$($pod.Restarts)</td></tr>"
+        $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($pod.Namespace)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($pod.Name)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($pod.Status)"))</td><td>$($pod.Restarts)</td></tr>"
     }
 
     $html += "</table></body></html>"

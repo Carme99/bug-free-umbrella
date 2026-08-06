@@ -67,6 +67,18 @@ param(
     [switch]$ShowAllMappings
 )
 
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 # Import helper module
 $modulePath = Join-Path $PSScriptRoot "IntuneGraphHelper.psm1"
 Import-Module $modulePath -Force
@@ -289,7 +301,7 @@ try {
 
     # Export reports
     $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-    $outputPath = "$env:USERPROFILE\Desktop"
+    $outputPath = $ReportDir
 
     $reportTitle = if ($DeviceName) {
         "Device_Group_Membership_$($DeviceName)_$timestamp"

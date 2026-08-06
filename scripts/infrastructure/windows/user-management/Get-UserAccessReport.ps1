@@ -51,7 +51,7 @@ param(
     [switch]$CheckLocalAdmin,
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = "$env:TEMP\UserAccessReport_$(Get-Date -Format 'yyyyMMdd_HHmmss')",
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'),
 
     [Parameter(Mandatory = $false)]
     [switch]$ExportToCSV
@@ -59,11 +59,23 @@ param(
 
 #Requires -Module ActiveDirectory
 
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
+
 Write-Host "`n=== User Access Report ===" -ForegroundColor Cyan
 Write-Host "Start Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Gray
 
 # Create output directory
-if (-not (Test-Path -Path $OutputPath)) {
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
     New-Item -Path $OutputPath -ItemType Directory -Force | Out-Null
 }
 
@@ -147,14 +159,14 @@ try {
     # Export to CSV
     if ($ExportToCSV) {
         Write-Host "`nExporting to CSV..." -ForegroundColor Yellow
-        $csvPath = Join-Path -Path $OutputPath -ChildPath "UserAccessReport.csv"
+        $csvPath = Join-Path -Path $OutputPath -ChildPath "UserAccessReport_${RunTimestamp}_${RunId}.csv"
         $accessReports | Export-Csv -Path $csvPath -NoTypeInformation
         Write-Host "CSV exported to: $csvPath" -ForegroundColor Green
     }
 
     # Generate HTML report
     Write-Host "`nGenerating HTML report..." -ForegroundColor Yellow
-    $htmlPath = Join-Path -Path $OutputPath -ChildPath "UserAccessReport.html"
+    $htmlPath = Join-Path -Path $OutputPath -ChildPath "UserAccessReport_${RunTimestamp}_${RunId}.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -176,8 +188,8 @@ try {
 <body>
     <h1>User Access Report</h1>
     <div class="info">
-        <strong>Domain:</strong> $domainName<br>
-        <strong>Report Date:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')<br>
+        <strong>Domain:</strong> $([System.Net.WebUtility]::HtmlEncode("$domainName"))<br>
+        <strong>Report Date:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | <strong>Run ID:</strong> $RunId<br>
         <strong>Users Audited:</strong> $($users.Count)<br>
         <strong>Privileged Users:</strong> $(($accessReports | Where-Object IsPrivileged).Count)
     </div>
@@ -200,12 +212,12 @@ try {
 
         $html += @"
         <tr class="$rowClass">
-            <td>$($report.SamAccountName)</td>
-            <td>$($report.DisplayName)</td>
-            <td>$($report.Department)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($report.SamAccountName)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($report.DisplayName)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($report.Department)"))</td>
             <td>$($report.GroupCount)</td>
-            <td>$privStatus</td>
-            <td>$($report.LastLogon)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$privStatus"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($report.LastLogon)"))</td>
         </tr>
 "@
     }
@@ -218,9 +230,6 @@ try {
 
     $html | Out-File -FilePath $htmlPath -Encoding UTF8
     Write-Host "HTML report saved to: $htmlPath" -ForegroundColor Green
-
-    # Open report
-    Start-Process $htmlPath
 
 }
 catch {

@@ -75,6 +75,20 @@ $ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $cutoffDate = (Get-Date).AddDays(-$DaysToCheck)
 
+# Reports directory (internal output location)
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+# Validate report directory: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report directory: $ReportDir. Report directory must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 Write-Host "`n=== Backup Integrity Verification ===" -ForegroundColor Cyan
 Write-Host "Server: $env:COMPUTERNAME" -ForegroundColor Yellow
 Write-Host "Checking backups from: $($cutoffDate.ToShortDateString())" -ForegroundColor Yellow
@@ -304,7 +318,7 @@ Write-Host ""
 
 # Export results
 if ($ExportHTML) {
-    $htmlPath = "$env:USERPROFILE\Desktop\BackupIntegrityReport_$timestamp.html"
+    $htmlPath = Join-Path $ReportDir "BackupIntegrityReport_$timestamp.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -328,7 +342,7 @@ if ($ExportHTML) {
 <body>
     <h1>Backup Integrity Verification Report</h1>
     <div class="summary">
-        <strong>Server:</strong> $env:COMPUTERNAME<br>
+        <strong>Server:</strong> $([System.Net.WebUtility]::HtmlEncode("$env:COMPUTERNAME"))<br>
         <strong>Generated:</strong> $(Get-Date)<br>
         <strong>Health Score:</strong> <span class="score">$healthScore%</span><br>
         <strong>Passed:</strong> $successCount | <strong>Failed:</strong> $failCount | <strong>Warnings:</strong> $warningCount
@@ -343,9 +357,9 @@ if ($ExportHTML) {
         $statusClass = $result.Status.ToLower()
         $html += @"
         <tr>
-            <td>$($result.Check)</td>
-            <td><span class="$statusClass">$($result.Status)</span></td>
-            <td>$($result.Details)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Check)"))</td>
+            <td><span class="$statusClass">$([System.Net.WebUtility]::HtmlEncode("$($result.Status)"))</span></td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Details)"))</td>
             <td>$($result.Timestamp)</td>
         </tr>
 "@
@@ -358,7 +372,7 @@ if ($ExportHTML) {
 }
 
 if ($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\BackupIntegrityReport_$timestamp.csv"
+    $csvPath = Join-Path $ReportDir "BackupIntegrityReport_$timestamp.csv"
     $results | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
 }

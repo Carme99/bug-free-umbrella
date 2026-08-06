@@ -106,6 +106,19 @@ param(
 $ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
+# Resolve report output directory (default: MyDocuments\Reports) and validate against traversal/UNC paths
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 # Initialize results
 $results = @()
 $riskCount = 0
@@ -251,7 +264,7 @@ try {
 
         'Export' {
             if (-not $ExportPath) {
-                $ExportPath = "$env:USERPROFILE\Desktop\FirewallBackup_$timestamp"
+                $ExportPath = "$ReportDir\FirewallBackup_$timestamp"
             }
 
             if (-not (Test-Path $ExportPath)) {
@@ -356,7 +369,7 @@ try {
 
     # Export results if requested
     if ($ExportHTML) {
-        $htmlPath = "$env:USERPROFILE\Desktop\FirewallAudit_$timestamp.html"
+        $htmlPath = "$ReportDir\FirewallAudit_$timestamp.html"
 
         $html = @"
 <!DOCTYPE html>
@@ -432,7 +445,7 @@ try {
     }
 
     if ($ExportCSV) {
-        $csvPath = "$env:USERPROFILE\Desktop\FirewallAudit_$timestamp.csv"
+        $csvPath = "$ReportDir\FirewallAudit_$timestamp.csv"
         $results | Export-Csv -Path $csvPath -NoTypeInformation
         Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
     }

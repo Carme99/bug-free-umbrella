@@ -17,7 +17,7 @@
     Folder containing installer files to convert.
 
 .PARAMETER OutputFolder
-    Where to save .intunewin packages (default: Desktop\IntuneWinPackages).
+    Where to save .intunewin packages (default: MyDocuments\Reports\IntuneWinPackages).
 
 .PARAMETER SetupFile
     Specific installer file to convert (for single file mode).
@@ -60,7 +60,7 @@ Write-Host "========================================`n" -ForegroundColor Cyan
 
 # Set output folder
 if (-not $OutputFolder) {
-    $OutputFolder = Join-Path $env:USERPROFILE "Desktop\IntuneWinPackages"
+    $OutputFolder = Join-Path (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports') 'IntuneWinPackages'
 }
 
 # Create output folder

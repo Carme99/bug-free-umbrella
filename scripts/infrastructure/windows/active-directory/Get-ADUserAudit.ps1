@@ -46,7 +46,7 @@ param(
     [int]$InactiveDays = 90,
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = "$env:TEMP\ADUserAudit_$(Get-Date -Format 'yyyyMMdd_HHmmss')",
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'),
 
     [Parameter(Mandatory = $false)]
     [switch]$IncludeDisabledAccounts,
@@ -60,11 +60,23 @@ param(
 
 #Requires -Module ActiveDirectory
 
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
+
 Write-Host "`n=== Active Directory User Account Audit ===" -ForegroundColor Cyan
 Write-Host "Start Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Gray
 
 # Create output directory
-if (-not (Test-Path -Path $OutputPath)) {
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
     New-Item -Path $OutputPath -ItemType Directory -Force | Out-Null
 }
 
@@ -274,16 +286,16 @@ try {
 
         foreach ($category in $auditResults.Keys) {
             if ($auditResults[$category].Count -gt 0) {
-                $csvPath = Join-Path -Path $OutputPath -ChildPath "$category.csv"
+                $csvPath = Join-Path -Path $OutputPath -ChildPath "${category}_${RunTimestamp}_${RunId}.csv"
                 $auditResults[$category] | Export-Csv -Path $csvPath -NoTypeInformation
-                Write-Host "  Exported: $category.csv ($($auditResults[$category].Count) records)" -ForegroundColor Green
+                Write-Host "  Exported: ${category}_${RunTimestamp}_${RunId}.csv ($($auditResults[$category].Count) records)" -ForegroundColor Green
             }
         }
     }
 
     # Generate HTML report
     Write-Host "`nGenerating HTML report..." -ForegroundColor Yellow
-    $htmlPath = Join-Path -Path $OutputPath -ChildPath "ADUserAuditReport.html"
+    $htmlPath = Join-Path -Path $OutputPath -ChildPath "ADUserAuditReport_${RunTimestamp}_${RunId}.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -307,8 +319,8 @@ try {
 <body>
     <h1>Active Directory User Audit Report</h1>
     <div class="info">
-        <strong>Domain:</strong> $domainName<br>
-        <strong>Report Date:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')<br>
+        <strong>Domain:</strong> $([System.Net.WebUtility]::HtmlEncode("$domainName"))<br>
+        <strong>Report Date:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | <strong>Run ID:</strong> $RunId<br>
         <strong>Total Users Analyzed:</strong> $totalUsers
     </div>
 
@@ -328,7 +340,7 @@ try {
     if ($auditResults.InactiveAccounts.Count -gt 0) {
         $html += "<h2>Inactive Accounts (Top 20)</h2><table><tr><th>Username</th><th>Display Name</th><th>Last Logon</th><th>Days Inactive</th><th>Department</th></tr>"
         foreach ($user in ($auditResults.InactiveAccounts | Sort-Object -Property DaysInactive -Descending | Select-Object -First 20)) {
-            $html += "<tr><td>$($user.SamAccountName)</td><td>$($user.DisplayName)</td><td>$($user.LastLogon)</td><td>$($user.DaysInactive)</td><td>$($user.Department)</td></tr>"
+            $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($user.SamAccountName)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($user.DisplayName)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($user.LastLogon)"))</td><td>$($user.DaysInactive)</td><td>$([System.Net.WebUtility]::HtmlEncode("$($user.Department)"))</td></tr>"
         }
         $html += "</table>"
     }
@@ -336,7 +348,7 @@ try {
     if ($auditResults.PasswordNeverExpires.Count -gt 0) {
         $html += "<h2>Password Never Expires (Top 20)</h2><table><tr><th>Username</th><th>Display Name</th><th>Last Password Set</th><th>Department</th></tr>"
         foreach ($user in ($auditResults.PasswordNeverExpires | Select-Object -First 20)) {
-            $html += "<tr><td>$($user.SamAccountName)</td><td>$($user.DisplayName)</td><td>$($user.LastPasswordSet)</td><td>$($user.Department)</td></tr>"
+            $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($user.SamAccountName)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($user.DisplayName)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($user.LastPasswordSet)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($user.Department)"))</td></tr>"
         }
         $html += "</table>"
     }
@@ -346,7 +358,7 @@ try {
         foreach ($user in ($auditResults.PrivilegedAccounts | Sort-Object -Property GroupName, SamAccountName)) {
             $pwdNeverExpires = if ($user.PasswordNeverExpires) { "<span class='warning'>Yes</span>" } else { "No" }
             $smartcard = if ($user.SmartcardRequired) { "<span class='good'>Yes</span>" } else { "<span class='warning'>No</span>" }
-            $html += "<tr><td>$($user.SamAccountName)</td><td>$($user.DisplayName)</td><td>$($user.GroupName)</td><td>$pwdNeverExpires</td><td>$smartcard</td></tr>"
+            $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($user.SamAccountName)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($user.DisplayName)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($user.GroupName)"))</td><td>$pwdNeverExpires</td><td>$smartcard</td></tr>"
         }
         $html += "</table>"
     }
@@ -355,9 +367,6 @@ try {
 
     $html | Out-File -FilePath $htmlPath -Encoding UTF8
     Write-Host "HTML report saved to: $htmlPath" -ForegroundColor Green
-
-    # Open report
-    Start-Process $htmlPath
 
 }
 catch {

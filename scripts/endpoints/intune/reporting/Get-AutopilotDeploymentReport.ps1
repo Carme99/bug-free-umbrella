@@ -58,6 +58,18 @@ param(
     [switch]$ExportCSV
 )
 
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 #Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.DeviceManagement
 
 $script:report = @{
@@ -148,7 +160,7 @@ if($script:report.Deployments.Count -gt 0) {
 }
 
 if($ExportHTML) {
-    $reportPath = "$env:USERPROFILE\Desktop\AutopilotReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+    $reportPath = "$ReportDir\AutopilotReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
     $html = @"
 <!DOCTYPE html>
 <html><head><title>Autopilot Deployment Report</title>
@@ -167,7 +179,7 @@ $(foreach($d in $script:report.Deployments){$c=$d.Status.ToLower();"<tr><td>$($d
 }
 
 if($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\AutopilotReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+    $csvPath = "$ReportDir\AutopilotReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
     $script:report.Deployments | Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
     Write-ColorOutput "CSV report: $csvPath" -Level Success
 }

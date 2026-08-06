@@ -26,7 +26,7 @@
     Output format: 'Console', 'HTML', or 'JSON'. Default: 'HTML'
 
 .PARAMETER OutputPath
-    Path for HTML/JSON output file. Default: Desktop
+    Path for HTML/JSON output file. Default: MyDocuments\Reports
 
 .PARAMETER IdentifyRegressions
     Detect builds that are significantly slower than historical average
@@ -66,7 +66,7 @@ param(
     [string]$OutputFormat = 'HTML',
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = [Environment]::GetFolderPath('Desktop'),
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'),
 
     [Parameter(Mandatory = $false)]
     [switch]$IdentifyRegressions,
@@ -74,6 +74,17 @@ param(
     [Parameter(Mandatory = $false)]
     [int]$RegressionThreshold = 25
 )
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
 
 Write-Host "Analyzing build performance for $Platform (Last $DaysToAnalyze days)..." -ForegroundColor Cyan
 
@@ -238,6 +249,8 @@ $analysis.Summary = @{
 }
 
 # Output results
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
 switch ($OutputFormat) {
     'Console' {
         Write-Host "`n=== Build Performance Summary ===" -ForegroundColor Cyan
@@ -262,10 +275,10 @@ switch ($OutputFormat) {
     }
 
     'HTML' {
-        $htmlFile = Join-Path $OutputPath "Build-Performance-Analysis-$(Get-Date -Format 'yyyyMMdd-HHmmss').html"
+        $htmlFile = Join-Path $OutputPath "Build-Performance-Analysis-${RunTimestamp}_${RunId}.html"
 
         # Create trend chart data
-        $chartLabels = ($analysis.DurationTrends | ForEach-Object { "'$($_.Period)'" }) -join ','
+        $chartLabels = ($analysis.DurationTrends | ForEach-Object { "'$([System.Net.WebUtility]::HtmlEncode("$($_.Period)"))'" }) -join ','
         $chartData = ($analysis.DurationTrends | ForEach-Object { $_.AvgDuration }) -join ','
 
         $html = @"
@@ -295,7 +308,7 @@ switch ($OutputFormat) {
 <body>
     <h1>Build Performance Analysis Report</h1>
     <div class="summary">
-        <strong>Platform:</strong> $Platform | <strong>Analysis Period:</strong> Last $DaysToAnalyze days<br>
+        <strong>Platform:</strong> $([System.Net.WebUtility]::HtmlEncode("$Platform")) | <strong>Analysis Period:</strong> Last $DaysToAnalyze days<br>
         <strong>Generated:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
 
         <div class="summary-grid">
@@ -345,11 +358,11 @@ switch ($OutputFormat) {
         foreach ($build in $analysis.SlowestBuilds) {
             $html += @"
         <tr>
-            <td>$($build.BuildId)</td>
-            <td>$($build.StartTime)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($build.BuildId)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($build.StartTime)"))</td>
             <td>$($build.DurationMinutes)</td>
-            <td>$($build.Branch)</td>
-            <td>$($build.Result)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($build.Branch)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($build.Result)"))</td>
         </tr>
 "@
         }
@@ -371,8 +384,8 @@ switch ($OutputFormat) {
             foreach ($regression in $analysis.Regressions) {
                 $html += @"
         <tr>
-            <td>$($regression.BuildId)</td>
-            <td>$($regression.StartTime)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($regression.BuildId)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($regression.StartTime)"))</td>
             <td class="regression">$($regression.DurationMinutes)</td>
             <td>$($regression.BaselineAvg)</td>
             <td class="regression">+$($regression.IncreasePercent)%</td>
@@ -418,11 +431,10 @@ switch ($OutputFormat) {
 
         $html | Out-File -FilePath $htmlFile -Encoding UTF8
         Write-Host "`nHTML report saved to: $htmlFile" -ForegroundColor Green
-        Start-Process $htmlFile
     }
 
     'JSON' {
-        $jsonFile = Join-Path $OutputPath "Build-Performance-$(Get-Date -Format 'yyyyMMdd-HHmmss').json"
+        $jsonFile = Join-Path $OutputPath "Build-Performance-${RunTimestamp}_${RunId}.json"
         $analysis | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonFile
         Write-Host "`nJSON report saved to: $jsonFile" -ForegroundColor Green
     }

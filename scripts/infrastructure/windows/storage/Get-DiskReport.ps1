@@ -58,6 +58,18 @@ param(
     [int]$MinimumFolderSizeMB = 100
 )
 
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 #Requires -RunAsAdministrator
 
 $script:reportData = @{
@@ -329,7 +341,7 @@ function Show-CleanupSuggestions {
 }
 
 function Export-HTMLReport {
-    $reportPath = "$env:USERPROFILE\Desktop\DiskReport_$($env:COMPUTERNAME)_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+    $reportPath = "$ReportDir\DiskReport_$($env:COMPUTERNAME)_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
 
     $volumesHTML = ""
     foreach ($volume in $script:reportData.Volumes) {

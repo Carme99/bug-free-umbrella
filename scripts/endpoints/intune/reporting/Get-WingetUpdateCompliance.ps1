@@ -68,6 +68,18 @@ param(
     [int]$Top
 )
 
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 #Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.DeviceManagement
 
 $script:report = @{
@@ -214,7 +226,7 @@ function Show-Summary {
 }
 
 function Export-HTMLReport {
-    $reportPath = "$env:USERPROFILE\Desktop\WingetCompliance_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+    $reportPath = "$ReportDir\WingetCompliance_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
 
     $html = @"
 <!DOCTYPE html>
@@ -302,7 +314,7 @@ function Export-HTMLReport {
 }
 
 function Export-CSVReport {
-    $reportPath = "$env:USERPROFILE\Desktop\WingetCompliance_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+    $reportPath = "$ReportDir\WingetCompliance_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 
     $script:report.Applications | Export-Csv -Path $reportPath -NoTypeInformation -Encoding UTF8
     Write-ColorOutput "CSV report exported to: $reportPath" -Level Success

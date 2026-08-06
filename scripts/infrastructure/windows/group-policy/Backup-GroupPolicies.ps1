@@ -63,12 +63,23 @@ param(
 
 #Requires -Module GroupPolicy
 
+# Validate BackupPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($BackupPath) -or
+    $BackupPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $BackupPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe BackupPath: $BackupPath. BackupPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$BackupPath = [System.IO.Path]::GetFullPath($BackupPath)
+
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
+
 Write-Host "`n=== Group Policy Backup Utility ===" -ForegroundColor Cyan
 Write-Host "Start Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -ForegroundColor Gray
 
 # Create backup directory structure
-$timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-$backupFolder = Join-Path -Path $BackupPath -ChildPath "GPO_Backup_$timestamp"
+$backupFolder = Join-Path -Path $BackupPath -ChildPath "GPO_Backup_${RunTimestamp}_${RunId}"
 
 try {
     if (-not (Test-Path -Path $BackupPath)) {
@@ -218,11 +229,11 @@ try {
 <body>
     <h1>Group Policy Backup Report</h1>
     <div class="info">
-        <strong>Domain:</strong> $domainName<br>
-        <strong>Backup Date:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')<br>
-        <strong>Backup Location:</strong> $backupFolder<br>
-        <strong>Performed By:</strong> $env:USERDOMAIN\$env:USERNAME<br>
-        <strong>Comment:</strong> $Comment
+        <strong>Domain:</strong> $([System.Net.WebUtility]::HtmlEncode("$domainName"))<br>
+        <strong>Backup Date:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') | <strong>Run ID:</strong> $RunId<br>
+        <strong>Backup Location:</strong> $([System.Net.WebUtility]::HtmlEncode("$backupFolder"))<br>
+        <strong>Performed By:</strong> $([System.Net.WebUtility]::HtmlEncode("$env:USERDOMAIN\$env:USERNAME"))<br>
+        <strong>Comment:</strong> $([System.Net.WebUtility]::HtmlEncode("$Comment"))
     </div>
 
     <h2>Backup Summary</h2>
@@ -247,9 +258,9 @@ try {
         $statusClass = if ($entry.Status -eq "Success") { "success" } else { "failed" }
         $htmlReport += @"
         <tr>
-            <td>$($entry.GPOName)</td>
-            <td class="$statusClass">$($entry.Status)</td>
-            <td>$($entry.BackupID)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($entry.GPOName)"))</td>
+            <td class="$statusClass">$([System.Net.WebUtility]::HtmlEncode("$($entry.Status)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($entry.BackupID)"))</td>
             <td>$($entry.Modified.ToString('yyyy-MM-dd HH:mm'))</td>
             <td>$($entry.LinkCount)</td>
         </tr>
@@ -318,9 +329,7 @@ try {
         Write-Host "Failed: $failCount" -ForegroundColor Red
     }
     Write-Host "`nBackup Location: $backupFolder" -ForegroundColor Cyan
-
-    # Open report
-    Start-Process $reportPath
+    Write-Host "[+] HTML report saved to: $reportPath" -ForegroundColor Green
 
 }
 catch {

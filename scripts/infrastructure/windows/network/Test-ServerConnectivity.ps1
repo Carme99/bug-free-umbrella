@@ -75,6 +75,18 @@ param(
     [switch]$ExportCSV
 )
 
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 $script:report = @{
     TestTime = Get-Date
     SourceServer = $env:COMPUTERNAME
@@ -329,7 +341,7 @@ function Show-Summary {
 }
 
 function Export-HTMLReport {
-    $reportPath = "$env:USERPROFILE\Desktop\ConnectivityReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+    $reportPath = "$ReportDir\ConnectivityReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
 
     $html = @"
 <!DOCTYPE html>
@@ -441,7 +453,7 @@ function Export-HTMLReport {
 }
 
 function Export-CSVReport {
-    $reportPath = "$env:USERPROFILE\Desktop\ConnectivityReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+    $reportPath = "$ReportDir\ConnectivityReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 
     $csvData = @()
     foreach($result in $script:report.Results) {

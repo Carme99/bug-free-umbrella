@@ -37,7 +37,7 @@
     Output format: 'Console', 'HTML', or 'JSON'. Default: 'HTML'
 
 .PARAMETER OutputPath
-    Path for output files. Default: Desktop
+    Path for output files. Default: MyDocuments\Reports
 
 .EXAMPLE
     .\Monitor-MongoDBHealth.ps1 -MongoDBServer "localhost" -Database "*"
@@ -86,8 +86,23 @@ param(
     [string]$OutputFormat = 'HTML',
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = [Environment]::GetFolderPath('Desktop')
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
 )
+
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
+
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
 
 $results = @{
     Timestamp = Get-Date
@@ -130,5 +145,5 @@ if ($Credential) {
 Write-Host "MongoDB monitoring framework ready" -ForegroundColor Green
 Write-Host "Note: Full implementation requires MongoDB .NET driver or mongosh CLI" -ForegroundColor Yellow
 
-$results | ConvertTo-Json -Depth 10 | Out-File -Path (Join-Path $OutputPath "MongoDB-Health-$(Get-Date -Format 'yyyyMMdd-HHmmss').json")
+$results | ConvertTo-Json -Depth 10 | Out-File -Path (Join-Path $OutputPath "MongoDB-Health-${RunTimestamp}_${RunId}.json")
 Write-Host "Template JSON saved for MongoDB monitoring implementation" -ForegroundColor Green

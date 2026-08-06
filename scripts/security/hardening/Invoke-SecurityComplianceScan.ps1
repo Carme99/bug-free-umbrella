@@ -26,7 +26,7 @@
     Output format: 'Console', 'HTML', 'CSV', or 'JSON'. Default: 'HTML'
 
 .PARAMETER OutputPath
-    Path for output files. Default: Desktop
+    Path for output files. Default: MyDocuments\Reports
 
 .PARAMETER RemediationGuidance
     Include detailed remediation steps in report
@@ -68,11 +68,23 @@ param(
     [string]$OutputFormat = 'HTML',
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = [Environment]::GetFolderPath('Desktop'),
+    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'),
 
     [Parameter(Mandatory = $false)]
     [switch]$RemediationGuidance
 )
+
+# Validate OutputPath: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($OutputPath) -or
+    $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $OutputPath -match '^(\\\\|//)') {
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    exit 1
+}
+$OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+    New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+}
 
 $results = @{
     Timestamp = Get-Date
@@ -324,6 +336,8 @@ $results.Summary = @{
 }
 
 # Output results
+$RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
 switch ($OutputFormat) {
     'Console' {
         Write-Host "`n=== Security Compliance Scan Results ===" -ForegroundColor Cyan
@@ -351,7 +365,7 @@ switch ($OutputFormat) {
     }
 
     'HTML' {
-        $htmlFile = Join-Path $OutputPath "Security-Compliance-$(Get-Date -Format 'yyyyMMdd-HHmmss').html"
+        $htmlFile = Join-Path $OutputPath "Security-Compliance-${RunTimestamp}_${RunId}.html"
         $scoreColor = if ($results.Summary.ComplianceScore -ge 80) { '#107c10' } elseif ($results.Summary.ComplianceScore -ge 60) { '#ff8c00' } else { '#d13438' }
 
         $html = @"
@@ -376,8 +390,8 @@ switch ($OutputFormat) {
 <body>
     <h1>Security Compliance Report</h1>
     <div class="summary">
-        <strong>Framework:</strong> $Framework | <strong>System:</strong> $TargetSystem<br>
-        <strong>Computer:</strong> $($results.ComputerName) | <strong>Scan Time:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+        <strong>Framework:</strong> $([System.Net.WebUtility]::HtmlEncode("$Framework")) | <strong>System:</strong> $([System.Net.WebUtility]::HtmlEncode("$TargetSystem"))<br>
+        <strong>Computer:</strong> $([System.Net.WebUtility]::HtmlEncode("$($results.ComputerName)")) | <strong>Scan Time:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
         <div class="score">$($results.Summary.ComplianceScore)%</div>
         <p style="text-align: center;">Compliance Score</p>
         <p>Critical: $criticalCount | High: $highCount | Medium: $mediumCount | Low: $lowCount</p>
@@ -388,9 +402,9 @@ switch ($OutputFormat) {
 "@
         foreach ($finding in ($results.Findings | Sort-Object { @('Critical','High','Medium','Low').IndexOf($_.Severity) })) {
             $severityClass = $finding.Severity.ToLower()
-            $html += "<tr class='$severityClass'><td>$($finding.ControlID)</td><td>$($finding.Title)</td><td>$($finding.Severity)</td><td>$($finding.Status)</td><td>$($finding.CurrentValue)</td><td>$($finding.ExpectedValue)</td>"
+            $html += "<tr class='$severityClass'><td>$([System.Net.WebUtility]::HtmlEncode("$($finding.ControlID)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($finding.Title)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($finding.Severity)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($finding.Status)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($finding.CurrentValue)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($finding.ExpectedValue)"))</td>"
             if ($RemediationGuidance) {
-                $html += "<td>$($finding.Remediation)</td>"
+                $html += "<td>$([System.Net.WebUtility]::HtmlEncode("$($finding.Remediation)"))</td>"
             }
             $html += "</tr>"
         }
@@ -398,17 +412,16 @@ switch ($OutputFormat) {
 
         $html | Out-File -FilePath $htmlFile -Encoding UTF8
         Write-Host "`nHTML report saved to: $htmlFile" -ForegroundColor Green
-        Start-Process $htmlFile
     }
 
     'CSV' {
-        $csvFile = Join-Path $OutputPath "Security-Compliance-$(Get-Date -Format 'yyyyMMdd-HHmmss').csv"
+        $csvFile = Join-Path $OutputPath "Security-Compliance-${RunTimestamp}_${RunId}.csv"
         $results.Findings | Export-Csv -Path $csvFile -NoTypeInformation
         Write-Host "`nCSV report saved to: $csvFile" -ForegroundColor Green
     }
 
     'JSON' {
-        $jsonFile = Join-Path $OutputPath "Security-Compliance-$(Get-Date -Format 'yyyyMMdd-HHmmss').json"
+        $jsonFile = Join-Path $OutputPath "Security-Compliance-${RunTimestamp}_${RunId}.json"
         $results | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonFile
         Write-Host "`nJSON saved to: $jsonFile" -ForegroundColor Green
     }

@@ -19,7 +19,7 @@
     Skip confirmation prompts and automatically remove detected blockers.
 
 .PARAMETER LogPath
-    Path where the log file will be created. Defaults to Desktop.
+    Path where the log file will be created. Defaults to MyDocuments\Reports.
 
 .PARAMETER ExportBlockersList
     Export the list of detected blockers to a CSV file before removal.
@@ -48,7 +48,7 @@ param(
     [switch]$Force,
 
     [Parameter(HelpMessage="Path for log file")]
-    [string]$LogPath = "$env:USERPROFILE\Desktop\SysprepBlockerRemoval_$(Get-Date -Format 'yyyyMMdd_HHmmss').log",
+    [string]$LogPath = (Join-Path (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports') "SysprepBlockerRemoval_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"),
 
     [Parameter(HelpMessage="Export list of blockers to CSV before removal")]
     [switch]$ExportBlockersList
@@ -60,6 +60,18 @@ $script:LogPath = $LogPath
 $script:BlockersRemoved = @()
 $script:BlockersFailed = @()
 $script:StartTime = Get-Date
+
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
 
 # Services that may lock AppX packages
 $servicesToStop = @('AppXSVC', 'ClipSVC')
@@ -281,7 +293,7 @@ function Export-BlockersList {
         [array]$Blockers
     )
 
-    $exportPath = "$env:USERPROFILE\Desktop\SysprepBlockers_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+    $exportPath = Join-Path $ReportDir "SysprepBlockers_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 
     try {
         $Blockers | Select-Object Name, PackageFullName, Version, Publisher, InstallLocation, SignatureKind |

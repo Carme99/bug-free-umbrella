@@ -82,6 +82,20 @@ param(
 $ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 $computerName = $env:COMPUTERNAME
+
+# Resolve report output directory (default: MyDocuments\Reports) and validate against traversal/UNC paths
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 $results = @{
     Timestamp = Get-Date
     ComputerName = $computerName
@@ -386,7 +400,7 @@ if ($results.Recommendations.Count -gt 0) {
 
 # Export HTML Report
 if ($ExportHTML) {
-    $reportPath = "$env:USERPROFILE\Desktop\IIS_HealthCheck_${computerName}_${timestamp}.html"
+    $reportPath = "$ReportDir\IIS_HealthCheck_${computerName}_${timestamp}.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -474,7 +488,7 @@ if ($ExportHTML) {
 
 # Export CSV
 if ($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\IIS_HealthCheck_${computerName}_${timestamp}.csv"
+    $csvPath = "$ReportDir\IIS_HealthCheck_${computerName}_${timestamp}.csv"
     $results.Websites | Export-Csv -Path $csvPath -NoTypeInformation
     Write-StatusMessage "CSV export saved to: $csvPath" -Status Success
 }

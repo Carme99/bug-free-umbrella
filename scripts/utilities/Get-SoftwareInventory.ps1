@@ -78,7 +78,19 @@ param(
 $ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
-Write-Host "`n=== Software Inventory Report ===" -ForegroundColor Cyan
+# Reports directory (internal output location)
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+# Validate report directory: reject '..' traversal and UNC remote paths before resolution
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report directory: $ReportDir. Report directory must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
 Write-Host "Computer: $env:COMPUTERNAME" -ForegroundColor Yellow
 Write-Host "Generated: $(Get-Date)" -ForegroundColor Gray
 Write-Host ""
@@ -272,7 +284,7 @@ $inventory.InstalledApplications | Select-Object -First 10 Name, Version, Publis
 
 # Export results
 if ($ExportHTML) {
-    $htmlPath = "$env:USERPROFILE\Desktop\SoftwareInventory_$timestamp.html"
+    $htmlPath = Join-Path $ReportDir "SoftwareInventory_$timestamp.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -293,7 +305,7 @@ if ($ExportHTML) {
 <body>
     <h1>Software Inventory Report</h1>
     <div class="summary">
-        <strong>Computer:</strong> $env:COMPUTERNAME<br>
+        <strong>Computer:</strong> $([System.Net.WebUtility]::HtmlEncode("$env:COMPUTERNAME"))<br>
         <strong>Generated:</strong> $(Get-Date)<br>
         <strong>Total Applications:</strong> $($inventory.InstalledApplications.Count)
     </div>
@@ -304,7 +316,7 @@ if ($ExportHTML) {
 "@
 
     foreach ($app in ($inventory.InstalledApplications | Sort-Object Name)) {
-        $html += "<tr><td>$($app.Name)</td><td>$($app.Version)</td><td>$($app.Publisher)</td><td>$($app.InstallDate)</td></tr>`n"
+        $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($app.Name)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($app.Version)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($app.Publisher)"))</td><td>$($app.InstallDate)</td></tr>`n"
     }
 
     $html += "</table>"
@@ -312,7 +324,7 @@ if ($ExportHTML) {
     if ($IncludeStoreApps -and $inventory.StoreApps.Count -gt 0) {
         $html += "<h2>Microsoft Store Apps</h2><table><tr><th>Name</th><th>Version</th><th>Publisher</th></tr>"
         foreach ($app in ($inventory.StoreApps | Sort-Object Name)) {
-            $html += "<tr><td>$($app.Name)</td><td>$($app.Version)</td><td>$($app.Publisher)</td></tr>`n"
+            $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($app.Name)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($app.Version)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($app.Publisher)"))</td></tr>`n"
         }
         $html += "</table>"
     }
@@ -324,13 +336,13 @@ if ($ExportHTML) {
 }
 
 if ($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\SoftwareInventory_$timestamp.csv"
+    $csvPath = Join-Path $ReportDir "SoftwareInventory_$timestamp.csv"
     $inventory.InstalledApplications | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
 }
 
 if ($ExportJSON) {
-    $jsonPath = "$env:USERPROFILE\Desktop\SoftwareInventory_$timestamp.json"
+    $jsonPath = Join-Path $ReportDir "SoftwareInventory_$timestamp.json"
     $inventory | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonPath -Encoding UTF8
     Write-Host "[+] JSON export saved to: $jsonPath" -ForegroundColor Green
 }
