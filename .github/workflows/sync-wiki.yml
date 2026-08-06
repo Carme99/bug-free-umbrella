@@ -17,6 +17,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Verify wiki repository exists
+        env:
+          GH_TOKEN: ${{ secrets.WIKI_TOKEN }}
+        run: |
+          has_wiki=$(gh api "repos/${{ github.repository }}" --jq .has_wiki)
+          if [ "$has_wiki" != "true" ]; then
+            echo "::error::GitHub wiki is not enabled for ${{ github.repository }}. Enable it under Settings > General > Features, or create the wiki repo, then re-run."
+            exit 1
+          fi
+
       - name: Checkout wiki repository
         uses: actions/checkout@v4
         with:
@@ -35,13 +45,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Check if there are changes
-          if git diff --quiet; then
+          # Stage all changes (including newly copied untracked files) before checking for a diff
+          git add .
+
+          # If there is nothing staged, there is nothing to commit
+          if git diff --cached --quiet; then
             echo "No changes to commit"
             exit 0
           fi
 
-          git add .
           git commit -m "docs: Auto-sync wiki from main repository
 
           Synced from commit: ${{ github.sha }}

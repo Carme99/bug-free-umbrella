@@ -104,10 +104,15 @@ $labels = @(
     @{ name = "testing"; color = "BFD4F2"; description = "Testing, validation, Pester tests" }
 
     # ========== PRIORITY LEVELS ==========
-    @{ name = "priority:high"; color = "B60205"; description = "High priority issue" }
+    @{ name = "priority-high"; color = "B60205"; description = "High priority issue" }
     @{ name = "good-first-issue"; color = "7057FF"; description = "Good for newcomers" }
 
     # ========== PROCESS LABELS ==========
+    @{ name = "pinned"; color = "FEF2C0"; description = "Pinned issue/PR exempt from stale-closing" }
+    @{ name = "work-in-progress"; color = "FFD93D"; description = "PR or issue still in progress" }
+    @{ name = "help-wanted"; color = "008672"; description = "Help wanted from contributors" }
+    @{ name = "triage"; color = "B60205"; description = "Needs triage" }
+    @{ name = "new-script"; color = "0E8A16"; description = "New script submission" }
     @{ name = "stale"; color = "EDEDED"; description = "Inactive issue/PR (auto-applied)" }
     @{ name = "broken-links"; color = "D93F0B"; description = "Broken links in documentation" }
     @{ name = "automated"; color = "BFDADC"; description = "Created by automation" }

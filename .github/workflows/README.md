@@ -16,14 +16,14 @@ This directory contains automated workflows for repository management and qualit
 - Analyzes issue title and body for keywords
 - Applies relevant technology labels (azure, intune, m365, etc.)
 - Applies issue type labels (bug, enhancement, documentation, etc.)
-- Applies priority labels (priority:high, good-first-issue)
+- Applies priority labels (priority-high, good-first-issue)
 - Adds a comment when multiple categories are detected
 - Adds a helpful comment when no labels match
 
 **Labels Applied** (46 total):
 - **Technology** (29): azure, aws, containers, intune, winget, windows-server, active-directory, security, etc.
 - **Issue Type** (6): bug, enhancement, documentation, question, performance, testing
-- **Priority** (2): priority:high, good-first-issue
+- **Priority** (2): priority-high, good-first-issue
 - **Process** (5): stale, broken-links, automated, dependencies, github-actions
 
 **Configuration:**
