@@ -43,16 +43,17 @@ jobs:
           # Run analyzer with curated settings from .vscode
           Write-Host "Running PSScriptAnalyzer with curated settings (.vscode/PSScriptAnalyzerSettings.psd1)..." -ForegroundColor Cyan
 
-          $settingsPath = './.vscode/PSScriptAnalyzerSettings.psd1'
-          if (-not (Test-Path $settingsPath)) {
-            Write-Host "Settings file '$settingsPath' not found. Cannot run analyzer." -ForegroundColor Red
+          # Curated settings contract: local .vscode/PSScriptAnalyzerSettings.psd1 and CI must stay in sync on this.
+          $psaSettings = './.vscode/PSScriptAnalyzerSettings.psd1'
+          if (-not (Test-Path $psaSettings)) {
+            Write-Host "Settings file '$psaSettings' not found. Cannot run analyzer." -ForegroundColor Red
             exit 1
           }
 
           $invokeArgs = @{
             Path = $scriptsPath
             Recurse = $true
-            Settings = $settingsPath
+            Settings = $psaSettings
           }
 
           try {
@@ -68,7 +69,7 @@ jobs:
             foreach ($f in $files) {
               try {
                 Write-Host "Analyzing: $($f.FullName)" -ForegroundColor Gray
-                $r = Invoke-ScriptAnalyzer -Path $f.FullName -Settings $settingsPath -ErrorAction Stop
+                $r = Invoke-ScriptAnalyzer -Path $f.FullName -Settings $psaSettings -ErrorAction Stop
                 if ($r) { $allResults += $r }
               } catch {
                 Write-Host "ERROR analyzing $($f.FullName): $($_.Exception.Message)" -ForegroundColor Red
@@ -91,7 +92,7 @@ jobs:
             Write-Host "Warnings: $($warnings.Count)" -ForegroundColor Yellow
 
             if ($errors.Count -gt 0) {
-              Write-Host "`nShowing errors:" -ForegroundColor Yellow
+              Write-Host "`nShowing first 10 errors:" -ForegroundColor Yellow
               $errors | Select-Object -First 10 | Format-Table RuleName, ScriptName, Line, Message -AutoSize
               Write-Host "PSScriptAnalyzer found $($errors.Count) error(s). Failing the pipeline." -ForegroundColor Red
               exit 1
