@@ -112,7 +112,7 @@ param(
 if ([string]::IsNullOrWhiteSpace($OutputPath) -or
     $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
     $OutputPath -match '^(\\\\|//)') {
-    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must be a local absolute path without '..' traversal."
+    Write-Error "Unsafe OutputPath: $OutputPath. OutputPath must not contain '..' traversal or be a UNC/remote path; relative paths are resolved to an absolute path."
     exit 1
 }
 $OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
