@@ -79,6 +79,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
 
 Write-Host "`n=== Exchange Online Mailbox Health Report ===" -ForegroundColor Cyan
 Write-Host "Mailbox Type: $MailboxType" -ForegroundColor Yellow
@@ -269,7 +273,7 @@ if ($inactiveMailboxes -gt 0) {
 
 # Export results
 if ($ExportHTML) {
-    $htmlPath = "$env:USERPROFILE\Desktop\MailboxHealth_$timestamp.html"
+    $htmlPath = (Join-Path $ReportDir "MailboxHealth_$timestamp.html")
 
     $html = @"
 <!DOCTYPE html>
@@ -319,15 +323,15 @@ if ($ExportHTML) {
         $statusClass = $result.Status.ToLower()
         $html += @"
         <tr>
-            <td>$($result.DisplayName)</td>
-            <td>$($result.MailboxType)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.DisplayName)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.MailboxType)"))</td>
             <td>$($result.MailboxSizeGB)</td>
             <td>$($result.QuotaGB)</td>
             <td>$($result.QuotaUsedPercent)</td>
             <td>$($result.ItemCount)</td>
             <td><span class="$statusClass">$($result.Status)</span></td>
-            <td>$($result.LastLogon)</td>
-            <td>$($result.LitigationHold)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.LastLogon)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.LitigationHold)"))</td>
         </tr>
 "@
     }
@@ -339,7 +343,7 @@ if ($ExportHTML) {
 }
 
 if ($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\MailboxHealth_$timestamp.csv"
+    $csvPath = (Join-Path $ReportDir "MailboxHealth_$timestamp.csv")
     $results | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
 }

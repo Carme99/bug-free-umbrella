@@ -593,7 +593,11 @@ function Export-UserReport {
 
     # Use safe filename to prevent path traversal
     $safeEmail = Get-SafeFileName $script:UserData.UserPrincipalName
-    $reportPath = "$env:USERPROFILE\Desktop\M365_UserReport_${safeEmail}_$timestamp.html"
+    $reportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+    if (-not (Test-Path -LiteralPath $reportDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $reportDir -Force | Out-Null
+    }
+    $reportPath = Join-Path $reportDir "M365_UserReport_${safeEmail}_$timestamp.html"
 
     # Encode all user data for HTML to prevent XSS
     $safeDisplayName = ConvertTo-HtmlSafe $script:UserData.DisplayName
@@ -650,7 +654,6 @@ function Export-UserReport {
 
     $html | Out-File -FilePath $reportPath -Encoding UTF8
     Write-Host "[+] Report saved to: $reportPath" -ForegroundColor Green
-    Start-Process $reportPath
 }
 
 #endregion

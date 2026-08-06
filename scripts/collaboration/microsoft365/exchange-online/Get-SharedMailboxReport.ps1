@@ -61,6 +61,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
 
 Write-Host "`n=== Shared Mailbox Audit Report ===" -ForegroundColor Cyan
 Write-Host "Timestamp: $(Get-Date)" -ForegroundColor Gray
@@ -215,7 +219,7 @@ if ($noPermissions -gt 0) {
 
 # Export
 if ($ExportHTML) {
-    $htmlPath = "$env:USERPROFILE\Desktop\SharedMailboxAudit_$timestamp.html"
+    $htmlPath = (Join-Path $ReportDir "SharedMailboxAudit_$timestamp.html")
 
     $html = @"
 <!DOCTYPE html>
@@ -261,13 +265,13 @@ if ($ExportHTML) {
         $rowClass = if ($result.SignInEnabled -or $result.TotalPermissions -eq 0) { "issue" } else { "" }
         $html += @"
         <tr class="$rowClass">
-            <td>$($result.DisplayName)</td>
-            <td>$($result.PrimarySmtpAddress)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.DisplayName)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.PrimarySmtpAddress)"))</td>
             <td>$($result.SizeGB)</td>
             <td>$($result.ItemCount)</td>
             <td>$($result.SignInEnabled)</td>
             <td>$($result.TotalPermissions)</td>
-            <td>$($result.LastActivity)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.LastActivity)"))</td>
         </tr>
 "@
     }
@@ -278,7 +282,7 @@ if ($ExportHTML) {
 }
 
 if ($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\SharedMailboxAudit_$timestamp.csv"
+    $csvPath = (Join-Path $ReportDir "SharedMailboxAudit_$timestamp.csv")
     $results | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
 }

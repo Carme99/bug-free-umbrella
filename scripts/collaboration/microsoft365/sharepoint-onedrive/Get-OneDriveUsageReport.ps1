@@ -54,6 +54,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
 
 Write-Host "`n=== OneDrive for Business Usage Report ===" -ForegroundColor Cyan
 Write-Host "Storage Warning Threshold: $StorageWarningThreshold%" -ForegroundColor Yellow
@@ -198,7 +202,7 @@ if ($inactiveSites -gt 0) {
 
 # Export
 if ($ExportHTML) {
-    $htmlPath = "$env:USERPROFILE\Desktop\OneDriveUsageReport_$timestamp.html"
+    $htmlPath = (Join-Path $ReportDir "OneDriveUsageReport_$timestamp.html")
 
     $html = @"
 <!DOCTYPE html>
@@ -243,13 +247,13 @@ if ($ExportHTML) {
         $rowClass = if ($result.Status -eq "Warning") { "warning" } else { "" }
         $html += @"
         <tr class="$rowClass">
-            <td>$($result.Owner)</td>
-            <td>$($result.StorageUsedGB)</td>
-            <td>$($result.StorageQuotaGB)</td>
-            <td>$($result.StoragePercent)</td>
-            <td>$($result.FileCount)</td>
-            <td>$($result.LastActivityDate)</td>
-            <td>$($result.Status)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Owner)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.StorageUsedGB)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.StorageQuotaGB)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.StoragePercent)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.FileCount)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.LastActivityDate)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Status)"))</td>
         </tr>
 "@
     }
@@ -260,7 +264,7 @@ if ($ExportHTML) {
 }
 
 if ($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\OneDriveUsageReport_$timestamp.csv"
+    $csvPath = (Join-Path $ReportDir "OneDriveUsageReport_$timestamp.csv")
     $results | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
 }
