@@ -70,14 +70,11 @@ function Stop-ApplicationProcess {
 function Invoke-WingetWithRetry {
     param([string]$Arguments, [int]$MaxAttempts = $MaxRetries)
     $attempt = 1; $delay = $RetryDelaySeconds
-    while ($attempt -le $MaxAttempts) {
-        try {
-function Invoke-WingetWithRetry {
-    param([string]$Arguments)
+
     $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
     $wingetPath = if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }
-    $a = 1
-    while ($a -le 3) {
+
+    while ($attempt -le $MaxAttempts) {
         try {
             $psi = New-Object System.Diagnostics.ProcessStartInfo
             $psi.FileName = $wingetPath
@@ -91,15 +88,8 @@ function Invoke-WingetWithRetry {
             $p.Start() | Out-Null
             $stdout = $p.StandardOutput.ReadToEnd()
             $p.WaitForExit()
-            if ($stdout) { return $stdout }
-        } catch {
-            Write-Verbose "Winget command failed on attempt $a: $($_.Exception.Message)" -Verbose:$false
-        }
-        Start-Sleep -Seconds 2
-        $a++
-    }
-    throw "Failed after 3 attempts"
-}
+            $result = $stdout
+
             if ($result -and -not ($result -match "error|failed|exception")) { return $result }
         } catch { Write-Log "Failed: $($_.Exception.Message)" -Level Warning }
         if ($attempt -lt $MaxAttempts) { Start-Sleep -Seconds $delay; $delay = $delay * 2 }
@@ -112,10 +102,6 @@ function Invoke-WingetWithRetry {
 #region Script
 try {
     Write-Log "=== Starting Microsoft Teams update ===" -Level Info
-
-    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
-    $SystemContext = if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }
-    
 
     $packageInfo = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"
     $nameMatch = $packageInfo | Select-String -Pattern "^($ID)\s+(.+?)\s+\d"
