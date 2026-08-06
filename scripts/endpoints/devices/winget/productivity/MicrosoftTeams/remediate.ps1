@@ -56,8 +56,6 @@ function Show-UserNotification {
 function Stop-ApplicationProcess {
     param([string]$ProcessName, [int]$MaxAttempts = $MaxProcessCloseAttempts)
     $attempt = 1
-    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
-    $wingetPath = if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }
     while ($attempt -le $MaxAttempts) {
         $process = Get-Process -Name $ProcessName -ErrorAction SilentlyContinue
         if (-not $process) { return $true }
@@ -72,6 +70,10 @@ function Stop-ApplicationProcess {
 function Invoke-WingetWithRetry {
     param([string]$Arguments, [int]$MaxAttempts = $MaxRetries)
     $attempt = 1; $delay = $RetryDelaySeconds
+
+    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
+    $wingetPath = if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }
+
     while ($attempt -le $MaxAttempts) {
         try {
             $psi = New-Object System.Diagnostics.ProcessStartInfo
@@ -100,10 +102,6 @@ function Invoke-WingetWithRetry {
 #region Script
 try {
     Write-Log "=== Starting Microsoft Teams update ===" -Level Info
-
-    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
-    $SystemContext = if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }
-    
 
     $packageInfo = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"
     $nameMatch = $packageInfo | Select-String -Pattern "^($ID)\s+(.+?)\s+\d"

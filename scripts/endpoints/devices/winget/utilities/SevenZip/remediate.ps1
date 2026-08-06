@@ -51,8 +51,6 @@ function Write-Log {
 function Stop-ApplicationProcess {
     param([string]$ProcessName, [int]$MaxAttempts = $MaxProcessCloseAttempts)
     $attempt = 1
-    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
-    $wingetPath = if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }
     while ($attempt -le $MaxAttempts) {
         $process = Get-Process -Name $ProcessName -ErrorAction SilentlyContinue
         if (-not $process) {
@@ -76,6 +74,10 @@ function Invoke-WingetWithRetry {
     param([string]$Arguments, [int]$MaxAttempts = $MaxRetries)
     $attempt = 1
     $delay = $RetryDelaySeconds
+
+    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
+    $wingetPath = if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }
+
     while ($attempt -le $MaxAttempts) {
         try {
             Write-Log "Executing: sysget $Arguments (Attempt $attempt/$MaxAttempts)" -Level Info
@@ -108,11 +110,6 @@ function Invoke-WingetWithRetry {
 #region Script
 try {
     Write-Log "=== Starting 7-Zip update ===" -Level Info
-
-    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
-    if ($wingetexe.Count -gt 1) { $SystemContext = $wingetexe[-1].Path } else { $SystemContext = $wingetexe.Path }
-    
-    Write-Log "Found winget: $SystemContext" -Level Info
 
     $packageInfo = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"
 
