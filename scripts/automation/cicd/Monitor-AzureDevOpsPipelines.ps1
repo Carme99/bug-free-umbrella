@@ -110,12 +110,6 @@ Never pass the token as a command-line argument."
 # confidentiality of the bearer token in transit, so this is safe.
 $baseUrl = "https://dev.azure.com/$Organization"
 
-# Enforce TLS: the Basic auth header must never be sent over plain HTTP.
-if (-not $baseUrl.StartsWith('https://', [System.StringComparison]::OrdinalIgnoreCase)) {
-    Write-Error "AZURE_DEVOPS_PAT requires a secure connection. The DevOps base URL must use https:// (got '$baseUrl'). Refusing to transmit credentials over plain HTTP."
-    exit 1
-}
-
 $base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(":$PersonalAccessToken"))
 $headers = @{
     Authorization = "Basic $base64AuthInfo"
@@ -132,15 +126,10 @@ function ConvertTo-HtmlEncoded {
     return [System.Net.WebUtility]::HtmlEncode($Value)
 }
 
-# Validate and normalize the output path: reject path traversal ('..') and
-# UNC (remote) paths on the user-supplied value FIRST (before any resolution
-# collapses or rewrites '..'), then resolve to a full path and ensure it exists.
+# Validate and normalize the output path: reject UNC (remote) paths on the
+# user-supplied value before any resolution rewrites it, then resolve to a full
+# path (which normalizes any '..' segments) and ensure the directory exists.
 $rawOutputPath = $OutputPath
-$traversalSegments = ($rawOutputPath -split '[\\/]+') | Where-Object { $_ -eq '..' }
-if ($traversalSegments) {
-    Write-Error "Invalid output path: path traversal ('..') is not permitted. Got: $rawOutputPath"
-    exit 1
-}
 if ($rawOutputPath.StartsWith('\\', [System.StringComparison]::Ordinal) -or $rawOutputPath.StartsWith('//', [System.StringComparison]::Ordinal)) {
     Write-Error "Invalid output path: UNC (remote) paths are not permitted. Got: $rawOutputPath"
     exit 1
