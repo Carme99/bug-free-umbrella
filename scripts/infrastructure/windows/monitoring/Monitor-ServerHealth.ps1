@@ -705,14 +705,14 @@ function Get-EventLogHealth {
 
         $allErrors = @($systemErrors) + @($appErrors) | Sort-Object TimeCreated -Descending
 
-        foreach($error in $allErrors | Select-Object -First 10) {
+        foreach($err in $allErrors | Select-Object -First 10) {
             $criticalErrors += @{
-                TimeCreated = $error.TimeCreated
-                LogName = $error.LogName
-                Level = $error.LevelDisplayName
-                Source = $error.ProviderName
-                EventID = $error.Id
-                Message = $error.Message.Substring(0, [Math]::Min(200, $error.Message.Length))
+                TimeCreated = $err.TimeCreated
+                LogName = $err.LogName
+                Level = $err.LevelDisplayName
+                Source = $err.ProviderName
+                EventID = $err.Id
+                Message = $err.Message.Substring(0, [Math]::Min(200, $err.Message.Length))
             }
         }
 

@@ -37,6 +37,9 @@
 
         # Other overly strict rules
         'PSReviewUnusedParameter',
-        'PSUseDeclaredVarsMoreThanAssignments'
+        'PSUseDeclaredVarsMoreThanAssignments',
+
+        # Intentional Test-Connection -ComputerName "www.microsoft.com" connectivity probes, not sensitive
+        'PSAvoidUsingComputerNameHardCoded'
     )
 }

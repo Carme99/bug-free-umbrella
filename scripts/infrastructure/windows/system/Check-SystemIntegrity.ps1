@@ -217,13 +217,13 @@ function Get-CriticalEventLogErrors {
             } -ErrorAction SilentlyContinue | Select-Object -First 10
 
             if ($errors) {
-                foreach ($error in $errors) {
+                foreach ($err in $errors) {
                     $errorInfo = [PSCustomObject]@{
-                        Time = $error.TimeCreated
+                        Time = $err.TimeCreated
                         Log = $logName
-                        Source = $error.ProviderName
-                        EventID = $error.Id
-                        Message = $error.Message.Substring(0, [Math]::Min(200, $error.Message.Length))
+                        Source = $err.ProviderName
+                        EventID = $err.Id
+                        Message = $err.Message.Substring(0, [Math]::Min(200, $err.Message.Length))
                     }
                     $script:results.EventLogErrors += $errorInfo
                 }
@@ -290,8 +290,8 @@ function New-IntegrityReport {
 "@
 
     if ($script:results.EventLogErrors.Count -gt 0) {
-        foreach ($error in $script:results.EventLogErrors) {
-            $html += "<tr><td>$($error.Time)</td><td>$($error.Log)</td><td>$($error.Source)</td><td>$($error.EventID)</td><td>$($error.Message)</td></tr>"
+        foreach ($err in $script:results.EventLogErrors) {
+            $html += "<tr><td>$($err.Time)</td><td>$($err.Log)</td><td>$($err.Source)</td><td>$($err.EventID)</td><td>$($err.Message)</td></tr>"
         }
     }
     else {
