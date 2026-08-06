@@ -299,7 +299,7 @@ if ($allFindings | Where-Object { $_.Category -eq "Failed Logins & Lockouts" }) 
 
 # Export results
 if ($ExportHTML) {
-    $htmlPath = "$env:USERPROFILE\Desktop\SecurityEventAudit_$timestamp.html"
+    $htmlPath = "$ReportDir\SecurityEventAudit_$timestamp.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -376,7 +376,7 @@ if ($ExportHTML) {
 }
 
 if ($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\SecurityEventAudit_$timestamp.csv"
+    $csvPath = "$ReportDir\SecurityEventAudit_$timestamp.csv"
     $allFindings | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
 }

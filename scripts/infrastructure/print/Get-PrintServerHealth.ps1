@@ -328,7 +328,7 @@ Write-Host ""
 
 # Export results
 if ($ExportHTML) {
-    $htmlPath = "$env:USERPROFILE\Desktop\PrintServerHealth_$timestamp.html"
+    $htmlPath = "$ReportDir\PrintServerHealth_$timestamp.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -384,7 +384,7 @@ if ($ExportHTML) {
 }
 
 if ($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\PrintServerHealth_$timestamp.csv"
+    $csvPath = "$ReportDir\PrintServerHealth_$timestamp.csv"
     $results | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
 }

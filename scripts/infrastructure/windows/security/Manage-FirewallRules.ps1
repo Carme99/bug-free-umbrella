@@ -264,7 +264,7 @@ try {
 
         'Export' {
             if (-not $ExportPath) {
-                $ExportPath = "$env:USERPROFILE\Desktop\FirewallBackup_$timestamp"
+                $ExportPath = "$ReportDir\FirewallBackup_$timestamp"
             }
 
             if (-not (Test-Path $ExportPath)) {
@@ -369,7 +369,7 @@ try {
 
     # Export results if requested
     if ($ExportHTML) {
-        $htmlPath = "$env:USERPROFILE\Desktop\FirewallAudit_$timestamp.html"
+        $htmlPath = "$ReportDir\FirewallAudit_$timestamp.html"
 
         $html = @"
 <!DOCTYPE html>
@@ -445,7 +445,7 @@ try {
     }
 
     if ($ExportCSV) {
-        $csvPath = "$env:USERPROFILE\Desktop\FirewallAudit_$timestamp.csv"
+        $csvPath = "$ReportDir\FirewallAudit_$timestamp.csv"
         $results | Export-Csv -Path $csvPath -NoTypeInformation
         Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
     }

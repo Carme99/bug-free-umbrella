@@ -67,6 +67,18 @@ param(
     [switch]$ExportCSV
 )
 
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 #Requires -Modules ActiveDirectory
 
 $script:report = @{
@@ -446,7 +458,7 @@ function Show-Summary {
 }
 
 function Export-HTMLReport {
-    $reportPath = "$env:USERPROFILE\Desktop\ADHealthCheck_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+    $reportPath = "$ReportDir\ADHealthCheck_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
 
     $healthColor = switch($script:report.HealthStatus) {
         'Critical' { '#dc3545' }

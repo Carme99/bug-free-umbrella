@@ -368,7 +368,7 @@ if ($failCount -gt 0) {
 
 # Export results
 if ($ExportHTML) {
-    $htmlPath = "$env:USERPROFILE\Desktop\ServerHardeningReport_$timestamp.html"
+    $htmlPath = "$ReportDir\ServerHardeningReport_$timestamp.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -424,7 +424,7 @@ if ($ExportHTML) {
 }
 
 if ($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\ServerHardeningReport_$timestamp.csv"
+    $csvPath = "$ReportDir\ServerHardeningReport_$timestamp.csv"
     $results | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
 }

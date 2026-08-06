@@ -74,6 +74,18 @@ param(
     [switch]$ExportCSV
 )
 
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 $ErrorActionPreference = "Stop"
 $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
@@ -190,7 +202,7 @@ Write-Host "Non-Compliant: $nonCompliantCount" -ForegroundColor Yellow
 Write-Host ""
 
 if ($ExportHTML) {
-    $htmlPath = "$env:USERPROFILE\Desktop\PowerPlatformRegionalSettings_$timestamp.html"
+    $htmlPath = "$ReportDir\PowerPlatformRegionalSettings_$timestamp.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -238,7 +250,7 @@ if ($ExportHTML) {
 }
 
 if ($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\PowerPlatformRegionalSettings_$timestamp.csv"
+    $csvPath = "$ReportDir\PowerPlatformRegionalSettings_$timestamp.csv"
     $results | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
 }

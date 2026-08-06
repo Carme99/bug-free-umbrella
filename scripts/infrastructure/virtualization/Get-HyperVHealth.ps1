@@ -311,7 +311,7 @@ Write-Host ""
 
 # Export results
 if ($ExportHTML) {
-    $htmlPath = "$env:USERPROFILE\Desktop\HyperVHealth_$timestamp.html"
+    $htmlPath = "$ReportDir\HyperVHealth_$timestamp.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -366,7 +366,7 @@ if ($ExportHTML) {
 }
 
 if ($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\HyperVHealth_$timestamp.csv"
+    $csvPath = "$ReportDir\HyperVHealth_$timestamp.csv"
     $results | Export-Csv -Path $csvPath -NoTypeInformation
     Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
 }

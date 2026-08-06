@@ -400,7 +400,7 @@ if ($results.Recommendations.Count -gt 0) {
 
 # Export HTML Report
 if ($ExportHTML) {
-    $reportPath = "$env:USERPROFILE\Desktop\IIS_HealthCheck_${computerName}_${timestamp}.html"
+    $reportPath = "$ReportDir\IIS_HealthCheck_${computerName}_${timestamp}.html"
 
     $html = @"
 <!DOCTYPE html>
@@ -488,7 +488,7 @@ if ($ExportHTML) {
 
 # Export CSV
 if ($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\IIS_HealthCheck_${computerName}_${timestamp}.csv"
+    $csvPath = "$ReportDir\IIS_HealthCheck_${computerName}_${timestamp}.csv"
     $results.Websites | Export-Csv -Path $csvPath -NoTypeInformation
     Write-StatusMessage "CSV export saved to: $csvPath" -Status Success
 }

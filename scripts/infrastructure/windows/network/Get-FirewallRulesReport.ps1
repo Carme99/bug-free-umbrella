@@ -73,6 +73,18 @@ param(
     [switch]$ExportCSV
 )
 
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 #Requires -RunAsAdministrator
 
 $script:report = @{
@@ -265,7 +277,7 @@ function Show-Summary {
 }
 
 function Export-HTMLReport {
-    $reportPath = "$env:USERPROFILE\Desktop\FirewallRules_$($env:COMPUTERNAME)_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+    $reportPath = "$ReportDir\FirewallRules_$($env:COMPUTERNAME)_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
 
     $html = @"
 <!DOCTYPE html>
@@ -401,7 +413,7 @@ function Export-HTMLReport {
 }
 
 function Export-CSVReport {
-    $reportPath = "$env:USERPROFILE\Desktop\FirewallRules_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+    $reportPath = "$ReportDir\FirewallRules_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 
     $script:report.Rules | Export-Csv -Path $reportPath -NoTypeInformation -Encoding UTF8
     Write-ColorOutput "CSV report exported to: $reportPath" -Level Success

@@ -86,6 +86,18 @@ param(
     [switch]$ExportCSV
 )
 
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 $script:report = @{
     ServerName = $env:COMPUTERNAME
     ScanTime = Get-Date
@@ -334,7 +346,7 @@ function Show-Summary {
 }
 
 function Export-HTMLReport {
-    $reportPath = "$env:USERPROFILE\Desktop\CertificateReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+    $reportPath = "$ReportDir\CertificateReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
 
     $html = @"
 <!DOCTYPE html>
@@ -439,7 +451,7 @@ function Export-HTMLReport {
 }
 
 function Export-CSVReport {
-    $reportPath = "$env:USERPROFILE\Desktop\CertificateReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+    $reportPath = "$ReportDir\CertificateReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 
     $script:report.Certificates | Export-Csv -Path $reportPath -NoTypeInformation -Encoding UTF8
     Write-ColorOutput "CSV report exported to: $reportPath" -Level Success

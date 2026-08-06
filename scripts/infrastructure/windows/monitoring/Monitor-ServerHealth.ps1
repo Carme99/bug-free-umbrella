@@ -213,6 +213,18 @@ param(
     [int]$CertificateWarningDays = 30
 )
 
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 #Requires -RunAsAdministrator
 
 # Define alert thresholds
@@ -1459,7 +1471,7 @@ function Export-JSONReport {
         Exports health report to JSON format.
     #>
 
-    $reportPath = "$env:USERPROFILE\Desktop\ServerHealth_$($env:COMPUTERNAME)_$(Get-Date -Format 'yyyyMMdd_HHmmss').json"
+    $reportPath = "$ReportDir\ServerHealth_$($env:COMPUTERNAME)_$(Get-Date -Format 'yyyyMMdd_HHmmss').json"
 
     try {
         $json = $script:healthReport | ConvertTo-Json -Depth 10
@@ -1568,7 +1580,7 @@ function Send-EmailReport {
 }
 
 function Export-HTMLReport {
-    $reportPath = "$env:USERPROFILE\Desktop\ServerHealth_$($env:COMPUTERNAME)_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+    $reportPath = "$ReportDir\ServerHealth_$($env:COMPUTERNAME)_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
 
     $statusColor = switch($script:healthReport.Status) {
         'Critical' { '#dc3545' }

@@ -53,6 +53,18 @@ param(
     [switch]$ExportCSV
 )
 
+$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+    $ReportDir -match '^(\\\\|//)') {
+    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+    exit 1
+}
+$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+}
+
 #Requires -Modules Microsoft.Graph.Authentication
 
 $script:report = @{
@@ -138,13 +150,13 @@ th{background:#007bff;color:white;padding:12px}td{padding:10px;border-bottom:1px
 $(foreach($f in $script:report.Failures){"<tr><td>$($f.AppName)</td><td>$($f.DeviceName)</td><td>$($f.UserName)</td><td>$($f.ErrorCode)</td><td>$($f.LastSync)</td></tr>"})
 </table></body></html>
 "@
-    $reportPath = "$env:USERPROFILE\Desktop\AppInstallErrors_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+    $reportPath = "$ReportDir\AppInstallErrors_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
     $html | Out-File -FilePath $reportPath -Encoding UTF8
     Write-ColorOutput "`nHTML report: $reportPath" -Level Success
 }
 
 if($ExportCSV) {
-    $csvPath = "$env:USERPROFILE\Desktop\AppInstallErrors_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+    $csvPath = "$ReportDir\AppInstallErrors_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
     $script:report.Failures | Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
     Write-ColorOutput "CSV report: $csvPath" -Level Success
 }

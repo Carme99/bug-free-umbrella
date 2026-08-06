@@ -224,7 +224,7 @@ if ($IncludeSecurityAnalysis -and $analysis.SecurityThreats.Count -gt 0) {
 
 # Export HTML
 if ($ExportHTML) {
-    $reportPath = "$env:USERPROFILE\Desktop\IIS_LogAnalysis_${timestamp}.html"
+    $reportPath = "$ReportDir\IIS_LogAnalysis_${timestamp}.html"
 
     $html = @"
 <!DOCTYPE html>
