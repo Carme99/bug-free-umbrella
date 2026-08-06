@@ -146,7 +146,7 @@ Let's run a simple, safe script to get started!
 
 ```powershell
 # Navigate to the scripts folder
-cd scripts/intune
+cd scripts/endpoints/intune
 
 # View help for the script
 Get-Help .\Get-DeviceComplianceReport.ps1 -Detailed
@@ -165,7 +165,7 @@ Get-Help .\Get-DeviceComplianceReport.ps1 -Detailed
 
 ```powershell
 # Navigate to server monitoring
-cd scripts/server/monitoring
+cd scripts/infrastructure/windows/monitoring
 
 # Run basic health check
 .\Monitor-ServerHealth.ps1

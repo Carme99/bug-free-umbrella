@@ -183,7 +183,8 @@ Tests/             # Pester tests
 
 ## GitHub Issue Format
 
-For the standard issue format, see the [root AGENTS.md](../AGENTS.md#github-issue-format).
+For the standard issue format, use the issue templates in [`.github/ISSUE_TEMPLATE/`](.github/ISSUE_TEMPLATE/):
+[`bug_report.yml`](.github/ISSUE_TEMPLATE/bug_report.yml), [`feature_request.yml`](.github/ISSUE_TEMPLATE/feature_request.yml), and [`script_request.yml`](.github/ISSUE_TEMPLATE/script_request.yml). See also the issue-format guidance in [CONTRIBUTING.md](CONTRIBUTING.md) and [GOVERNANCE.md](GOVERNANCE.md).
 
 ---
 
