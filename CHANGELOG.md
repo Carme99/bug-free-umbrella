@@ -1,7 +1,7 @@
 # Changelog
 
-![Version](https://img.shields.io/badge/version-4.1.0-blue)
-![Release Date](https://img.shields.io/badge/release-2026--04--17-green)
+![Version](https://img.shields.io/badge/version-4.2.0-blue)
+![Release Date](https://img.shields.io/badge/release-2026--08--06-green)
 ![Total Scripts](https://img.shields.io/badge/scripts-260+-orange)
 ![License](https://img.shields.io/badge/license-Apache%202.0-red)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [🌂 About Our Release Names](#-about-our-release-names)
 - [Unreleased](#unreleased)
 - **Latest Releases:**
+  - [v4.2.0 (2026-08-06) ⛈️ Tempest - Security & Hardening Release](#420---2026-08-06-️-tempest---security--hardening-release)
   - [v4.1.0 (2026-04-17) ☔ Drizzle - Bug Fix Release](#410-drizzle-bug-fix-release)
   - [v4.0.0 (2026-03-03) 🌪️ Hurricane - Security Hardening](#400---2026-03-03-️-hurricane---security-hardening-release)
   - [v3.7.1 (2026-01-29) 🌂 Drizzle - Documentation & Security Hardening](#371---2026-01-29-️-drizzle---documentation--security-hardening-update)
@@ -58,6 +59,38 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 ---
 
 ## [Unreleased]
+
+---
+
+<a id="420---2026-08-06-️-tempest---security--hardening-release"></a>
+## [4.2.0] - 2026-08-06 ⛈️ **"Tempest"** - Security & Hardening Release
+
+Resolves 17 open issues spanning security hardening, CI integrity, documentation accuracy, and endpoint tooling.
+
+### 🔐 Security Fixes
+- **#70 CRITICAL** - Azure DevOps PAT no longer accepted as a CLI parameter; read only from `AZURE_DEVOPS_PAT` env var (no process-list/history exposure)
+- **#71 CRITICAL** - Enforced HTTPS for PAT auth; documented Basic-over-TLS contract
+- **#72 HIGH** - Removed auto-opening of generated HTML reports via `Start-Process` (code-execution risk) across all report scripts
+- **#73 HIGH** - OutputPath validation rejects `..` traversal and UNC/remote paths
+- **#74 HIGH** - All dynamic report data HTML-encoded via `[System.Net.WebUtility]::HtmlEncode` (XSS)
+- **#79 LOW** - Timestamp filenames now use a single `$RunTimestamp`+`$RunId` to prevent collision/overwrite
+- **#82 LOW** - Report/export default output moved from Desktop to `Documents\Reports`, auto-created
+
+### ⚙️ CI & GitHub Actions
+- **#94** - `validate-powershell.yml` now hard-fails on PSScriptAnalyzer Errors and syntax errors (was informational)
+- **#95** - Fixed `priority:high`→`priority-high` labeler typo; seeded missing labels
+- **#89** - `sync-wiki.yml` verifies the wiki repo exists (`has_wiki`) and stages untracked pages before commit
+
+### 🛠️ Endpoint & Tooling
+- **#91** - Collapsed 10 duplicate `Invoke-WingetWithRetry` definitions; added guardrail test
+- **#92** - SCCM `remediate.ps1` now installs ccmsetup.exe via secure ProcessStartInfo when client missing
+
+### 📚 Documentation & Integrity
+- **#88** - Added root `WARP.md` (WARP validation test now 66/66 green)
+- **#90** - Corrected v4.0.0 CHANGELOG claims about non-existent security test module/helper
+- **#93** - Fixed wiki `scripts/` path fragments to current layout
+- **#96** - Renumbered duplicate v3.2.0 (Monsoon → v3.2.1)
+- **#97** - Replaced dead `../AGENTS.md` cross-link with actual issue templates
 
 ---
 
