@@ -101,6 +101,48 @@ jobs:
             Write-Host "No issues found by PSScriptAnalyzer!" -ForegroundColor Green
           }
 
+      - name: Enforce policy rules (comment-based help, style, ShouldProcess)
+        shell: pwsh
+        run: |
+          $settings = @{
+            Severity = @('Error', 'Warning', 'Information')
+            Rules = @{
+              PSUseConsistentIndentation = @{ Enable = $true }
+              PSUseConsistentWhitespace  = @{ Enable = $true }
+              PSPlaceOpenBrace           = @{ Enable = $true }
+              PSPlaceCloseBrace          = @{ Enable = $true }
+              PSUseCorrectCasing         = @{ Enable = $true }
+            }
+            IncludeRules = @(
+              'PSUseConsistentIndentation', 'PSUseConsistentWhitespace',
+              'PSPlaceOpenBrace', 'PSPlaceCloseBrace', 'PSUseCorrectCasing',
+              'PSShouldProcess', 'PSUseShouldProcessForStateChangingFunctions',
+              'PSUseSupportsShouldProcess'
+            )
+          }
+          $policyFindings = Invoke-ScriptAnalyzer -Path ./scripts -Recurse -Settings $settings
+          if ($policyFindings) {
+            $policyFindings | Format-Table RuleName, ScriptName, Line, Message -AutoSize
+            Write-Host "Policy enforcement found $($policyFindings.Count) finding(s). Failing the pipeline." -ForegroundColor Red
+            exit 1
+          }
+          Write-Host "Policy enforcement passed (help/style/ShouldProcess)." -ForegroundColor Green
+
+      - name: Enforce comment-based help (SYNOPSIS presence)
+        shell: pwsh
+        run: |
+          $missing = @()
+          Get-ChildItem -Path ./scripts -Filter *.ps1 -Recurse | ForEach-Object {
+            $content = Get-Content -LiteralPath $_.FullName -Raw
+            if ($content -and $content -notmatch '\.SYNOPSIS') { $missing += $_.FullName }
+          }
+          if ($missing.Count -gt 0) {
+            $missing | ForEach-Object { Write-Host "MISSING .SYNOPSIS: $_" -ForegroundColor Red }
+            Write-Host "$($missing.Count) script(s) missing comment-based help. Failing the pipeline." -ForegroundColor Red
+            exit 1
+          }
+          Write-Host "Comment-based help present in all scripts." -ForegroundColor Green
+
       - name: Upload Analysis Results
         if: always()
         uses: actions/upload-artifact@v4
