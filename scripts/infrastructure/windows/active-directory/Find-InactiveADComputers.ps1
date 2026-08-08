@@ -59,27 +59,27 @@
     LastLogonTimestamp may be up to 14 days behind actual logon
 #>
 
-[CmdletBinding(SupportsShouldProcess=$true)]
+[CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$InactiveDays = 90,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$SearchBase,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeDisabled,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$OperatingSystem,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$DisableInactive,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -117,7 +117,7 @@ $script:report = @{
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
 
-    $color = switch($Level) {
+    $color = switch ($Level) {
         'Warning' { 'Yellow' }
         'Error' { 'Red' }
         'Success' { 'Green' }
@@ -154,11 +154,11 @@ function Find-InactiveComputers {
         # Build filter
         $filter = "LastLogonTimeStamp -lt '$cutoffDate' -or LastLogonTimeStamp -notlike '*'"
 
-        if(-not $IncludeDisabled) {
+        if (-not $IncludeDisabled) {
             $filter = "($filter) -and Enabled -eq 'True'"
         }
 
-        if($OperatingSystem) {
+        if ($OperatingSystem) {
             $filter = "($filter) -and OperatingSystem -like '$OperatingSystem'"
         }
 
@@ -166,11 +166,11 @@ function Find-InactiveComputers {
         $searchParams = @{
             Filter = $filter
             Properties = 'Name', 'DNSHostName', 'OperatingSystem', 'OperatingSystemVersion',
-                        'LastLogonTimeStamp', 'PasswordLastSet', 'Enabled', 'Description',
-                        'Created', 'Modified', 'DistinguishedName'
+            'LastLogonTimeStamp', 'PasswordLastSet', 'Enabled', 'Description',
+            'Created', 'Modified', 'DistinguishedName'
         }
 
-        if($SearchBase) {
+        if ($SearchBase) {
             $searchParams['SearchBase'] = $SearchBase
             Write-Host "  Search Base: $SearchBase" -ForegroundColor Gray
         }
@@ -180,17 +180,19 @@ function Find-InactiveComputers {
 
         Write-ColorOutput "  Found $($computers.Count) inactive computer account(s)" -Level Info
 
-        foreach($computer in $computers) {
+        foreach ($computer in $computers) {
             # Convert LastLogonTimestamp
-            $lastLogon = if($computer.LastLogonTimeStamp) {
+            $lastLogon = if ($computer.LastLogonTimeStamp) {
                 [DateTime]::FromFileTime($computer.LastLogonTimeStamp)
-            } else {
+            }
+            else {
                 $null
             }
 
-            $inactiveDayCount = if($lastLogon) {
+            $inactiveDayCount = if ($lastLogon) {
                 [math]::Round(((Get-Date) - $lastLogon).TotalDays, 0)
-            } else {
+            }
+            else {
                 [math]::Round(((Get-Date) - $computer.Created).TotalDays, 0)
             }
 
@@ -212,7 +214,7 @@ function Find-InactiveComputers {
             $script:report.InactiveComputers += $computerInfo
             $script:report.Summary.TotalInactive++
 
-            if($computer.Enabled) {
+            if ($computer.Enabled) {
                 $script:report.Summary.Enabled++
             }
             else {
@@ -220,7 +222,7 @@ function Find-InactiveComputers {
             }
 
             # Categorize by OS
-            $osType = if($computer.OperatingSystem -like "*Server*") {
+            $osType = if ($computer.OperatingSystem -like "*Server*") {
                 $script:report.Summary.Servers++
                 "Server"
             }
@@ -230,8 +232,8 @@ function Find-InactiveComputers {
             }
 
             # Track OS distribution
-            $os = if($computer.OperatingSystem) { $computer.OperatingSystem } else { 'Unknown' }
-            if($script:report.OperatingSystems.ContainsKey($os)) {
+            $os = if ($computer.OperatingSystem) { $computer.OperatingSystem } else { 'Unknown' }
+            if ($script:report.OperatingSystems.ContainsKey($os)) {
                 $script:report.OperatingSystems[$os]++
             }
             else {
@@ -246,19 +248,21 @@ function Find-InactiveComputers {
 }
 
 function Disable-InactiveComputerAccounts {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
     Write-Host "`nDisabling inactive computer accounts..." -ForegroundColor Yellow
 
-    $toDisable = $script:report.InactiveComputers | Where-Object {$_.Enabled -eq $true}
+    $toDisable = $script:report.InactiveComputers | Where-Object { $_.Enabled -eq $true }
 
-    if($toDisable.Count -eq 0) {
+    if ($toDisable.Count -eq 0) {
         Write-Host "  No enabled inactive accounts to disable" -ForegroundColor Gray
         return
     }
 
     Write-ColorOutput "  $($toDisable.Count) account(s) will be disabled" -Level Warning
 
-    foreach($computer in $toDisable) {
-        if($PSCmdlet.ShouldProcess($computer.Name, "Disable computer account")) {
+    foreach ($computer in $toDisable) {
+        if ($PSCmdlet.ShouldProcess($computer.Name, "Disable computer account")) {
             try {
                 Disable-ADAccount -Identity $computer.DistinguishedName -ErrorAction Stop
                 $script:report.Summary.AccountsDisabled++
@@ -273,7 +277,7 @@ function Disable-InactiveComputerAccounts {
         }
     }
 
-    if(-not $WhatIfPreference) {
+    if (-not $WhatIfPreference) {
         Write-ColorOutput "`n  Disabled $($script:report.Summary.AccountsDisabled) account(s)" -Level Success
     }
 }
@@ -286,7 +290,7 @@ function Show-Summary {
     Write-Host "Scan Time: $($script:report.ScanTime)"
     Write-Host "Inactivity Threshold: $($script:report.InactiveDays) days"
 
-    if($script:report.SearchBase) {
+    if ($script:report.SearchBase) {
         Write-Host "Search Base: $($script:report.SearchBase)"
     }
 
@@ -297,7 +301,7 @@ function Show-Summary {
     Write-Host "  Servers: $($script:report.Summary.Servers)"
     Write-Host "  Workstations: $($script:report.Summary.Workstations)"
 
-    if($script:report.Summary.AccountsDisabled -gt 0) {
+    if ($script:report.Summary.AccountsDisabled -gt 0) {
         Write-ColorOutput "  Accounts Disabled: $($script:report.Summary.AccountsDisabled)" -Level Success
     }
 
@@ -308,7 +312,7 @@ function Show-Summary {
         Select-Object Name, OperatingSystem, Enabled, InactiveDays, LastLogon |
         Format-Table -AutoSize
 
-    if($script:report.OperatingSystems.Count -gt 0) {
+    if ($script:report.OperatingSystems.Count -gt 0) {
         Write-Host "`nOperating System Distribution:" -ForegroundColor Cyan
         $script:report.OperatingSystems.GetEnumerator() |
             Sort-Object Value -Descending |
@@ -448,24 +452,24 @@ Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "  Inactive Computer Accounts Finder" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
 
-if(-not (Test-ADModule)) {
+if (-not (Test-ADModule)) {
     exit 1
 }
 
 Find-InactiveComputers
 
-if($DisableInactive) {
+if ($DisableInactive) {
     Disable-InactiveComputerAccounts
 }
 
 Show-Summary
 
-if($ExportHTML) {
+if ($ExportHTML) {
     Write-Host "Generating HTML report..." -ForegroundColor Cyan
     Export-HTMLReport
 }
 
-if($ExportCSV) {
+if ($ExportCSV) {
     Write-Host "Generating CSV report..." -ForegroundColor Cyan
     Export-CSVReport
 }

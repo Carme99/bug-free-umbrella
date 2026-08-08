@@ -59,22 +59,22 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")]
     [string]$DayOfWeek,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidatePattern('^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$')]
     [string]$Time,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$TaskName = "Weekly Server Reboot",
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateRange(0, 600)]
     [int]$RebootDelay = 60,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$Force
 )
 
@@ -90,20 +90,20 @@ function Write-Log {
         Writes formatted log messages to console with color coding.
     #>
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Message,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [ValidateSet("INFO", "SUCCESS", "WARNING", "ERROR")]
         [string]$Type = "INFO"
     )
 
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $color = switch($Type) {
-        "ERROR"   { "Red" }
+    $color = switch ($Type) {
+        "ERROR" { "Red" }
         "SUCCESS" { "Green" }
         "WARNING" { "Yellow" }
-        default   { "White" }
+        default { "White" }
     }
     Write-Host "[$timestamp] [$Type] $Message" -ForegroundColor $color
 }
@@ -175,7 +175,8 @@ function Get-TimeInput {
             $hour = $timeParts[0].PadLeft(2, '0')
             $minute = $timeParts[1]
             return "${hour}:${minute}"
-        } else {
+        }
+        else {
             Write-Host "Invalid time format. Please use 24-hour format (HH:mm), e.g., 02:00 or 23:30" -ForegroundColor Red
         }
     } while ($true)
@@ -187,7 +188,7 @@ function Test-ScheduledTaskExists {
         Checks if a scheduled task exists.
     #>
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Name
     )
 
@@ -205,15 +206,18 @@ function Remove-ExistingTask {
     .SYNOPSIS
         Removes an existing scheduled task.
     #>
+    [CmdletBinding(SupportsShouldProcess)]
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Name
     )
 
     try {
-        Unregister-ScheduledTask -TaskName $Name -Confirm:$false -ErrorAction Stop
-        Write-Log "Removed existing scheduled task: $Name" "SUCCESS"
-        return $true
+        if ($PSCmdlet.ShouldProcess($Name, 'Unregister scheduled task')) {
+            Unregister-ScheduledTask -TaskName $Name -Confirm:$false -ErrorAction Stop
+            Write-Log "Removed existing scheduled task: $Name" "SUCCESS"
+            return $true
+        }
     }
     catch {
         Write-Log "Failed to remove existing task: $($_.Exception.Message)" "ERROR"
@@ -226,17 +230,18 @@ function New-RebootScheduledTask {
     .SYNOPSIS
         Creates the scheduled task for weekly reboots.
     #>
+    [CmdletBinding(SupportsShouldProcess)]
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$TaskName,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Day,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$ScheduledTime,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [int]$Delay
     )
 
@@ -269,14 +274,16 @@ function New-RebootScheduledTask {
 
         # Register the scheduled task
         Write-Log "Registering scheduled task..." "INFO"
-        $task = Register-ScheduledTask `
-            -TaskName $TaskName `
-            -Action $action `
-            -Trigger $trigger `
-            -Settings $settings `
-            -Principal $principal `
-            -Description "Automatically reboots the server weekly on $Day at $ScheduledTime. Created by New-WeeklyRebootSchedule.ps1" `
-            -ErrorAction Stop
+        if ($PSCmdlet.ShouldProcess($TaskName, 'Register weekly reboot scheduled task')) {
+            $task = Register-ScheduledTask `
+                -TaskName $TaskName `
+                -Action $action `
+                -Trigger $trigger `
+                -Settings $settings `
+                -Principal $principal `
+                -Description "Automatically reboots the server weekly on $Day at $ScheduledTime. Created by New-WeeklyRebootSchedule.ps1" `
+                -ErrorAction Stop
+        }
 
         return $task
     }
@@ -292,16 +299,16 @@ function Show-TaskSummary {
         Displays a summary of the created scheduled task.
     #>
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [Microsoft.Management.Infrastructure.CimInstance]$Task,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Day,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$ScheduledTime,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [int]$Delay
     )
 
@@ -329,7 +336,7 @@ function Get-UserConfirmation {
         Prompts user for confirmation.
     #>
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Message
     )
 
@@ -352,7 +359,8 @@ Write-Log "Starting Weekly Reboot Scheduler configuration..." "INFO"
 if ([string]::IsNullOrEmpty($DayOfWeek)) {
     $DayOfWeek = Get-DayOfWeekSelection
     Write-Log "Selected day: $DayOfWeek" "INFO"
-} else {
+}
+else {
     Write-Log "Using day from parameter: $DayOfWeek" "INFO"
 }
 
@@ -360,7 +368,8 @@ if ([string]::IsNullOrEmpty($DayOfWeek)) {
 if ([string]::IsNullOrEmpty($Time)) {
     $Time = Get-TimeInput
     Write-Log "Selected time: $Time" "INFO"
-} else {
+}
+else {
     Write-Log "Using time from parameter: $Time" "INFO"
 }
 
@@ -387,7 +396,8 @@ if ($taskExists) {
             Write-Log "Operation cancelled by user." "INFO"
             exit 0
         }
-    } else {
+    }
+    else {
         Write-Log "Force parameter specified - will overwrite existing task." "INFO"
     }
 
