@@ -117,6 +117,7 @@ function Get-AppProcessName {
 }
 
 function Stop-AppProcess {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$AppId)
 
     $processName = Get-AppProcessName -AppId $AppId
@@ -134,14 +135,16 @@ function Stop-AppProcess {
     Write-Log "Force closing $processName..."
 
     try {
-        $processes | ForEach-Object {
-            $_.CloseMainWindow() | Out-Null
+        if ($PSCmdlet.ShouldProcess($processName, 'Close application process')) {
+            $processes | ForEach-Object {
+                $_.CloseMainWindow() | Out-Null
+            }
         }
 
         Start-Sleep -Seconds 2
 
         $remainingProcesses = Get-Process -Name $processName -ErrorAction SilentlyContinue
-        if ($remainingProcesses) {
+        if ($remainingProcesses -and $PSCmdlet.ShouldProcess($processName, 'Force kill application process')) {
             Stop-Process -Name $processName -Force -ErrorAction SilentlyContinue
             Start-Sleep -Seconds 1
 
@@ -156,7 +159,8 @@ function Stop-AppProcess {
         Write-Log "Successfully closed $processName"
         return $true
 
-    } catch {
+    }
+    catch {
         Write-Log "Error closing process: $_" "ERROR"
         return $false
     }
@@ -165,6 +169,7 @@ function Stop-AppProcess {
 # ========================= UPDATE FUNCTION ========================= #
 
 function Update-PriorityApp {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$AppId, [string]$AppName, [int]$RetryCount = 0)
 
     Write-Log "[PRIORITY] Updating: $AppName ($AppId)"
@@ -186,6 +191,9 @@ function Update-PriorityApp {
     try {
         Write-Log "Executing: winget upgrade --id $AppId --silent"
 
+        if (-not $PSCmdlet.ShouldProcess($AppId, 'Run winget upgrade')) {
+            return $false
+        }
         $job = Start-Job -ScriptBlock {
             param($id)
             & winget upgrade --id $id --silent --accept-source-agreements --accept-package-agreements 2>&1
@@ -203,15 +211,17 @@ function Update-PriorityApp {
             # FIX: Differentiate between actually updated vs already up-to-date
             $wasUpdated = $outputString -match 'Successfully installed'
             $alreadyUpToDate = $outputString -match 'No applicable update found' -or
-                               $outputString -match 'No available upgrade found'
+            $outputString -match 'No available upgrade found'
 
             if ($wasUpdated) {
                 Write-Log "Successfully updated $AppName" "SUCCESS"
                 return $true
-            } elseif ($alreadyUpToDate) {
+            }
+            elseif ($alreadyUpToDate) {
                 Write-Log "$AppName is already up-to-date (no update needed)" "INFO"
                 return $true
-            } else {
+            }
+            else {
                 Write-Log "Update failed for $AppName" "ERROR"
 
                 if ($RetryCount -lt ($MaxRetries - 1)) {
@@ -222,14 +232,16 @@ function Update-PriorityApp {
 
                 return $false
             }
-        } else {
+        }
+        else {
             Stop-Job -Job $job
             Remove-Job -Job $job -Force
             Write-Log "Update timed out for $AppName" "ERROR"
             return $false
         }
 
-    } catch {
+    }
+    catch {
         Write-Log "Error updating $AppName : $_" "ERROR"
 
         if ($RetryCount -lt ($MaxRetries - 1)) {
@@ -289,7 +301,8 @@ try {
 
         if ($success) {
             $successCount++
-        } else {
+        }
+        else {
             $failCount++
         }
 
@@ -304,12 +317,14 @@ try {
     if ($successCount -gt 0) {
         Write-Log "Priority security updates completed successfully"
         exit 0
-    } else {
+    }
+    else {
         Write-Log "No priority applications were updated" "WARN"
         exit 1
     }
 
-} catch {
+}
+catch {
     Write-Log "Unexpected error: $_" "ERROR"
     exit 1
 }

@@ -181,6 +181,7 @@ function Test-AppRunning {
 }
 
 function Stop-AppProcess {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$AppId, [int]$MaxAttempts = 3)
 
     $processName = Get-AppProcessName -AppId $AppId
@@ -199,8 +200,10 @@ function Stop-AppProcess {
         Write-Log "Attempting to close $processName (attempt $i/$MaxAttempts)"
 
         try {
-            $processes | ForEach-Object {
-                $_.CloseMainWindow() | Out-Null
+            if ($PSCmdlet.ShouldProcess($processName, 'Close application process')) {
+                $processes | ForEach-Object {
+                    $_.CloseMainWindow() | Out-Null
+                }
             }
 
             Start-Sleep -Seconds 3
@@ -214,7 +217,9 @@ function Stop-AppProcess {
             # Force kill if last attempt
             if ($i -eq $MaxAttempts) {
                 Write-Log "Force killing $processName" "WARN"
-                Stop-Process -Name $processName -Force -ErrorAction SilentlyContinue
+                if ($PSCmdlet.ShouldProcess($processName, 'Force kill application process')) {
+                    Stop-Process -Name $processName -Force -ErrorAction SilentlyContinue
+                }
                 Start-Sleep -Seconds 2
 
                 # FIX: Verify process was actually terminated
@@ -227,7 +232,8 @@ function Stop-AppProcess {
                 return $true
             }
 
-        } catch {
+        }
+        catch {
             Write-Log "Error closing process: $_" "ERROR"
         }
 
@@ -240,6 +246,7 @@ function Stop-AppProcess {
 # ========================= UPDATE FUNCTIONS ========================= #
 
 function Update-Application {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [string]$AppId,
         [string]$AppName,
@@ -267,7 +274,8 @@ function Update-Application {
                         Message = "Application is running and could not be closed"
                     }
                 }
-            } else {
+            }
+            else {
                 Write-Log "$AppName is currently running, skipping update" "WARN"
                 return [PSCustomObject]@{
                     AppId = $AppId
@@ -295,6 +303,14 @@ function Update-Application {
         Write-Log "Executing: winget upgrade --id $AppId --source winget --silent --accept-source-agreements --accept-package-agreements"
 
         $timeoutSeconds = $TimeoutPerAppMinutes * 60
+        if (-not $PSCmdlet.ShouldProcess($AppId, 'Run winget upgrade')) {
+            return [PSCustomObject]@{
+                AppId = $AppId
+                AppName = $AppName
+                Success = $false
+                Message = "Update skipped (WhatIf)"
+            }
+        }
         $job = Start-Job -ScriptBlock {
             param($id)
             & winget upgrade --id $id --source winget --silent --accept-source-agreements --accept-package-agreements 2>&1
@@ -312,7 +328,7 @@ function Update-Application {
             # FIX: Differentiate between actually updated, already up-to-date, and failed
             $wasUpdated = $outputString -match 'Successfully installed'
             $alreadyUpToDate = $outputString -match 'No applicable update found' -or
-                               $outputString -match 'No available upgrade found'
+            $outputString -match 'No available upgrade found'
 
             if ($wasUpdated) {
                 Write-Log "Successfully updated $AppName" "SUCCESS"
@@ -322,7 +338,8 @@ function Update-Application {
                     Success = $true
                     Message = "Update installed successfully"
                 }
-            } elseif ($alreadyUpToDate) {
+            }
+            elseif ($alreadyUpToDate) {
                 Write-Log "$AppName is already up-to-date (no update needed)" "INFO"
                 return [PSCustomObject]@{
                     AppId = $AppId
@@ -330,7 +347,8 @@ function Update-Application {
                     Success = $true
                     Message = "Already up-to-date"
                 }
-            } else {
+            }
+            else {
                 $errorMessage = $output -join "`n"
                 Write-Log "Update failed for $AppName : $errorMessage" "ERROR"
 
@@ -348,12 +366,14 @@ function Update-Application {
                     Message = "Update failed after $MaxRetries attempts"
                 }
             }
-        } else {
+        }
+        else {
             # Timeout occurred - FIX: Add error handling for job cleanup
             try {
                 Stop-Job -Job $job -ErrorAction SilentlyContinue
                 Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
-            } catch {
+            }
+            catch {
                 Write-Log "Error cleaning up timed out job: $_" "WARN"
             }
 
@@ -366,7 +386,8 @@ function Update-Application {
             }
         }
 
-    } catch {
+    }
+    catch {
         Write-Log "Error updating $AppName : $_" "ERROR"
 
         if ($RetryCount -lt ($MaxRetries - 1)) {
@@ -408,7 +429,8 @@ function Get-OutdatedApps {
         }
 
         return $outdatedApps
-    } catch {
+    }
+    catch {
         Write-Log "Error detecting outdated apps: $_" "ERROR"
         return @()
     }
@@ -433,7 +455,8 @@ try {
     # Filter apps to update
     if ($PriorityAppsOnly) {
         $appsToUpdate = $outdatedApps | Where-Object { $_.IsPriority -eq $true }
-    } else {
+    }
+    else {
         $appsToCheck = $PriorityApps + $StandardApps
         $appsToUpdate = $outdatedApps | Where-Object { $_.Id -in $appsToCheck }
     }
@@ -458,9 +481,11 @@ try {
 
         if ($result.Success) {
             $successCount++
-        } elseif ($result.Message -match "running") {
+        }
+        elseif ($result.Message -match "running") {
             $skippedCount++
-        } else {
+        }
+        else {
             $failCount++
         }
 
@@ -486,12 +511,14 @@ try {
     if ($successCount -gt 0) {
         Write-Log "Remediation completed successfully (some apps may require restart)"
         exit 0
-    } else {
+    }
+    else {
         Write-Log "No applications were successfully updated" "WARN"
         exit 1
     }
 
-} catch {
+}
+catch {
     Write-Log "Unexpected error during remediation: $_" "ERROR"
     Write-Log "Stack trace: $($_.ScriptStackTrace)" "ERROR"
     exit 1

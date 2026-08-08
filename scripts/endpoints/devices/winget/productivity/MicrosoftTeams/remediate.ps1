@@ -71,9 +71,9 @@ function Write-Log {
     $logMessage = "[$timestamp] [$Level] $Message"
 
     switch ($Level) {
-        'Error'   { Write-Error $Message }
+        'Error' { Write-Error $Message }
         'Warning' { Write-Warning $Message }
-        'Info'    { Write-Host $Message }
+        'Info' { Write-Host $Message }
     }
 
     if ($EnableLogging) {
@@ -83,7 +83,8 @@ function Write-Log {
                 New-Item -Path $logDir -ItemType Directory -Force | Out-Null
             }
             Add-Content -Path $LogPath -Value $logMessage -ErrorAction SilentlyContinue
-        } catch { }
+        }
+        catch { }
     }
 }
 
@@ -107,12 +108,14 @@ function Show-UserNotification {
         }
 
         Write-Log "User notification sent: $AppName will close in $Seconds seconds" -Level Info
-    } catch {
+    }
+    catch {
         Write-Log "Failed to send user notification: $($_.Exception.Message)" -Level Warning
     }
 }
 
 function Stop-ApplicationProcess {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [string]$ProcessName,
         [int]$MaxAttempts = $MaxProcessCloseAttempts
@@ -128,7 +131,9 @@ function Stop-ApplicationProcess {
         }
 
         Write-Log "Stopping $ProcessName process (attempt $attempt/$MaxAttempts)..." -Level Info
-        Stop-Process -Name $ProcessName -Force -ErrorAction SilentlyContinue
+        if ($PSCmdlet.ShouldProcess($ProcessName, 'Stop application process')) {
+            Stop-Process -Name $ProcessName -Force -ErrorAction SilentlyContinue
+        }
         Start-Sleep -Seconds 2
 
         $attempt++
@@ -188,7 +193,8 @@ function Invoke-WingetWithRetry {
 
             Write-Log "Winget command exited with code 0x$($p.ExitCode.ToString('X8')) on attempt $attempt" -Level Warning
             if ($stderr) { Write-Log "Winget stderr: $stderr" -Level Warning }
-        } catch {
+        }
+        catch {
             Write-Log "Winget command failed on attempt $attempt : $($_.Exception.Message)" -Level Warning
         }
 
@@ -262,7 +268,8 @@ try {
 
                 Write-Log "$name closed successfully. Waiting $GracePeriodSeconds seconds..." -Level Info
                 Start-Sleep -Seconds $GracePeriodSeconds
-            } else {
+            }
+            else {
                 Write-Log "$name is not currently running." -Level Info
                 Write-Host "$name is not currently running."
             }
@@ -278,7 +285,8 @@ try {
                     Write-Log "Executing pre-update hook..." -Level Info
                     try {
                         & $PreUpdateScriptBlock
-                    } catch {
+                    }
+                    catch {
                         Write-Log "Pre-update hook failed: $($_.Exception.Message)" -Level Warning
                     }
                 }
@@ -297,7 +305,8 @@ try {
                     Write-Log "Executing post-update hook..." -Level Info
                     try {
                         & $PostUpdateScriptBlock
-                    } catch {
+                    }
+                    catch {
                         Write-Log "Post-update hook failed: $($_.Exception.Message)" -Level Warning
                     }
                 }
@@ -319,12 +328,14 @@ try {
                     }
 
                     exit 0
-                } else {
+                }
+                else {
                     Write-Log "Failed to verify $name installation after update" -Level Error
                     Write-Error "Failed to verify $name installation after update."
                     exit 1
                 }
-            } else {
+            }
+            else {
                 # No update available
                 $versionInstalled = $package.InstalledVersion
                 Write-Log "$name is already up to date (version $versionInstalled)" -Level Info
@@ -350,7 +361,8 @@ try {
 
     if ($wingetexe.Count -gt 1) {
         $SystemContext = $wingetexe[-1].Path
-    } else {
+    }
+    else {
         $SystemContext = $wingetexe.Path
     }
 
@@ -365,7 +377,8 @@ try {
         $nameMatch = $packageInfo | Select-String -Pattern "^($ID)\s+(.+?)\s+\d"
         if ($nameMatch) {
             $name = $nameMatch.Matches[0].Groups[2].Value.Trim()
-        } else {
+        }
+        else {
             $name = $ID
         }
     }
@@ -407,14 +420,15 @@ try {
 
         Write-Log "$name closed successfully. Waiting $GracePeriodSeconds seconds..." -Level Info
         Start-Sleep -Seconds $GracePeriodSeconds
-    } else {
+    }
+    else {
         Write-Log "$name is not currently running." -Level Info
         Write-Host "$name is not currently running."
     }
 
     # Check if update is available
     if ($packageInfo -match '\bVersion\s+Available\b') {
-        $verInstalled, $verAvailable = (-split $packageInfo[-1])[-3,-2]
+        $verInstalled, $verAvailable = (-split $packageInfo[-1])[-3, -2]
         Write-Log "Update available for $name | Installed: $verInstalled | Available: $verAvailable" -Level Info
 
         # Execute pre-update hook if defined
@@ -422,7 +436,8 @@ try {
             Write-Log "Executing pre-update hook..." -Level Info
             try {
                 & $PreUpdateScriptBlock
-            } catch {
+            }
+            catch {
                 Write-Log "Pre-update hook failed: $($_.Exception.Message)" -Level Warning
             }
         }
@@ -442,7 +457,8 @@ try {
             Write-Log "Executing post-update hook..." -Level Info
             try {
                 & $PostUpdateScriptBlock
-            } catch {
+            }
+            catch {
                 Write-Log "Post-update hook failed: $($_.Exception.Message)" -Level Warning
             }
         }
@@ -464,12 +480,14 @@ try {
             }
 
             exit 0
-        } else {
+        }
+        else {
             Write-Log "Failed to verify $name installation after update" -Level Error
             Write-Error "Failed to verify $name installation after update."
             exit 1
         }
-    } else {
+    }
+    else {
         # No update available
         if ($packageInfo -match '\d+(\.\d+)+') {
             $versionInstalled = (-split $packageInfo[-1])[-2]
@@ -486,12 +504,14 @@ try {
         }
     }
 
-} catch {
+}
+catch {
     $errMsg = $_.Exception.Message
     Write-Log "ERROR: Failed to update $name : $errMsg" -Level Error
     Write-Error "Failed to update $name : $errMsg"
     exit 1
-} finally {
+}
+finally {
     Write-Log "=== Remediation script completed ===" -Level Info
 }
 #endregion
