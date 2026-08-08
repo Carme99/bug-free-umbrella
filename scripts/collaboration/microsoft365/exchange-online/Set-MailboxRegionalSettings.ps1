@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Checks and configures Exchange Online mailbox regional and calendar settings.
 
@@ -72,49 +72,49 @@
     Compatible with Exchange Online (Microsoft 365)
 #>
 
-[CmdletBinding(DefaultParameterSetName='AuditSingle')]
+[CmdletBinding(DefaultParameterSetName = 'AuditSingle')]
 param(
-    [Parameter(Mandatory=$false, ParameterSetName='AuditSingle')]
-    [Parameter(Mandatory=$false, ParameterSetName='ApplySingle')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'AuditSingle')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'ApplySingle')]
     [string]$UserPrincipalName,
 
-    [Parameter(Mandatory=$false, ParameterSetName='AuditAll')]
-    [Parameter(Mandatory=$false, ParameterSetName='ApplyAll')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'AuditAll')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'ApplyAll')]
     [switch]$AllMailboxes,
 
-    [Parameter(Mandatory=$false, ParameterSetName='AuditSingle')]
-    [Parameter(Mandatory=$false, ParameterSetName='AuditAll')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'AuditSingle')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'AuditAll')]
     [switch]$AuditOnly,
 
-    [Parameter(Mandatory=$false, ParameterSetName='ApplySingle')]
-    [Parameter(Mandatory=$false, ParameterSetName='ApplyAll')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'ApplySingle')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'ApplyAll')]
     [switch]$Apply,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$TimeZone = 'GMT Standard Time',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$DateFormat = 'dd/MM/yyyy',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$TimeFormat = 'HH:mm',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$Language = 'en-GB',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$WorkDays = 'Monday, Tuesday, Wednesday, Thursday, Friday',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$WorkingHoursStartTime = '08:00:00',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$WorkingHoursEndTime = '17:00:00',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -181,7 +181,7 @@ $mailboxesToProcess = @()
 if ($AllMailboxes) {
     Write-Host "[*] Retrieving all user mailboxes..." -ForegroundColor Cyan
     try {
-        $allMailboxes = Get-EXOMailbox -ResultSize Unlimited -RecipientTypeDetails UserMailbox -Properties DisplayName,UserPrincipalName
+        $allMailboxes = Get-EXOMailbox -ResultSize Unlimited -RecipientTypeDetails UserMailbox -Properties DisplayName, UserPrincipalName
         Write-Host "[+] Found $($allMailboxes.Count) mailbox(es)" -ForegroundColor Green
         $mailboxesToProcess = $allMailboxes
     }
@@ -193,7 +193,7 @@ if ($AllMailboxes) {
 elseif ($UserPrincipalName) {
     Write-Host "[*] Retrieving mailbox: $UserPrincipalName..." -ForegroundColor Cyan
     try {
-        $mailbox = Get-EXOMailbox -Identity $UserPrincipalName -Properties DisplayName,UserPrincipalName
+        $mailbox = Get-EXOMailbox -Identity $UserPrincipalName -Properties DisplayName, UserPrincipalName
         Write-Host "[+] Found mailbox: $($mailbox.DisplayName)" -ForegroundColor Green
         $mailboxesToProcess = @($mailbox)
     }
@@ -206,7 +206,7 @@ else {
     Write-Host "[*] Using current logged-in user's mailbox..." -ForegroundColor Cyan
     try {
         $connectionStatus = Get-ConnectionInformation
-        $mailbox = Get-EXOMailbox -Identity $connectionStatus.UserPrincipalName -Properties DisplayName,UserPrincipalName
+        $mailbox = Get-EXOMailbox -Identity $connectionStatus.UserPrincipalName -Properties DisplayName, UserPrincipalName
         Write-Host "[+] Current user mailbox: $($mailbox.DisplayName)" -ForegroundColor Green
         $mailboxesToProcess = @($mailbox)
     }

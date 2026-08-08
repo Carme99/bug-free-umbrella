@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Audits Azure VM security configuration and compliance.
 
@@ -98,14 +98,16 @@ try {
         Write-Error "Not logged in. Run Connect-AzAccount"
         exit 1
     }
-} catch {
+}
+catch {
     Write-Error "Azure authentication required"
     exit 1
 }
 
 $subscriptions = if ($SubscriptionId -eq '*') {
     Get-AzSubscription
-} else {
+}
+else {
     @(Get-AzSubscription -SubscriptionId $SubscriptionId)
 }
 
@@ -115,7 +117,8 @@ foreach ($sub in $subscriptions) {
 
     $vms = if ($ResourceGroupName -eq '*') {
         Get-AzVM -Status
-    } else {
+    }
+    else {
         Get-AzVM -ResourceGroupName $ResourceGroupName -Status
     }
 
@@ -153,7 +156,8 @@ foreach ($sub in $subscriptions) {
                         Recommendation = "Enable Azure Disk Encryption"
                     }
                 }
-            } else {
+            }
+            else {
                 $vmSecurity.SecurityIssues += "Encryption status unknown"
                 $vmSecurity.SecurityScore -= 10
             }
@@ -212,7 +216,8 @@ foreach ($sub in $subscriptions) {
         # Check boot diagnostics
         if ($vm.DiagnosticsProfile.BootDiagnostics.Enabled) {
             $vmSecurity.BootDiagnosticsEnabled = $true
-        } else {
+        }
+        else {
             $vmSecurity.BootDiagnosticsEnabled = $false
             $vmSecurity.SecurityIssues += "Boot diagnostics disabled"
             $vmSecurity.SecurityScore -= 5
@@ -221,7 +226,8 @@ foreach ($sub in $subscriptions) {
         # Check managed identity
         if ($vm.Identity) {
             $vmSecurity.ManagedIdentity = $vm.Identity.Type
-        } else {
+        }
+        else {
             $vmSecurity.ManagedIdentity = "None"
         }
 
@@ -233,9 +239,9 @@ foreach ($sub in $subscriptions) {
 
         # Security score assessment
         $vmSecurity.SecurityRating = if ($vmSecurity.SecurityScore -ge 90) { 'Excellent' }
-                                     elseif ($vmSecurity.SecurityScore -ge 75) { 'Good' }
-                                     elseif ($vmSecurity.SecurityScore -ge 60) { 'Fair' }
-                                     else { 'Poor' }
+        elseif ($vmSecurity.SecurityScore -ge 75) { 'Good' }
+        elseif ($vmSecurity.SecurityScore -ge 60) { 'Fair' }
+        else { 'Poor' }
 
         $vmSecurity.SecurityIssues = $vmSecurity.SecurityIssues -join '; '
         $results.VMSecurityStatus += $vmSecurity
@@ -250,7 +256,8 @@ $highSeverityFindings = ($results.SecurityFindings | Where-Object { $_.Severity 
 
 $avgSecurityScore = if ($totalVMs -gt 0) {
     [math]::Round(($results.VMSecurityStatus.SecurityScore | Measure-Object -Average).Average, 2)
-} else { 0 }
+}
+else { 0 }
 
 $results.Summary = @{
     TotalVMs = $totalVMs

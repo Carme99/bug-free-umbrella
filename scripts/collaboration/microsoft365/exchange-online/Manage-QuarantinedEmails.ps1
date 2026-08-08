@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Interactive tool for managing quarantined emails for a specific M365 user.
 
@@ -172,9 +172,9 @@ function Get-QuarantinedMessages {
     try {
         # Get quarantine messages for the user
         $messages = Get-QuarantineMessage -RecipientAddress $RecipientAddress `
-                                          -StartReceivedDate $startDate `
-                                          -EndReceivedDate $endDate `
-                                          -ErrorAction Stop
+            -StartReceivedDate $startDate `
+            -EndReceivedDate $endDate `
+            -ErrorAction Stop
 
         return $messages
     }
@@ -282,8 +282,8 @@ function Release-QuarantinedMessage {
         # Release the message to original recipient
         # Note: Release-QuarantineMessage only supports releasing to original recipients
         Release-QuarantineMessage -Identity $Message.Identity `
-                                  -ReleaseToAll:$false `
-                                  -ErrorAction Stop
+            -ReleaseToAll:$false `
+            -ErrorAction Stop
 
         Write-Host "[+] Message successfully released to: $targetRecipient" -ForegroundColor Green
         Write-Host "[i] The message should be delivered to the original recipient shortly." -ForegroundColor Green
@@ -369,107 +369,107 @@ function Show-MessageActionMenu {
 # Only execute if not dot-sourced (for Pester tests)
 if ($MyInvocation.InvocationName -ne '.') {
 
-Show-Banner
+    Show-Banner
 
-# Check Exchange Online connection
-if (-not (Connect-ToExchangeOnline)) {
-    exit 1
-}
-
-# Get user email address
-if ([string]::IsNullOrWhiteSpace($UserEmail)) {
-    $UserEmail = Get-UserEmailInteractive
-    if (-not $UserEmail) {
+    # Check Exchange Online connection
+    if (-not (Connect-ToExchangeOnline)) {
         exit 1
     }
-}
-else {
-    # Validate provided email
-    if (-not (Test-EmailAddress -Email $UserEmail)) {
-        Write-Host "[-] Invalid email address format: $UserEmail" -ForegroundColor Red
+
+    # Get user email address
+    if ([string]::IsNullOrWhiteSpace($UserEmail)) {
+        $UserEmail = Get-UserEmailInteractive
+        if (-not $UserEmail) {
+            exit 1
+        }
+    }
+    else {
+        # Validate provided email
+        if (-not (Test-EmailAddress -Email $UserEmail)) {
+            Write-Host "[-] Invalid email address format: $UserEmail" -ForegroundColor Red
+            exit 1
+        }
+    }
+
+    # Verify user exists
+    Write-Host "`n[*] Verifying user account..." -ForegroundColor Cyan
+    try {
+        $user = Get-EXOMailbox -Identity $UserEmail -ErrorAction Stop
+        Write-Host "[+] User found: $($user.DisplayName) ($($user.PrimarySmtpAddress))" -ForegroundColor Green
+        $UserEmail = $user.PrimarySmtpAddress  # Use primary SMTP address
+    }
+    catch {
+        Write-Host "[-] User not found or error accessing mailbox: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "[!] Please verify the email address is correct." -ForegroundColor Yellow
         exit 1
     }
-}
 
-# Verify user exists
-Write-Host "`n[*] Verifying user account..." -ForegroundColor Cyan
-try {
-    $user = Get-EXOMailbox -Identity $UserEmail -ErrorAction Stop
-    Write-Host "[+] User found: $($user.DisplayName) ($($user.PrimarySmtpAddress))" -ForegroundColor Green
-    $UserEmail = $user.PrimarySmtpAddress  # Use primary SMTP address
-}
-catch {
-    Write-Host "[-] User not found or error accessing mailbox: $($_.Exception.Message)" -ForegroundColor Red
-    Write-Host "[!] Please verify the email address is correct." -ForegroundColor Yellow
-    exit 1
-}
+    # Get quarantined messages
+    $quarantinedMessages = Get-QuarantinedMessages -RecipientAddress $UserEmail -DaysBack $Days
 
-# Get quarantined messages
-$quarantinedMessages = Get-QuarantinedMessages -RecipientAddress $UserEmail -DaysBack $Days
-
-if (-not $quarantinedMessages) {
-    exit 0
-}
-
-# Convert to array if single item
-if ($quarantinedMessages -isnot [array]) {
-    $quarantinedMessages = @($quarantinedMessages)
-}
-
-# Display messages
-if (-not (Show-QuarantinedMessages -Messages $quarantinedMessages)) {
-    exit 0
-}
-
-# Interactive message selection loop
-$continue = $true
-while ($continue) {
-    $selection = Select-MessageToRelease -Messages $quarantinedMessages
-
-    if ($null -eq $selection) {
-        # Invalid input, try again
-        continue
+    if (-not $quarantinedMessages) {
+        exit 0
     }
 
-    if ($selection -eq 0) {
-        Write-Host "`n[+] Exiting quarantine manager." -ForegroundColor Green
-        $continue = $false
-        break
+    # Convert to array if single item
+    if ($quarantinedMessages -isnot [array]) {
+        $quarantinedMessages = @($quarantinedMessages)
     }
 
-    # Get selected message
-    $selectedMessage = $quarantinedMessages[$selection - 1]
-
-    # Show action menu
-    $actionResult = Show-MessageActionMenu -Message $selectedMessage -Index $selection
-
-    if ($actionResult.Action -eq 'Exit') {
-        Write-Host "`n[+] Exiting quarantine manager." -ForegroundColor Green
-        $continue = $false
+    # Display messages
+    if (-not (Show-QuarantinedMessages -Messages $quarantinedMessages)) {
+        exit 0
     }
-    elseif ($actionResult.Action -eq 'Released' -and $actionResult.Success) {
-        # Message was released, refresh the list
-        Write-Host "`n[*] Refreshing quarantine list..." -ForegroundColor Cyan
-        $quarantinedMessages = Get-QuarantinedMessages -RecipientAddress $UserEmail -DaysBack $Days
 
-        if (-not $quarantinedMessages -or $quarantinedMessages.Count -eq 0) {
-            Write-Host "[i] No more quarantined messages for this user." -ForegroundColor Green
+    # Interactive message selection loop
+    $continue = $true
+    while ($continue) {
+        $selection = Select-MessageToRelease -Messages $quarantinedMessages
+
+        if ($null -eq $selection) {
+            # Invalid input, try again
+            continue
+        }
+
+        if ($selection -eq 0) {
+            Write-Host "`n[+] Exiting quarantine manager." -ForegroundColor Green
+            $continue = $false
+            break
+        }
+
+        # Get selected message
+        $selectedMessage = $quarantinedMessages[$selection - 1]
+
+        # Show action menu
+        $actionResult = Show-MessageActionMenu -Message $selectedMessage -Index $selection
+
+        if ($actionResult.Action -eq 'Exit') {
+            Write-Host "`n[+] Exiting quarantine manager." -ForegroundColor Green
             $continue = $false
         }
-        else {
-            if ($quarantinedMessages -isnot [array]) {
-                $quarantinedMessages = @($quarantinedMessages)
+        elseif ($actionResult.Action -eq 'Released' -and $actionResult.Success) {
+            # Message was released, refresh the list
+            Write-Host "`n[*] Refreshing quarantine list..." -ForegroundColor Cyan
+            $quarantinedMessages = Get-QuarantinedMessages -RecipientAddress $UserEmail -DaysBack $Days
+
+            if (-not $quarantinedMessages -or $quarantinedMessages.Count -eq 0) {
+                Write-Host "[i] No more quarantined messages for this user." -ForegroundColor Green
+                $continue = $false
             }
+            else {
+                if ($quarantinedMessages -isnot [array]) {
+                    $quarantinedMessages = @($quarantinedMessages)
+                }
+                Show-QuarantinedMessages -Messages $quarantinedMessages
+            }
+        }
+        elseif ($actionResult.Action -eq 'Back') {
+            # Return to message list
             Show-QuarantinedMessages -Messages $quarantinedMessages
         }
     }
-    elseif ($actionResult.Action -eq 'Back') {
-        # Return to message list
-        Show-QuarantinedMessages -Messages $quarantinedMessages
-    }
-}
 
-Write-Host "`n[+] Quarantine management session completed." -ForegroundColor Green
-exit 0
+    Write-Host "`n[+] Quarantine management session completed." -ForegroundColor Green
+    exit 0
 
 } # End of invocation check

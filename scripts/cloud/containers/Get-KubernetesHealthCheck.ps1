@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Kubernetes cluster health check and diagnostics.
 
@@ -79,7 +79,8 @@ try {
     }
     $results.Cluster = kubectl config current-context 2>$null
     Write-Host "[+] Connected to cluster: $($results.Cluster)" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Host "[!] kubectl not found or not configured" -ForegroundColor Red
     exit 1
 }
@@ -91,7 +92,7 @@ try {
     foreach ($node in $nodeJson.items) {
         $nodeInfo = [PSCustomObject]@{
             Name = $node.metadata.name
-            Status = ($node.status.conditions | Where-Object {$_.type -eq "Ready"}).status
+            Status = ($node.status.conditions | Where-Object { $_.type -eq "Ready" }).status
             Version = $node.status.nodeInfo.kubeletVersion
             OS = $node.status.nodeInfo.osImage
             CPUCapacity = $node.status.capacity.cpu
@@ -105,14 +106,15 @@ try {
         $results.Nodes += $nodeInfo
     }
     Write-Host "[+] Checked $($results.Nodes.Count) nodes" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Host "[!] Error checking nodes: $_" -ForegroundColor Yellow
 }
 
 # Check pods
 Write-Host "[*] Checking pod status..." -ForegroundColor Cyan
 try {
-    $nsFlag = if ($Namespace -eq "all-namespaces") {"--all-namespaces"} else {"-n $Namespace"}
+    $nsFlag = if ($Namespace -eq "all-namespaces") { "--all-namespaces" } else { "-n $Namespace" }
     $podJson = kubectl get pods $nsFlag -o json | ConvertFrom-Json
 
     foreach ($pod in $podJson.items) {
@@ -136,7 +138,8 @@ try {
         $results.Pods += $podInfo
     }
     Write-Host "[+] Checked $($results.Pods.Count) pods" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Host "[!] Error checking pods: $_" -ForegroundColor Yellow
 }
 
@@ -161,7 +164,8 @@ try {
         $results.Deployments += $deployInfo
     }
     Write-Host "[+] Checked $($results.Deployments.Count) deployments" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Host "[!] Error checking deployments: $_" -ForegroundColor Yellow
 }
 
@@ -182,7 +186,8 @@ if ($CheckEvents) {
             }
         }
         Write-Host "[+] Collected $($results.Events.Count) recent events" -ForegroundColor Green
-    } catch {
+    }
+    catch {
         Write-Host "[!] Error collecting events: $_" -ForegroundColor Yellow
     }
 }
@@ -264,7 +269,7 @@ if ($ExportHTML) {
 
     $html += "<h2>Nodes</h2><table><tr><th>Name</th><th>Status</th><th>Version</th><th>CPU</th><th>Memory</th></tr>"
     foreach ($node in $results.Nodes) {
-        $statusClass = if ($node.Status -eq "True") {"status-ready"} else {"status-notready"}
+        $statusClass = if ($node.Status -eq "True") { "status-ready" } else { "status-notready" }
         $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($node.Name)"))</td><td class='$statusClass'>$(if ($node.Status -eq 'True') {'Ready'} else {'NotReady'})</td><td>$([System.Net.WebUtility]::HtmlEncode("$($node.Version)"))</td><td>$($node.CPUCapacity)</td><td>$($node.MemoryCapacity)</td></tr>"
     }
 

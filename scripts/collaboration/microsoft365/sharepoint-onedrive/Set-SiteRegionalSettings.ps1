@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Checks and configures SharePoint Online site collection regional settings.
 
@@ -79,49 +79,49 @@
     - 1033: English (United States)
 #>
 
-[CmdletBinding(DefaultParameterSetName='AuditSingle')]
+[CmdletBinding(DefaultParameterSetName = 'AuditSingle')]
 param(
-    [Parameter(Mandatory=$false, ParameterSetName='AuditSingle')]
-    [Parameter(Mandatory=$false, ParameterSetName='ApplySingle')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'AuditSingle')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'ApplySingle')]
     [string]$SiteUrl,
 
-    [Parameter(Mandatory=$false, ParameterSetName='AuditAll')]
-    [Parameter(Mandatory=$false, ParameterSetName='ApplyAll')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'AuditAll')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'ApplyAll')]
     [switch]$AllSites,
 
-    [Parameter(Mandatory=$false, ParameterSetName='AuditSingle')]
-    [Parameter(Mandatory=$false, ParameterSetName='AuditAll')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'AuditSingle')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'AuditAll')]
     [switch]$AuditOnly,
 
-    [Parameter(Mandatory=$false, ParameterSetName='ApplySingle')]
-    [Parameter(Mandatory=$false, ParameterSetName='ApplyAll')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'ApplySingle')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'ApplyAll')]
     [switch]$Apply,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$TimeZone = 2,  # GMT Standard Time
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$LocaleId = 2057,  # en-GB
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$CalendarType = 1,  # Gregorian
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$WorkDayStartHour = 8,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$WorkDayEndHour = 17,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$FirstDayOfWeek = 1,  # Monday
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [bool]$Time24 = $true,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Monitors Azure Key Vault security, compliance, and secret expiration.
 
@@ -89,14 +89,16 @@ try {
         Write-Error "Not logged in. Run Connect-AzAccount"
         exit 1
     }
-} catch {
+}
+catch {
     Write-Error "Azure authentication required"
     exit 1
 }
 
 $subscriptions = if ($SubscriptionId -eq '*') {
     Get-AzSubscription
-} else {
+}
+else {
     @(Get-AzSubscription -SubscriptionId $SubscriptionId)
 }
 
@@ -157,12 +159,13 @@ foreach ($sub in $subscriptions) {
                         ExpirationDate = $secret.Expires
                         DaysUntilExpiration = $daysUntilExpiration
                         Severity = if ($daysUntilExpiration -le 7) { 'Critical' }
-                                   elseif ($daysUntilExpiration -le 14) { 'High' }
-                                   else { 'Medium' }
+                        elseif ($daysUntilExpiration -le 14) { 'High' }
+                        else { 'Medium' }
                     }
                 }
             }
-        } catch {
+        }
+        catch {
             Write-Warning "Could not retrieve secrets from $($vault.VaultName): $($_.Exception.Message)"
         }
 
@@ -181,12 +184,13 @@ foreach ($sub in $subscriptions) {
                         ExpirationDate = $cert.Expires
                         DaysUntilExpiration = $daysUntilExpiration
                         Severity = if ($daysUntilExpiration -le 7) { 'Critical' }
-                                   elseif ($daysUntilExpiration -le 14) { 'High' }
-                                   else { 'Medium' }
+                        elseif ($daysUntilExpiration -le 14) { 'High' }
+                        else { 'Medium' }
                     }
                 }
             }
-        } catch {
+        }
+        catch {
             Write-Warning "Could not retrieve certificates from $($vault.VaultName)"
         }
 

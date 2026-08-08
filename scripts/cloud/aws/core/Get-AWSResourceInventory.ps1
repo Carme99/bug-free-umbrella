@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     AWS cloud resource inventory and health monitoring.
 .DESCRIPTION
@@ -24,7 +24,8 @@ try {
     }
     Set-DefaultAWSRegion -Region $Region
     Write-Host "[+] Connected to AWS region: $Region" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Host "[!] AWS PowerShell module not installed" -ForegroundColor Red
     Write-Host "[*] Install: Install-Module AWSPowerShell.NetCore" -ForegroundColor Cyan
     exit 1
@@ -33,7 +34,7 @@ try {
 Write-Host "[*] Checking EC2 instances..." -ForegroundColor Cyan
 $ec2 = Get-EC2Instance
 $instances = $ec2.Instances
-$runningInstances = ($instances | Where-Object {$_.State.Name -eq "running"}).Count
+$runningInstances = ($instances | Where-Object { $_.State.Name -eq "running" }).Count
 Write-Host "[+] Found $($instances.Count) EC2 instances ($runningInstances running)" -ForegroundColor Green
 
 Write-Host "[*] Checking S3 buckets..." -ForegroundColor Cyan

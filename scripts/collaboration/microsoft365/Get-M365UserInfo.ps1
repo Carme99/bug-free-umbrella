@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Comprehensive M365 user information and management toolkit.
 
@@ -371,11 +371,13 @@ function Get-MailboxStatistics {
         # Parse quota safely
         $quotaGB = if ($mailboxDetails.ProhibitSendQuota -ne 'Unlimited') {
             Get-MailboxSizeGB $mailboxDetails.ProhibitSendQuota
-        } else { 0 }
+        }
+        else { 0 }
 
         $quotaPercent = if ($quotaGB -gt 0) {
             [math]::Round(($mailboxSizeGB / $quotaGB) * 100, 2)
-        } else { 0 }
+        }
+        else { 0 }
 
         Write-Host "`n╔══════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
         Write-Host "║                   MAILBOX STATISTICS                         ║" -ForegroundColor Cyan

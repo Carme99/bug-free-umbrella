@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Audits Azure AD (Entra ID) guest users for security and compliance.
 
@@ -43,19 +43,19 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$InactivityDays = 90,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$CheckPrivilegedGuests,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$GroupByDomain,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -99,7 +99,7 @@ Write-Host ""
 Write-Host "[*] Retrieving guest users..." -ForegroundColor Cyan
 
 try {
-    $guestUsers = Get-MgUser -Filter "userType eq 'Guest'" -All -Property DisplayName,UserPrincipalName,Mail,UserType,CreatedDateTime,SignInActivity,AccountEnabled
+    $guestUsers = Get-MgUser -Filter "userType eq 'Guest'" -All -Property DisplayName, UserPrincipalName, Mail, UserType, CreatedDateTime, SignInActivity, AccountEnabled
 
     Write-Host "[+] Found $($guestUsers.Count) guest user(s)" -ForegroundColor Green
 }

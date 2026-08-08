@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Generates comprehensive Microsoft Defender for Office 365 threat reports.
 
@@ -106,7 +106,8 @@ try {
     # Check if connected to Exchange Online
     try {
         Get-OrganizationConfig -ErrorAction Stop | Out-Null
-    } catch {
+    }
+    catch {
         Write-Error "Not connected to Exchange Online. Run: Connect-IPPSSession"
         exit 1
     }
@@ -131,7 +132,8 @@ try {
             }
         }
         Write-Host "Found $($phishingDetections.Count) phishing detections" -ForegroundColor White
-    } catch {
+    }
+    catch {
         Write-Warning "Could not retrieve phishing data: $($_.Exception.Message)"
     }
 
@@ -156,7 +158,8 @@ try {
             }
         }
         Write-Host "Found $($malwareDetections.Count) malware detections" -ForegroundColor White
-    } catch {
+    }
+    catch {
         Write-Warning "Could not retrieve malware data: $($_.Exception.Message)"
     }
 
@@ -170,7 +173,8 @@ try {
             Where-Object { $_.VerdictSource -eq 'Spam' }
 
         Write-Host "Found $($spamDetections.Count) spam detections" -ForegroundColor White
-    } catch {
+    }
+    catch {
         Write-Warning "Could not retrieve spam data: $($_.Exception.Message)"
     }
 
@@ -189,7 +193,8 @@ try {
             }
         }
         Write-Host "Found $($safeLinksData.Count) Safe Links clicks" -ForegroundColor White
-    } catch {
+    }
+    catch {
         Write-Warning "Could not retrieve Safe Links data: $($_.Exception.Message)"
     }
 
@@ -212,7 +217,8 @@ try {
             }
         }
         Write-Host "Found $($safeAttachmentsData.Count) Safe Attachments scans" -ForegroundColor White
-    } catch {
+    }
+    catch {
         Write-Warning "Could not retrieve Safe Attachments data: $($_.Exception.Message)"
     }
 
@@ -230,8 +236,8 @@ try {
                 UserEmail = $user.Name
                 ThreatCount = $user.Count
                 RiskLevel = if ($user.Count -gt 10) { 'High' }
-                           elseif ($user.Count -gt 5) { 'Medium' }
-                           else { 'Low' }
+                elseif ($user.Count -gt 5) { 'Medium' }
+                else { 'Low' }
             }
         }
     }
@@ -251,7 +257,8 @@ try {
         }
     }
 
-} catch {
+}
+catch {
     Write-Error "Error retrieving Defender data: $($_.Exception.Message)"
 }
 

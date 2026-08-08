@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Comprehensive Docker environment health check.
 
@@ -80,7 +80,8 @@ try {
     }
     $results.DockerVersion = $dockerVersion
     Write-Host "[+] Docker version: $dockerVersion" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Host "[!] Error accessing Docker: $_" -ForegroundColor Red
     exit 1
 }
@@ -99,7 +100,8 @@ try {
         OperatingSystem = $sysInfo.OperatingSystem
     }
     Write-Host "[+] System info collected" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Host "[!] Error collecting system info: $_" -ForegroundColor Yellow
 }
 
@@ -119,15 +121,16 @@ try {
                 Image = $fields[2]
                 Status = $fields[3]
                 State = $fields[4]
-                CPUPercent = if ($stats[0]) {$stats[0]} else {"N/A"}
-                MemoryUsage = if ($stats[1]) {$stats[1]} else {"N/A"}
-                MemoryPercent = if ($stats[2]) {$stats[2]} else {"N/A"}
+                CPUPercent = if ($stats[0]) { $stats[0] } else { "N/A" }
+                MemoryUsage = if ($stats[1]) { $stats[1] } else { "N/A" }
+                MemoryPercent = if ($stats[2]) { $stats[2] } else { "N/A" }
             }
 
             # Check for issues
             if ($containerInfo.State -eq "exited") {
                 $results.Issues += "Container '$($containerInfo.Name)' is stopped"
-            } elseif ($containerInfo.State -eq "restarting") {
+            }
+            elseif ($containerInfo.State -eq "restarting") {
                 $results.Issues += "Container '$($containerInfo.Name)' is in restart loop"
             }
 
@@ -135,7 +138,8 @@ try {
         }
     }
     Write-Host "[+] Analyzed $($results.Containers.Count) containers" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Host "[!] Error analyzing containers: $_" -ForegroundColor Yellow
 }
 
@@ -163,7 +167,8 @@ if ($IncludeImages) {
         }
 
         Write-Host "[+] Analyzed $($results.Images.Count) images" -ForegroundColor Green
-    } catch {
+    }
+    catch {
         Write-Host "[!] Error analyzing images: $_" -ForegroundColor Yellow
     }
 }
@@ -189,7 +194,8 @@ try {
     }
 
     Write-Host "[+] Analyzed $($results.Volumes.Count) volumes" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Host "[!] Error analyzing volumes: $_" -ForegroundColor Yellow
 }
 
@@ -210,7 +216,8 @@ if ($IncludeNetworks) {
             }
         }
         Write-Host "[+] Analyzed $($results.Networks.Count) networks" -ForegroundColor Green
-    } catch {
+    }
+    catch {
         Write-Host "[!] Error analyzing networks: $_" -ForegroundColor Yellow
     }
 }
@@ -233,7 +240,7 @@ if ($results.Issues.Count -gt 0) {
 # Display running containers
 if ($results.Containers.Count -gt 0) {
     Write-Host "`nRunning Containers:" -ForegroundColor Cyan
-    $results.Containers | Where-Object {$_.State -eq "running"} | Select-Object Name, Image, CPUPercent, MemoryPercent | Format-Table -AutoSize
+    $results.Containers | Where-Object { $_.State -eq "running" } | Select-Object Name, Image, CPUPercent, MemoryPercent | Format-Table -AutoSize
 }
 
 # Export HTML
@@ -292,7 +299,7 @@ if ($ExportHTML) {
 
     $html += "<h2>Containers</h2><table><tr><th>Name</th><th>Image</th><th>State</th><th>CPU</th><th>Memory</th></tr>"
     foreach ($container in $results.Containers) {
-        $stateClass = if ($container.State -eq "running") {"state-running"} else {"state-exited"}
+        $stateClass = if ($container.State -eq "running") { "state-running" } else { "state-exited" }
         $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($container.Name)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($container.Image)"))</td><td class='$stateClass'>$([System.Net.WebUtility]::HtmlEncode("$($container.State)"))</td><td>$($container.CPUPercent)</td><td>$($container.MemoryPercent)</td></tr>"
     }
 

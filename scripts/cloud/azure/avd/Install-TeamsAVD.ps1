@@ -82,22 +82,22 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$true, HelpMessage="Accept WebView2 EULA to proceed with installation")]
+    [Parameter(Mandatory = $true, HelpMessage = "Accept WebView2 EULA to proceed with installation")]
     [switch]$AcceptEULA,
 
-    [Parameter(HelpMessage="Skip cleanup of old per-user Teams installations")]
+    [Parameter(HelpMessage = "Skip cleanup of old per-user Teams installations")]
     [switch]$SkipUserCleanup,
 
-    [Parameter(HelpMessage="Path for transcript log file")]
+    [Parameter(HelpMessage = "Path for transcript log file")]
     [string]$LogPath = "C:\ProgramData\Microsoft\IntuneManagementExtension\Logs\TeamsAVD_Install_$(Get-Date -Format 'yyyyMMdd_HHmmss').log",
 
-    [Parameter(HelpMessage="Force reinstallation even if already installed")]
+    [Parameter(HelpMessage = "Force reinstallation even if already installed")]
     [switch]$Force,
 
-    [Parameter(HelpMessage="Skip Authenticode signature verification (use only in trusted environments)")]
+    [Parameter(HelpMessage = "Skip Authenticode signature verification (use only in trusted environments)")]
     [switch]$SkipSignatureCheck,
 
-    [Parameter(HelpMessage="Also install the Remote Desktop WebRTC Redirector Service (recommended for new Teams media optimization)")]
+    [Parameter(HelpMessage = "Also install the Remote Desktop WebRTC Redirector Service (recommended for new Teams media optimization)")]
     [switch]$InstallWebRtcRedirector
 )
 
@@ -153,7 +153,7 @@ function Write-Banner {
 
 function Write-Log {
     param(
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [AllowEmptyString()]
         [string]$Message = "",
 
@@ -175,17 +175,17 @@ function Write-Log {
     $color = switch ($Level) {
         'Success' { 'Green' }
         'Warning' { 'Yellow' }
-        'Error'   { 'Red' }
-        'Header'  { 'Cyan' }
-        default   { 'White' }
+        'Error' { 'Red' }
+        'Header' { 'Cyan' }
+        default { 'White' }
     }
 
     $prefix = switch ($Level) {
         'Success' { '[✓]' }
         'Warning' { '[⚠]' }
-        'Error'   { '[✗]' }
-        'Header'  { '[▶]' }
-        default   { '[•]' }
+        'Error' { '[✗]' }
+        'Header' { '[▶]' }
+        default { '[•]' }
     }
 
     $displayMessage = "$prefix $Message"
@@ -300,6 +300,7 @@ function Wait-ForVersionDetection {
 }
 
 function Set-RegistryValue {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [string]$Path,
         [string]$Name,
@@ -310,21 +311,28 @@ function Set-RegistryValue {
     try {
         # Create path if it doesn't exist
         if (-not (Test-Path $Path)) {
-            $null = New-Item -Path $Path -Force -ErrorAction Stop
-            Write-Log "Created registry path: $Path" -Level Info
+            if ($PSCmdlet.ShouldProcess($Path, 'Create registry path')) {
+                $null = New-Item -Path $Path -Force -ErrorAction Stop
+                Write-Log "Created registry path: $Path" -Level Info
+            }
         }
 
         # Set the value
-        Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type -Force -ErrorAction Stop
+        if ($PSCmdlet.ShouldProcess("$Path\$Name", 'Set registry value')) {
+            Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type -Force -ErrorAction Stop
 
-        # Verify the value was set correctly
-        $verifyValue = (Get-ItemProperty -Path $Path -Name $Name -ErrorAction Stop).$Name
-        if ($verifyValue -eq $Value) {
-            Write-Log "Registry: $Path\$Name = $Value" -Level Success
-            return $true
+            # Verify the value was set correctly
+            $verifyValue = (Get-ItemProperty -Path $Path -Name $Name -ErrorAction Stop).$Name
+            if ($verifyValue -eq $Value) {
+                Write-Log "Registry: $Path\$Name = $Value" -Level Success
+                return $true
+            }
+            else {
+                Write-Log "Registry verification failed: Expected $Value, got $verifyValue" -Level Error
+                return $false
+            }
         }
         else {
-            Write-Log "Registry verification failed: Expected $Value, got $verifyValue" -Level Error
             return $false
         }
     }
@@ -336,6 +344,7 @@ function Set-RegistryValue {
 }
 
 function Stop-TeamsProcessGracefully {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)]
         [System.Diagnostics.Process[]]$Processes,
@@ -365,10 +374,12 @@ function Stop-TeamsProcessGracefully {
             }
 
             # If graceful shutdown failed, force kill
-            Write-Log "Force terminating Teams process (PID: $($process.Id))" -Level Warning
-            $process.Kill()
-            $process.WaitForExit(5000)
-            Write-Log "Teams process terminated" -Level Info
+            if ($PSCmdlet.ShouldProcess("Teams process (PID: $($process.Id))", 'Stop process')) {
+                Write-Log "Force terminating Teams process (PID: $($process.Id))" -Level Warning
+                $process.Kill()
+                $process.WaitForExit(5000)
+                Write-Log "Teams process terminated" -Level Info
+            }
         }
         catch {
             Write-Log "Failed to stop Teams process: $_" -Level Warning
@@ -470,6 +481,9 @@ function Install-WebView2Runtime {
 }
 
 function Remove-UserTeamsInstalls {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
     if ($SkipUserCleanup) {
         Write-Log "User profile cleanup skipped (SkipUserCleanup parameter)" -Level Info
         return
@@ -500,9 +514,11 @@ function Remove-UserTeamsInstalls {
                     Stop-TeamsProcessGracefully -Processes $teamsProcesses -UserName $profile.Name
                 }
 
-                Remove-Item -Path $teamsPath -Recurse -Force -ErrorAction Stop
-                Write-Log "Removed Teams from user: $($profile.Name)" -Level Success
-                $removedCount++
+                if ($PSCmdlet.ShouldProcess($teamsPath, 'Remove Teams installation')) {
+                    Remove-Item -Path $teamsPath -Recurse -Force -ErrorAction Stop
+                    Write-Log "Removed Teams from user: $($profile.Name)" -Level Success
+                    $removedCount++
+                }
             }
             catch {
                 Write-Log "Failed to remove Teams for user $($profile.Name): $_" -Level Warning
@@ -694,36 +710,44 @@ function Install-WebRtcRedirectorService {
 }
 
 function Set-AVDRegistryConfiguration {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
     Write-Log ""
     Write-Log "═══ Configuring AVD Registry Settings ═══" -Level Header
 
     $success = $true
 
     # IsWVDEnvironment - Enables Teams optimizations for AVD
-    Write-Log "Configuring AVD environment marker..." -Level Info
-    $success = $success -and (Set-RegistryValue `
-        -Path "HKLM:\SOFTWARE\Microsoft\Teams" `
-        -Name "IsWVDEnvironment" `
-        -Value 1)
+    if ($PSCmdlet.ShouldProcess('HKLM:\SOFTWARE\Microsoft\Teams', 'Configure AVD registry settings')) {
+        Write-Log "Configuring AVD environment marker..." -Level Info
+        $success = $success -and (Set-RegistryValue `
+                -Path "HKLM:\SOFTWARE\Microsoft\Teams" `
+                -Name "IsWVDEnvironment" `
+                -Value 1)
 
-    # Allow side-loading of trusted apps (required for Teams)
-    Write-Log "Enabling trusted app side-loading..." -Level Info
-    $success = $success -and (Set-RegistryValue `
-        -Path "HKLM:\Software\Policies\Microsoft\Windows\Appx" `
-        -Name "AllowAllTrustedApps" `
-        -Value 1)
+        # Allow side-loading of trusted apps (required for Teams)
+        Write-Log "Enabling trusted app side-loading..." -Level Info
+        $success = $success -and (Set-RegistryValue `
+                -Path "HKLM:\Software\Policies\Microsoft\Windows\Appx" `
+                -Name "AllowAllTrustedApps" `
+                -Value 1)
 
-    $success = $success -and (Set-RegistryValue `
-        -Path "HKLM:\Software\Policies\Microsoft\Windows\Appx" `
-        -Name "AllowDevelopmentWithoutDevLicense" `
-        -Value 1)
+        $success = $success -and (Set-RegistryValue `
+                -Path "HKLM:\Software\Policies\Microsoft\Windows\Appx" `
+                -Name "AllowDevelopmentWithoutDevLicense" `
+                -Value 1)
 
-    # Prevent users from manually updating Teams
-    Write-Log "Configuring Teams update policy..." -Level Info
-    $success = $success -and (Set-RegistryValue `
-        -Path "HKLM:\Software\Policies\Microsoft\Office\Teams" `
-        -Name "PreventUserFromUpdatingTeams" `
-        -Value 1)
+        # Prevent users from manually updating Teams
+        Write-Log "Configuring Teams update policy..." -Level Info
+        $success = $success -and (Set-RegistryValue `
+                -Path "HKLM:\Software\Policies\Microsoft\Office\Teams" `
+                -Name "PreventUserFromUpdatingTeams" `
+                -Value 1)
+    }
+    else {
+        return $false
+    }
 
     if ($success) {
         Write-Log "All registry settings configured successfully" -Level Success

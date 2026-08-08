@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Audits Exchange Online shared mailboxes for usage, permissions, and compliance.
 
@@ -43,19 +43,19 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludePermissions,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$CheckInactive,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$InactivityDays = 90,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -85,7 +85,7 @@ catch {
 
 Write-Host "[*] Retrieving shared mailboxes..." -ForegroundColor Cyan
 
-$sharedMailboxes = Get-EXOMailbox -ResultSize Unlimited -RecipientTypeDetails SharedMailbox -Properties DisplayName,UserPrincipalName,PrimarySmtpAddress,WhenCreated,AccountDisabled
+$sharedMailboxes = Get-EXOMailbox -ResultSize Unlimited -RecipientTypeDetails SharedMailbox -Properties DisplayName, UserPrincipalName, PrimarySmtpAddress, WhenCreated, AccountDisabled
 
 Write-Host "[+] Found $($sharedMailboxes.Count) shared mailbox(es)" -ForegroundColor Green
 Write-Host ""
@@ -105,7 +105,7 @@ foreach ($mailbox in $sharedMailboxes) {
     $stats = Get-EXOMailboxStatistics -Identity $mailbox.UserPrincipalName -ErrorAction SilentlyContinue
 
     $mailboxSizeGB = if ($stats.TotalItemSize) {
-        [math]::Round(($stats.TotalItemSize.ToString().Split('(')[1].Split(' ')[0].Replace(',','') -as [double]) / 1GB, 2)
+        [math]::Round(($stats.TotalItemSize.ToString().Split('(')[1].Split(' ')[0].Replace(',', '') -as [double]) / 1GB, 2)
     }
     else { 0 }
 

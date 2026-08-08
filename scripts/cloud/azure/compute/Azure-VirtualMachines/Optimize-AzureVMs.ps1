@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Analyzes and optimizes Azure Virtual Machine configurations for cost and performance.
 
@@ -117,7 +117,8 @@ try {
         Write-Error "Not logged in. Run Connect-AzAccount first."
         exit 1
     }
-} catch {
+}
+catch {
     Write-Error "Azure authentication required"
     exit 1
 }
@@ -125,7 +126,8 @@ try {
 # Get subscriptions
 $subscriptions = if ($SubscriptionId -eq '*') {
     Get-AzSubscription
-} else {
+}
+else {
     @(Get-AzSubscription -SubscriptionId $SubscriptionId)
 }
 
@@ -136,7 +138,8 @@ foreach ($sub in $subscriptions) {
     # Get VMs
     $vms = if ($ResourceGroupName -eq '*') {
         Get-AzVM -Status
-    } else {
+    }
+    else {
         Get-AzVM -ResourceGroupName $ResourceGroupName -Status
     }
 
@@ -200,7 +203,8 @@ foreach ($sub in $subscriptions) {
                         }
                     }
                 }
-            } catch {
+            }
+            catch {
                 Write-Warning "Could not retrieve metrics for $($vm.Name): $($_.Exception.Message)"
             }
         }
@@ -225,9 +229,11 @@ foreach ($sub in $subscriptions) {
         # Check availability
         if ($vm.AvailabilitySetReference) {
             $vmData.HighAvailability = "Availability Set"
-        } elseif ($vm.Zones) {
+        }
+        elseif ($vm.Zones) {
             $vmData.HighAvailability = "Availability Zone: $($vm.Zones -join ',')"
-        } else {
+        }
+        else {
             $vmData.HighAvailability = "None"
 
             if ($GenerateRecommendations) {

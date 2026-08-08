@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Azure cloud resource health check.
 .DESCRIPTION
@@ -29,7 +29,8 @@ try {
         throw "Not connected to Azure. Run: Connect-AzAccount"
     }
     Write-Host "[+] Connected to: $($context.Subscription.Name)" -ForegroundColor Green
-} catch {
+}
+catch {
     if ($_.Exception.Message -like "Not connected to Azure*") {
         throw "Not connected to Azure. Run: Connect-AzAccount"
     }
@@ -45,7 +46,8 @@ try {
     $vms = Get-AzVM -Status -ErrorAction Stop
     $runningVMs = ($vms | Where-Object { $_.PowerState -eq "VM running" }).Count
     Write-Host "[+] Found $($vms.Count) VMs ($runningVMs running)" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Warning "Failed to retrieve VMs: $($_.Exception.Message)"
     $vms = @()
     $runningVMs = 0
@@ -55,7 +57,8 @@ Write-Host "[*] Checking storage accounts..." -ForegroundColor Cyan
 try {
     $storage = Get-AzStorageAccount -ErrorAction Stop
     Write-Host "[+] Found $($storage.Count) storage accounts" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Warning "Failed to retrieve storage accounts: $($_.Exception.Message)"
     $storage = @()
 }
@@ -63,14 +66,16 @@ try {
 Write-Host "[*] Checking network resources..." -ForegroundColor Cyan
 try {
     $vnets = Get-AzVirtualNetwork -ErrorAction Stop
-} catch {
+}
+catch {
     Write-Warning "Failed to retrieve virtual networks: $($_.Exception.Message)"
     $vnets = @()
 }
 
 try {
     $nsgs = Get-AzNetworkSecurityGroup -ErrorAction Stop
-} catch {
+}
+catch {
     Write-Warning "Failed to retrieve network security groups: $($_.Exception.Message)"
     $nsgs = @()
 }

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Comprehensive Power Platform governance and compliance reporting.
 
@@ -130,9 +130,11 @@ try {
                 Available = $capacity.DatabaseCapacity.Capacity.Available
                 PercentUsed = if ($capacity.DatabaseCapacity.Capacity.Available -gt 0) {
                     [math]::Round(($capacity.DatabaseCapacity.Capacity.Allocated / $capacity.DatabaseCapacity.Capacity.Available) * 100, 2)
-                } else { 0 }
+                }
+                else { 0 }
             }
-        } catch {
+        }
+        catch {
             Write-Warning "Could not retrieve capacity for $($env.DisplayName)"
         }
 
@@ -176,7 +178,8 @@ try {
                 $connections = Get-AdminPowerAppConnection -EnvironmentName $app.EnvironmentName
                 $appConnectors = $connections | Where-Object { $_.AppName -eq $app.AppName }
                 $appData.Connectors = ($appConnectors | Select-Object -ExpandProperty ConnectorName) -join ', '
-            } catch {
+            }
+            catch {
                 $appData.Connectors = "Unable to retrieve"
             }
 
@@ -240,7 +243,8 @@ try {
         Write-Host "Found $($dlpPolicies.Count) DLP policies" -ForegroundColor White
     }
 
-} catch {
+}
+catch {
     Write-Error "Error retrieving Power Platform data: $($_.Exception.Message)"
     Write-Warning "Ensure you have the Microsoft.PowerApps.Administration.PowerShell module installed and are authenticated"
 }

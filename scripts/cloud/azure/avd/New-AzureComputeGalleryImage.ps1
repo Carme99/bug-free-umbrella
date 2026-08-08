@@ -152,14 +152,14 @@
 param(
     [Parameter(ParameterSetName = 'ConfigFile', Mandatory)]
     [ValidateScript({
-        if (-not (Test-Path $_ -PathType Leaf)) {
-            throw "Configuration file not found: $_"
-        }
-        if ($_ -notmatch '\.json$') {
-            throw "Configuration file must be a JSON file: $_"
-        }
-        return $true
-    })]
+            if (-not (Test-Path $_ -PathType Leaf)) {
+                throw "Configuration file not found: $_"
+            }
+            if ($_ -notmatch '\.json$') {
+                throw "Configuration file must be a JSON file: $_"
+            }
+            return $true
+        })]
     [string]$ConfigFile,
 
     [Parameter(ParameterSetName = 'GenerateConfig')]
@@ -382,6 +382,7 @@ function Write-ProgressBar {
 # Configuration Management
 # ==========================
 function New-ConfigTemplate {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$Path)
 
     $template = @{
@@ -412,10 +413,12 @@ function New-ConfigTemplate {
         }
     } | ConvertTo-Json -Depth 10
 
-    $template | Out-File -FilePath $Path -Encoding UTF8
-    Write-Success "Configuration template created: $Path"
-    Write-Info "Edit this file with your Azure environment details, then run:"
-    Write-Host "  .\New-AzureComputeGalleryImage.ps1 -ConfigFile '$Path'" -ForegroundColor Yellow
+    if ($PSCmdlet.ShouldProcess($Path, 'Create configuration template')) {
+        $template | Out-File -FilePath $Path -Encoding UTF8
+        Write-Success "Configuration template created: $Path"
+        Write-Info "Edit this file with your Azure environment details, then run:"
+        Write-Host "  .\New-AzureComputeGalleryImage.ps1 -ConfigFile '$Path'" -ForegroundColor Yellow
+    }
 }
 
 function Read-Configuration {
@@ -429,7 +432,8 @@ function Read-Configuration {
     try {
         $config = Get-Content $Path -Raw | ConvertFrom-Json
         return $config
-    } catch {
+    }
+    catch {
         Write-ErrorMsg "Failed to parse configuration file: $($_.Exception.Message)"
         exit 1
     }
@@ -464,7 +468,8 @@ function Test-ConfigurationSchema {
         }
         if (-not $value) {
             $errors += "Missing required field: $field"
-        } elseif ($value -notmatch $requiredFields[$field]) {
+        }
+        elseif ($value -notmatch $requiredFields[$field]) {
             $errors += "Invalid format for $field : $value"
         }
     }
@@ -515,10 +520,11 @@ function Test-PreFlightChecks {
     try {
         $vm = Get-AzVM -ResourceGroupName $Config.SourceVMResourceGroup -Name $Config.SourceVMName -ErrorAction Stop
         Write-Host " ✓" -ForegroundColor Green
-        $checks += @{Name="Source VM"; Status="Pass"; Details="Found"}
-    } catch {
+        $checks += @{Name = "Source VM"; Status = "Pass"; Details = "Found" }
+    }
+    catch {
         Write-Host " ✗" -ForegroundColor Red
-        $checks += @{Name="Source VM"; Status="Fail"; Details=$_.Exception.Message}
+        $checks += @{Name = "Source VM"; Status = "Fail"; Details = $_.Exception.Message }
     }
 
     # Check 2: Gallery exists
@@ -526,10 +532,11 @@ function Test-PreFlightChecks {
     try {
         $gallery = Get-AzGallery -ResourceGroupName $Config.GalleryResourceGroup -Name $Config.GalleryName -ErrorAction Stop
         Write-Host " ✓" -ForegroundColor Green
-        $checks += @{Name="Gallery"; Status="Pass"; Details="Found"}
-    } catch {
+        $checks += @{Name = "Gallery"; Status = "Pass"; Details = "Found" }
+    }
+    catch {
         Write-Host " ✗" -ForegroundColor Red
-        $checks += @{Name="Gallery"; Status="Fail"; Details=$_.Exception.Message}
+        $checks += @{Name = "Gallery"; Status = "Fail"; Details = $_.Exception.Message }
     }
 
     # Check 3: Image Definition exists
@@ -537,10 +544,11 @@ function Test-PreFlightChecks {
     try {
         $imageDef = Get-AzGalleryImageDefinition -ResourceGroupName $Config.GalleryResourceGroup -GalleryName $Config.GalleryName -Name $Config.ImageDefinitionName -ErrorAction Stop
         Write-Host " ✓" -ForegroundColor Green
-        $checks += @{Name="Image Definition"; Status="Pass"; Details="Found"}
-    } catch {
+        $checks += @{Name = "Image Definition"; Status = "Pass"; Details = "Found" }
+    }
+    catch {
         Write-Host " ✗" -ForegroundColor Red
-        $checks += @{Name="Image Definition"; Status="Fail"; Details=$_.Exception.Message}
+        $checks += @{Name = "Image Definition"; Status = "Fail"; Details = $_.Exception.Message }
     }
 
     # Check 4: VNet and Subnet exist
@@ -549,10 +557,11 @@ function Test-PreFlightChecks {
         $vnet = Get-AzVirtualNetwork -Name $Config.VNetName -ResourceGroupName $Config.VNetResourceGroup -ErrorAction Stop
         $subnet = Get-AzVirtualNetworkSubnetConfig -Name $Config.SubnetName -VirtualNetwork $vnet -ErrorAction Stop
         Write-Host " ✓" -ForegroundColor Green
-        $checks += @{Name="Network"; Status="Pass"; Details="VNet and Subnet found"}
-    } catch {
+        $checks += @{Name = "Network"; Status = "Pass"; Details = "VNet and Subnet found" }
+    }
+    catch {
         Write-Host " ✗" -ForegroundColor Red
-        $checks += @{Name="Network"; Status="Fail"; Details=$_.Exception.Message}
+        $checks += @{Name = "Network"; Status = "Fail"; Details = $_.Exception.Message }
     }
 
     # Check 5: RBAC permissions (basic)
@@ -561,10 +570,11 @@ function Test-PreFlightChecks {
         $context = Get-AzContext
         $sub = Get-AzSubscription -SubscriptionId $Config.SubscriptionId -ErrorAction Stop
         Write-Host " ✓" -ForegroundColor Green
-        $checks += @{Name="Permissions"; Status="Pass"; Details="Subscription accessible"}
-    } catch {
+        $checks += @{Name = "Permissions"; Status = "Pass"; Details = "Subscription accessible" }
+    }
+    catch {
         Write-Host " ✗" -ForegroundColor Red
-        $checks += @{Name="Permissions"; Status="Fail"; Details="Cannot access subscription"}
+        $checks += @{Name = "Permissions"; Status = "Fail"; Details = "Cannot access subscription" }
     }
 
     # Check 6: VM Size available in region
@@ -575,14 +585,16 @@ function Test-PreFlightChecks {
             Where-Object { $_.ResourceType -eq 'virtualMachines' -and $_.Locations -contains $locationNormalized -and $_.Name -eq $Config.VMSize }
         if ($vmSizes) {
             Write-Host " ✓" -ForegroundColor Green
-            $checks += @{Name="VM Size"; Status="Pass"; Details="$($Config.VMSize) available"}
-        } else {
-            Write-Host " ✗" -ForegroundColor Red
-            $checks += @{Name="VM Size"; Status="Fail"; Details="$($Config.VMSize) not available in $($Config.Location)"}
+            $checks += @{Name = "VM Size"; Status = "Pass"; Details = "$($Config.VMSize) available" }
         }
-    } catch {
+        else {
+            Write-Host " ✗" -ForegroundColor Red
+            $checks += @{Name = "VM Size"; Status = "Fail"; Details = "$($Config.VMSize) not available in $($Config.Location)" }
+        }
+    }
+    catch {
         Write-Host " ⚠" -ForegroundColor Yellow
-        $checks += @{Name="VM Size"; Status="Warning"; Details="Could not verify: $($_.Exception.Message)"}
+        $checks += @{Name = "VM Size"; Status = "Warning"; Details = "Could not verify: $($_.Exception.Message)" }
     }
 
     # Check 7: Disk encryption status
@@ -591,14 +603,16 @@ function Test-PreFlightChecks {
         $vmForEncryption = Get-AzVM -ResourceGroupName $Config.SourceVMResourceGroup -Name $Config.SourceVMName -ErrorAction SilentlyContinue
         if ($vmForEncryption -and $vmForEncryption.StorageProfile.OsDisk.EncryptionSettings.Enabled) {
             Write-Host " ⚠" -ForegroundColor Yellow
-            $checks += @{Name="Disk Encryption"; Status="Warning"; Details="OS disk is encrypted - may cause issues"}
-        } else {
-            Write-Host " ✓" -ForegroundColor Green
-            $checks += @{Name="Disk Encryption"; Status="Pass"; Details="Not encrypted"}
+            $checks += @{Name = "Disk Encryption"; Status = "Warning"; Details = "OS disk is encrypted - may cause issues" }
         }
-    } catch {
+        else {
+            Write-Host " ✓" -ForegroundColor Green
+            $checks += @{Name = "Disk Encryption"; Status = "Pass"; Details = "Not encrypted" }
+        }
+    }
+    catch {
         Write-Host " ⚠" -ForegroundColor Yellow
-        $checks += @{Name="Disk Encryption"; Status="Warning"; Details="Could not verify"}
+        $checks += @{Name = "Disk Encryption"; Status = "Warning"; Details = "Could not verify" }
     }
 
     Write-Host ""
@@ -622,7 +636,8 @@ function Test-PreFlightChecks {
             Write-Host "  • $($warning.Name): " -NoNewline -ForegroundColor Yellow
             Write-Host $warning.Details -ForegroundColor Gray
         }
-    } else {
+    }
+    else {
         Write-Success "All pre-flight checks passed!"
     }
 
@@ -752,7 +767,8 @@ function Connect-AzureEnvironment {
         Write-Host "  Tenant: " -NoNewline -ForegroundColor Gray
         Write-Host $context.Tenant.Id -ForegroundColor White
         return $true
-    } catch {
+    }
+    catch {
         Write-ErrorMsg "Failed to authenticate to Azure: $($_.Exception.Message)"
         return $false
     }
@@ -773,9 +789,10 @@ function Get-GuestAgentStatus {
 
     try {
         $vm = Get-AzVM -ResourceGroupName $ResourceGroupName -Name $Name -Status -ErrorAction Stop
-        $agentStatus = ($vm.VMAgent.Statuses | Where-Object Code -like 'ProvisioningState/*').DisplayStatus
+        $agentStatus = ($vm.VMAgent.Statuses | Where-Object Code -Like 'ProvisioningState/*').DisplayStatus
         return $agentStatus
-    } catch {
+    }
+    catch {
         return $null
     }
 }
@@ -814,7 +831,8 @@ function Wait-ForVMAgent {
             $displayStatus = if ($status) { $status } else { "Waiting for status..." }
             Write-ProgressBar -Percent $percent -Activity "VM Agent Check" -Status $displayStatus
 
-        } catch {
+        }
+        catch {
             Write-ProgressBar -Percent $percent -Activity "VM Agent Check" -Status "Checking..."
         }
 
@@ -861,7 +879,8 @@ function Get-NextImageVersion {
                 $newVersion = "$($latest.Major).$($latest.Minor).$([int]$latest.Build + 1)"
             }
         }
-    } else {
+    }
+    else {
         $newVersion = "1.0.0"
     }
 
@@ -932,10 +951,12 @@ if ($PSCmdlet.ParameterSetName -ne 'ConfigFile' -and $PSCmdlet.ParameterSetName 
             $ConfigFile = $selectedFile.FullName
             Write-Success "Using configuration file: $($selectedFile.Name)"
             Write-Host ""
-        } elseif ($selection -eq '0') {
+        }
+        elseif ($selection -eq '0') {
             Write-Info "Proceeding with interactive mode"
             Write-Host ""
-        } else {
+        }
+        else {
             Write-Warning2 "Invalid selection. Proceeding with interactive mode"
             Write-Host ""
         }
@@ -982,10 +1003,12 @@ if ($ConfigFile) {
     # Show config preview before continuing
     Show-ConfigPreview -Config $config -Strategy $VersioningStrategy
 
-} elseif ($PSCmdlet.ParameterSetName -eq 'Interactive' -or -not $TenantId) {
+}
+elseif ($PSCmdlet.ParameterSetName -eq 'Interactive' -or -not $TenantId) {
     $config = Get-InteractiveConfiguration
 
-} else {
+}
+else {
     # Explicit parameters
     $config.TenantId = $TenantId
     $config.SubscriptionId = $SubscriptionId
@@ -1106,7 +1129,8 @@ if (-not $SkipPreFlightChecks) {
         }
     }
     Write-Log "Pre-flight checks completed"
-} else {
+}
+else {
     Write-Log "Pre-flight checks skipped by user"
 }
 
@@ -1149,7 +1173,7 @@ Write-Success "Source VM found: $($config.SourceVMName)"
 
 # Check VM power state
 $vmStatus = Get-AzVM -ResourceGroupName $config.SourceVMResourceGroup -Name $config.SourceVMName -Status
-$powerState = ($vmStatus.Statuses | Where-Object Code -like 'PowerState/*').DisplayStatus
+$powerState = ($vmStatus.Statuses | Where-Object Code -Like 'PowerState/*').DisplayStatus
 Write-Info "Source VM power state: $powerState"
 
 # Optional agent check (only if VM is running)
@@ -1158,7 +1182,8 @@ if (-not $SkipAgentCheck -and $powerState -eq 'VM running') {
     $agentStatus = Get-GuestAgentStatus -ResourceGroupName $config.SourceVMResourceGroup -Name $config.SourceVMName
     if ($agentStatus -eq 'Ready') {
         Write-Success "Guest agent is ready on source VM"
-    } else {
+    }
+    else {
         Write-Warning2 "Guest agent status: $agentStatus (continuing anyway)"
     }
 }
@@ -1335,7 +1360,8 @@ Start-Process -FilePath "C:\Windows\System32\Sysprep\Sysprep.exe" -ArgumentList 
 try {
     Invoke-AzVMRunCommand -ResourceGroupName $tempRG -Name $cloneVMName -CommandId 'RunPowerShellScript' -ScriptString $sysprepScript -ErrorAction Stop | Out-Null
     Write-Success "Sysprep completed successfully"
-} catch {
+}
+catch {
     Write-ErrorMsg "Sysprep failed: $($_.Exception.Message)"
     if (-not $SkipCleanup) {
         Write-Info "Cleaning up temporary resources..."
@@ -1393,7 +1419,8 @@ try {
     Write-Success "Gallery image version created: $nextVersion"
     $stepTimes["Publish to Gallery"] = ((Get-Date) - $stepStart).TotalSeconds
     Write-Log "Step $currentStep completed in $($stepTimes["Publish to Gallery"]) seconds"
-} catch {
+}
+catch {
     Write-ErrorMsg "Failed to create gallery image version: $($_.Exception.Message)"
     if (-not $SkipCleanup) {
         Write-Info "Cleaning up temporary resources..."
@@ -1411,7 +1438,8 @@ if (-not $SkipCleanup) {
     Write-Info "Removing temporary resource group: $tempRG"
     Remove-AzResourceGroup -Name $tempRG -Force | Out-Null
     Write-Success "Temporary resources cleaned up"
-} else {
+}
+else {
     Write-Warning2 "Temporary resources kept for debugging: $tempRG"
 }
 

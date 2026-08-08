@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Generates comprehensive Exchange Online mailbox health and usage report.
 
@@ -54,26 +54,26 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
-    [ValidateSet('UserMailbox','SharedMailbox','RoomMailbox','EquipmentMailbox','All')]
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('UserMailbox', 'SharedMailbox', 'RoomMailbox', 'EquipmentMailbox', 'All')]
     [string]$MailboxType = 'UserMailbox',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeArchive,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludePermissions,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$QuotaWarningThreshold = 80,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$InactivityDays = 90,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -157,15 +157,15 @@ foreach ($mailbox in $mailboxes) {
 
         # Parse sizes
         $mailboxSizeGB = if ($stats.TotalItemSize) {
-            [math]::Round(($stats.TotalItemSize.ToString().Split('(')[1].Split(' ')[0].Replace(',','') -as [double]) / 1GB, 2)
+            [math]::Round(($stats.TotalItemSize.ToString().Split('(')[1].Split(' ')[0].Replace(',', '') -as [double]) / 1GB, 2)
         }
         else { 0 }
 
         # Get quota
-        $mailboxDetails = Get-EXOMailbox -Identity $mailbox.UserPrincipalName -Properties ProhibitSendQuota,IssueWarningQuota,LitigationHoldEnabled,ArchiveStatus
+        $mailboxDetails = Get-EXOMailbox -Identity $mailbox.UserPrincipalName -Properties ProhibitSendQuota, IssueWarningQuota, LitigationHoldEnabled, ArchiveStatus
 
         $quotaGB = if ($mailboxDetails.ProhibitSendQuota -ne 'Unlimited') {
-            [math]::Round(($mailboxDetails.ProhibitSendQuota.ToString().Split('(')[1].Split(' ')[0].Replace(',','') -as [double]) / 1GB, 2)
+            [math]::Round(($mailboxDetails.ProhibitSendQuota.ToString().Split('(')[1].Split(' ')[0].Replace(',', '') -as [double]) / 1GB, 2)
         }
         else { 0 }
 
@@ -216,7 +216,7 @@ foreach ($mailbox in $mailboxes) {
             try {
                 $archiveStats = Get-EXOMailboxStatistics -Identity $mailbox.UserPrincipalName -Archive -ErrorAction SilentlyContinue
                 if ($archiveStats.TotalItemSize) {
-                    $archiveSizeGB = [math]::Round(($archiveStats.TotalItemSize.ToString().Split('(')[1].Split(' ')[0].Replace(',','') -as [double]) / 1GB, 2)
+                    $archiveSizeGB = [math]::Round(($archiveStats.TotalItemSize.ToString().Split('(')[1].Split(' ')[0].Replace(',', '') -as [double]) / 1GB, 2)
                     $archiveInfo = "$archiveSizeGB GB"
                 }
             }
