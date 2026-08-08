@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Checks Windows Server security hardening compliance against industry best practices.
 
@@ -48,22 +48,22 @@
     Some checks may require reboot to take effect
 #>
 
-[CmdletBinding(SupportsShouldProcess=$true)]
+[CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [Parameter(Mandatory=$false)]
-    [ValidateSet('CIS','STIG','Microsoft')]
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('CIS', 'STIG', 'Microsoft')]
     [string]$Baseline = 'Microsoft',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeRemediation,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$AutoFix
 )
 

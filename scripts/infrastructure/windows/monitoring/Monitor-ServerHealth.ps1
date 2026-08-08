@@ -134,82 +134,82 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportReport,
 
-    [Parameter(Mandatory=$false)]
-    [ValidateSet('High','Medium','Low')]
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('High', 'Medium', 'Low')]
     [string]$AlertThreshold = 'Medium',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$CheckServices,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$EmailReport,
 
     # Feature toggles
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeDiskIO,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeWindowsUpdate,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeSecurity,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeNetworkTests,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeApplications,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeCertificates,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeScheduledTasks,
 
     # Export options
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportJSON,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ShowProgress,
 
     # Email parameters
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$SMTPServer,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$SMTPPort = 25,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$EmailFrom,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string[]]$EmailTo,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$EmailSubject = "Server Health Report - $env:COMPUTERNAME",
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$UseSSL,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [PSCredential]$SMTPCredential,
 
     # Application-specific
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$CheckIIS,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$CheckSQLServer,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$CheckHyperV,
 
     # Certificate warning threshold
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$CertificateWarningDays = 30
 )
 
@@ -388,7 +388,7 @@ $script:healthReport = @{
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
 
-    $color = switch($Level) {
+    $color = switch ($Level) {
         'Critical' { 'Red' }
         'Warning' { 'Yellow' }
         'Success' { 'Green' }
@@ -402,6 +402,7 @@ function Update-Progress {
     .SYNOPSIS
         Updates progress bar for health checks.
     #>
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [int]$Current,
         [int]$Total,
@@ -409,14 +410,16 @@ function Update-Progress {
         [string]$Status
     )
 
-    if(-not $ShowProgress) { return }
+    if (-not $ShowProgress) { return }
 
     $percentComplete = [math]::Round(($Current / $Total) * 100, 0)
 
-    Write-Progress -Activity $Activity `
-                   -Status $Status `
-                   -PercentComplete $percentComplete `
-                   -CurrentOperation "Step $Current of $Total"
+    if ($PSCmdlet.ShouldProcess($Activity, 'Update progress')) {
+        Write-Progress -Activity $Activity `
+            -Status $Status `
+            -PercentComplete $percentComplete `
+            -CurrentOperation "Step $Current of $Total"
+    }
 }
 
 function Show-InteractiveMenu {
@@ -440,7 +443,7 @@ function Show-InteractiveMenu {
 
     $preset = Read-Host "Enter preset number (1-5) or press Enter for custom"
 
-    switch($preset) {
+    switch ($preset) {
         '1' {
             # Quick Check - just basic monitoring (default behavior)
             $script:ShowProgress = $true
@@ -491,13 +494,13 @@ function Show-InteractiveMenu {
 
             $selection = Read-Host "Your selection"
 
-            if($selection -eq 'all') {
+            if ($selection -eq 'all') {
                 $selection = '1,2,3,4,5,6,7,8'
             }
 
             $choices = $selection -split ','
-            foreach($choice in $choices) {
-                switch($choice.Trim()) {
+            foreach ($choice in $choices) {
+                switch ($choice.Trim()) {
                     '1' { $script:IncludeDiskIO = $true }
                     '2' { $script:IncludeWindowsUpdate = $true }
                     '3' { $script:IncludeSecurity = $true }
@@ -519,17 +522,17 @@ function Show-InteractiveMenu {
     # Export options
     Write-Host "`nExport Options:" -ForegroundColor Yellow
     $exportHtml = Read-Host "Export HTML report? (Y/N)"
-    if($exportHtml -eq 'Y' -or $exportHtml -eq 'y') {
+    if ($exportHtml -eq 'Y' -or $exportHtml -eq 'y') {
         $script:ExportReport = $true
     }
 
     $exportJson = Read-Host "Export JSON report? (Y/N)"
-    if($exportJson -eq 'Y' -or $exportJson -eq 'y') {
+    if ($exportJson -eq 'Y' -or $exportJson -eq 'y') {
         $script:ExportJSON = $true
     }
 
     $showProg = Read-Host "Show progress indicators? (Y/N)"
-    if($showProg -eq 'Y' -or $showProg -eq 'y') {
+    if ($showProg -eq 'Y' -or $showProg -eq 'y') {
         $script:ShowProgress = $true
     }
 
@@ -541,7 +544,7 @@ function Get-CPUHealth {
     Write-Verbose "Checking CPU utilization..."
 
     $cpuSamples = @()
-    for($i = 0; $i -lt 5; $i++) {
+    for ($i = 0; $i -lt 5; $i++) {
         $cpu = Get-Counter '\Processor(_Total)\% Processor Time' -ErrorAction SilentlyContinue
         $cpuSamples += $cpu.CounterSamples[0].CookedValue
         Start-Sleep -Seconds 1
@@ -554,15 +557,15 @@ function Get-CPUHealth {
         Status = 'OK'
     }
 
-    if($avgCPU -ge $script:threshold.CPUCritical) {
+    if ($avgCPU -ge $script:threshold.CPUCritical) {
         $script:healthReport.CPU.Status = 'Critical'
         $script:healthReport.Status = 'Critical'
         $script:healthReport.Issues += "CPU utilization critical: $([math]::Round($avgCPU, 2))%"
         Write-ColorOutput "  [CRITICAL] CPU: $([math]::Round($avgCPU, 2))%" -Level Critical
     }
-    elseif($avgCPU -ge $script:threshold.CPUWarning) {
+    elseif ($avgCPU -ge $script:threshold.CPUWarning) {
         $script:healthReport.CPU.Status = 'Warning'
-        if($script:healthReport.Status -ne 'Critical') { $script:healthReport.Status = 'Warning' }
+        if ($script:healthReport.Status -ne 'Critical') { $script:healthReport.Status = 'Warning' }
         $script:healthReport.Warnings += "CPU utilization elevated: $([math]::Round($avgCPU, 2))%"
         Write-ColorOutput "  [WARNING] CPU: $([math]::Round($avgCPU, 2))%" -Level Warning
     }
@@ -572,8 +575,8 @@ function Get-CPUHealth {
 
     # Get top CPU processes
     $topProcesses = Get-Process | Sort-Object CPU -Descending | Select-Object -First 5 |
-        Select-Object ProcessName, @{Name='CPU';Expression={[math]::Round($_.CPU, 2)}},
-        @{Name='MemoryMB';Expression={[math]::Round($_.WorkingSet64/1MB, 2)}}
+        Select-Object ProcessName, @{Name = 'CPU'; Expression = { [math]::Round($_.CPU, 2) } },
+        @{Name = 'MemoryMB'; Expression = { [math]::Round($_.WorkingSet64 / 1MB, 2) } }
     $script:healthReport.CPU.TopProcesses = $topProcesses
 }
 
@@ -581,8 +584,8 @@ function Get-MemoryHealth {
     Write-Verbose "Checking memory utilization..."
 
     $os = Get-CimInstance Win32_OperatingSystem
-    $totalMemoryGB = [math]::Round($os.TotalVisibleMemorySize/1MB, 2)
-    $freeMemoryGB = [math]::Round($os.FreePhysicalMemory/1MB, 2)
+    $totalMemoryGB = [math]::Round($os.TotalVisibleMemorySize / 1MB, 2)
+    $freeMemoryGB = [math]::Round($os.FreePhysicalMemory / 1MB, 2)
     $usedMemoryGB = $totalMemoryGB - $freeMemoryGB
     $memoryUsedPercent = [math]::Round(($usedMemoryGB / $totalMemoryGB) * 100, 2)
 
@@ -594,15 +597,15 @@ function Get-MemoryHealth {
         Status = 'OK'
     }
 
-    if($memoryUsedPercent -ge $script:threshold.MemoryCritical) {
+    if ($memoryUsedPercent -ge $script:threshold.MemoryCritical) {
         $script:healthReport.Memory.Status = 'Critical'
         $script:healthReport.Status = 'Critical'
         $script:healthReport.Issues += "Memory utilization critical: $memoryUsedPercent%"
         Write-ColorOutput "  [CRITICAL] Memory: $memoryUsedPercent% ($usedMemoryGB GB / $totalMemoryGB GB)" -Level Critical
     }
-    elseif($memoryUsedPercent -ge $script:threshold.MemoryWarning) {
+    elseif ($memoryUsedPercent -ge $script:threshold.MemoryWarning) {
         $script:healthReport.Memory.Status = 'Warning'
-        if($script:healthReport.Status -ne 'Critical') { $script:healthReport.Status = 'Warning' }
+        if ($script:healthReport.Status -ne 'Critical') { $script:healthReport.Status = 'Warning' }
         $script:healthReport.Warnings += "Memory utilization elevated: $memoryUsedPercent%"
         Write-ColorOutput "  [WARNING] Memory: $memoryUsedPercent% ($usedMemoryGB GB / $totalMemoryGB GB)" -Level Warning
     }
@@ -612,35 +615,35 @@ function Get-MemoryHealth {
 
     # Get top memory processes
     $topProcesses = Get-Process | Sort-Object WorkingSet64 -Descending | Select-Object -First 5 |
-        Select-Object ProcessName, @{Name='MemoryMB';Expression={[math]::Round($_.WorkingSet64/1MB, 2)}}
+        Select-Object ProcessName, @{Name = 'MemoryMB'; Expression = { [math]::Round($_.WorkingSet64 / 1MB, 2) } }
     $script:healthReport.Memory.TopProcesses = $topProcesses
 }
 
 function Get-DiskHealth {
     Write-Verbose "Checking disk space..."
 
-    $disks = Get-Volume | Where-Object {$_.DriveLetter -and $_.DriveType -eq 'Fixed'}
+    $disks = Get-Volume | Where-Object { $_.DriveLetter -and $_.DriveType -eq 'Fixed' }
 
-    foreach($disk in $disks) {
+    foreach ($disk in $disks) {
         $freeSpacePercent = [math]::Round(($disk.SizeRemaining / $disk.Size) * 100, 2)
         $diskInfo = @{
             DriveLetter = $disk.DriveLetter
             Label = $disk.FileSystemLabel
-            TotalGB = [math]::Round($disk.Size/1GB, 2)
-            FreeGB = [math]::Round($disk.SizeRemaining/1GB, 2)
+            TotalGB = [math]::Round($disk.Size / 1GB, 2)
+            FreeGB = [math]::Round($disk.SizeRemaining / 1GB, 2)
             FreePercent = $freeSpacePercent
             Status = 'OK'
         }
 
-        if($freeSpacePercent -le $script:threshold.DiskCritical) {
+        if ($freeSpacePercent -le $script:threshold.DiskCritical) {
             $diskInfo.Status = 'Critical'
             $script:healthReport.Status = 'Critical'
             $script:healthReport.Issues += "Drive $($disk.DriveLetter): critically low space ($freeSpacePercent%)"
             Write-ColorOutput "  [CRITICAL] Drive $($disk.DriveLetter): $freeSpacePercent% free ($($diskInfo.FreeGB) GB / $($diskInfo.TotalGB) GB)" -Level Critical
         }
-        elseif($freeSpacePercent -le $script:threshold.DiskWarning) {
+        elseif ($freeSpacePercent -le $script:threshold.DiskWarning) {
             $diskInfo.Status = 'Warning'
-            if($script:healthReport.Status -ne 'Critical') { $script:healthReport.Status = 'Warning' }
+            if ($script:healthReport.Status -ne 'Critical') { $script:healthReport.Status = 'Warning' }
             $script:healthReport.Warnings += "Drive $($disk.DriveLetter): low space ($freeSpacePercent%)"
             Write-ColorOutput "  [WARNING] Drive $($disk.DriveLetter): $freeSpacePercent% free ($($diskInfo.FreeGB) GB / $($diskInfo.TotalGB) GB)" -Level Warning
         }
@@ -662,15 +665,15 @@ function Get-ServiceHealth {
     )
 
     # Add user-specified services
-    if($CheckServices) {
+    if ($CheckServices) {
         $criticalServices += $CheckServices -split ','
     }
 
     $allHealthy = $true
-    foreach($serviceName in $criticalServices) {
+    foreach ($serviceName in $criticalServices) {
         $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
 
-        if($service) {
+        if ($service) {
             $serviceInfo = @{
                 Name = $service.Name
                 DisplayName = $service.DisplayName
@@ -679,7 +682,7 @@ function Get-ServiceHealth {
                 Health = 'OK'
             }
 
-            if($service.Status -ne 'Running' -and $service.StartType -eq 'Automatic') {
+            if ($service.Status -ne 'Running' -and $service.StartType -eq 'Automatic') {
                 $serviceInfo.Health = 'Critical'
                 $script:healthReport.Status = 'Critical'
                 $script:healthReport.Issues += "Critical service stopped: $($service.DisplayName)"
@@ -691,7 +694,7 @@ function Get-ServiceHealth {
         }
     }
 
-    if($allHealthy) {
+    if ($allHealthy) {
         Write-ColorOutput "  [OK] All critical services running" -Level Success
     }
 }
@@ -705,19 +708,19 @@ function Get-EventLogHealth {
     try {
         $systemErrors = Get-WinEvent -FilterHashtable @{
             LogName = 'System'
-            Level = 1,2
+            Level = 1, 2
             StartTime = $since
         } -MaxEvents 50 -ErrorAction SilentlyContinue
 
         $appErrors = Get-WinEvent -FilterHashtable @{
             LogName = 'Application'
-            Level = 1,2
+            Level = 1, 2
             StartTime = $since
         } -MaxEvents 50 -ErrorAction SilentlyContinue
 
         $allErrors = @($systemErrors) + @($appErrors) | Sort-Object TimeCreated -Descending
 
-        foreach($err in $allErrors | Select-Object -First 10) {
+        foreach ($err in $allErrors | Select-Object -First 10) {
             $criticalErrors += @{
                 TimeCreated = $err.TimeCreated
                 LogName = $err.LogName
@@ -730,11 +733,11 @@ function Get-EventLogHealth {
 
         $script:healthReport.EventLogErrors = $criticalErrors
 
-        if($criticalErrors.Count -gt 20) {
+        if ($criticalErrors.Count -gt 20) {
             $script:healthReport.Warnings += "High volume of errors in event logs (last 24h): $($criticalErrors.Count)"
             Write-ColorOutput "  [WARNING] Found $($criticalErrors.Count) critical errors in last 24 hours" -Level Warning
         }
-        elseif($criticalErrors.Count -gt 0) {
+        elseif ($criticalErrors.Count -gt 0) {
             Write-ColorOutput "  [INFO] Found $($criticalErrors.Count) errors in last 24 hours"
         }
         else {
@@ -749,9 +752,9 @@ function Get-EventLogHealth {
 function Get-NetworkHealth {
     Write-Verbose "Checking network adapters..."
 
-    $adapters = Get-NetAdapter | Where-Object {$_.Status -eq 'Up'}
+    $adapters = Get-NetAdapter | Where-Object { $_.Status -eq 'Up' }
 
-    foreach($adapter in $adapters) {
+    foreach ($adapter in $adapters) {
         $adapterInfo = @{
             Name = $adapter.Name
             InterfaceDescription = $adapter.InterfaceDescription
@@ -793,14 +796,14 @@ function Get-DiskIOHealth {
         Monitors disk I/O performance metrics.
     #>
 
-    if(-not $IncludeDiskIO) { return }
+    if (-not $IncludeDiskIO) { return }
 
     Write-Verbose "Checking disk I/O performance..."
     $script:healthReport.DiskIO.Enabled = $true
 
     try {
         $samples = @()
-        for($i = 0; $i -lt 3; $i++) {
+        for ($i = 0; $i -lt 3; $i++) {
             $counters = Get-Counter @(
                 '\PhysicalDisk(_Total)\Disk Reads/sec',
                 '\PhysicalDisk(_Total)\Disk Writes/sec',
@@ -817,7 +820,7 @@ function Get-DiskIOHealth {
                 QueueLength = $counters.CounterSamples[4].CookedValue
             }
 
-            if($i -lt 2) { Start-Sleep -Seconds 2 }
+            if ($i -lt 2) { Start-Sleep -Seconds 2 }
         }
 
         $script:healthReport.DiskIO.Samples = $samples
@@ -827,12 +830,12 @@ function Get-DiskIOHealth {
         $script:healthReport.DiskIO.AverageWriteLatencyMs = [math]::Round(($samples | Measure-Object -Property WriteLatency -Average).Average, 2)
         $script:healthReport.DiskIO.AverageQueueLength = [math]::Round(($samples | Measure-Object -Property QueueLength -Average).Average, 2)
 
-        if($script:healthReport.DiskIO.AverageReadLatencyMs -gt 25 -or $script:healthReport.DiskIO.AverageWriteLatencyMs -gt 25) {
+        if ($script:healthReport.DiskIO.AverageReadLatencyMs -gt 25 -or $script:healthReport.DiskIO.AverageWriteLatencyMs -gt 25) {
             $script:healthReport.DiskIO.Status = 'Warning'
             $script:healthReport.Warnings += "High disk latency detected (Read: $($script:healthReport.DiskIO.AverageReadLatencyMs)ms, Write: $($script:healthReport.DiskIO.AverageWriteLatencyMs)ms)"
             Write-ColorOutput "  [WARNING] Disk I/O: High latency" -Level Warning
         }
-        elseif($script:healthReport.DiskIO.AverageQueueLength -gt 2) {
+        elseif ($script:healthReport.DiskIO.AverageQueueLength -gt 2) {
             $script:healthReport.DiskIO.Status = 'Warning'
             $script:healthReport.Warnings += "High disk queue length: $($script:healthReport.DiskIO.AverageQueueLength)"
             Write-ColorOutput "  [WARNING] Disk I/O: High queue length" -Level Warning
@@ -856,12 +859,12 @@ function Get-AdvancedPerformanceMetrics {
 
     try {
         $pageFile = Get-CimInstance Win32_PageFileUsage -ErrorAction SilentlyContinue
-        if($pageFile) {
+        if ($pageFile) {
             $script:healthReport.AdvancedPerformance.PageFile.TotalSizeMB = $pageFile.AllocatedBaseSize
             $script:healthReport.AdvancedPerformance.PageFile.UsedMB = $pageFile.CurrentUsage
             $script:healthReport.AdvancedPerformance.PageFile.UsedPercent = [math]::Round(($pageFile.CurrentUsage / $pageFile.AllocatedBaseSize) * 100, 2)
 
-            if($script:healthReport.AdvancedPerformance.PageFile.UsedPercent -gt 80) {
+            if ($script:healthReport.AdvancedPerformance.PageFile.UsedPercent -gt 80) {
                 $script:healthReport.AdvancedPerformance.PageFile.Status = 'Warning'
                 $script:healthReport.Warnings += "Page file usage high: $($script:healthReport.AdvancedPerformance.PageFile.UsedPercent)%"
             }
@@ -871,12 +874,12 @@ function Get-AdvancedPerformanceMetrics {
         $script:healthReport.AdvancedPerformance.Processes = $os.NumberOfProcesses
 
         $threadCounter = Get-Counter '\System\Threads' -ErrorAction SilentlyContinue
-        if($threadCounter) {
+        if ($threadCounter) {
             $script:healthReport.AdvancedPerformance.Threads = [int]$threadCounter.CounterSamples[0].CookedValue
         }
 
         $handleCounter = Get-Counter '\Process(_Total)\Handle Count' -ErrorAction SilentlyContinue
-        if($handleCounter) {
+        if ($handleCounter) {
             $script:healthReport.AdvancedPerformance.Handles = [int]$handleCounter.CounterSamples[0].CookedValue
         }
 
@@ -893,16 +896,16 @@ function Get-WindowsUpdateHealth {
         Checks Windows Update status and pending updates.
     #>
 
-    if(-not $IncludeWindowsUpdate) { return }
+    if (-not $IncludeWindowsUpdate) { return }
 
     Write-Verbose "Checking Windows Update status..."
     $script:healthReport.WindowsUpdate.Enabled = $true
 
     try {
         $wuService = Get-Service -Name wuauserv -ErrorAction SilentlyContinue
-        if($wuService) {
+        if ($wuService) {
             $script:healthReport.WindowsUpdate.WindowsUpdateService = $wuService.Status
-            if($wuService.Status -ne 'Running' -and $wuService.StartType -eq 'Automatic') {
+            if ($wuService.Status -ne 'Running' -and $wuService.StartType -eq 'Automatic') {
                 $script:healthReport.Warnings += "Windows Update service is not running"
             }
         }
@@ -913,8 +916,8 @@ function Get-WindowsUpdateHealth {
             'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired'
         )
 
-        foreach($key in $rebootKeys) {
-            if(Test-Path $key) {
+        foreach ($key in $rebootKeys) {
+            if (Test-Path $key) {
                 $rebootPending = $true
                 break
             }
@@ -926,29 +929,29 @@ function Get-WindowsUpdateHealth {
         $searchResult = $updateSearcher.Search("IsInstalled=0 and IsHidden=0")
 
         $script:healthReport.WindowsUpdate.UpdatesPending = $searchResult.Updates.Count
-        foreach($update in $searchResult.Updates) {
+        foreach ($update in $searchResult.Updates) {
             $script:healthReport.WindowsUpdate.PendingUpdates += @{
                 Title = $update.Title
-                Severity = if($update.MsrcSeverity) { $update.MsrcSeverity } else { 'Unknown' }
+                Severity = if ($update.MsrcSeverity) { $update.MsrcSeverity } else { 'Unknown' }
                 IsDownloaded = $update.IsDownloaded
                 IsMandatory = $update.IsMandatory
-                KB = if($update.KBArticleIDs.Count -gt 0) { $update.KBArticleIDs[0] } else { 'N/A' }
+                KB = if ($update.KBArticleIDs.Count -gt 0) { $update.KBArticleIDs[0] } else { 'N/A' }
             }
         }
 
         $updateHistory = $updateSearcher.QueryHistory(0, 10)
         $successfulUpdates = $updateHistory | Where-Object { $_.ResultCode -eq 2 } | Sort-Object Date -Descending
-        if($successfulUpdates) {
+        if ($successfulUpdates) {
             $script:healthReport.WindowsUpdate.LastSuccessfulUpdate = $successfulUpdates[0].Date
             $script:healthReport.WindowsUpdate.UpdatesInstalled = $successfulUpdates.Count
         }
 
-        if($script:healthReport.WindowsUpdate.UpdatesPending -gt 10) {
+        if ($script:healthReport.WindowsUpdate.UpdatesPending -gt 10) {
             $script:healthReport.WindowsUpdate.Status = 'Warning'
             $script:healthReport.Warnings += "Many pending updates: $($script:healthReport.WindowsUpdate.UpdatesPending)"
             Write-ColorOutput "  [WARNING] Windows Update: $($script:healthReport.WindowsUpdate.UpdatesPending) pending updates" -Level Warning
         }
-        elseif($rebootPending) {
+        elseif ($rebootPending) {
             $script:healthReport.WindowsUpdate.Status = 'Warning'
             $script:healthReport.Warnings += "Reboot required for updates"
             Write-ColorOutput "  [WARNING] Windows Update: Reboot required" -Level Warning
@@ -968,15 +971,15 @@ function Get-SecurityHealth {
         Monitors security settings: Firewall, Defender, failed logins.
     #>
 
-    if(-not $IncludeSecurity) { return }
+    if (-not $IncludeSecurity) { return }
 
     Write-Verbose "Checking security configuration..."
     $script:healthReport.Security.Enabled = $true
 
     try {
         $fwProfiles = Get-NetFirewallProfile -ErrorAction Stop
-        foreach($profile in $fwProfiles) {
-            switch($profile.Name) {
+        foreach ($profile in $fwProfiles) {
+            switch ($profile.Name) {
                 'Domain' { $script:healthReport.Security.Firewall.DomainProfile = $profile.Enabled }
                 'Private' { $script:healthReport.Security.Firewall.PrivateProfile = $profile.Enabled }
                 'Public' { $script:healthReport.Security.Firewall.PublicProfile = $profile.Enabled }
@@ -984,10 +987,10 @@ function Get-SecurityHealth {
         }
 
         $allEnabled = ($script:healthReport.Security.Firewall.DomainProfile -and
-                       $script:healthReport.Security.Firewall.PrivateProfile -and
-                       $script:healthReport.Security.Firewall.PublicProfile)
+            $script:healthReport.Security.Firewall.PrivateProfile -and
+            $script:healthReport.Security.Firewall.PublicProfile)
 
-        if(-not $allEnabled) {
+        if (-not $allEnabled) {
             $script:healthReport.Security.Firewall.Status = 'Critical'
             $script:healthReport.Status = 'Critical'
             $script:healthReport.Issues += "Windows Firewall is disabled on one or more profiles"
@@ -1003,26 +1006,26 @@ function Get-SecurityHealth {
 
     try {
         $defenderService = Get-Service -Name WinDefend -ErrorAction SilentlyContinue
-        if($defenderService) {
+        if ($defenderService) {
             $script:healthReport.Security.Defender.ServiceRunning = ($defenderService.Status -eq 'Running')
 
             $mpPreference = Get-MpPreference -ErrorAction SilentlyContinue
             $mpComputerStatus = Get-MpComputerStatus -ErrorAction SilentlyContinue
 
-            if($mpPreference) {
+            if ($mpPreference) {
                 $script:healthReport.Security.Defender.RealTimeProtection = $mpPreference.DisableRealtimeMonitoring -eq $false
             }
 
-            if($mpComputerStatus) {
+            if ($mpComputerStatus) {
                 $script:healthReport.Security.Defender.SignatureAge = $mpComputerStatus.AntivirusSignatureAge
                 $script:healthReport.Security.Defender.LastScan = $mpComputerStatus.QuickScanEndTime
 
-                if($mpComputerStatus.AntivirusSignatureAge -gt 7) {
+                if ($mpComputerStatus.AntivirusSignatureAge -gt 7) {
                     $script:healthReport.Security.Defender.Status = 'Warning'
                     $script:healthReport.Warnings += "Defender signatures outdated: $($mpComputerStatus.AntivirusSignatureAge) days"
                     Write-ColorOutput "  [WARNING] Defender: Signatures $($mpComputerStatus.AntivirusSignatureAge) days old" -Level Warning
                 }
-                elseif(-not $script:healthReport.Security.Defender.RealTimeProtection) {
+                elseif (-not $script:healthReport.Security.Defender.RealTimeProtection) {
                     $script:healthReport.Security.Defender.Status = 'Critical'
                     $script:healthReport.Status = 'Critical'
                     $script:healthReport.Issues += "Defender real-time protection is disabled"
@@ -1046,10 +1049,10 @@ function Get-SecurityHealth {
             StartTime = $since
         } -MaxEvents 100 -ErrorAction SilentlyContinue
 
-        if($failedLogins) {
+        if ($failedLogins) {
             $script:healthReport.Security.FailedLogins.Last24Hours = $failedLogins.Count
 
-            foreach($login in ($failedLogins | Select-Object -First 10)) {
+            foreach ($login in ($failedLogins | Select-Object -First 10)) {
                 $xml = [xml]$login.ToXml()
                 $script:healthReport.Security.FailedLogins.RecentAttempts += @{
                     TimeCreated = $login.TimeCreated
@@ -1060,7 +1063,7 @@ function Get-SecurityHealth {
                 }
             }
 
-            if($failedLogins.Count -gt 50) {
+            if ($failedLogins.Count -gt 50) {
                 $script:healthReport.Security.FailedLogins.Status = 'Warning'
                 $script:healthReport.Warnings += "High number of failed login attempts: $($failedLogins.Count)"
                 Write-ColorOutput "  [WARNING] Security: $($failedLogins.Count) failed logins in 24h" -Level Warning
@@ -1084,7 +1087,7 @@ function Get-NetworkConnectivityHealth {
         Tests network connectivity to gateway, DNS, and internet.
     #>
 
-    if(-not $IncludeNetworkTests) { return }
+    if (-not $IncludeNetworkTests) { return }
 
     Write-Verbose "Testing network connectivity..."
     $script:healthReport.NetworkTests.Enabled = $true
@@ -1095,7 +1098,7 @@ function Get-NetworkConnectivityHealth {
         $script:healthReport.NetworkTests.Gateway.IP = $gatewayIP
 
         $ping = Test-Connection -ComputerName $gatewayIP -Count 2 -ErrorAction SilentlyContinue
-        if($ping) {
+        if ($ping) {
             $script:healthReport.NetworkTests.Gateway.Reachable = $true
             $script:healthReport.NetworkTests.Gateway.Latency = [math]::Round(($ping.ResponseTime | Measure-Object -Average).Average, 2)
             Write-ColorOutput "  [OK] Gateway: $gatewayIP ($($script:healthReport.NetworkTests.Gateway.Latency)ms)" -Level Success
@@ -1113,10 +1116,10 @@ function Get-NetworkConnectivityHealth {
 
     try {
         $dnsServers = Get-DnsClientServerAddress -AddressFamily IPv4 |
-            Where-Object {$_.ServerAddresses.Count -gt 0} |
+            Where-Object { $_.ServerAddresses.Count -gt 0 } |
             Select-Object -First 1
 
-        if($dnsServers) {
+        if ($dnsServers) {
             $dnsIP = $dnsServers.ServerAddresses[0]
             $script:healthReport.NetworkTests.DNS.PrimaryServer = $dnsIP
 
@@ -1126,7 +1129,7 @@ function Get-NetworkConnectivityHealth {
             $dnsTest = Resolve-DnsName -Name 'www.microsoft.com' -ErrorAction SilentlyContinue
             $script:healthReport.NetworkTests.DNS.ResolutionWorking = ($dnsTest -ne $null)
 
-            if($script:healthReport.NetworkTests.DNS.ResolutionWorking) {
+            if ($script:healthReport.NetworkTests.DNS.ResolutionWorking) {
                 Write-ColorOutput "  [OK] DNS: Server $dnsIP, resolution working" -Level Success
             }
             else {
@@ -1145,7 +1148,7 @@ function Get-NetworkConnectivityHealth {
         $script:healthReport.NetworkTests.Internet.Target = $internetTarget
 
         $internetPing = Test-Connection -ComputerName $internetTarget -Count 2 -ErrorAction SilentlyContinue
-        if($internetPing) {
+        if ($internetPing) {
             $script:healthReport.NetworkTests.Internet.Reachable = $true
             $script:healthReport.NetworkTests.Internet.Latency = [math]::Round(($internetPing.ResponseTime | Measure-Object -Average).Average, 2)
             Write-ColorOutput "  [OK] Internet: Reachable ($($script:healthReport.NetworkTests.Internet.Latency)ms)" -Level Success
@@ -1166,7 +1169,7 @@ function Get-CertificateHealth {
         Checks certificate expiration in local computer stores.
     #>
 
-    if(-not $IncludeCertificates) { return }
+    if (-not $IncludeCertificates) { return }
 
     Write-Verbose "Checking certificate expiration..."
     $script:healthReport.Certificates.Enabled = $true
@@ -1181,11 +1184,11 @@ function Get-CertificateHealth {
         $now = Get-Date
         $warningDate = $now.AddDays($CertificateWarningDays)
 
-        foreach($storePath in $storePaths) {
-            if(Test-Path $storePath) {
+        foreach ($storePath in $storePaths) {
+            if (Test-Path $storePath) {
                 $certs = Get-ChildItem -Path $storePath -ErrorAction SilentlyContinue
 
-                foreach($cert in $certs) {
+                foreach ($cert in $certs) {
                     $daysUntilExpiry = ($cert.NotAfter - $now).Days
 
                     $certInfo = @{
@@ -1198,11 +1201,11 @@ function Get-CertificateHealth {
                         Status = 'OK'
                     }
 
-                    if($cert.NotAfter -lt $now) {
+                    if ($cert.NotAfter -lt $now) {
                         $certInfo.Status = 'Expired'
                         $script:healthReport.Certificates.Expired++
                     }
-                    elseif($cert.NotAfter -lt $warningDate) {
+                    elseif ($cert.NotAfter -lt $warningDate) {
                         $certInfo.Status = 'Expiring'
                         $script:healthReport.Certificates.Expiring++
                     }
@@ -1212,13 +1215,13 @@ function Get-CertificateHealth {
             }
         }
 
-        if($script:healthReport.Certificates.Expired -gt 0) {
+        if ($script:healthReport.Certificates.Expired -gt 0) {
             $script:healthReport.Certificates.Status = 'Critical'
             $script:healthReport.Status = 'Critical'
             $script:healthReport.Issues += "Expired certificates found: $($script:healthReport.Certificates.Expired)"
             Write-ColorOutput "  [CRITICAL] Certificates: $($script:healthReport.Certificates.Expired) expired" -Level Critical
         }
-        elseif($script:healthReport.Certificates.Expiring -gt 0) {
+        elseif ($script:healthReport.Certificates.Expiring -gt 0) {
             $script:healthReport.Certificates.Status = 'Warning'
             $script:healthReport.Warnings += "Certificates expiring soon: $($script:healthReport.Certificates.Expiring)"
             Write-ColorOutput "  [WARNING] Certificates: $($script:healthReport.Certificates.Expiring) expiring within $CertificateWarningDays days" -Level Warning
@@ -1238,16 +1241,16 @@ function Get-ScheduledTasksHealth {
         Monitors scheduled tasks for failures and disabled tasks.
     #>
 
-    if(-not $IncludeScheduledTasks) { return }
+    if (-not $IncludeScheduledTasks) { return }
 
     Write-Verbose "Checking scheduled tasks..."
     $script:healthReport.ScheduledTasks.Enabled = $true
 
     try {
         $tasks = Get-ScheduledTask -ErrorAction Stop |
-            Where-Object {$_.TaskPath -notlike '\Microsoft\*'}
+            Where-Object { $_.TaskPath -notlike '\Microsoft\*' }
 
-        foreach($task in $tasks) {
+        foreach ($task in $tasks) {
             $taskInfo = Get-ScheduledTaskInfo -TaskName $task.TaskName -TaskPath $task.TaskPath -ErrorAction SilentlyContinue
 
             $taskData = @{
@@ -1260,12 +1263,12 @@ function Get-ScheduledTasksHealth {
                 Status = 'OK'
             }
 
-            if($taskInfo.LastTaskResult -ne 0 -and $taskInfo.LastTaskResult -ne $null) {
+            if ($taskInfo.LastTaskResult -ne 0 -and $taskInfo.LastTaskResult -ne $null) {
                 $taskData.Status = 'Failed'
                 $script:healthReport.ScheduledTasks.Failed++
             }
 
-            if($task.State -eq 'Disabled') {
+            if ($task.State -eq 'Disabled') {
                 $taskData.Status = 'Disabled'
                 $script:healthReport.ScheduledTasks.Disabled++
             }
@@ -1273,7 +1276,7 @@ function Get-ScheduledTasksHealth {
             $script:healthReport.ScheduledTasks.Tasks += $taskData
         }
 
-        if($script:healthReport.ScheduledTasks.Failed -gt 0) {
+        if ($script:healthReport.ScheduledTasks.Failed -gt 0) {
             $script:healthReport.ScheduledTasks.Status = 'Warning'
             $script:healthReport.Warnings += "Failed scheduled tasks: $($script:healthReport.ScheduledTasks.Failed)"
             Write-ColorOutput "  [WARNING] Scheduled Tasks: $($script:healthReport.ScheduledTasks.Failed) failed" -Level Warning
@@ -1293,7 +1296,7 @@ function Get-IISHealth {
         Monitors IIS application pools and websites (if IIS is installed).
     #>
 
-    if(-not $CheckIIS -and -not $IncludeApplications) { return }
+    if (-not $CheckIIS -and -not $IncludeApplications) { return }
 
     Write-Verbose "Checking IIS health..."
     $script:healthReport.Applications.IIS.Enabled = $true
@@ -1309,12 +1312,12 @@ function Get-IISHealth {
 
     try {
         $iisService = Get-Service -Name W3SVC -ErrorAction SilentlyContinue
-        if($iisService) {
+        if ($iisService) {
             $script:healthReport.Applications.IIS.Running = ($iisService.Status -eq 'Running')
         }
 
         $appPools = Get-IISAppPool -ErrorAction Stop
-        foreach($pool in $appPools) {
+        foreach ($pool in $appPools) {
             $poolInfo = @{
                 Name = $pool.Name
                 State = $pool.State
@@ -1324,7 +1327,7 @@ function Get-IISHealth {
                 Status = 'OK'
             }
 
-            if($pool.State -ne 'Started') {
+            if ($pool.State -ne 'Started') {
                 $script:healthReport.Applications.IIS.FailedPools++
                 $poolInfo.Status = 'Stopped'
             }
@@ -1333,7 +1336,7 @@ function Get-IISHealth {
         }
 
         $sites = Get-IISSite -ErrorAction Stop
-        foreach($site in $sites) {
+        foreach ($site in $sites) {
             $siteInfo = @{
                 Name = $site.Name
                 State = $site.State
@@ -1343,7 +1346,7 @@ function Get-IISHealth {
                 Status = 'OK'
             }
 
-            if($site.State -ne 'Started') {
+            if ($site.State -ne 'Started') {
                 $script:healthReport.Applications.IIS.StoppedSites++
                 $siteInfo.Status = 'Stopped'
             }
@@ -1351,14 +1354,14 @@ function Get-IISHealth {
             $script:healthReport.Applications.IIS.Websites += $siteInfo
         }
 
-        if($script:healthReport.Applications.IIS.FailedPools -gt 0 -or
-           $script:healthReport.Applications.IIS.StoppedSites -gt 0) {
+        if ($script:healthReport.Applications.IIS.FailedPools -gt 0 -or
+            $script:healthReport.Applications.IIS.StoppedSites -gt 0) {
             $script:healthReport.Applications.IIS.Status = 'Critical'
             $script:healthReport.Status = 'Critical'
             $script:healthReport.Issues += "IIS: $($script:healthReport.Applications.IIS.FailedPools) stopped pools, $($script:healthReport.Applications.IIS.StoppedSites) stopped sites"
             Write-ColorOutput "  [CRITICAL] IIS: Stopped application pools or websites detected" -Level Critical
         }
-        elseif(-not $script:healthReport.Applications.IIS.Running) {
+        elseif (-not $script:healthReport.Applications.IIS.Running) {
             $script:healthReport.Applications.IIS.Status = 'Critical'
             $script:healthReport.Status = 'Critical'
             $script:healthReport.Issues += "IIS service is not running"
@@ -1379,13 +1382,13 @@ function Get-SQLServerHealth {
         Monitors SQL Server instances and databases (if SQL Server is installed).
     #>
 
-    if(-not $CheckSQLServer -and -not $IncludeApplications) { return }
+    if (-not $CheckSQLServer -and -not $IncludeApplications) { return }
 
     Write-Verbose "Checking SQL Server health..."
     $script:healthReport.Applications.SQLServer.Enabled = $true
 
-    $sqlService = Get-Service -Name 'MSSQLSERVER','MSSQL$*' -ErrorAction SilentlyContinue
-    if(-not $sqlService) {
+    $sqlService = Get-Service -Name 'MSSQLSERVER', 'MSSQL$*' -ErrorAction SilentlyContinue
+    if (-not $sqlService) {
         Write-ColorOutput "  [INFO] SQL Server not installed" -Level Info
         return
     }
@@ -1393,7 +1396,7 @@ function Get-SQLServerHealth {
     $script:healthReport.Applications.SQLServer.Installed = $true
     $script:healthReport.Applications.SQLServer.Running = ($sqlService[0].Status -eq 'Running')
 
-    if(-not $script:healthReport.Applications.SQLServer.Running) {
+    if (-not $script:healthReport.Applications.SQLServer.Running) {
         $script:healthReport.Applications.SQLServer.Status = 'Critical'
         $script:healthReport.Status = 'Critical'
         $script:healthReport.Issues += "SQL Server service is not running"
@@ -1415,7 +1418,7 @@ function Get-HyperVHealth {
         Monitors Hyper-V host and virtual machines (if Hyper-V is installed).
     #>
 
-    if(-not $CheckHyperV -and -not $IncludeApplications) { return }
+    if (-not $CheckHyperV -and -not $IncludeApplications) { return }
 
     Write-Verbose "Checking Hyper-V health..."
     $script:healthReport.Applications.HyperV.Enabled = $true
@@ -1431,11 +1434,11 @@ function Get-HyperVHealth {
 
     try {
         $vmmsService = Get-Service -Name vmms -ErrorAction SilentlyContinue
-        if($vmmsService) {
+        if ($vmmsService) {
             $script:healthReport.Applications.HyperV.Running = ($vmmsService.Status -eq 'Running')
         }
 
-        if(-not $script:healthReport.Applications.HyperV.Running) {
+        if (-not $script:healthReport.Applications.HyperV.Running) {
             $script:healthReport.Applications.HyperV.Status = 'Critical'
             $script:healthReport.Status = 'Critical'
             $script:healthReport.Issues += "Hyper-V service is not running"
@@ -1444,20 +1447,20 @@ function Get-HyperVHealth {
         }
 
         $vms = Get-VM -ErrorAction Stop
-        foreach($vm in $vms) {
+        foreach ($vm in $vms) {
             $vmInfo = @{
                 Name = $vm.Name
                 State = $vm.State
                 CPUUsage = $vm.CPUUsage
                 MemoryMB = [math]::Round($vm.MemoryAssigned / 1MB, 0)
                 Uptime = $vm.Uptime
-                Status = if($vm.State -eq 'Running') { 'OK' } else { 'Stopped' }
+                Status = if ($vm.State -eq 'Running') { 'OK' } else { 'Stopped' }
             }
 
             $script:healthReport.Applications.HyperV.VirtualMachines += $vmInfo
         }
 
-        $runningVMs = ($vms | Where-Object {$_.State -eq 'Running'}).Count
+        $runningVMs = ($vms | Where-Object { $_.State -eq 'Running' }).Count
         Write-ColorOutput "  [OK] Hyper-V: $($vms.Count) VMs ($runningVMs running)" -Level Success
     }
     catch {
@@ -1494,9 +1497,9 @@ function Send-EmailReport {
         [string]$HTMLReportPath
     )
 
-    if(-not $EmailReport) { return }
+    if (-not $EmailReport) { return }
 
-    if(-not $SMTPServer -or -not $EmailFrom -or -not $EmailTo) {
+    if (-not $SMTPServer -or -not $EmailFrom -or -not $EmailTo) {
         Write-ColorOutput "`n[WARNING] Email reporting requires -SMTPServer, -EmailFrom, and -EmailTo parameters" -Level Warning
         return
     }
@@ -1552,20 +1555,20 @@ function Send-EmailReport {
         # preserving the port, SSL, credential, and attachment parameters.
         $smtpClient = New-Object System.Net.Mail.SmtpClient($SMTPServer, $SMTPPort)
         $smtpClient.EnableSsl = [bool]$UseSSL
-        if($SMTPCredential) {
+        if ($SMTPCredential) {
             $smtpClient.Credentials = $SMTPCredential.GetNetworkCredential()
         }
 
         $mailMessage = New-Object System.Net.Mail.MailMessage
         $mailMessage.From = (New-Object System.Net.Mail.MailAddress($EmailFrom))
-        foreach($recipient in $EmailTo) {
+        foreach ($recipient in $EmailTo) {
             $mailMessage.To.Add($recipient)
         }
         $mailMessage.Subject = $EmailSubject
         $mailMessage.Body = $emailBody
         $mailMessage.IsBodyHtml = $true
 
-        if($HTMLReportPath -and (Test-Path $HTMLReportPath)) {
+        if ($HTMLReportPath -and (Test-Path $HTMLReportPath)) {
             $mailMessage.Attachments.Add((New-Object System.Net.Mail.Attachment($HTMLReportPath)))
         }
 
@@ -1583,7 +1586,7 @@ function Send-EmailReport {
 function Export-HTMLReport {
     $reportPath = "$ReportDir\ServerHealth_$($env:COMPUTERNAME)_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
 
-    $statusColor = switch($script:healthReport.Status) {
+    $statusColor = switch ($script:healthReport.Status) {
         'Critical' { '#dc3545' }
         'Warning' { '#ffc107' }
         default { '#28a745' }
@@ -1856,30 +1859,30 @@ function Export-HTMLReport {
 
 # Check if running in interactive mode (no significant parameters provided)
 $interactiveModeParams = @('IncludeDiskIO', 'IncludeWindowsUpdate', 'IncludeSecurity', 'IncludeNetworkTests',
-                           'IncludeApplications', 'IncludeCertificates', 'IncludeScheduledTasks',
-                           'CheckIIS', 'CheckSQLServer', 'CheckHyperV', 'ExportJSON', 'ShowProgress')
+    'IncludeApplications', 'IncludeCertificates', 'IncludeScheduledTasks',
+    'CheckIIS', 'CheckSQLServer', 'CheckHyperV', 'ExportJSON', 'ShowProgress')
 
 $hasOptionalParams = $false
-foreach($param in $interactiveModeParams) {
-    if(Get-Variable -Name $param -ValueOnly -ErrorAction SilentlyContinue) {
+foreach ($param in $interactiveModeParams) {
+    if (Get-Variable -Name $param -ValueOnly -ErrorAction SilentlyContinue) {
         $hasOptionalParams = $true
         break
     }
 }
 
-if(-not $hasOptionalParams -and -not $ExportReport -and -not $EmailReport) {
+if (-not $hasOptionalParams -and -not $ExportReport -and -not $EmailReport) {
     Show-InteractiveMenu
 }
 
 # Calculate total steps for progress tracking
 $totalSteps = 7  # Base checks (CPU, Memory, Disk, Services, Events, Network, SystemInfo)
-if($IncludeDiskIO) { $totalSteps++ }
-if($IncludeWindowsUpdate) { $totalSteps++ }
-if($IncludeSecurity) { $totalSteps++ }
-if($IncludeNetworkTests) { $totalSteps++ }
-if($IncludeCertificates) { $totalSteps++ }
-if($IncludeScheduledTasks) { $totalSteps++ }
-if($CheckIIS -or $IncludeApplications) { $totalSteps += 3 }  # IIS, SQL, Hyper-V
+if ($IncludeDiskIO) { $totalSteps++ }
+if ($IncludeWindowsUpdate) { $totalSteps++ }
+if ($IncludeSecurity) { $totalSteps++ }
+if ($IncludeNetworkTests) { $totalSteps++ }
+if ($IncludeCertificates) { $totalSteps++ }
+if ($IncludeScheduledTasks) { $totalSteps++ }
+if ($CheckIIS -or $IncludeApplications) { $totalSteps += 3 }  # IIS, SQL, Hyper-V
 $totalSteps++  # Advanced metrics (always runs)
 
 $currentStep = 0
@@ -1903,7 +1906,7 @@ Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server H
 Get-DiskHealth
 
 # Optional: Disk I/O
-if($IncludeDiskIO) {
+if ($IncludeDiskIO) {
     Write-Host "`nChecking Disk I/O..." -ForegroundColor Cyan
     Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Disk I/O..."
     Get-DiskIOHealth
@@ -1925,54 +1928,54 @@ Get-NetworkHealth
 Get-AdvancedPerformanceMetrics
 
 # Optional: Windows Update
-if($IncludeWindowsUpdate) {
+if ($IncludeWindowsUpdate) {
     Write-Host "`nChecking Windows Update..." -ForegroundColor Cyan
     Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Windows Update..."
     Get-WindowsUpdateHealth
 }
 
 # Optional: Security
-if($IncludeSecurity) {
+if ($IncludeSecurity) {
     Write-Host "`nChecking Security..." -ForegroundColor Cyan
     Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Security..."
     Get-SecurityHealth
 }
 
 # Optional: Network Tests
-if($IncludeNetworkTests) {
+if ($IncludeNetworkTests) {
     Write-Host "`nTesting Network Connectivity..." -ForegroundColor Cyan
     Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Testing Network..."
     Get-NetworkConnectivityHealth
 }
 
 # Optional: Certificates
-if($IncludeCertificates) {
+if ($IncludeCertificates) {
     Write-Host "`nChecking Certificates..." -ForegroundColor Cyan
     Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Certificates..."
     Get-CertificateHealth
 }
 
 # Optional: Scheduled Tasks
-if($IncludeScheduledTasks) {
+if ($IncludeScheduledTasks) {
     Write-Host "`nChecking Scheduled Tasks..." -ForegroundColor Cyan
     Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Scheduled Tasks..."
     Get-ScheduledTasksHealth
 }
 
 # Optional: Applications
-if($CheckIIS -or $IncludeApplications) {
+if ($CheckIIS -or $IncludeApplications) {
     Write-Host "`nChecking IIS..." -ForegroundColor Cyan
     Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking IIS..."
     Get-IISHealth
 }
 
-if($CheckSQLServer -or $IncludeApplications) {
+if ($CheckSQLServer -or $IncludeApplications) {
     Write-Host "`nChecking SQL Server..." -ForegroundColor Cyan
     Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking SQL Server..."
     Get-SQLServerHealth
 }
 
-if($CheckHyperV -or $IncludeApplications) {
+if ($CheckHyperV -or $IncludeApplications) {
     Write-Host "`nChecking Hyper-V..." -ForegroundColor Cyan
     Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Hyper-V..."
     Get-HyperVHealth
@@ -1983,7 +1986,7 @@ Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server H
 Get-SystemInfo
 
 # Complete progress
-if($ShowProgress) {
+if ($ShowProgress) {
     Write-Progress -Activity "Server Health Check" -Completed
 }
 
@@ -1993,35 +1996,35 @@ Write-Host "  Health Check Summary" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Server: $($script:healthReport.ServerName)"
 Write-Host "Status: " -NoNewline
-switch($script:healthReport.Status) {
+switch ($script:healthReport.Status) {
     'Critical' { Write-Host "CRITICAL" -ForegroundColor Red }
     'Warning' { Write-Host "WARNING" -ForegroundColor Yellow }
     default { Write-Host "HEALTHY" -ForegroundColor Green }
 }
 
-if($script:healthReport.Issues.Count -gt 0) {
+if ($script:healthReport.Issues.Count -gt 0) {
     Write-Host "`nCritical Issues:" -ForegroundColor Red
     $script:healthReport.Issues | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
 }
 
-if($script:healthReport.Warnings.Count -gt 0) {
+if ($script:healthReport.Warnings.Count -gt 0) {
     Write-Host "`nWarnings:" -ForegroundColor Yellow
     $script:healthReport.Warnings | ForEach-Object { Write-Host "  - $_" -ForegroundColor Yellow }
 }
 
 # Export reports
 $htmlPath = $null
-if($ExportReport) {
+if ($ExportReport) {
     Write-Host "`nGenerating HTML report..." -ForegroundColor Cyan
     $htmlPath = Export-HTMLReport
 }
 
-if($ExportJSON) {
+if ($ExportJSON) {
     Write-Host "Generating JSON report..." -ForegroundColor Cyan
     Export-JSONReport
 }
 
-if($EmailReport) {
+if ($EmailReport) {
     Write-Host "Sending email report..." -ForegroundColor Cyan
     Send-EmailReport -HTMLReportPath $htmlPath
 }

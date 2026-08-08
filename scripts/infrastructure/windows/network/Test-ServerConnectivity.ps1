@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Tests network connectivity to remote servers including ping, port checks, and DNS resolution.
 
@@ -53,25 +53,25 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+    [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
     [string[]]$ComputerName,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int[]]$Port = @(80, 443, 3389, 445),
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$PingCount = 4,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$Timeout = 3000,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeTraceRoute,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -103,7 +103,7 @@ $script:report = @{
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
 
-    $color = switch($Level) {
+    $color = switch ($Level) {
         'Error' { 'Red' }
         'Warning' { 'Yellow' }
         'Success' { 'Green' }
@@ -136,7 +136,7 @@ function Test-ICMPConnectivity {
         $pingResults.Received = $ping.Count
         $pingResults.Lost = $PingCount - $ping.Count
 
-        if($ping) {
+        if ($ping) {
             $latencies = $ping | ForEach-Object { $_.ResponseTime }
             $pingResults.MinLatency = ($latencies | Measure-Object -Minimum).Minimum
             $pingResults.MaxLatency = ($latencies | Measure-Object -Maximum).Maximum
@@ -170,7 +170,7 @@ function Test-DNSResolution {
 
     try {
         # Skip DNS resolution if target is already an IP address
-        if($Target -match '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$') {
+        if ($Target -match '^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$') {
             $dnsResults.Success = $true
             $dnsResults.IPAddresses = @($Target)
             $dnsResults.FQDN = "N/A (IP Address)"
@@ -179,8 +179,8 @@ function Test-DNSResolution {
         else {
             $dns = Resolve-DnsName -Name $Target -ErrorAction Stop
 
-            $ipRecords = $dns | Where-Object {$_.Type -eq 'A'}
-            if($ipRecords) {
+            $ipRecords = $dns | Where-Object { $_.Type -eq 'A' }
+            if ($ipRecords) {
                 $dnsResults.Success = $true
                 $dnsResults.IPAddresses = $ipRecords.IPAddress
                 $dnsResults.FQDN = $ipRecords[0].Name
@@ -222,7 +222,7 @@ function Test-PortConnectivity {
 
         $stopwatch.Stop()
 
-        if($wait) {
+        if ($wait) {
             try {
                 $tcpClient.EndConnect($asyncResult)
                 $portResult.Success = $true
@@ -260,8 +260,8 @@ function Get-TraceRoute {
         $traceRoute = Test-NetConnection -ComputerName $Target -TraceRoute -ErrorAction Stop
 
         $hops = @()
-        if($traceRoute.TraceRoute) {
-            for($i = 0; $i -lt $traceRoute.TraceRoute.Count; $i++) {
+        if ($traceRoute.TraceRoute) {
+            for ($i = 0; $i -lt $traceRoute.TraceRoute.Count; $i++) {
                 $hop = $traceRoute.TraceRoute[$i]
                 $hops += [PSCustomObject]@{
                     Hop = $i + 1
@@ -304,16 +304,16 @@ function Test-TargetConnectivity {
     $result.Ping = Test-ICMPConnectivity -Target $Target
 
     # Port Tests
-    if($Port) {
+    if ($Port) {
         Write-Host "`nPort Connectivity Tests..." -ForegroundColor Cyan
-        foreach($p in $Port) {
+        foreach ($p in $Port) {
             $portResult = Test-PortConnectivity -Target $Target -TestPort $p
             $result.Ports += $portResult
         }
     }
 
     # Trace Route
-    if($IncludeTraceRoute) {
+    if ($IncludeTraceRoute) {
         Write-Host "`nTrace Route..." -ForegroundColor Cyan
         $result.TraceRoute = Get-TraceRoute -Target $Target
     }
@@ -332,7 +332,7 @@ function Show-Summary {
     Write-Host "Successful Pings: $($script:report.Summary.SuccessfulPings)"
     Write-Host "Failed Pings: $($script:report.Summary.FailedPings)"
 
-    if($script:report.Summary.PortTestsRun -gt 0) {
+    if ($script:report.Summary.PortTestsRun -gt 0) {
         $portSuccessRate = [math]::Round(($script:report.Summary.PortTestsSuccessful / $script:report.Summary.PortTestsRun) * 100, 2)
         Write-Host "`nPort Tests: $($script:report.Summary.PortTestsSuccessful)/$($script:report.Summary.PortTestsRun) successful ($portSuccessRate%)"
     }
@@ -456,8 +456,8 @@ function Export-CSVReport {
     $reportPath = "$ReportDir\ConnectivityReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 
     $csvData = @()
-    foreach($result in $script:report.Results) {
-        foreach($portResult in $result.Ports) {
+    foreach ($result in $script:report.Results) {
+        foreach ($portResult in $result.Ports) {
             $csvData += [PSCustomObject]@{
                 Target = $result.Target
                 DNSResolved = $result.DNS.Success
@@ -489,18 +489,18 @@ Write-Host "Ports: $($Port -join ', ')"
 Write-Host "Ping Count: $PingCount"
 Write-Host "`nStarting tests..." -ForegroundColor Cyan
 
-foreach($target in $ComputerName) {
+foreach ($target in $ComputerName) {
     Test-TargetConnectivity -Target $target
 }
 
 Show-Summary
 
-if($ExportHTML) {
+if ($ExportHTML) {
     Write-Host "Generating HTML report..." -ForegroundColor Cyan
     Export-HTMLReport
 }
 
-if($ExportCSV) {
+if ($ExportCSV) {
     Write-Host "Generating CSV report..." -ForegroundColor Cyan
     Export-CSVReport
 }

@@ -55,25 +55,25 @@
     Always test with -WhatIf first
 #>
 
-[CmdletBinding(SupportsShouldProcess=$true)]
+[CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidatePattern('^[A-Z]$')]
     [string]$DriveLetter,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeWindowsUpdate,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeIISLogs,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$IISLogRetentionDays = 30,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeDISM,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$Force
 )
 
@@ -93,7 +93,7 @@ $script:report = @{
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
 
-    $color = switch($Level) {
+    $color = switch ($Level) {
         'Warning' { 'Yellow' }
         'Error' { 'Red' }
         'Success' { 'Green' }
@@ -106,8 +106,8 @@ function Write-ColorOutput {
 function Get-DiskSpace {
     param([string]$Drive)
 
-    $volume = Get-Volume | Where-Object {$_.DriveLetter -eq $Drive}
-    if($volume) {
+    $volume = Get-Volume | Where-Object { $_.DriveLetter -eq $Drive }
+    if ($volume) {
         return @{
             TotalGB = [math]::Round($volume.Size / 1GB, 2)
             FreeGB = [math]::Round($volume.SizeRemaining / 1GB, 2)
@@ -120,10 +120,10 @@ function Get-DiskSpace {
 function Get-FolderSize {
     param([string]$Path)
 
-    if(Test-Path $Path) {
+    if (Test-Path $Path) {
         try {
             $size = (Get-ChildItem -Path $Path -Recurse -File -ErrorAction SilentlyContinue |
-                Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
+                    Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
             return [math]::Round($size / 1MB, 2)
         }
         catch {
@@ -134,20 +134,21 @@ function Get-FolderSize {
 }
 
 function Remove-FolderContents {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [string]$Path,
         [string]$Description,
         [int]$OlderThanDays = 0
     )
 
-    if(-not (Test-Path $Path)) {
+    if (-not (Test-Path $Path)) {
         Write-Verbose "$Path does not exist, skipping..."
         return
     }
 
     $beforeSize = Get-FolderSize -Path $Path
 
-    if($WhatIfPreference) {
+    if ($WhatIfPreference) {
         Write-ColorOutput "  [WHATIF] Would clean: $Description ($Path)" -Level Info
         Write-ColorOutput "    Current size: $beforeSize MB" -Level Info
         return
@@ -156,20 +157,22 @@ function Remove-FolderContents {
     Write-Host "  Cleaning: $Description..." -ForegroundColor Cyan
 
     try {
-        if($OlderThanDays -gt 0) {
+        if ($OlderThanDays -gt 0) {
             $cutoffDate = (Get-Date).AddDays(-$OlderThanDays)
             $items = Get-ChildItem -Path $Path -Recurse -File -ErrorAction SilentlyContinue |
-                Where-Object {$_.LastWriteTime -lt $cutoffDate}
+                Where-Object { $_.LastWriteTime -lt $cutoffDate }
         }
         else {
             $items = Get-ChildItem -Path $Path -Recurse -File -ErrorAction SilentlyContinue
         }
 
         $itemCount = 0
-        foreach($item in $items) {
+        foreach ($item in $items) {
             try {
-                Remove-Item -Path $item.FullName -Force -ErrorAction SilentlyContinue
-                $itemCount++
+                if ($PSCmdlet.ShouldProcess($item.FullName, 'Remove file')) {
+                    Remove-Item -Path $item.FullName -Force -ErrorAction SilentlyContinue
+                    $itemCount++
+                }
             }
             catch {
                 Write-Verbose "Could not delete: $($item.FullName)"
@@ -179,7 +182,7 @@ function Remove-FolderContents {
         $afterSize = Get-FolderSize -Path $Path
         $savedMB = $beforeSize - $afterSize
 
-        if($savedMB -gt 0) {
+        if ($savedMB -gt 0) {
             Write-ColorOutput "    Cleaned $itemCount files, saved $savedMB MB" -Level Success
             $script:report.TotalSpaceSavedMB += $savedMB
         }
@@ -214,9 +217,9 @@ function Clean-UserTemp {
 
     $userProfiles = Get-ChildItem "C:\Users" -Directory -ErrorAction SilentlyContinue
 
-    foreach($profile in $userProfiles) {
+    foreach ($profile in $userProfiles) {
         $tempPath = Join-Path $profile.FullName "AppData\Local\Temp"
-        if(Test-Path $tempPath) {
+        if (Test-Path $tempPath) {
             Remove-FolderContents -Path $tempPath -Description "User temp: $($profile.Name)"
         }
     }
@@ -225,7 +228,7 @@ function Clean-UserTemp {
 function Clean-RecycleBin {
     Write-Host "`nCleaning Recycle Bin..." -ForegroundColor Cyan
 
-    if($WhatIfPreference) {
+    if ($WhatIfPreference) {
         Write-ColorOutput "  [WHATIF] Would empty Recycle Bin on all drives" -Level Info
         return
     }
@@ -256,8 +259,8 @@ function Clean-WindowsErrorReporting {
         "$env:ProgramData\Microsoft\Windows\WER\ReportQueue"
     )
 
-    foreach($path in $werPaths) {
-        if(Test-Path $path) {
+    foreach ($path in $werPaths) {
+        if (Test-Path $path) {
             Remove-FolderContents -Path $path -Description "Windows Error Reporting: $(Split-Path $path -Leaf)" -OlderThanDays 7
         }
     }
@@ -268,9 +271,9 @@ function Clean-ThumbnailCache {
 
     $userProfiles = Get-ChildItem "C:\Users" -Directory -ErrorAction SilentlyContinue
 
-    foreach($profile in $userProfiles) {
+    foreach ($profile in $userProfiles) {
         $thumbPath = Join-Path $profile.FullName "AppData\Local\Microsoft\Windows\Explorer"
-        if(Test-Path $thumbPath) {
+        if (Test-Path $thumbPath) {
             Remove-FolderContents -Path $thumbPath -Description "Thumbnail cache: $($profile.Name)"
         }
     }
@@ -279,7 +282,7 @@ function Clean-ThumbnailCache {
 function Clean-WindowsUpdate {
     Write-Host "`nCleaning Windows Update cache..." -ForegroundColor Cyan
 
-    if($WhatIfPreference) {
+    if ($WhatIfPreference) {
         Write-ColorOutput "  [WHATIF] Would run Windows Update cleanup" -Level Info
         return
     }
@@ -315,7 +318,7 @@ function Clean-IISLogs {
     # Check if IIS is installed
     $iisInstalled = Get-Service -Name W3SVC -ErrorAction SilentlyContinue
 
-    if(-not $iisInstalled) {
+    if (-not $iisInstalled) {
         Write-Host "  IIS not detected, skipping..." -ForegroundColor Gray
         return
     }
@@ -328,9 +331,9 @@ function Clean-IISLogs {
     try {
         Import-Module IISAdministration -ErrorAction SilentlyContinue
         $sites = Get-IISSite -ErrorAction SilentlyContinue
-        foreach($site in $sites) {
+        foreach ($site in $sites) {
             $logPath = $site.logFile.directory
-            if($logPath -and (Test-Path $logPath)) {
+            if ($logPath -and (Test-Path $logPath)) {
                 $iisLogPaths += $logPath
             }
         }
@@ -339,8 +342,8 @@ function Clean-IISLogs {
         Write-Verbose "Could not read IIS configuration"
     }
 
-    foreach($path in ($iisLogPaths | Select-Object -Unique)) {
-        if(Test-Path $path) {
+    foreach ($path in ($iisLogPaths | Select-Object -Unique)) {
+        if (Test-Path $path) {
             Remove-FolderContents -Path $path -Description "IIS logs older than $IISLogRetentionDays days" -OlderThanDays $IISLogRetentionDays
         }
     }
@@ -350,14 +353,14 @@ function Clean-DISMComponentStore {
     Write-Host "`nRunning DISM component store cleanup..." -ForegroundColor Cyan
     Write-ColorOutput "  This operation can take 30+ minutes..." -Level Warning
 
-    if($WhatIfPreference) {
+    if ($WhatIfPreference) {
         Write-ColorOutput "  [WHATIF] Would run DISM component store cleanup" -Level Info
         return
     }
 
-    if(-not $Force) {
+    if (-not $Force) {
         $confirm = Read-Host "DISM cleanup can take significant time. Continue? (y/N)"
-        if($confirm -ne 'y') {
+        if ($confirm -ne 'y') {
             Write-Host "  Skipping DISM cleanup..." -ForegroundColor Gray
             return
         }
@@ -367,7 +370,7 @@ function Clean-DISMComponentStore {
         Write-Host "  Starting DISM cleanup (this will take a while)..." -ForegroundColor Gray
         $result = Dism.exe /Online /Cleanup-Image /StartComponentCleanup /ResetBase
 
-        if($LASTEXITCODE -eq 0) {
+        if ($LASTEXITCODE -eq 0) {
             Write-ColorOutput "  DISM cleanup completed successfully" -Level Success
             $script:report.Operations += [PSCustomObject]@{
                 Operation = "DISM Component Store Cleanup"
@@ -399,7 +402,7 @@ function Show-Summary {
     Write-Host "End Time: $($script:report.EndTime)"
     Write-Host "Duration: $([math]::Round($duration, 2)) seconds"
 
-    if($WhatIfPreference) {
+    if ($WhatIfPreference) {
         Write-ColorOutput "`n[WHATIF MODE - No changes were made]" -Level Warning
     }
     else {
@@ -407,7 +410,7 @@ function Show-Summary {
     }
 
     # Show space changes per drive
-    foreach($drive in $script:report.FinalSpace.Keys) {
+    foreach ($drive in $script:report.FinalSpace.Keys) {
         $initial = $script:report.InitialSpace[$drive]
         $final = $script:report.FinalSpace[$drive]
         $saved = $final.FreeGB - $initial.FreeGB
@@ -415,17 +418,17 @@ function Show-Summary {
         Write-Host "`nDrive $drive`:" -ForegroundColor Cyan
         Write-Host "  Before: $($initial.FreeGB) GB free / $($initial.TotalGB) GB total"
         Write-Host "  After:  $($final.FreeGB) GB free / $($final.TotalGB) GB total"
-        if($saved -gt 0) {
+        if ($saved -gt 0) {
             Write-ColorOutput "  Saved:  $([math]::Round($saved, 2)) GB" -Level Success
         }
     }
 
     # Show operations performed
-    if($script:report.Operations.Count -gt 0) {
+    if ($script:report.Operations.Count -gt 0) {
         Write-Host "`nOperations Performed:" -ForegroundColor Cyan
-        $script:report.Operations | Where-Object {$_.SavedMB -gt 0} |
+        $script:report.Operations | Where-Object { $_.SavedMB -gt 0 } |
             Sort-Object SavedMB -Descending |
-            Format-Table Operation, @{Name='Saved (MB)';Expression={$_.SavedMB}}, FilesRemoved -AutoSize
+            Format-Table Operation, @{Name = 'Saved (MB)'; Expression = { $_.SavedMB } }, FilesRemoved -AutoSize
     }
 
     Write-Host "`n========================================`n" -ForegroundColor Cyan
@@ -437,16 +440,16 @@ Write-Host "  Server Storage Optimization" -ForegroundColor Cyan
 Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Server: $($script:report.ServerName)"
 
-if($WhatIfPreference) {
+if ($WhatIfPreference) {
     Write-ColorOutput "Running in WhatIf mode - no changes will be made" -Level Warning
 }
 
 # Get initial disk space
-$drives = if($DriveLetter) { @($DriveLetter) } else { (Get-Volume | Where-Object {$_.DriveLetter}).DriveLetter }
+$drives = if ($DriveLetter) { @($DriveLetter) } else { (Get-Volume | Where-Object { $_.DriveLetter }).DriveLetter }
 
-foreach($drive in $drives) {
+foreach ($drive in $drives) {
     $space = Get-DiskSpace -Drive $drive
-    if($space) {
+    if ($space) {
         $script:report.InitialSpace[$drive] = $space
         Write-Host "`nDrive $drive`: $($space.FreeGB) GB free / $($space.TotalGB) GB total"
     }
@@ -459,22 +462,22 @@ Clean-RecycleBin
 Clean-WindowsErrorReporting
 Clean-ThumbnailCache
 
-if($IncludeWindowsUpdate) {
+if ($IncludeWindowsUpdate) {
     Clean-WindowsUpdate
 }
 
-if($IncludeIISLogs) {
+if ($IncludeIISLogs) {
     Clean-IISLogs
 }
 
-if($IncludeDISM) {
+if ($IncludeDISM) {
     Clean-DISMComponentStore
 }
 
 # Get final disk space
-foreach($drive in $drives) {
+foreach ($drive in $drives) {
     $space = Get-DiskSpace -Drive $drive
-    if($space) {
+    if ($space) {
         $script:report.FinalSpace[$drive] = $space
     }
 }

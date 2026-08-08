@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Generates comprehensive Group Policy Object (GPO) reports for domain analysis.
 
@@ -143,7 +143,7 @@ try {
         $userVersion = $gpo.User.DSVersion
 
         $isEmpty = ((-not $computerEnabled) -and (-not $userEnabled)) -or
-                   (($computerVersion -eq 0) -and ($userVersion -eq 0))
+        (($computerVersion -eq 0) -and ($userVersion -eq 0))
 
         if ($isEmpty) {
             $emptyGPOs += $gpo
@@ -154,20 +154,20 @@ try {
 
         # Create summary object
         $gpoSummary += [PSCustomObject]@{
-            Name              = $gpoName
-            GUID              = $gpoGuid
-            Status            = $gpoStatus
-            Created           = $gpoCreated
-            Modified          = $gpoModified
-            LinkCount         = $linkCount
-            IsUnlinked        = $isUnlinked
-            IsEmpty           = $isEmpty
-            ComputerEnabled   = $computerEnabled
-            UserEnabled       = $userEnabled
-            ComputerVersion   = $computerVersion
-            UserVersion       = $userVersion
-            WMIFilter         = $wmiFilter
-            Owner             = $gpo.Owner
+            Name = $gpoName
+            GUID = $gpoGuid
+            Status = $gpoStatus
+            Created = $gpoCreated
+            Modified = $gpoModified
+            LinkCount = $linkCount
+            IsUnlinked = $isUnlinked
+            IsEmpty = $isEmpty
+            ComputerEnabled = $computerEnabled
+            UserEnabled = $userEnabled
+            ComputerVersion = $computerVersion
+            UserVersion = $userVersion
+            WMIFilter = $wmiFilter
+            Owner = $gpo.Owner
         }
 
         # Generate individual GPO reports

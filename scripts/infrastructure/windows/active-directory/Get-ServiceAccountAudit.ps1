@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Audits service accounts in Active Directory for security and compliance.
 
@@ -247,7 +247,8 @@ try {
                 SPNs = ($msa.ServicePrincipalNames -join "; ")
                 PrincipalsAllowedToRetrieve = if ($msa.'PrincipalsAllowedToRetrieveManagedPassword') {
                     ($msa.'PrincipalsAllowedToRetrieveManagedPassword' -join "; ")
-                } else {
+                }
+                else {
                     "None"
                 }
             }

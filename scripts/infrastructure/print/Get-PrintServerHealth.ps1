@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Monitors print server health and identifies printing issues.
 
@@ -46,21 +46,21 @@
     Compatible with Windows Server 2016, 2019, 2022
 #>
 
-[CmdletBinding(SupportsShouldProcess=$true)]
+[CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ClearStuckJobs,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$StuckJobThresholdHours = 2,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$CheckDrivers,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -130,7 +130,7 @@ $spoolPath = "$env:SystemRoot\System32\spool\PRINTERS"
 $spoolDrive = Split-Path -Path $spoolPath -Qualifier
 
 try {
-    $drive = Get-PSDrive -Name ($spoolDrive -replace ':','') -ErrorAction Stop
+    $drive = Get-PSDrive -Name ($spoolDrive -replace ':', '') -ErrorAction Stop
     $freeSpaceGB = [math]::Round($drive.Free / 1GB, 2)
     $usedPercent = [math]::Round(($drive.Used / ($drive.Used + $drive.Free)) * 100, 2)
 
@@ -171,8 +171,8 @@ try {
     foreach ($printer in $printers) {
         # Check printer status
         $status = if ($printer.PrinterStatus -eq 'Normal') { "Pass" }
-                 elseif ($printer.PrinterStatus -match 'Error|Offline') { "Fail" }
-                 else { "Warning" }
+        elseif ($printer.PrinterStatus -match 'Error|Offline') { "Fail" }
+        else { "Warning" }
 
         if ($status -eq "Fail") {
             Write-Host "    [Fail] $($printer.Name): $($printer.PrinterStatus)" -ForegroundColor Red
@@ -285,7 +285,7 @@ try {
     $errorEvents = Get-WinEvent -FilterHashtable @{
         LogName = 'System'
         ProviderName = 'Microsoft-Windows-PrintService'
-        Level = 2,3  # Error and Warning
+        Level = 2, 3  # Error and Warning
         StartTime = (Get-Date).AddHours(-24)
     } -MaxEvents 50 -ErrorAction SilentlyContinue
 

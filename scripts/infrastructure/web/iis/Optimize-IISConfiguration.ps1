@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Optimize IIS configuration for performance and security.
 
@@ -117,10 +117,10 @@ if ($ApplySecurityHardening) {
             $sitePath = "IIS:\Sites\$($site.Name)"
 
             # Add custom headers
-            Add-WebConfigurationProperty -PSPath $sitePath -Filter "system.webServer/httpProtocol/customHeaders" -Name "." -Value @{name='X-Frame-Options';value='SAMEORIGIN'} -ErrorAction SilentlyContinue
-            Add-WebConfigurationProperty -PSPath $sitePath -Filter "system.webServer/httpProtocol/customHeaders" -Name "." -Value @{name='X-Content-Type-Options';value='nosniff'} -ErrorAction SilentlyContinue
-            Add-WebConfigurationProperty -PSPath $sitePath -Filter "system.webServer/httpProtocol/customHeaders" -Name "." -Value @{name='X-XSS-Protection';value='1; mode=block'} -ErrorAction SilentlyContinue
-            Add-WebConfigurationProperty -PSPath $sitePath -Filter "system.webServer/httpProtocol/customHeaders" -Name "." -Value @{name='Strict-Transport-Security';value='max-age=31536000; includeSubDomains'} -ErrorAction SilentlyContinue
+            Add-WebConfigurationProperty -PSPath $sitePath -Filter "system.webServer/httpProtocol/customHeaders" -Name "." -Value @{name = 'X-Frame-Options'; value = 'SAMEORIGIN' } -ErrorAction SilentlyContinue
+            Add-WebConfigurationProperty -PSPath $sitePath -Filter "system.webServer/httpProtocol/customHeaders" -Name "." -Value @{name = 'X-Content-Type-Options'; value = 'nosniff' } -ErrorAction SilentlyContinue
+            Add-WebConfigurationProperty -PSPath $sitePath -Filter "system.webServer/httpProtocol/customHeaders" -Name "." -Value @{name = 'X-XSS-Protection'; value = '1; mode=block' } -ErrorAction SilentlyContinue
+            Add-WebConfigurationProperty -PSPath $sitePath -Filter "system.webServer/httpProtocol/customHeaders" -Name "." -Value @{name = 'Strict-Transport-Security'; value = 'max-age=31536000; includeSubDomains' } -ErrorAction SilentlyContinue
         }
         $changes += "Added security headers to $($sites.Count) sites"
         Write-Host "[+] Security headers configured" -ForegroundColor Green
@@ -153,7 +153,8 @@ if ($changes.Count -gt 0) {
     }
     Write-Host "`n[!] Note: Some changes may require IIS restart to take effect" -ForegroundColor Yellow
     Write-Host "[*] To restart IIS: iisreset /noforce" -ForegroundColor Cyan
-} else {
+}
+else {
     Write-Host "  No changes applied (use -WhatIf to preview or specify optimization switches)" -ForegroundColor Yellow
 }
 

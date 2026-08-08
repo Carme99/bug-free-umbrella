@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Parses and analyzes Windows event logs for critical errors and security events.
 
@@ -56,30 +56,30 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
-    [ValidateSet('System','Application','Security','All')]
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('System', 'Application', 'Security', 'All')]
     [string]$LogName = 'All',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$Hours = 24,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$Days,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$MaxEvents = 1000,
 
-    [Parameter(Mandatory=$false)]
-    [ValidateSet('Critical','Error','Warning','All')]
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('Critical', 'Error', 'Warning', 'All')]
     [string]$Severity = 'Error',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$GroupBySource
 )
 
@@ -113,7 +113,7 @@ $script:report = @{
 }
 
 # Determine time range
-if($Days) {
+if ($Days) {
     $script:startTime = (Get-Date).AddDays(-$Days)
     $script:report.TimeRange = "Last $Days days"
 }
@@ -125,7 +125,7 @@ else {
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
 
-    $color = switch($Level) {
+    $color = switch ($Level) {
         'Critical' { 'Red' }
         'Error' { 'Red' }
         'Warning' { 'Yellow' }
@@ -138,11 +138,11 @@ function Write-ColorOutput {
 function Get-SeverityLevel {
     param([string]$Severity)
 
-    switch($Severity) {
+    switch ($Severity) {
         'Critical' { return @(1) }
-        'Error' { return @(1,2) }
-        'Warning' { return @(1,2,3) }
-        'All' { return @(0,1,2,3,4) }
+        'Error' { return @(1, 2) }
+        'Warning' { return @(1, 2, 3) }
+        'All' { return @(0, 1, 2, 3, 4) }
     }
 }
 
@@ -168,14 +168,14 @@ function Get-EventLogAnalysis {
         }
 
         $levels = Get-SeverityLevel -Severity $Severity
-        if($Severity -ne 'All') {
+        if ($Severity -ne 'All') {
             $filterHash['Level'] = $levels
         }
 
         $events = Get-WinEvent -FilterHashtable $filterHash -MaxEvents $MaxEvents -ErrorAction SilentlyContinue
 
-        if($events) {
-            foreach($event in $events) {
+        if ($events) {
+            foreach ($event in $events) {
                 $eventInfo = [PSCustomObject]@{
                     TimeCreated = $event.TimeCreated
                     LogName = $event.LogName
@@ -192,7 +192,7 @@ function Get-EventLogAnalysis {
                 $script:report.AllEvents += $eventInfo
 
                 # Count by severity
-                switch($event.Level) {
+                switch ($event.Level) {
                     1 {
                         $logReport.CriticalCount++
                         $script:report.Summary.CriticalCount++
@@ -208,7 +208,7 @@ function Get-EventLogAnalysis {
                 }
 
                 # Track event sources
-                if($logReport.TopSources.ContainsKey($event.ProviderName)) {
+                if ($logReport.TopSources.ContainsKey($event.ProviderName)) {
                     $logReport.TopSources[$event.ProviderName]++
                 }
                 else {
@@ -238,9 +238,9 @@ function Get-TopEventSources {
 
     $allSources = @{}
 
-    foreach($log in $script:report.Logs) {
-        foreach($source in $log.TopSources.GetEnumerator()) {
-            if($allSources.ContainsKey($source.Key)) {
+    foreach ($log in $script:report.Logs) {
+        foreach ($source in $log.TopSources.GetEnumerator()) {
+            if ($allSources.ContainsKey($source.Key)) {
                 $allSources[$source.Key] += $source.Value
             }
             else {
@@ -269,38 +269,38 @@ function Show-Summary {
     Write-Host "Scan Time: $($script:report.ScanTime)"
     Write-Host "`nTotal Events: $($script:report.Summary.TotalEvents)"
 
-    if($script:report.Summary.CriticalCount -gt 0) {
+    if ($script:report.Summary.CriticalCount -gt 0) {
         Write-ColorOutput "Critical: $($script:report.Summary.CriticalCount)" -Level Critical
     }
-    if($script:report.Summary.ErrorCount -gt 0) {
+    if ($script:report.Summary.ErrorCount -gt 0) {
         Write-ColorOutput "Errors: $($script:report.Summary.ErrorCount)" -Level Error
     }
-    if($script:report.Summary.WarningCount -gt 0) {
+    if ($script:report.Summary.WarningCount -gt 0) {
         Write-ColorOutput "Warnings: $($script:report.Summary.WarningCount)" -Level Warning
     }
 
-    if($script:report.TopSources.Count -gt 0) {
+    if ($script:report.TopSources.Count -gt 0) {
         Write-Host "`nTop Event Sources:" -ForegroundColor Cyan
-        foreach($source in $script:report.TopSources) {
+        foreach ($source in $script:report.TopSources) {
             Write-Host "  $($source.Source): $($source.EventCount) events"
         }
     }
 
     # Show recent critical/error events
     $recentCritical = $script:report.AllEvents |
-        Where-Object {$_.Level -le 2} |
+        Where-Object { $_.Level -le 2 } |
         Sort-Object TimeCreated -Descending |
         Select-Object -First 5
 
-    if($recentCritical) {
+    if ($recentCritical) {
         Write-Host "`nRecent Critical/Error Events:" -ForegroundColor Cyan
-        foreach($event in $recentCritical) {
-            $levelColor = if($event.Level -eq 1) { 'Red' } else { 'Yellow' }
+        foreach ($event in $recentCritical) {
+            $levelColor = if ($event.Level -eq 1) { 'Red' } else { 'Yellow' }
             Write-Host "  [$($event.TimeCreated)] " -NoNewline
             Write-Host "$($event.LevelDisplayName) " -ForegroundColor $levelColor -NoNewline
             Write-Host "- $($event.Source) (Event $($event.EventID))"
             $message = $event.Message
-            if($message.Length -gt 100) {
+            if ($message.Length -gt 100) {
                 $message = $message.Substring(0, 100) + "..."
             }
             Write-Host "    $message" -ForegroundColor Gray
@@ -429,7 +429,7 @@ Write-Host "Severity Filter: $Severity"
 Write-Host "Max Events per Log: $MaxEvents"
 Write-Host "`nAnalyzing logs..." -ForegroundColor Cyan
 
-if($LogName -eq 'All') {
+if ($LogName -eq 'All') {
     Get-EventLogAnalysis -Log 'System'
     Get-EventLogAnalysis -Log 'Application'
     Get-EventLogAnalysis -Log 'Security'
@@ -441,12 +441,12 @@ else {
 Get-TopEventSources
 Show-Summary
 
-if($ExportHTML) {
+if ($ExportHTML) {
     Write-Host "Generating HTML report..." -ForegroundColor Cyan
     Export-HTMLReport
 }
 
-if($ExportCSV) {
+if ($ExportCSV) {
     Write-Host "Generating CSV report..." -ForegroundColor Cyan
     Export-CSVReport
 }

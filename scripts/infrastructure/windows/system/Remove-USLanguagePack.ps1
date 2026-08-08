@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Removes US English (en-US) language packs from Windows Server 2016-2022.
 
@@ -40,13 +40,13 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$Force,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$KeepKeyboard,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$BackupFirst
 )
 
@@ -55,7 +55,7 @@ param(
 function Write-Log {
     param([string]$Message, [string]$Type = "INFO")
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $color = switch($Type) {
+    $color = switch ($Type) {
         "ERROR" { "Red" }
         "SUCCESS" { "Green" }
         "WARNING" { "Yellow" }

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Advanced IIS log file analysis and reporting.
 
@@ -123,19 +123,21 @@ foreach ($file in $logFiles) {
                         Port = $fields[6]
                         Username = $fields[7]
                         ServerIP = $fields[8]
-                        UserAgent = if ($fields.Count -gt 9) {$fields[9]} else {""}
-                        Referer = if ($fields.Count -gt 10) {$fields[10]} else {""}
-                        StatusCode = if ($fields.Count -gt 11) {$fields[11]} else {"200"}
-                        SubStatus = if ($fields.Count -gt 12) {$fields[12]} else {"0"}
-                        TimeTaken = if ($fields.Count -gt 14) {[int]$fields[14]} else {0}
-                        BytesSent = if ($fields.Count -gt 13) {[int]$fields[13]} else {0}
+                        UserAgent = if ($fields.Count -gt 9) { $fields[9] } else { "" }
+                        Referer = if ($fields.Count -gt 10) { $fields[10] } else { "" }
+                        StatusCode = if ($fields.Count -gt 11) { $fields[11] } else { "200" }
+                        SubStatus = if ($fields.Count -gt 12) { $fields[12] } else { "0" }
+                        TimeTaken = if ($fields.Count -gt 14) { [int]$fields[14] } else { 0 }
+                        BytesSent = if ($fields.Count -gt 13) { [int]$fields[13] } else { 0 }
                     }
                 }
-            } catch {
+            }
+            catch {
                 $parseErrors++
             }
         }
-    } catch {
+    }
+    catch {
         Write-Host "[!] Error reading $($file.Name): $_" -ForegroundColor Yellow
     }
 }
@@ -154,21 +156,21 @@ Write-Host "`n[*] Performing analysis..." -ForegroundColor Cyan
 
 # Top URLs
 $analysis.TopURLs = $entries | Group-Object UriStem | Sort-Object Count -Descending | Select-Object -First $Top |
-    ForEach-Object { [PSCustomObject]@{URL = $_.Name; Requests = $_.Count} }
+    ForEach-Object { [PSCustomObject]@{URL = $_.Name; Requests = $_.Count } }
 
 # Status codes
 $analysis.StatusCodes = $entries | Group-Object StatusCode | Sort-Object Count -Descending |
-    ForEach-Object { [PSCustomObject]@{StatusCode = $_.Name; Count = $_.Count; Percentage = [math]::Round(($_.Count / $entries.Count) * 100, 2)} }
+    ForEach-Object { [PSCustomObject]@{StatusCode = $_.Name; Count = $_.Count; Percentage = [math]::Round(($_.Count / $entries.Count) * 100, 2) } }
 
 # Top client IPs
 $analysis.TopIPs = $entries | Group-Object ClientIP | Sort-Object Count -Descending | Select-Object -First $Top |
-    ForEach-Object { [PSCustomObject]@{IP = $_.Name; Requests = $_.Count} }
+    ForEach-Object { [PSCustomObject]@{IP = $_.Name; Requests = $_.Count } }
 
 # Error analysis (4xx and 5xx)
 $errors = $entries | Where-Object { [int]$_.StatusCode -ge 400 }
 $analysis.ErrorCount = $errors.Count
 $analysis.TopErrors = $errors | Group-Object UriStem | Sort-Object Count -Descending | Select-Object -First $Top |
-    ForEach-Object { [PSCustomObject]@{URL = $_.Name; ErrorCount = $_.Count} }
+    ForEach-Object { [PSCustomObject]@{URL = $_.Name; ErrorCount = $_.Count } }
 
 # Performance metrics
 $analysis.AvgResponseTime = [math]::Round(($entries | Measure-Object TimeTaken -Average).Average, 2)
@@ -184,10 +186,10 @@ if ($IncludeSecurityAnalysis) {
     Write-Host "[*] Performing security analysis..." -ForegroundColor Cyan
 
     $suspiciousPatterns = @(
-        @{Name = "SQL Injection"; Pattern = "(\%27)|(')|(--)|(\%23)|(#)|(union)|(select)|(insert)|(drop)|(update)|(delete)|(exec)"}
-        @{Name = "XSS Attempts"; Pattern = "(<script|javascript:|onerror=|onload=)"}
-        @{Name = "Path Traversal"; Pattern = "(\.\./|\.\.\\|%2e%2e)"}
-        @{Name = 'Command Injection'; Pattern = '(\||;|`|\\$\(|\${)'}
+        @{Name = "SQL Injection"; Pattern = "(\%27)|(')|(--)|(\%23)|(#)|(union)|(select)|(insert)|(drop)|(update)|(delete)|(exec)" }
+        @{Name = "XSS Attempts"; Pattern = "(<script|javascript:|onerror=|onload=)" }
+        @{Name = "Path Traversal"; Pattern = "(\.\./|\.\.\\|%2e%2e)" }
+        @{Name = 'Command Injection'; Pattern = '(\||;|`|\\$\(|\${)' }
     )
 
     $analysis.SecurityThreats = @()
@@ -209,7 +211,7 @@ Write-Host "Total Requests: $($entries.Count)" -ForegroundColor White
 Write-Host "Date Range: $($entries[0].Date) to $($entries[-1].Date)" -ForegroundColor White
 Write-Host "Total Bandwidth: $($analysis.TotalBandwidthGB) GB" -ForegroundColor White
 Write-Host "Average Response Time: $($analysis.AvgResponseTime) ms" -ForegroundColor White
-Write-Host "Errors (4xx/5xx): $($analysis.ErrorCount)" -ForegroundColor $(if ($analysis.ErrorCount -gt 100) {"Red"} else {"Green"})
+Write-Host "Errors (4xx/5xx): $($analysis.ErrorCount)" -ForegroundColor $(if ($analysis.ErrorCount -gt 100) { "Red" } else { "Green" })
 
 Write-Host "`nTop 10 URLs:" -ForegroundColor Yellow
 $analysis.TopURLs | Select-Object -First 10 | Format-Table -AutoSize

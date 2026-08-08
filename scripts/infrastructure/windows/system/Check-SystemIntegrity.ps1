@@ -35,13 +35,13 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$QuickScan,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$AutoRepair,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$GenerateReport
 )
 
@@ -61,7 +61,7 @@ $script:results = @{
 function Write-Log {
     param([string]$Message, [string]$Type = "INFO")
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $color = switch($Type) {
+    $color = switch ($Type) {
         "ERROR" { "Red" }
         "SUCCESS" { "Green" }
         "WARNING" { "Yellow" }
@@ -171,7 +171,7 @@ function Test-DiskHealth {
     Write-Log "Analyzing disk health..." "INFO"
 
     try {
-        $volumes = Get-Volume | Where-Object {$_.DriveLetter -ne $null -and $_.FileSystem -eq "NTFS"}
+        $volumes = Get-Volume | Where-Object { $_.DriveLetter -ne $null -and $_.FileSystem -eq "NTFS" }
 
         foreach ($volume in $volumes) {
             $driveLetter = $volume.DriveLetter
@@ -212,7 +212,7 @@ function Get-CriticalEventLogErrors {
         foreach ($logName in $logs) {
             $errors = Get-WinEvent -FilterHashtable @{
                 LogName = $logName
-                Level = 1,2  # Critical and Error
+                Level = 1, 2  # Critical and Error
                 StartTime = $startTime
             } -ErrorAction SilentlyContinue | Select-Object -First 10
 
@@ -246,6 +246,8 @@ function Get-CriticalEventLogErrors {
 }
 
 function New-IntegrityReport {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
     $RunTimestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
     $RunId = [Guid]::NewGuid().ToString('N').Substring(0, 8)
 
@@ -260,7 +262,9 @@ function New-IntegrityReport {
     }
     $reportDir = [System.IO.Path]::GetFullPath($reportDir)
     if (-not (Test-Path -LiteralPath $reportDir -PathType Container)) {
-        New-Item -ItemType Directory -Path $reportDir -Force | Out-Null
+        if ($PSCmdlet.ShouldProcess($reportDir, 'Create report directory')) {
+            New-Item -ItemType Directory -Path $reportDir -Force | Out-Null
+        }
     }
 
     $reportPath = Join-Path $reportDir "SystemIntegrityReport_$($env:COMPUTERNAME)_${RunTimestamp}_${RunId}.html"
@@ -307,7 +311,7 @@ function New-IntegrityReport {
 "@
 
     if ($script:results.EventLogErrors.Count -gt 0) {
-foreach ($err in $script:results.EventLogErrors) {
+        foreach ($err in $script:results.EventLogErrors) {
             $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($err.Time)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($err.Log)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($err.Source)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($err.EventID)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($err.Message)"))</td></tr>"
         }
     }
@@ -322,7 +326,9 @@ foreach ($err in $script:results.EventLogErrors) {
 </html>
 "@
 
-    $html | Out-File -FilePath $reportPath -Encoding UTF8
+    if ($PSCmdlet.ShouldProcess($reportPath, 'Write integrity report')) {
+        $html | Out-File -FilePath $reportPath -Encoding UTF8
+    }
     Write-Log "Report generated: $reportPath" "SUCCESS"
     Write-Host "[+] HTML report saved to: $reportPath" -ForegroundColor Green
 }

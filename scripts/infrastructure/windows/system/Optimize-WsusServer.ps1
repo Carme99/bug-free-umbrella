@@ -87,15 +87,15 @@ param (
 
     [Parameter()]
     [ValidateScript({
-        # Validate path format and prevent path traversal
-        if ($_ -match '\.\.[/\\]') {
-            throw "Path traversal detected in ConfigFile parameter"
-        }
-        if ($_ -notmatch '^[A-Za-z]:\\') {
-            throw "ConfigFile must be an absolute Windows path"
-        }
-        return $true
-    })]
+            # Validate path format and prevent path traversal
+            if ($_ -match '\.\.[/\\]') {
+                throw "Path traversal detected in ConfigFile parameter"
+            }
+            if ($_ -notmatch '^[A-Za-z]:\\') {
+                throw "ConfigFile must be an absolute Windows path"
+            }
+            return $true
+        })]
     [string]$ConfigFile = "C:\Scripts\WSUS\wsus-config.json",
 
     [Parameter()]
@@ -286,9 +286,9 @@ function Write-Log {
     # Write to console unless suppressed
     if (-not $NoConsole) {
         switch ($Level) {
-            'Info'    { Write-Host $logMessage -ForegroundColor Cyan }
+            'Info' { Write-Host $logMessage -ForegroundColor Cyan }
             'Warning' { Write-Warning $Message }
-            'Error'   { Write-Host $logMessage -ForegroundColor Red }
+            'Error' { Write-Host $logMessage -ForegroundColor Red }
             'Success' { Write-Host $logMessage -ForegroundColor Green }
         }
     }
@@ -531,13 +531,13 @@ function ConvertTo-Hashtable {
             }
             elseif ($value -is [Array]) {
                 $hash[$_.Name] = @($value | ForEach-Object {
-                    if ($_ -is [PSCustomObject] -or $_ -is [System.Collections.IDictionary]) {
-                        ConvertTo-Hashtable $_
-                    }
-                    else {
-                        $_
-                    }
-                })
+                        if ($_ -is [PSCustomObject] -or $_ -is [System.Collections.IDictionary]) {
+                            ConvertTo-Hashtable $_
+                        }
+                        else {
+                            $_
+                        }
+                    })
             }
             else {
                 $hash[$_.Name] = $value
@@ -567,13 +567,13 @@ function Copy-HashtableDeep {
         elseif ($value -is [Array]) {
             # Clone array elements
             $clone[$key] = @($value | ForEach-Object {
-                if ($_ -is [hashtable]) {
-                    Copy-HashtableDeep $_
-                }
-                else {
-                    $_
-                }
-            })
+                    if ($_ -is [hashtable]) {
+                        Copy-HashtableDeep $_
+                    }
+                    else {
+                        $_
+                    }
+                })
         }
         else {
             # Copy value types and strings
@@ -646,7 +646,7 @@ function Confirm-Choice {
 }
 
 function Start-InteractiveWizard {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param()
 
     Show-Banner
@@ -929,7 +929,7 @@ function Get-WsusIISConfig {
 }
 
 function Test-WsusIISConfig {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [hashtable]$Config
     )
@@ -1387,7 +1387,7 @@ function Invoke-DeepClean {
 }
 
 function Remove-UpdatesByProduct {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $true)]
         $WsusServer,
@@ -1425,8 +1425,10 @@ function Remove-UpdatesByProduct {
 
                 foreach ($update in $updates) {
                     if (-not $update.IsDeclined) {
-                        $update.Decline()
-                        $declinedCount++
+                        if ($PSCmdlet.ShouldProcess($update.Title, 'Decline update')) {
+                            $update.Decline()
+                            $declinedCount++
+                        }
                     }
                 }
 
@@ -1445,7 +1447,7 @@ function Remove-UpdatesByProduct {
 }
 
 function Remove-UpdatesByTitle {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $true)]
         $WsusServer,
@@ -1486,9 +1488,11 @@ function Remove-UpdatesByTitle {
 
                 foreach ($titlePattern in $UpdateTitles) {
                     if ($update.Title -like "*$titlePattern*" -and -not $update.IsDeclined) {
-                        $update.Decline()
-                        $declinedCount++
-                        Write-Log "  Declined: $($update.Title)" -Level Info -NoConsole
+                        if ($PSCmdlet.ShouldProcess($update.Title, 'Decline update')) {
+                            $update.Decline()
+                            $declinedCount++
+                            Write-Log "  Declined: $($update.Title)" -Level Info -NoConsole
+                        }
                         break
                     }
                 }
@@ -1506,7 +1510,7 @@ function Remove-UpdatesByTitle {
 }
 
 function Remove-DriverUpdates {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $true)]
         $WsusServer
@@ -1544,8 +1548,10 @@ function Remove-DriverUpdates {
                 }
 
                 if (-not $update.IsDeclined) {
-                    $update.Decline()
-                    $declinedCount++
+                    if ($PSCmdlet.ShouldProcess($update.Title, 'Decline driver update')) {
+                        $update.Decline()
+                        $declinedCount++
+                    }
                 }
             }
         }
@@ -1685,7 +1691,7 @@ function New-WsusScheduledTasks {
 }
 
 function New-WsusDailyTask {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [string]$ScriptPath,
         [hashtable]$Config
@@ -1710,12 +1716,16 @@ function New-WsusDailyTask {
         # Remove existing task if it exists
         $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         if ($existingTask) {
-            Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+            if ($PSCmdlet.ShouldProcess($taskName, 'Unregister existing scheduled task')) {
+                Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+            }
         }
 
-        Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description "Daily WSUS server optimization and superseded update cleanup" | Out-Null
+        if ($PSCmdlet.ShouldProcess($taskName, 'Register daily WSUS optimization scheduled task')) {
+            Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description "Daily WSUS server optimization and superseded update cleanup" | Out-Null
 
-        Write-Log "Daily task created: $taskName at $time" -Level Success
+            Write-Log "Daily task created: $taskName at $time" -Level Success
+        }
     }
     catch {
         Write-Log "Failed to create daily task: $_" -Level Error
@@ -1723,7 +1733,7 @@ function New-WsusDailyTask {
 }
 
 function New-WsusWeeklyTask {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [string]$ScriptPath,
         [hashtable]$Config
@@ -1747,12 +1757,16 @@ function New-WsusWeeklyTask {
 
         $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         if ($existingTask) {
-            Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+            if ($PSCmdlet.ShouldProcess($taskName, 'Unregister existing scheduled task')) {
+                Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+            }
         }
 
-        Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description "Weekly WSUS database optimization and IIS configuration check" | Out-Null
+        if ($PSCmdlet.ShouldProcess($taskName, 'Register weekly WSUS optimization scheduled task')) {
+            Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description "Weekly WSUS database optimization and IIS configuration check" | Out-Null
 
-        Write-Log "Weekly task created: $taskName on $dayOfWeek at $time" -Level Success
+            Write-Log "Weekly task created: $taskName on $dayOfWeek at $time" -Level Success
+        }
     }
     catch {
         Write-Log "Failed to create weekly task: $_" -Level Error
@@ -1760,7 +1774,7 @@ function New-WsusWeeklyTask {
 }
 
 function New-WsusMonthlyTask {
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [string]$ScriptPath,
         [hashtable]$Config
@@ -1792,11 +1806,15 @@ function New-WsusMonthlyTask {
 
         $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         if ($existingTask) {
-            Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+            if ($PSCmdlet.ShouldProcess($taskName, 'Unregister existing scheduled task')) {
+                Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+            }
         }
 
         $task = New-ScheduledTask -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description "Monthly WSUS deep clean of obsolete updates"
-        Register-ScheduledTask -TaskName $taskName -InputObject $task | Out-Null
+        if ($PSCmdlet.ShouldProcess($taskName, 'Register monthly WSUS deep clean scheduled task')) {
+            Register-ScheduledTask -TaskName $taskName -InputObject $task | Out-Null
+        }
 
         Write-Log "Monthly task created: $taskName on day $day at $time" -Level Success
     }

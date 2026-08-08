@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Backs up all Group Policy Objects in the domain to a specified location.
 
@@ -141,20 +141,20 @@ try {
 
             # Create detailed backup record
             $backupLog += [PSCustomObject]@{
-                GPOName           = $gpo.DisplayName
-                GUID              = $gpo.Id
-                BackupTime        = Get-Date
-                BackupID          = $backupInfo.Id
-                Status            = "Success"
-                GpoStatus         = $gpo.GpoStatus
-                Created           = $gpo.CreationTime
-                Modified          = $gpo.ModificationTime
-                LinkCount         = $linkCount
-                WMIFilter         = $wmiFilter
-                Owner             = $gpo.Owner
-                ComputerEnabled   = $gpo.Computer.Enabled
-                UserEnabled       = $gpo.User.Enabled
-                Error             = ""
+                GPOName = $gpo.DisplayName
+                GUID = $gpo.Id
+                BackupTime = Get-Date
+                BackupID = $backupInfo.Id
+                Status = "Success"
+                GpoStatus = $gpo.GpoStatus
+                Created = $gpo.CreationTime
+                Modified = $gpo.ModificationTime
+                LinkCount = $linkCount
+                WMIFilter = $wmiFilter
+                Owner = $gpo.Owner
+                ComputerEnabled = $gpo.Computer.Enabled
+                UserEnabled = $gpo.User.Enabled
+                Error = ""
             }
 
             $successCount++
@@ -165,20 +165,20 @@ try {
             Write-Host "  ✗ $($gpo.DisplayName): $($_.Exception.Message)" -ForegroundColor Red
 
             $backupLog += [PSCustomObject]@{
-                GPOName           = $gpo.DisplayName
-                GUID              = $gpo.Id
-                BackupTime        = Get-Date
-                BackupID          = "N/A"
-                Status            = "Failed"
-                GpoStatus         = $gpo.GpoStatus
-                Created           = $gpo.CreationTime
-                Modified          = $gpo.ModificationTime
-                LinkCount         = 0
-                WMIFilter         = ""
-                Owner             = $gpo.Owner
-                ComputerEnabled   = $false
-                UserEnabled       = $false
-                Error             = $_.Exception.Message
+                GPOName = $gpo.DisplayName
+                GUID = $gpo.Id
+                BackupTime = Get-Date
+                BackupID = "N/A"
+                Status = "Failed"
+                GpoStatus = $gpo.GpoStatus
+                Created = $gpo.CreationTime
+                Modified = $gpo.ModificationTime
+                LinkCount = 0
+                WMIFilter = ""
+                Owner = $gpo.Owner
+                ComputerEnabled = $false
+                UserEnabled = $false
+                Error = $_.Exception.Message
             }
         }
     }
@@ -192,14 +192,14 @@ try {
 
     # Create backup manifest
     $manifest = @{
-        BackupDate        = Get-Date
-        Domain            = $domainName
-        TotalGPOs         = $totalGPOs
+        BackupDate = Get-Date
+        Domain = $domainName
+        TotalGPOs = $totalGPOs
         SuccessfulBackups = $successCount
-        FailedBackups     = $failCount
-        BackupPath        = $backupFolder
-        Comment           = $Comment
-        BackupBy          = "$env:USERDOMAIN\$env:USERNAME"
+        FailedBackups = $failCount
+        BackupPath = $backupFolder
+        Comment = $Comment
+        BackupBy = "$env:USERDOMAIN\$env:USERNAME"
     }
 
     $manifestPath = Join-Path -Path $backupFolder -ChildPath "BackupManifest.json"

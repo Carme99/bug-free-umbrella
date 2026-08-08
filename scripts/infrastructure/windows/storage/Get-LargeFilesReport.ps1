@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Identifies and reports large files consuming disk space on Windows Server.
 
@@ -54,25 +54,25 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$Path,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$MinimumSizeMB = 100,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$TopCount = 50,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeDuplicates,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string[]]$ExcludePath = @('C:\Windows\WinSxS', 'C:\$Recycle.Bin'),
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -104,7 +104,7 @@ $script:report = @{
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
 
-    $color = switch($Level) {
+    $color = switch ($Level) {
         'Warning' { 'Yellow' }
         'Error' { 'Red' }
         'Success' { 'Green' }
@@ -117,8 +117,8 @@ function Write-ColorOutput {
 function Should-ExcludePath {
     param([string]$FilePath)
 
-    foreach($exclude in $ExcludePath) {
-        if($FilePath -like "$exclude*") {
+    foreach ($exclude in $ExcludePath) {
+        if ($FilePath -like "$exclude*") {
             return $true
         }
     }
@@ -142,9 +142,9 @@ function Scan-LargeFiles {
                 -not (Should-ExcludePath -FilePath $_.FullName)
             }
 
-        foreach($file in $files) {
+        foreach ($file in $files) {
             $filesScanned++
-            if($filesScanned % 100 -eq 0) {
+            if ($filesScanned % 100 -eq 0) {
                 Write-Progress -Activity "Scanning files" -Status "Found $($script:report.LargeFiles.Count) large files (scanned $filesScanned)" -PercentComplete -1
             }
 
@@ -167,8 +167,8 @@ function Scan-LargeFiles {
             $script:report.TotalFiles++
 
             # Group by extension
-            $ext = if($file.Extension) { $file.Extension.ToLower() } else { '(no extension)' }
-            if($script:report.FilesByExtension.ContainsKey($ext)) {
+            $ext = if ($file.Extension) { $file.Extension.ToLower() } else { '(no extension)' }
+            if ($script:report.FilesByExtension.ContainsKey($ext)) {
                 $script:report.FilesByExtension[$ext].Count++
                 $script:report.FilesByExtension[$ext].TotalSizeMB += $fileInfo.SizeMB
             }
@@ -194,9 +194,9 @@ function Find-Duplicates {
     Write-Host "This may take significant time for large file sets..." -ForegroundColor Gray
 
     # Group files by size first (faster)
-    $sizeGroups = $script:report.LargeFiles | Group-Object SizeMB | Where-Object {$_.Count -gt 1}
+    $sizeGroups = $script:report.LargeFiles | Group-Object SizeMB | Where-Object { $_.Count -gt 1 }
 
-    if(-not $sizeGroups) {
+    if (-not $sizeGroups) {
         Write-Host "  No potential duplicates found (no files with matching sizes)" -ForegroundColor Gray
         return
     }
@@ -206,10 +206,10 @@ function Find-Duplicates {
 
     $duplicateGroups = @{}
     $filesProcessed = 0
-    $totalFilesToHash = ($sizeGroups | ForEach-Object {$_.Group}).Count
+    $totalFilesToHash = ($sizeGroups | ForEach-Object { $_.Group }).Count
 
-    foreach($group in $sizeGroups) {
-        foreach($file in $group.Group) {
+    foreach ($group in $sizeGroups) {
+        foreach ($file in $group.Group) {
             $filesProcessed++
             Write-Progress -Activity "Computing file hashes" -Status "Processing $filesProcessed of $totalFilesToHash" -PercentComplete (($filesProcessed / $totalFilesToHash) * 100)
 
@@ -217,7 +217,7 @@ function Find-Duplicates {
                 $hash = (Get-FileHash -Path $file.Path -Algorithm MD5 -ErrorAction Stop).Hash
                 $file.Hash = $hash
 
-                if($duplicateGroups.ContainsKey($hash)) {
+                if ($duplicateGroups.ContainsKey($hash)) {
                     $duplicateGroups[$hash] += $file
                 }
                 else {
@@ -233,7 +233,7 @@ function Find-Duplicates {
     Write-Progress -Activity "Computing file hashes" -Completed
 
     # Filter to only groups with multiple files
-    $duplicateGroups.GetEnumerator() | Where-Object {$_.Value.Count -gt 1} | ForEach-Object {
+    $duplicateGroups.GetEnumerator() | Where-Object { $_.Value.Count -gt 1 } | ForEach-Object {
         $dupGroup = $_.Value | Sort-Object Path
         $wastedSpace = ($dupGroup.Count - 1) * $dupGroup[0].SizeMB
 
@@ -247,7 +247,7 @@ function Find-Duplicates {
         }
     }
 
-    if($script:report.DuplicateFiles.Count -gt 0) {
+    if ($script:report.DuplicateFiles.Count -gt 0) {
         $totalWasted = ($script:report.DuplicateFiles | Measure-Object -Property WastedSpaceMB -Sum).Sum
         Write-ColorOutput "  Found $($script:report.DuplicateFiles.Count) sets of duplicate files" -Level Warning
         Write-ColorOutput "  Potential space savings: $([math]::Round($totalWasted / 1024, 2)) GB" -Level Info
@@ -272,13 +272,13 @@ function Show-Summary {
     $script:report.LargeFiles |
         Sort-Object SizeMB -Descending |
         Select-Object -First $TopCount |
-        Select-Object Name, @{Name='Size (GB)';Expression={$_.SizeGB}}, @{Name='Age (Days)';Expression={$_.AgeDays}}, Directory |
+        Select-Object Name, @{Name = 'Size (GB)'; Expression = { $_.SizeGB } }, @{Name = 'Age (Days)'; Expression = { $_.AgeDays } }, Directory |
         Format-Table -AutoSize
 
     # Files by extension
     Write-Host "`nLarge Files by Type:" -ForegroundColor Cyan
     $script:report.FilesByExtension.GetEnumerator() |
-        Sort-Object {$_.Value.TotalSizeMB} -Descending |
+        Sort-Object { $_.Value.TotalSizeMB } -Descending |
         Select-Object -First 10 |
         ForEach-Object {
             [PSCustomObject]@{
@@ -290,12 +290,12 @@ function Show-Summary {
         Format-Table -AutoSize
 
     # Duplicates
-    if($script:report.DuplicateFiles.Count -gt 0) {
+    if ($script:report.DuplicateFiles.Count -gt 0) {
         Write-Host "`nTop Duplicate Files (by wasted space):" -ForegroundColor Yellow
         $script:report.DuplicateFiles |
             Sort-Object WastedSpaceMB -Descending |
             Select-Object -First 10 |
-            Select-Object SampleFile, FileCount, @{Name='Size (MB)';Expression={$_.SizeMB}}, @{Name='Wasted (MB)';Expression={$_.WastedSpaceMB}} |
+            Select-Object SampleFile, FileCount, @{Name = 'Size (MB)'; Expression = { $_.SizeMB } }, @{Name = 'Wasted (MB)'; Expression = { $_.WastedSpaceMB } } |
             Format-Table -AutoSize
     }
 
@@ -420,34 +420,34 @@ Write-Host "Server: $($script:report.ServerName)"
 Write-Host "Minimum Size: $MinimumSizeMB MB"
 
 # Determine scan paths
-if($Path) {
+if ($Path) {
     $scanPaths = @($Path)
 }
 else {
-    $scanPaths = (Get-Volume | Where-Object {$_.DriveLetter -and $_.DriveType -eq 'Fixed'}).DriveLetter | ForEach-Object {"$_`:"}
+    $scanPaths = (Get-Volume | Where-Object { $_.DriveLetter -and $_.DriveType -eq 'Fixed' }).DriveLetter | ForEach-Object { "$_`:" }
 }
 
 Write-Host "Scan Paths: $($scanPaths -join ', ')"
 Write-Host "Excluded Paths: $($ExcludePath -join ', ')"
 
 # Scan each path
-foreach($scanPath in $scanPaths) {
+foreach ($scanPath in $scanPaths) {
     Scan-LargeFiles -ScanPath $scanPath
 }
 
 # Find duplicates if requested
-if($IncludeDuplicates) {
+if ($IncludeDuplicates) {
     Find-Duplicates
 }
 
 Show-Summary
 
-if($ExportHTML) {
+if ($ExportHTML) {
     Write-Host "Generating HTML report..." -ForegroundColor Cyan
     Export-HTMLReport
 }
 
-if($ExportCSV) {
+if ($ExportCSV) {
     Write-Host "Generating CSV report..." -ForegroundColor Cyan
     Export-CSVReport
 }
