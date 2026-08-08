@@ -153,7 +153,15 @@ foreach ($dc in $dcs) {
                 if ($event.Id -eq 4740) {
                     # Lockout event
                     $targetUser = $eventXml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetUserName' } | Select-Object -ExpandProperty '#text'
-                    $callerComputer = $eventXml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetDomainName' } | Select-Object -ExpandProperty '#text'
+                    $targetDomain = $eventXml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetDomainName' } | Select-Object -ExpandProperty '#text'
+
+                    # Event 4740: 'TargetDomainName' is the domain of the locked-out
+                    # account (account identity), not the lockout source. The machine
+                    # that triggered the lockout is 'Caller Computer Name'; older v0
+                    # events may not include it, in which case fall back gracefully
+                    # to $null so it is not misattributed.
+                    $callerComputerData = $eventXml.Event.EventData.Data | Where-Object { $_.Name -eq 'Caller Computer Name' }
+                    $callerComputer = if ($callerComputerData) { $callerComputerData.'#text' } else { $null }
 
                     if ($Username -and $targetUser -ne $Username) {
                         continue
@@ -162,6 +170,7 @@ foreach ($dc in $dcs) {
                     $lockouts += [PSCustomObject]@{
                         TimeCreated = $event.TimeCreated
                         Username = $targetUser
+                        Domain = $targetDomain
                         SourceComputer = $callerComputer
                         DomainController = $dc.HostName
                         EventID = 4740

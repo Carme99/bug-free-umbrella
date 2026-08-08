@@ -55,7 +55,7 @@ param(
     [switch]$WhatIf
 )
 
-#Requires -Modules WebAdministration
+#Requires -Modules IISAdministration
 #Requires -RunAsAdministrator
 
 Write-Host "`n=== IIS Configuration Optimizer ===" -ForegroundColor Cyan
@@ -65,6 +65,9 @@ $changes = @()
 if ($ApplyPerformanceOptimizations) {
     Write-Host "`n[*] Applying performance optimizations..." -ForegroundColor Cyan
 
+    # Set-WebConfigurationProperty / Add-WebConfigurationProperty have no direct
+    # IISAdministration equivalent for arbitrary config sections; they remain on
+    # WebAdministration, which PowerShell auto-loads side by side with IISAdministration.
     # Enable compression
     if ($PSCmdlet.ShouldProcess("IIS", "Enable static compression")) {
         Set-WebConfigurationProperty -PSPath 'MACHINE/WEBROOT/APPHOST' -Filter "system.webServer/urlCompression" -Name "doStaticCompression" -Value "True"
@@ -75,13 +78,16 @@ if ($ApplyPerformanceOptimizations) {
 
     # Optimize application pools
     if ($PSCmdlet.ShouldProcess("Application Pools", "Optimize recycling and queue settings")) {
-        $appPools = Get-IISAppPool
+        # IISAdministration equivalent of the IIS:\ provider Set-Item: modify the
+        # Microsoft.Web.Administration pool objects and commit via ServerManager.
+        $serverManager = Get-IISServerManager
+        $appPools = $serverManager.ApplicationPools
         foreach ($pool in $appPools) {
             $pool.Recycling.PeriodicRestart.Time = [TimeSpan]::FromHours(29)
             $pool.ProcessModel.IdleTimeout = [TimeSpan]::FromMinutes(20)
             $pool.QueueLength = 5000
-            $pool | Set-Item
         }
+        $serverManager.CommitChanges()
         $changes += "Optimized application pool settings for $($appPools.Count) pools"
         Write-Host "[+] Application pools optimized" -ForegroundColor Green
     }

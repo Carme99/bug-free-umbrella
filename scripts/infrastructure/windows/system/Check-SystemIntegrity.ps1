@@ -50,7 +50,7 @@ param(
 $script:results = @{
     ServerName = $env:COMPUTERNAME
     ScanDate = Get-Date
-    OSVersion = (Get-WmiObject Win32_OperatingSystem).Caption
+    OSVersion = (Get-CimInstance -ClassName Win32_OperatingSystem).Caption
     SFCResult = ""
     DISMResult = ""
     CHKDSKResult = ""

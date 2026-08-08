@@ -265,17 +265,23 @@ if ($CheckVSS) {
         }
 
         # Check shadow copies
-        $volumes = Get-WmiObject Win32_Volume | Where-Object { $_.DriveLetter -ne $null }
+        $volumes = Get-CimInstance -ClassName Win32_Volume | Where-Object { $_.DriveLetter -ne $null }
 
         foreach ($volume in $volumes) {
-            $shadows = Get-WmiObject Win32_ShadowCopy | Where-Object { $_.VolumeName -eq $volume.DeviceID }
+            $shadows = Get-CimInstance -ClassName Win32_ShadowCopy | Where-Object { $_.VolumeName -eq $volume.DeviceID }
 
             if ($shadows) {
                 Write-Host "[+] Volume $($volume.DriveLetter): $(@($shadows).Count) shadow copy/copies" -ForegroundColor Green
 
                 # Check newest shadow copy age
                 $newestShadow = $shadows | Sort-Object InstallDate -Descending | Select-Object -First 1
-                $shadowAge = ((Get-Date) - [Management.ManagementDateTimeConverter]::ToDateTime($newestShadow.InstallDate)).Days
+                # Get-CimInstance returns InstallDate as a DateTime; fall back to the
+                # WMI DMTF string conversion only if a string is encountered.
+                $installDate = $newestShadow.InstallDate
+                if ($installDate -is [string]) {
+                    $installDate = [Management.ManagementDateTimeConverter]::ToDateTime($installDate)
+                }
+                $shadowAge = ((Get-Date) - $installDate).Days
 
                 Write-Host "    Newest shadow copy: $shadowAge day(s) old" -ForegroundColor Gray
             }

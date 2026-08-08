@@ -1299,11 +1299,11 @@ function Get-IISHealth {
     $script:healthReport.Applications.IIS.Enabled = $true
 
     try {
-        Import-Module WebAdministration -ErrorAction Stop
+        Import-Module IISAdministration -ErrorAction Stop
         $script:healthReport.Applications.IIS.Installed = $true
     }
     catch {
-        Write-ColorOutput "  [INFO] IIS not installed or WebAdministration module unavailable" -Level Info
+        Write-ColorOutput "  [INFO] IIS not installed or IISAdministration module unavailable" -Level Info
         return
     }
 
@@ -1313,7 +1313,7 @@ function Get-IISHealth {
             $script:healthReport.Applications.IIS.Running = ($iisService.Status -eq 'Running')
         }
 
-        $appPools = Get-ChildItem IIS:\AppPools -ErrorAction Stop
+        $appPools = Get-IISAppPool -ErrorAction Stop
         foreach($pool in $appPools) {
             $poolInfo = @{
                 Name = $pool.Name
@@ -1332,7 +1332,7 @@ function Get-IISHealth {
             $script:healthReport.Applications.IIS.ApplicationPools += $poolInfo
         }
 
-        $sites = Get-ChildItem IIS:\Sites -ErrorAction Stop
+        $sites = Get-IISSite -ErrorAction Stop
         foreach($site in $sites) {
             $siteInfo = @{
                 Name = $site.Name
@@ -1548,29 +1548,30 @@ function Send-EmailReport {
 </html>
 "@
 
-        $mailParams = @{
-            SmtpServer = $SMTPServer
-            Port = $SMTPPort
-            From = $EmailFrom
-            To = $EmailTo
-            Subject = $EmailSubject
-            Body = $emailBody
-            BodyAsHtml = $true
-        }
-
-        if($UseSSL) {
-            $mailParams.UseSsl = $true
-        }
-
+        # Send-MailMessage is obsolete; use System.Net.Mail.SmtpClient instead,
+        # preserving the port, SSL, credential, and attachment parameters.
+        $smtpClient = New-Object System.Net.Mail.SmtpClient($SMTPServer, $SMTPPort)
+        $smtpClient.EnableSsl = [bool]$UseSSL
         if($SMTPCredential) {
-            $mailParams.Credential = $SMTPCredential
+            $smtpClient.Credentials = $SMTPCredential.GetNetworkCredential()
         }
+
+        $mailMessage = New-Object System.Net.Mail.MailMessage
+        $mailMessage.From = (New-Object System.Net.Mail.MailAddress($EmailFrom))
+        foreach($recipient in $EmailTo) {
+            $mailMessage.To.Add($recipient)
+        }
+        $mailMessage.Subject = $EmailSubject
+        $mailMessage.Body = $emailBody
+        $mailMessage.IsBodyHtml = $true
 
         if($HTMLReportPath -and (Test-Path $HTMLReportPath)) {
-            $mailParams.Attachments = $HTMLReportPath
+            $mailMessage.Attachments.Add((New-Object System.Net.Mail.Attachment($HTMLReportPath)))
         }
 
-        Send-MailMessage @mailParams -ErrorAction Stop
+        $smtpClient.Send($mailMessage)
+        $mailMessage.Dispose()
+        $smtpClient.Dispose()
 
         Write-ColorOutput "`nEmail report sent to: $($EmailTo -join ', ')" -Level Success
     }

@@ -73,7 +73,7 @@ param(
     [string]$RestoreFrom
 )
 
-#Requires -Modules WebAdministration
+#Requires -Modules IISAdministration
 #Requires -RunAsAdministrator
 
 Write-Host "`n=== IIS Configuration Backup Tool ===" -ForegroundColor Cyan

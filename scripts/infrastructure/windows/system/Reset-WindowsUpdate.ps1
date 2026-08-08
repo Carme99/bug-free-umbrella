@@ -13,13 +13,27 @@
 .PARAMETER FullReset
     Performs a complete reset including BITS and Cryptographic services.
 
+.PARAMETER RunDismRepair
+    Runs the documented repair path for Server 2016+ (DISM /Online /Cleanup-Image
+    /RestoreHealth followed by sfc /scannow) before the legacy reset steps. Defaults
+    to ON; when the DISM repair succeeds, the legacy regsvr32 re-registration and
+    policy-key deletion steps are skipped. Disable with -RunDismRepair:$false.
+
+.PARAMETER LegacyReset
+    Forces the legacy manual reset (regsvr32 re-registration and Windows Update
+    policy key deletion) even when the DISM repair succeeds.
+
 .EXAMPLE
     .\Reset-WindowsUpdate.ps1
-    Performs a standard Windows Update reset.
+    Performs a standard Windows Update reset (DISM repair first).
 
 .EXAMPLE
     .\Reset-WindowsUpdate.ps1 -FullReset
     Performs a comprehensive reset including all related services.
+
+.EXAMPLE
+    .\Reset-WindowsUpdate.ps1 -LegacyReset
+    Performs the legacy manual reset without the DISM repair step.
 
 .NOTES
     Requires Administrator privileges
@@ -29,7 +43,13 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory=$false)]
-    [switch]$FullReset
+    [switch]$FullReset,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$RunDismRepair = $true,
+
+    [Parameter(Mandatory=$false)]
+    [switch]$LegacyReset
 )
 
 # Requires Administrator privileges
@@ -48,7 +68,7 @@ function Write-Log {
 }
 
 Write-Log "Starting Windows Update Reset Process" "INFO"
-Write-Log "Server: $env:COMPUTERNAME | OS: $((Get-WmiObject Win32_OperatingSystem).Caption)" "INFO"
+Write-Log "Server: $env:COMPUTERNAME | OS: $((Get-CimInstance -ClassName Win32_OperatingSystem).Caption)" "INFO"
 
 # Stop Windows Update Services
 Write-Log "Stopping Windows Update services..." "INFO"
@@ -82,6 +102,49 @@ foreach ($path in $cachePaths) {
         }
     }
 }
+
+# DISM component repair (documented repair path for Windows Server 2016+).
+# Runs first when -RunDismRepair is set (default ON) and -LegacyReset is not
+# specified. When the DISM repair succeeds, the legacy regsvr32 re-registration
+# and policy-key deletion steps below are skipped.
+$dismRepairSucceeded = $false
+
+if (-not $LegacyReset -and $RunDismRepair) {
+    Write-Log "Running DISM component repair (RestoreHealth)..." "INFO"
+    try {
+        Dism.exe /Online /Cleanup-Image /RestoreHealth
+        $dismRepairSucceeded = ($LASTEXITCODE -eq 0)
+        if ($dismRepairSucceeded) {
+            Write-Log "DISM RestoreHealth completed successfully" "SUCCESS"
+        }
+        else {
+            Write-Log "DISM RestoreHealth failed (exit code: $LASTEXITCODE); falling back to legacy reset" "WARNING"
+        }
+    }
+    catch {
+        Write-Log "DISM RestoreHealth failed - $($_.Exception.Message); falling back to legacy reset" "WARNING"
+    }
+
+    if ($dismRepairSucceeded) {
+        Write-Log "Running sfc /scannow..." "INFO"
+        try {
+            sfc.exe /scannow
+            if ($LASTEXITCODE -eq 0) {
+                Write-Log "sfc /scannow completed without errors" "SUCCESS"
+            }
+            else {
+                Write-Log "sfc /scannow completed with exit code $LASTEXITCODE" "WARNING"
+            }
+        }
+        catch {
+            Write-Log "sfc /scannow failed - $($_.Exception.Message)" "WARNING"
+        }
+    }
+}
+
+# Legacy manual reset steps (regsvr32 re-registration + policy key deletion).
+# Skipped when the DISM repair succeeded, unless -LegacyReset forces them.
+if ($LegacyReset -or -not $dismRepairSucceeded) {
 
 # Re-register Windows Update DLLs
 Write-Log "Re-registering Windows Update DLLs..." "INFO"
@@ -125,6 +188,8 @@ foreach ($regPath in $regPaths) {
         }
     }
 }
+
+} # end legacy reset steps (skipped when DISM repair succeeded)
 
 # Reset BITS queue if FullReset is specified
 if ($FullReset) {
