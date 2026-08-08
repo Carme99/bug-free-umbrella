@@ -72,15 +72,17 @@ else {
     Write-Log "Logo image already exists: $LogoImage"
 }
 
-# Get system uptime for notification text
-try {
-    $Uptime = (Get-ComputerInfo).OSUptime
-    $UptimeDays = [math]::Floor($Uptime.TotalDays)
-}
-catch {
-    Write-Log "Failed to get uptime: $_"
-    $UptimeDays = "unknown"
-}
+    # Get time since last restart for notification text
+    # NOTE: OSUptime derives from Win32_OperatingSystem.LastBootUpTime (time since the OS
+    # was last restarted); sleep/hibernate time does not count.
+    try {
+        $Uptime = (Get-ComputerInfo).OSUptime
+        $UptimeDays = [math]::Floor($Uptime.TotalDays)
+    }
+    catch {
+        Write-Log "Failed to get uptime: $_"
+        $UptimeDays = "unknown"
+    }
 
 # Show toast notification with buttons
 try {
@@ -92,7 +94,7 @@ try {
 
     # Show toast with buttons
     New-BurntToastNotification `
-        -Text "Restart Required", "Your device has been running for $UptimeDays days.", "Restart for better performance and security." `
+        -Text "Restart Required", "Your device has not been restarted in $UptimeDays days.", "Restart for better performance and security." `
         -AppLogo $LogoImage `
         -Button $btnRestart, $btnRemind
 

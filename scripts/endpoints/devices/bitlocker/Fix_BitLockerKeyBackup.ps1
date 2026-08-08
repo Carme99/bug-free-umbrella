@@ -5,6 +5,7 @@ function Backup-BitLockerKeyToAAD {
 
     .DESCRIPTION
         Script retrieves the BitLocker recovery key of the local computer and then attempts to backup the key to Azure Active Directory.
+        Exits 1 if any key fails to escrow so Intune reports the remediation as failed.
 
     .NOTES
         Run this script as an administrator.
@@ -15,6 +16,7 @@ function Backup-BitLockerKeyToAAD {
 
     Begin {
         Write-Host "Starting BitLocker Key Backup process to Azure AD." -ForegroundColor Cyan
+        $script:BackupFailed = $false
     }
 
     Process {
@@ -35,8 +37,14 @@ function Backup-BitLockerKeyToAAD {
 
                 foreach ($KeyProtectorId in $KeyProtectorIds) {
                     # Backup the BitLocker Key to Azure AD
-                    BackupToAAD-BitLockerKeyProtector -MountPoint $BitLockerVolume.MountPoint -KeyProtectorId $KeyProtectorId
-                    Write-Host "Successfully backed up BitLocker Key for volume $($BitLockerVolume.MountPoint) to Azure AD." -ForegroundColor Green
+                    try {
+                        BackupToAAD-BitLockerKeyProtector -MountPoint $BitLockerVolume.MountPoint -KeyProtectorId $KeyProtectorId -ErrorAction Stop
+                        Write-Host "Successfully backed up BitLocker Key for volume $($BitLockerVolume.MountPoint) to Azure AD." -ForegroundColor Green
+                    }
+                    catch {
+                        Write-Host "Failed to backup BitLocker Key for volume $($BitLockerVolume.MountPoint) to Azure AD: $_" -ForegroundColor Red
+                        $script:BackupFailed = $true
+                    }
                 }
             }
 
@@ -46,6 +54,7 @@ function Backup-BitLockerKeyToAAD {
         }
         catch {
             Write-Host "Failed to backup BitLocker Key to Azure AD: $_" -ForegroundColor Red
+            $script:BackupFailed = $true
         }
     }
 
@@ -53,6 +62,12 @@ function Backup-BitLockerKeyToAAD {
         Write-Host "`n`n"
         Write-Host "BitLocker Key Backup process to Azure AD completed." -ForegroundColor Cyan
         Write-Host $driveInfoString
+
+        # Escrow failure must yield a non-zero exit so Intune does not report success
+        if ($script:BackupFailed) {
+            exit 1
+        }
+        exit 0
     }
 }
 

@@ -8,12 +8,14 @@ try { Stop-Transcript | Out-Null } catch [System.InvalidOperationException] {}
 Start-Transcript -Path "$TranscriptPath\$TranscriptName" -Append
 
 # Initialize the array
+# NOTE: "DisableWindowsUpdateAccess" ("Remove access to use all Windows Update features")
+# is not supported on Windows 10+ / Server 2016+; the supported WUaaS control is
+# NoAutoUpdate under ...\WindowsUpdate\AU (see waas-wu-settings).
 [PsObject[]]$regkeys = @(
     @{ Name = "DoNotConnectToWindowsUpdateInternetLocations"; Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\" },
-    @{ Name = "DisableWindowsUpdateAccess"; Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\" },
     @{ Name = "NoAutoUpdate"; Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU\" },
     @{ Name = "WUServer"; Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\" },
-    @{ Name = "UseWUServer"; Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\" }
+    @{ Name = "UseWUServer"; Path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU\" }
 )
 
 $RemediationNeeded = $false

@@ -1,10 +1,14 @@
-# Detect if UK keyboard layout is the primary input method
+# Detect if a UK keyboard layout is the primary input method
 # Exit 0 if compliant, Exit 1 if non-compliant
+#
+# Keyboard layout identifiers (Microsoft keyboard reference):
+#   00000809 = United Kingdom (standard)   https://learn.microsoft.com/en-us/globalization/keyboards/kbduk
+#   00000452 = United Kingdom Extended     https://learn.microsoft.com/en-us/globalization/keyboards/kbdukx
 
 $ErrorActionPreference = 'Stop'
 
-# Required keyboard layout
-$requiredLayout = '00000809'  # United Kingdom Extended
+# Required keyboard layouts (either standard UK or UK Extended is compliant)
+$requiredLayouts = @('00000809', '00000452')
 
 try {
     # Get current input language list
@@ -14,9 +18,9 @@ try {
     $primaryLanguage = $languageList[0]
     $primaryInputMethod = $primaryLanguage.InputMethodTips[0]
 
-    # Expected formats: "0809:00000809" for UK keyboard
-    if ($primaryInputMethod -notlike "*00000809*") {
-        Write-Host "Non-compliant: Primary keyboard is $primaryInputMethod (expected UK: 00000809)"
+    # Expected formats: "0809:00000809" for standard UK, "0809:00000452" for UK Extended
+    if ($primaryInputMethod -notmatch '00000809|00000452') {
+        Write-Host "Non-compliant: Primary keyboard is $primaryInputMethod (expected UK: 00000809 or UK Extended: 00000452)"
         exit 1
     }
 

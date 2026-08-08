@@ -24,7 +24,7 @@ try {
     Write-Host "   ⚠ BACK UP ALL CRITICAL DATA IMMEDIATELY"
     Write-Host "   - Use cloud backup or external drive"
     Write-Host "   - Do not delay - disk can fail at any time"
-    Write-Host "   - Check SMART status: wmic diskdrive get status"
+    Write-Host "   - Check SMART status: Get-PhysicalDisk | Get-StorageReliabilityCounter"
     Write-Host "   - Prepare for disk replacement"
     Write-Host ""
     Write-Host "2. MEMORY (RAM) ERRORS"

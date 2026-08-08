@@ -42,10 +42,9 @@ try {
         $issues += "TPM is not ready for use"
     }
 
-    # Check TPM ownership (for BitLocker)
-    if ($tpm.TpmOwned -eq $false) {
-        $issues += "TPM is not owned (required for BitLocker)"
-    }
+    # TPM ownership is intentionally NOT checked: since Windows 10 version 1607, Windows
+    # automatically initializes and takes ownership of the TPM, so TpmOwned=$false is not a
+    # failure. See https://learn.microsoft.com/en-us/windows/security/hardware-security/tpm/initialize-and-configure-ownership-of-the-tpm
 
     # Check TPM version (TPM 2.0 is preferred)
     $tpmVersion = (Get-WmiObject -Namespace "root\cimv2\Security\MicrosoftTpm" -Class Win32_Tpm -ErrorAction SilentlyContinue).SpecVersion

@@ -22,7 +22,7 @@ try {
     Write-Host ""
     Write-Host "1. Disk errors (Event IDs 7, 11, 51, 153, 55)"
     Write-Host "   - Run: chkdsk /f /r (requires reboot)"
-    Write-Host "   - Check SMART status: wmic diskdrive get status"
+    Write-Host "   - Check SMART status: Get-PhysicalDisk | Get-StorageReliabilityCounter"
     Write-Host "   - Back up critical data immediately"
     Write-Host "   - Consider disk replacement if errors persist"
     Write-Host ""
