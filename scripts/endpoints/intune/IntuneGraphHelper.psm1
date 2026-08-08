@@ -21,7 +21,7 @@ function Connect-IntuneGraph {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [string[]]$Scopes = @(
             "DeviceManagementManagedDevices.Read.All",
             "DeviceManagementConfiguration.Read.All",
@@ -110,13 +110,13 @@ function Export-IntuneReportToHTML {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [object[]]$Data,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Title,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [string]$FilePath
     )
 
@@ -227,13 +227,13 @@ function Export-IntuneReportToCSV {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [object[]]$Data,
 
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Title,
 
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [string]$FilePath
     )
 
