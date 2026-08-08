@@ -1,3 +1,21 @@
+<#
+.SYNOPSIS
+    Detect if regional settings match UK standards
+
+.DESCRIPTION
+    Checks the system culture (en-GB), geographic location (GeoId 242, United Kingdom), time zone (GMT Standard Time), system locale and primary user language and exits 1 when any setting deviates from the required UK values.
+
+.EXAMPLE
+    ./detect.ps1
+
+.NOTES
+    File Name  : detect.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Version    : 1.0.0
+    Date       : 2026-08-08
+#>
+
 # Detect if Windows client device regional settings match UK standards
 # Exit 0 if compliant, Exit 1 if non-compliant
 

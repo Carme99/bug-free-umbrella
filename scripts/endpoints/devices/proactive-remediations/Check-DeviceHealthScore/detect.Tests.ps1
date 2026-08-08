@@ -1,3 +1,21 @@
+<#
+.SYNOPSIS
+    Pester tests for Check-DeviceHealthScore/detect.ps1
+
+.DESCRIPTION
+    Pester test suite covering the device health score calculation of the Check-DeviceHealthScore proactive remediation detection script. Mocks Get-CimInstance, Get-WinEvent, Get-MpComputerStatus and related cmdlets to validate the category scores and that the script does not throw on null data.
+
+.EXAMPLE
+    ./detect.Tests.ps1
+
+.NOTES
+    File Name  : detect.Tests.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Version    : 1.0.0
+    Date       : 2026-08-08
+#>
+
 BeforeAll {
     # Import the script to test
     $scriptPath = "$PSScriptRoot/detect.ps1"
@@ -214,7 +232,8 @@ Describe "Check-DeviceHealthScore.detect.ps1" {
             try {
                 & $scriptPath
                 $LASTEXITCODE | Should -Be 0
-            } catch {
+            }
+            catch {
                 # Expected exit behavior
             }
         }
@@ -233,7 +252,8 @@ Describe "Check-DeviceHealthScore.detect.ps1" {
             try {
                 & $scriptPath
                 $LASTEXITCODE | Should -Be 1
-            } catch {
+            }
+            catch {
                 # Expected exit behavior
             }
         }

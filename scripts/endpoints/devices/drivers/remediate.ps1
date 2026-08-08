@@ -1,3 +1,21 @@
+<#
+.SYNOPSIS
+    Apply the AMD Radeon driver block
+
+.DESCRIPTION
+    Applies the DeviceInstallation DenyDeviceIDs policy for the AMD Radeon hardware ID (PCIVEN_1002&DEV_1681) on target Lenovo 21L8S0VP00 devices, including the DenyDeviceIDsRetroactive flag so already-installed devices are blocked. Non-target devices exit 0 without changes.
+
+.EXAMPLE
+    ./remediate.ps1
+
+.NOTES
+    File Name  : remediate.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Version    : 1.0.0
+    Date       : 2026-08-08
+#>
+
 # Remediate: apply the AMD Radeon driver block (DeviceInstallation policy)
 #
 # Documented layout (Policy CSP PreventInstallationOfMatchingDeviceIDs / ADMX
@@ -11,7 +29,7 @@ $DeviceModel = (Get-CimInstance -ClassName Win32_ComputerSystem).Model
 
 if ($DeviceModel -ne "21L8S0VP00") {
     Write-Output "Device is not a Lenovo 21L8S0VP00. No action needed."
-    Exit 0
+    exit 0
 }
 
 # Documented registry location
@@ -39,4 +57,4 @@ if ($denyList -notcontains $RegValue) {
 Set-ItemProperty -Path $RegPath -Name "DenyDeviceIDsRetroactive" -Value 1 -Type DWord -Force
 
 Write-Output "AMD Radeon driver block policy applied."
-Exit 0
+exit 0

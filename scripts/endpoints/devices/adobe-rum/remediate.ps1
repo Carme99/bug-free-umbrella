@@ -1,4 +1,22 @@
 <#
+.SYNOPSIS
+    Remediate Adobe Creative Cloud app updates via Remote Update Manager
+
+.DESCRIPTION
+    Runs the Adobe Remote Update Manager (RUM) to install all applicable Adobe Creative Cloud app updates, logs the results, and exits 0 on success. Must run in the SYSTEM context.
+
+.EXAMPLE
+    ./remediate.ps1
+
+.NOTES
+    File Name  : remediate.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Version    : 1.0.0
+    Date       : 2026-08-08
+#>
+
+<#
 ==================================
 |  Remediate-AdobeCCUpdates.ps1  |
 ==================================
@@ -113,7 +131,7 @@ $productNames = @{
 #endregion
 
 #region Main process
-if (!(Test-Path $LogPath)) {mkdir $LogPath -Force | Out-Null}
+if (!(Test-Path $LogPath)) { mkdir $LogPath -Force | Out-Null }
 
 Start-Transcript -Path $LogFile -Force
 
@@ -121,20 +139,20 @@ try {
     # Run Adobe Remote Update Manager and capture its output
     $ARUMOutput = (& "$ARUMPath") 2>&1 | Out-String
 	
-	# Use regex to find the app codes, version numbers, and platforms in the text string
+    # Use regex to find the app codes, version numbers, and platforms in the text string
     $discoveries = [regex]::Matches($ARUMOutput, $regexpattern)
 	
-	# Create an array to store the results
-	$results = @()
+    # Create an array to store the results
+    $results = @()
 	
-	# Loop through the regex matches and add a row to the results array for each app
-	foreach ($discovered in $discoveries) {
-		$SapCode = $discovered.Groups[1].Value
-		$versionNumber = $discovered.Groups[2].Value
-		#$platform = $discovered.Groups[3].Value
-		$productName = $productNames[$SapCode]
+    # Loop through the regex matches and add a row to the results array for each app
+    foreach ($discovered in $discoveries) {
+        $SapCode = $discovered.Groups[1].Value
+        $versionNumber = $discovered.Groups[2].Value
+        #$platform = $discovered.Groups[3].Value
+        $productName = $productNames[$SapCode]
 
-		<#
+        <#
 		# Add a row to the results array
 		$results += [pscustomobject]@{
 			"Product Name" = $productName
@@ -143,29 +161,33 @@ try {
 			"Platform Architecture" = $platform
 		}
 		#>
-		$results += "$($productName) ($($SapCode)) (v$($versionNumber))"
-	}
+        $results += "$($productName) ($($SapCode)) (v$($versionNumber))"
+    }
     
-	# Convert $results array to a string and join each line with a comma (so content can be output in PR results)
+    # Convert $results array to a string and join each line with a comma (so content can be output in PR results)
     $resultsstring = (($results -join ", " ) -replace "`r`n", ", ").Trim()
 	
-	# Search the output for the string
-	$ARUMStatus = $ARUMOutput | ForEach-Object {"$_" | Select-String -Pattern $updatesinstalled}
-	if ($ARUMStatus.Matches.Success -eq "True") {
-		# proceed to remediation script
-		Write-Output "$($results.count) updates were successfully installed for the following Adobe Creative Cloud Apps: $($resultsstring)"
-	} else {
-		# nothing further to do
-		Write-Output "No updates are required for Adobe Creative Cloud Apps"
-	}
-} catch {
+    # Search the output for the string
+    $ARUMStatus = $ARUMOutput | ForEach-Object { "$_" | Select-String -Pattern $updatesinstalled }
+    if ($ARUMStatus.Matches.Success -eq "True") {
+        # proceed to remediation script
+        Write-Output "$($results.count) updates were successfully installed for the following Adobe Creative Cloud Apps: $($resultsstring)"
+    }
+    else {
+        # nothing further to do
+        Write-Output "No updates are required for Adobe Creative Cloud Apps"
+    }
+}
+catch {
     $errorMsg = $_.Exception.Message
-} finally {
+}
+finally {
     if ($errorMsg) {
         Write-Output "Something went wrong: $errorMsg"
         Stop-Transcript | Out-Null
-        Throw $errorMsg
-} else {
+        throw $errorMsg
+    }
+    else {
         Stop-Transcript | Out-Null
     }
 }

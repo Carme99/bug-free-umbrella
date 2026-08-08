@@ -1,3 +1,21 @@
+<#
+.SYNOPSIS
+    Remediate regional settings to UK standards
+
+.DESCRIPTION
+    Sets the geographic location to United Kingdom, time zone to GMT Standard Time and culture to en-GB when they deviate from the required UK values, and reports each applied change.
+
+.EXAMPLE
+    ./remediate.ps1
+
+.NOTES
+    File Name  : remediate.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Version    : 1.0.0
+    Date       : 2026-08-08
+#>
+
 # Remediate Windows client device regional settings to UK standards
 # Exit 0 if successful, Exit 1 if failed
 

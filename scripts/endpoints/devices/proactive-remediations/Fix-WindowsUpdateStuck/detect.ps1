@@ -73,7 +73,8 @@ if (-not $firstSeen) {
 
 try {
     $firstSeenDate = [DateTime]::Parse($firstSeen)
-} catch {
+}
+catch {
     # Unparseable marker - reset it and re-observe
     Set-ItemProperty -Path $markerPath -Name $markerName -Value (Get-Date).ToString("o") -Force
     Write-Host "Found $pendingCount pending updates (marker reset - not yet flagged)"

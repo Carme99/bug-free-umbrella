@@ -1,3 +1,21 @@
+<#
+.SYNOPSIS
+    Pester tests for Check-HardwareErrors/detect.ps1
+
+.DESCRIPTION
+    Pester test suite covering the WHEA hardware error detection logic of the Check-HardwareErrors proactive remediation detection script. Mocks Get-WinEvent, Get-CimInstance and related cmdlets to validate that WHEA errors are detected and reported without contacting the hardware.
+
+.EXAMPLE
+    ./detect.Tests.ps1
+
+.NOTES
+    File Name  : detect.Tests.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Version    : 1.0.0
+    Date       : 2026-08-08
+#>
+
 BeforeAll {
     # Import the script to test
     $scriptPath = "$PSScriptRoot/detect.ps1"

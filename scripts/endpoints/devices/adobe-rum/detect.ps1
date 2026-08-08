@@ -1,4 +1,22 @@
 <#
+.SYNOPSIS
+    Detect Adobe Creative Cloud app updates via Remote Update Manager
+
+.DESCRIPTION
+    Runs the Adobe Remote Update Manager (RUM) in detection mode to determine whether any Adobe Creative Cloud apps require an update. Exits 1 when updates are required (so the paired remediation runs) and 0 when the system is up to date or RUM is not present. Must run in the SYSTEM context.
+
+.EXAMPLE
+    ./detect.ps1
+
+.NOTES
+    File Name  : detect.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Version    : 1.0.0
+    Date       : 2026-08-08
+#>
+
+<#
 ===============================
 |  Detect-AdobeCCUpdates.ps1  |
 ===============================
@@ -117,7 +135,7 @@ $productNames = @{
 #endregion
 
 #region Main process
-if (!(Test-Path $LogPath)) {mkdir $LogPath -Force | Out-Null}
+if (!(Test-Path $LogPath)) { mkdir $LogPath -Force | Out-Null }
 
 Start-Transcript -Path $LogFile -Force
 
@@ -158,38 +176,45 @@ try {
         $resultsstring = (($results -join ", " ) -replace "`r`n", ", ").Trim()
 
         # Search the output for the string
-        $ARUMStatus = $ARUMOutput | ForEach-Object {"$_" | Select-String -Pattern $updatesrequired}
+        $ARUMStatus = $ARUMOutput | ForEach-Object { "$_" | Select-String -Pattern $updatesrequired }
         if ($ARUMStatus.Matches.Success -eq "True") {
             # proceed to remediation script
-            If ($InstalledVersion -ge $LatestVersion){
+            if ($InstalledVersion -ge $LatestVersion) {
                 Write-Output "$($results.count) updates are required for the following Adobe Creative Cloud Apps: $($resultsstring)"
                 exit 1 # Return a non-zero exit code to trigger the remediation
-            } else {
+            }
+            else {
                 Write-Output "$($results.count) updates are required for the following Adobe Creative Cloud Apps: $($resultsstring) N.B. Adobe RUM is not the latest version ($($LatestVersion)), the version on this machine ($($InstalledVersion)) should be updated"
                 exit 1 # Return a non-zero exit code to trigger the remediation
             }
-        } else {
+        }
+        else {
             # nothing further to do
-            If ($InstalledVersion -ge $LatestVersion){
+            if ($InstalledVersion -ge $LatestVersion) {
                 Write-Output "No updates are required for Adobe Creative Cloud Apps"
                 exit 0  # Return a zero exit code to indicate success
-            } else {
+            }
+            else {
                 Write-Output "No updates are required for Adobe Creative Cloud Apps. N.B. Adobe RUM is not the latest version ($($LatestVersion)), the version on this machine ($($InstalledVersion)) should be updated"
                 exit 0  # Return a zero exit code to indicate success
             }
         }
-    } else {
+    }
+    else {
         Write-Output "Adobe RUM not found N.B. Check if RUM should exist on this device"
         exit 0
     }
-} catch {
+}
+catch {
     $errorMsg = $_.Exception.Message
-} finally {
+}
+finally {
     if ($errorMsg) {
         Write-Output "Something went wrong: $errorMsg"
         Stop-Transcript | Out-Null
-        Throw $errorMsg
-} else {
+        throw $errorMsg
+    }
+    else {
         Stop-Transcript | Out-Null
     }
 }

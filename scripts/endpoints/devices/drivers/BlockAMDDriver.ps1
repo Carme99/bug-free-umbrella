@@ -1,3 +1,21 @@
+<#
+.SYNOPSIS
+    Block the AMD Radeon driver via DeviceInstallation policy
+
+.DESCRIPTION
+    Applies the DeviceInstallation policy that blocks the AMD Radeon hardware ID (PCIVEN_1002&DEV_1681) by merging it into the DenyDeviceIDs multi-string value under HKLM\SOFTWARE\Policies\Microsoft\Windows\DeviceInstall\Restrictions and setting the DenyDeviceIDsRetroactive flag so already-installed devices are blocked too.
+
+.EXAMPLE
+    ./BlockAMDDriver.ps1
+
+.NOTES
+    File Name  : BlockAMDDriver.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Version    : 1.0.0
+    Date       : 2026-08-08
+#>
+
 # Block the AMD Radeon driver (DeviceInstallation policy)
 #
 # Documented layout (Policy CSP PreventInstallationOfMatchingDeviceIDs / ADMX
@@ -32,4 +50,4 @@ if ($denyList -notcontains $RegValue) {
 Set-ItemProperty -Path $RegPath -Name "DenyDeviceIDsRetroactive" -Value 1 -Type DWord -Force
 
 Write-Output "AMD Radeon driver block policy applied."
-Exit 0
+exit 0

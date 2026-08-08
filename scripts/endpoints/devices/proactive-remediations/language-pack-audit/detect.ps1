@@ -1,3 +1,21 @@
+<#
+.SYNOPSIS
+    Detect unnecessary OS language packs
+
+.DESCRIPTION
+    Enumerates installed OS language packs via DISM (Get-WindowsPackage) and exits 1 when any language pack other than the allowed en-GB/en-US set is installed. Only OS language packs are considered; per-user language lists are not inspected.
+
+.EXAMPLE
+    ./detect.ps1
+
+.NOTES
+    File Name  : detect.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Version    : 1.0.0
+    Date       : 2026-08-08
+#>
+
 # Detect unnecessary language packs installed on the system
 # Exit 0 if only essential language packs are installed, Exit 1 if unnecessary packs found
 #
@@ -24,10 +42,10 @@ try {
     # Extract the language tag from each package name, e.g.
     # Microsoft-Windows-Client-LanguagePack-Package~31bf3856ad364e35~amd64~~en-GB~10.0.19041.1
     $installedLanguages = @($languagePacks | ForEach-Object {
-        if ($_.PackageName -match '~([a-zA-Z]{2}-[a-zA-Z]{2})~') {
-            $Matches[1]
-        }
-    } | Sort-Object -Unique)
+            if ($_.PackageName -match '~([a-zA-Z]{2}-[a-zA-Z]{2})~') {
+                $Matches[1]
+            }
+        } | Sort-Object -Unique)
 
     Write-Host "Installed language packs: $($installedLanguages -join ', ')"
 

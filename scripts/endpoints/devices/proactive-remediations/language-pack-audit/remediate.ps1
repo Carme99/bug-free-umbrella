@@ -1,3 +1,21 @@
+<#
+.SYNOPSIS
+    Remove unnecessary OS language packs
+
+.DESCRIPTION
+    Removes installed OS language packs that are not in the allowed en-GB/en-US set using Remove-WindowsPackage (DISM /Online). Requires an elevated context (Intune Proactive Remediations run as SYSTEM). Exits 0 on success and 1 on failure.
+
+.EXAMPLE
+    ./remediate.ps1
+
+.NOTES
+    File Name  : remediate.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Version    : 1.0.0
+    Date       : 2026-08-08
+#>
+
 # Remediate by removing unnecessary language packs via DISM
 # Exit 0 if successful, Exit 1 if failed
 #
