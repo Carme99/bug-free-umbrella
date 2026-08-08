@@ -1,8 +1,8 @@
 # Changelog
 
-![Version](https://img.shields.io/badge/version-4.2.0-blue)
-![Release Date](https://img.shields.io/badge/release-2026--08--06-green)
-![Total Scripts](https://img.shields.io/badge/scripts-260+-orange)
+![Version](https://img.shields.io/badge/version-4.3.0-blue)
+![Release Date](https://img.shields.io/badge/release-2026--08--08-green)
+![Total Scripts](https://img.shields.io/badge/scripts-350+-orange)
 ![License](https://img.shields.io/badge/license-Apache%202.0-red)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
 
@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [🌂 About Our Release Names](#-about-our-release-names)
 - [Unreleased](#unreleased)
 - **Latest Releases:**
+  - [v4.3.0 (2026-08-08) 🌈 Zephyr - Quality & Enforcement Release](#430---2026-08-08-🌈-zephyr---quality--enforcement-release)
   - [v4.2.0 (2026-08-06) ⛈️ Tempest - Security & Hardening Release](#420---2026-08-06-️-tempest---security--hardening-release)
   - [v4.1.0 (2026-04-17) ☔ Drizzle - Bug Fix Release](#410-drizzle-bug-fix-release)
   - [v4.0.0 (2026-03-03) 🌪️ Hurricane - Security Hardening](#400---2026-03-03-️-hurricane---security-hardening-release)
@@ -59,6 +60,49 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 ---
 
 ## [Unreleased]
+
+---
+
+<a id="430---2026-08-08-🌈-zephyr---quality--enforcement-release"></a>
+## [4.3.0] - 2026-08-08 🌈 **"Zephyr"** - Quality & Enforcement Release
+
+Resolves 122 open issues (#106-#245) — the largest cleanup in project history: a full Microsoft Learn alignment review (97 findings), PSSA policy enforcement with new CI gates, and endpoint/security/CI fixes across 18 PRs (#228-#245).
+
+### 📐 PSSA Policy Enforcement (new CI gates)
+- Comment-based help, style rules (indentation/whitespace/braces/casing) and ShouldProcess (-WhatIf) are now **enforced in CI on every PR**
+- 4,404 style findings fixed across 345 scripts; 56 state-changing functions retrofitted with `[CmdletBinding(SupportsShouldProcess)]` + `$PSCmdlet.ShouldProcess()` guards (no prompt on normal runs; -WhatIf/-Confirm now available)
+- 48 scripts gained full comment-based help headers (`.SYNOPSIS` presence is CI-gated)
+- `validate-powershell.yml` syntax gate fixed: `PSParser.Tokenize` no-op replaced with `Language.Parser` — 43 scripts with latent parse errors repaired (#140, #229, #239)
+
+### 🎯 Microsoft Learn Alignment (#131-#227)
+- 14 dead/misleading MS Learn links fixed across READMEs and wiki (verified live); WARP.md testing claims made honest (#127, #130, #141-#151)
+- Deprecated API migration: `Get-WmiObject`→`Get-CimInstance` (10 scripts), `WebAdministration`→`IISAdministration` (6 scripts), `Send-MailMessage`→`SmtpClient`, SQLPS→`SqlServer` module, `System.Data.SqlClient`→`Microsoft.Data.SqlClient`, `Set-AzRecoveryServicesVaultContext`→`-VaultId`
+- Exchange/Graph modernization: `Get-MailDetailATPReport`, `Get-MessageTraceV2`, unified RBAC role APIs, ODT-based Office channel switching, corrected M365 channel GUID data
+- Winget: `Microsoft.WinGet.Client` module-first migration (81 files), `--exact` matching, exit-code-based success
+- Intune: generated remediation exit codes corrected, valid Graph filters, registry-based MSI detection, honest (non-fabricated) report templates
+
+### 🛡️ Endpoint & Remediation Fixes
+- Driver block scripts: `DenyDeviceIDs` written as the documented REG value (+ retroactive flag) instead of an ineffective subkey (#137)
+- Autopatch: `UseWUServer` read at the documented `\AU` path (#138); unsupported `DisableWindowsUpdateAccess` policy replaced with `NoAutoUpdate`
+- SYSTEM-context fixes: TeamsCache/TempFiles/BrokenShortcuts/CertificateExpiry now enumerate real user profiles; StaleProfiles uses documented `DeleteProfileW` semantics; TimeSync respects NT5DS; RebootPending no longer deletes authoritative registry keys
+- TPM auto-ownership guidance, page-file sizing, DISM-based language-pack handling, real RAC stability index, keyboard KLID labels corrected
+
+### 🔐 Security
+- `LockoutBadCount`/`PasswordComplexity` read from documented secedit keys; Schannel registry TLS check; Windows LAPS detection (#157-#160)
+- Event 4625 `Status` field, Event 4740 Caller Computer Name, Event 37 provider corrected
+- MDE API endpoint + `Machine.Read.All` permission updated; retired AzureAD module guidance replaced with Microsoft Graph
+
+### ⚙️ CI & Tooling
+- Syntax gate now actually fails on parse errors (#140); PSGallery kept Untrusted with scoped `-SkipPublisherCheck` install (#120)
+- `sync-wiki.yml` pushes to `main` (#123); PSScriptAnalyzer rule-name typo fixed (#222)
+
+### 📚 Documentation
+- "Proactive Remediations"→"Remediations" naming; AzureAD retirement; workflow README corrected (#224-#225)
+
+### 🐛 Notable Bug Fixes (#106-#130)
+- Exit-code masking in Install-TeamsAVD (#107), unhandled Az null-refs (#109), empty Graph catch blocks (#111), `-OutputPath` traversal validation (#112), stub cost analysis removed (#113), host-closing `exit` replaced with `throw` (#114), execution-policy scope handling (#115/#117), division-by-zero guard (#121), temp-file cleanup (#124), quote-aware argument splitting (#125), parameterized install paths (#126), version-comparison padding (#129)
+
+**Full change list**: 122 issues closed (#106-#227) via 18 PRs (#228-#245).
 
 ---
 
@@ -1492,6 +1536,10 @@ Comprehensive documentation suite:
 
 | Version | Date | Codename | Type | Major Changes |
 |---------|------|----------|------|---------------|
+| **4.3.0** | 2026-08-08 | 🌈 Zephyr | Minor | MS Learn alignment (97 findings), PSSA enforcement gates, 122 issues |
+| **4.2.0** | 2026-08-06 | ⛈️ Tempest | Minor | Security & hardening, CI integrity, docs accuracy |
+| **4.1.0** | 2026-04-17 | ☔ Drizzle | Minor | Bug fixes, error handling standardization, deprecated cmdlets |
+| **4.0.0** | 2026-03-03 | 🌪️ Hurricane | Major | Security hardening |
 | **3.7.0** | 2026-01-21 | 🌧️ Shower | Minor | Winget security updates, .NET runtime fixes |
 | **3.6.0** | 2026-01-16 | 🌧️ Shower | Minor | Intune device management scripts |
 | **3.5.0** | 2026-01-15 | 🌧️ Shower | Minor | AVD image builder enhancements |
@@ -1513,6 +1561,11 @@ Comprehensive documentation suite:
 ---
 
 ## Upgrade Notes
+
+### Upgrading to 4.3.0 (Zephyr)
+- ✅ **No breaking changes** - fully backward compatible
+- 📐 **New CI enforcement**: every PR must pass comment-based help (`.SYNOPSIS`), style rules, and ShouldProcess checks. Contributors: add help headers to new scripts, follow 4-space formatting, and declare `SupportsShouldProcess` on state-changing functions.
+- 🔧 **Runtime behavior note**: destructive functions in scripts now support `-WhatIf`/`-Confirm`; normal execution is unchanged.
 
 ### Upgrading to 3.7.0 (Shower)
 - ✅ **No breaking changes** - fully backward compatible
@@ -1571,6 +1624,6 @@ Scripts in this repository were created with the assistance of **[Claude Code](h
 
 For detailed commit history, see [Git Log](https://github.com/Carme99/bug-free-umbrella/commits/main).
 
-**Last Updated**: 2026-01-25
+**Last Updated**: 2026-08-08
 
 [⬆️ Back to top](#-table-of-contents)
