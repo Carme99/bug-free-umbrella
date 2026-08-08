@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Comprehensive Active Directory health check for domain controllers.
 
@@ -51,19 +51,19 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$DomainController,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeReplication,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeEventLogs,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -97,7 +97,7 @@ $script:report = @{
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
 
-    $color = switch($Level) {
+    $color = switch ($Level) {
         'Critical' { 'Red' }
         'Error' { 'Red' }
         'Warning' { 'Yellow' }
@@ -157,7 +157,7 @@ function Get-FSMORoles {
             DomainNamingMaster = $forest.DomainNamingMaster
         }
 
-        foreach($role in $script:report.FSMORoles.GetEnumerator()) {
+        foreach ($role in $script:report.FSMORoles.GetEnumerator()) {
             Write-Host "  $($role.Key): $($role.Value)" -ForegroundColor Gray
         }
     }
@@ -170,7 +170,7 @@ function Test-DomainControllers {
     Write-Host "`nTesting domain controllers..." -ForegroundColor Cyan
 
     try {
-        if($DomainController) {
+        if ($DomainController) {
             $dcs = @(Get-ADDomainController -Identity $DomainController)
         }
         else {
@@ -179,7 +179,7 @@ function Test-DomainControllers {
 
         Write-ColorOutput "  Found $($dcs.Count) domain controller(s)" -Level Info
 
-        foreach($dc in $dcs) {
+        foreach ($dc in $dcs) {
             Write-Host "`n  Testing: $($dc.Name)" -ForegroundColor Cyan
 
             $dcHealth = [PSCustomObject]@{
@@ -204,7 +204,7 @@ function Test-DomainControllers {
             try {
                 $ping = Test-Connection -ComputerName $dc.HostName -Count 2 -Quiet
                 $dcHealth.Ping = $ping
-                if($ping) {
+                if ($ping) {
                     Write-ColorOutput "    [OK] Ping successful" -Level Success
                 }
                 else {
@@ -232,7 +232,7 @@ function Test-DomainControllers {
 
             # SYSVOL share test
             $sysvolPath = "\\$($dc.HostName)\SYSVOL"
-            if(Test-Path $sysvolPath -ErrorAction SilentlyContinue) {
+            if (Test-Path $sysvolPath -ErrorAction SilentlyContinue) {
                 $dcHealth.SYSVOLAccessible = $true
                 Write-ColorOutput "    [OK] SYSVOL accessible" -Level Success
             }
@@ -244,7 +244,7 @@ function Test-DomainControllers {
 
             # NETLOGON share test
             $netlogonPath = "\\$($dc.HostName)\NETLOGON"
-            if(Test-Path $netlogonPath -ErrorAction SilentlyContinue) {
+            if (Test-Path $netlogonPath -ErrorAction SilentlyContinue) {
                 $dcHealth.NETLOGONAccessible = $true
                 Write-ColorOutput "    [OK] NETLOGON accessible" -Level Success
             }
@@ -256,12 +256,12 @@ function Test-DomainControllers {
 
             # Service status checks
             $services = @('NTDS', 'DNS', 'kdc', 'Netlogon')
-            foreach($serviceName in $services) {
+            foreach ($serviceName in $services) {
                 try {
                     $service = Get-Service -ComputerName $dc.HostName -Name $serviceName -ErrorAction Stop
                     $dcHealth.Services[$serviceName] = $service.Status
 
-                    if($service.Status -eq 'Running') {
+                    if ($service.Status -eq 'Running') {
                         Write-ColorOutput "    [OK] $serviceName service running" -Level Success
                     }
                     else {
@@ -278,16 +278,16 @@ function Test-DomainControllers {
 
             # Time synchronization check
             try {
-                $dcTime = Invoke-Command -ComputerName $dc.HostName -ScriptBlock {Get-Date} -ErrorAction Stop
+                $dcTime = Invoke-Command -ComputerName $dc.HostName -ScriptBlock { Get-Date } -ErrorAction Stop
                 $localTime = Get-Date
                 $timeDiff = ($dcTime - $localTime).TotalSeconds
 
                 $dcHealth.TimeDifference = [math]::Round($timeDiff, 2)
 
-                if([math]::Abs($timeDiff) -le 5) {
+                if ([math]::Abs($timeDiff) -le 5) {
                     Write-ColorOutput "    [OK] Time sync OK (difference: $([math]::Round($timeDiff, 2))s)" -Level Success
                 }
-                elseif([math]::Abs($timeDiff) -le 300) {
+                elseif ([math]::Abs($timeDiff) -le 300) {
                     Write-ColorOutput "    [WARNING] Time difference: $([math]::Round($timeDiff, 2))s" -Level Warning
                     $script:report.Warnings += "$($dc.Name): Time difference $([math]::Round($timeDiff, 2))s"
                 }
@@ -302,7 +302,7 @@ function Test-DomainControllers {
             }
 
             # Set overall health status
-            if($dcHealth.HealthStatus -ne 'Critical') {
+            if ($dcHealth.HealthStatus -ne 'Critical') {
                 $dcHealth.HealthStatus = 'Healthy'
             }
 
@@ -324,11 +324,11 @@ function Get-ReplicationStatus {
         # enumerate domain controllers and query each one, aggregating the results.
         $replSummary = @()
         $dcs = Get-ADDomainController -Filter *
-        foreach($dc in $dcs) {
+        foreach ($dc in $dcs) {
             $replSummary += Get-ADReplicationPartnerMetadata -Target $dc.HostName -Scope Domain
         }
 
-        foreach($repl in $replSummary) {
+        foreach ($repl in $replSummary) {
             $lastSuccess = $repl.LastReplicationSuccess
             $lastAttempt = $repl.LastReplicationAttempt
             $consecutiveFailures = $repl.ConsecutiveReplicationFailures
@@ -336,11 +336,11 @@ function Get-ReplicationStatus {
             $status = 'Healthy'
             $age = ((Get-Date) - $lastSuccess).TotalHours
 
-            if($consecutiveFailures -gt 0) {
+            if ($consecutiveFailures -gt 0) {
                 $status = 'Failed'
                 $script:report.Issues += "Replication failure: $($repl.Server) to $($repl.Partner)"
             }
-            elseif($age -gt 24) {
+            elseif ($age -gt 24) {
                 $status = 'Warning'
                 $script:report.Warnings += "Replication stale: $($repl.Server) to $($repl.Partner) (last success $([math]::Round($age, 1))h ago)"
             }
@@ -377,19 +377,19 @@ function Get-ADEventLogs {
     $since = (Get-Date).AddHours(-24)
 
     try {
-        $dcs = if($DomainController) { @($DomainController) } else { (Get-ADDomainController -Filter *).HostName }
+        $dcs = if ($DomainController) { @($DomainController) } else { (Get-ADDomainController -Filter *).HostName }
 
-        foreach($dc in $dcs) {
+        foreach ($dc in $dcs) {
             Write-Host "  Checking $dc..." -ForegroundColor Gray
 
             try {
                 $events = Get-WinEvent -ComputerName $dc -FilterHashtable @{
                     LogName = 'Directory Service', 'DFS Replication'
-                    Level = 1,2
+                    Level = 1, 2
                     StartTime = $since
                 } -MaxEvents 50 -ErrorAction SilentlyContinue
 
-                foreach($event in $events) {
+                foreach ($event in $events) {
                     $script:report.EventLogErrors += [PSCustomObject]@{
                         Server = $dc
                         TimeCreated = $event.TimeCreated
@@ -401,7 +401,7 @@ function Get-ADEventLogs {
                     }
                 }
 
-                if($events) {
+                if ($events) {
                     Write-ColorOutput "    Found $($events.Count) error(s) in last 24h" -Level Warning
                 }
                 else {
@@ -427,27 +427,27 @@ function Show-Summary {
     Write-Host "Scan Time: $($script:report.ScanTime)"
 
     # Determine overall health
-    if($script:report.Issues.Count -gt 0) {
+    if ($script:report.Issues.Count -gt 0) {
         $script:report.HealthStatus = 'Critical'
     }
-    elseif($script:report.Warnings.Count -gt 0) {
+    elseif ($script:report.Warnings.Count -gt 0) {
         $script:report.HealthStatus = 'Warning'
     }
 
     Write-Host "`nOverall Health: " -NoNewline
-    $healthColor = switch($script:report.HealthStatus) {
+    $healthColor = switch ($script:report.HealthStatus) {
         'Critical' { 'Red' }
         'Warning' { 'Yellow' }
         default { 'Green' }
     }
     Write-Host $script:report.HealthStatus -ForegroundColor $healthColor
 
-    if($script:report.Issues.Count -gt 0) {
+    if ($script:report.Issues.Count -gt 0) {
         Write-Host "`nCritical Issues:" -ForegroundColor Red
         $script:report.Issues | ForEach-Object { Write-ColorOutput "  - $_" -Level Error }
     }
 
-    if($script:report.Warnings.Count -gt 0) {
+    if ($script:report.Warnings.Count -gt 0) {
         Write-Host "`nWarnings:" -ForegroundColor Yellow
         $script:report.Warnings | ForEach-Object { Write-ColorOutput "  - $_" -Level Warning }
     }
@@ -466,7 +466,7 @@ function Show-Summary {
 function Export-HTMLReport {
     $reportPath = "$ReportDir\ADHealthCheck_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
 
-    $healthColor = switch($script:report.HealthStatus) {
+    $healthColor = switch ($script:report.HealthStatus) {
         'Critical' { '#dc3545' }
         'Warning' { '#ffc107' }
         default { '#28a745' }
@@ -576,7 +576,7 @@ Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "  Active Directory Health Check" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
 
-if(-not (Test-ADModule)) {
+if (-not (Test-ADModule)) {
     exit 1
 }
 
@@ -584,17 +584,17 @@ Get-DomainInfo
 Get-FSMORoles
 Test-DomainControllers
 
-if($IncludeReplication) {
+if ($IncludeReplication) {
     Get-ReplicationStatus
 }
 
-if($IncludeEventLogs) {
+if ($IncludeEventLogs) {
     Get-ADEventLogs
 }
 
 Show-Summary
 
-if($ExportHTML) {
+if ($ExportHTML) {
     Write-Host "Generating HTML report..." -ForegroundColor Cyan
     Export-HTMLReport
 }

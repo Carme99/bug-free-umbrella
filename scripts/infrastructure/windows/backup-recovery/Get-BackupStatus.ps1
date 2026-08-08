@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Verifies Windows Server Backup status and configuration.
 
@@ -129,11 +129,11 @@ try {
         $report.BackupPolicy = @{
             Schedule = $policy.Schedule
             BackupTargets = @($policy.BackupTargets | ForEach-Object {
-                @{
-                    TargetType = $_.TargetType
-                    TargetPath = $_.TargetPath
-                }
-            })
+                    @{
+                        TargetType = $_.TargetType
+                        TargetPath = $_.TargetPath
+                    }
+                })
             VolumesToBackup = @($policy.VolumesToBackup)
             BMREnabled = $policy.BMRBackupEnabled
             SystemStateEnabled = $policy.SystemStateBackupEnabled
@@ -326,7 +326,8 @@ try {
             $issuesHtml += "<li>$([System.Net.WebUtility]::HtmlEncode("$issue"))</li>"
         }
         $issuesHtml += "</ul>"
-    } else {
+    }
+    else {
         "<p style='color: green;'><strong>No issues detected</strong></p>"
     }
 

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Comprehensive IIS health check and configuration audit.
 
@@ -138,7 +138,8 @@ try {
         exit 1
     }
     Write-StatusMessage "IIS is installed and accessible" -Status Success
-} catch {
+}
+catch {
     Write-StatusMessage "Error checking IIS installation: $_" -Status Error
     exit 1
 }
@@ -149,7 +150,8 @@ try {
     $iisVersion = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\InetStp").VersionString
     $results.IISVersion = $iisVersion
     Write-StatusMessage "IIS Version: $iisVersion" -Status Success
-} catch {
+}
+catch {
     Write-StatusMessage "Could not determine IIS version" -Status Warning
 }
 
@@ -185,8 +187,9 @@ try {
         $results.ApplicationPools += $poolInfo
     }
 
-    Write-StatusMessage "Found $($appPools.Count) application pools ($poolIssues issues)" -Status $(if ($poolIssues -eq 0) {"Success"} else {"Warning"})
-} catch {
+    Write-StatusMessage "Found $($appPools.Count) application pools ($poolIssues issues)" -Status $(if ($poolIssues -eq 0) { "Success" } else { "Warning" })
+}
+catch {
     Write-StatusMessage "Error analyzing application pools: $_" -Status Error
 }
 
@@ -225,8 +228,9 @@ try {
         $results.Websites += $siteInfo
     }
 
-    Write-StatusMessage "Found $($websites.Count) websites ($siteIssues issues)" -Status $(if ($siteIssues -eq 0) {"Success"} else {"Warning"})
-} catch {
+    Write-StatusMessage "Found $($websites.Count) websites ($siteIssues issues)" -Status $(if ($siteIssues -eq 0) { "Success" } else { "Warning" })
+}
+catch {
     Write-StatusMessage "Error analyzing websites: $_" -Status Error
 }
 
@@ -262,7 +266,7 @@ if ($CheckSSLCertificates) {
                         NotBefore = $cert.NotBefore
                         NotAfter = $cert.NotAfter
                         DaysToExpire = $daysToExpire
-                        Status = if ($daysToExpire -lt 0) {"Expired"} elseif ($daysToExpire -lt 30) {"Expiring Soon"} else {"Valid"}
+                        Status = if ($daysToExpire -lt 0) { "Expired" } elseif ($daysToExpire -lt 30) { "Expiring Soon" } else { "Valid" }
                     }
 
                     if ($certInfo.Status -ne "Valid") {
@@ -270,14 +274,16 @@ if ($CheckSSLCertificates) {
                     }
 
                     $results.SSLCertificates += $certInfo
-                } else {
+                }
+                else {
                     $certIssues++
                 }
             }
         }
 
-        Write-StatusMessage "Checked $($httpsBindings.Count) HTTPS bindings ($certIssues issues)" -Status $(if ($certIssues -eq 0) {"Success"} else {"Warning"})
-    } catch {
+        Write-StatusMessage "Checked $($httpsBindings.Count) HTTPS bindings ($certIssues issues)" -Status $(if ($certIssues -eq 0) { "Success" } else { "Warning" })
+    }
+    catch {
         Write-StatusMessage "Error checking SSL certificates: $_" -Status Error
     }
 }
@@ -299,13 +305,15 @@ if ($IncludePerformanceCounters) {
             try {
                 $value = (Get-Counter -Counter $counter -SampleInterval 1 -MaxSamples 1 -ErrorAction SilentlyContinue).CounterSamples.CookedValue
                 $results.PerformanceData[$counter] = $value
-            } catch {
+            }
+            catch {
                 # Counter might not exist
             }
         }
 
         Write-StatusMessage "Performance data collected" -Status Success
-    } catch {
+    }
+    catch {
         Write-StatusMessage "Error collecting performance data: $_" -Status Warning
     }
 }
@@ -331,10 +339,12 @@ if ($AnalyzeLogFiles) {
             }
 
             Write-StatusMessage "Analyzed $totalLogs log files ($([math]::Round($totalSize, 2)) MB)" -Status Success
-        } else {
+        }
+        else {
             Write-StatusMessage "Log file path not found: $logPath" -Status Warning
         }
-    } catch {
+    }
+    catch {
         Write-StatusMessage "Error analyzing log files: $_" -Status Error
     }
 }
@@ -374,12 +384,12 @@ if ($CheckSSLCertificates) {
 
 # Determine overall health
 $results.OverallHealth = if ($healthScore -ge 90) { "Excellent" }
-                         elseif ($healthScore -ge 75) { "Good" }
-                         elseif ($healthScore -ge 50) { "Fair" }
-                         else { "Poor" }
+elseif ($healthScore -ge 75) { "Good" }
+elseif ($healthScore -ge 50) { "Fair" }
+else { "Poor" }
 
 Write-StatusMessage "Overall IIS Health: $($results.OverallHealth) (Score: $healthScore/100)" -Status $(
-    if ($healthScore -ge 75) {"Success"} elseif ($healthScore -ge 50) {"Warning"} else {"Error"}
+    if ($healthScore -ge 75) { "Success" } elseif ($healthScore -ge 50) { "Warning" } else { "Error" }
 )
 
 # Display Summary
@@ -451,8 +461,8 @@ if ($ExportHTML) {
     # Application Pools Table
     $html += "<h2>Application Pools ($($results.ApplicationPools.Count))</h2><table><tr><th>Name</th><th>State</th><th>Runtime Version</th><th>Pipeline Mode</th><th>Start Mode</th><th>Issues</th></tr>"
     foreach ($pool in $results.ApplicationPools) {
-        $stateClass = if ($pool.State -eq "Started") {"status-started"} else {"status-stopped"}
-        $issuesText = if ($pool.Issues.Count -gt 0) {$pool.Issues -join ", "} else {"None"}
+        $stateClass = if ($pool.State -eq "Started") { "status-started" } else { "status-stopped" }
+        $issuesText = if ($pool.Issues.Count -gt 0) { $pool.Issues -join ", " } else { "None" }
         $html += "<tr><td>$($pool.Name)</td><td class='$stateClass'>$($pool.State)</td><td>$($pool.ManagedRuntimeVersion)</td><td>$($pool.ManagedPipelineMode)</td><td>$($pool.StartMode)</td><td>$issuesText</td></tr>"
     }
     $html += "</table>"
@@ -460,8 +470,8 @@ if ($ExportHTML) {
     # Websites Table
     $html += "<h2>Websites ($($results.Websites.Count))</h2><table><tr><th>Name</th><th>State</th><th>Application Pool</th><th>Bindings</th><th>Physical Path</th><th>Issues</th></tr>"
     foreach ($site in $results.Websites) {
-        $stateClass = if ($site.State -eq "Started") {"status-started"} else {"status-stopped"}
-        $issuesText = if ($site.Issues.Count -gt 0) {$site.Issues -join ", "} else {"None"}
+        $stateClass = if ($site.State -eq "Started") { "status-started" } else { "status-stopped" }
+        $issuesText = if ($site.Issues.Count -gt 0) { $site.Issues -join ", " } else { "None" }
         $html += "<tr><td>$($site.Name)</td><td class='$stateClass'>$($site.State)</td><td>$($site.ApplicationPool)</td><td>$($site.Bindings)</td><td>$($site.PhysicalPath)</td><td>$issuesText</td></tr>"
     }
     $html += "</table>"
@@ -496,4 +506,4 @@ if ($ExportCSV) {
 Write-ColorOutput "`nHealth check complete!`n" -Color Green
 
 # Exit with appropriate code
-exit $(if ($healthScore -ge 75) {0} else {1})
+exit $(if ($healthScore -ge 75) { 0 } else { 1 })

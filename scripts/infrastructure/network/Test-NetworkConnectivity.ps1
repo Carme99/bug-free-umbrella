@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Comprehensive network connectivity and troubleshooting script.
 
@@ -83,7 +83,7 @@ $networkDiag = @{
 #region Network Adapter Check
 Write-Host "`nChecking network adapters..." -ForegroundColor Yellow
 try {
-    $adapters = Get-NetAdapter | Where-Object {$_.Status -eq 'Up'}
+    $adapters = Get-NetAdapter | Where-Object { $_.Status -eq 'Up' }
 
     foreach ($adapter in $adapters) {
         $ipConfig = Get-NetIPAddress -InterfaceIndex $adapter.ifIndex -AddressFamily IPv4 -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -110,7 +110,8 @@ try {
                         $adapterInfo.WiFiSignal = $Matches[1] + "%"
                     }
                 }
-            } catch {
+            }
+            catch {
                 # Signal strength not available
             }
         }
@@ -123,7 +124,8 @@ try {
     if ($adapters.Count -eq 0) {
         $networkDiag.Issues += "No active network adapters found"
     }
-} catch {
+}
+catch {
     $networkDiag.Issues += "Could not enumerate network adapters"
 }
 #endregion
@@ -141,15 +143,18 @@ try {
             Write-Host "Gateway ($gateway): Reachable (Avg: $([math]::Round($avgLatency, 2))ms)" -ForegroundColor Green
 
             $networkDiag.Performance.GatewayLatency = [math]::Round($avgLatency, 2)
-        } else {
+        }
+        else {
             Write-Host "Gateway ($gateway): Unreachable" -ForegroundColor Red
             $networkDiag.Issues += "Cannot reach default gateway: $gateway"
         }
-    } else {
+    }
+    else {
         Write-Host "No default gateway configured" -ForegroundColor Yellow
         $networkDiag.Warnings += "No default gateway found"
     }
-} catch {
+}
+catch {
     $networkDiag.Warnings += "Could not test gateway connectivity"
 }
 #endregion
@@ -158,7 +163,7 @@ try {
 Write-Host "`nTesting DNS resolution..." -ForegroundColor Yellow
 try {
     # Get system DNS servers
-    $systemDNS = (Get-DnsClientServerAddress -AddressFamily IPv4 | Where-Object {$_.ServerAddresses.Count -gt 0} | Select-Object -First 1).ServerAddresses
+    $systemDNS = (Get-DnsClientServerAddress -AddressFamily IPv4 | Where-Object { $_.ServerAddresses.Count -gt 0 } | Select-Object -First 1).ServerAddresses
 
     $networkDiag.DNS.SystemDNS = $systemDNS -join ", "
 
@@ -168,7 +173,8 @@ try {
     if ($dnsTest) {
         Write-Host "DNS Resolution: Working" -ForegroundColor Green
         $networkDiag.DNS.Status = "Working"
-    } else {
+    }
+    else {
         Write-Host "DNS Resolution: Failed" -ForegroundColor Red
         $networkDiag.Issues += "DNS resolution is not working"
         $networkDiag.DNS.Status = "Failed"
@@ -181,14 +187,17 @@ try {
 
             if ($dnsServerTest) {
                 Write-Host "  Public DNS ($dnsServer): Working" -ForegroundColor Green
-            } else {
+            }
+            else {
                 Write-Host "  Public DNS ($dnsServer): Failed" -ForegroundColor Yellow
             }
-        } catch {
+        }
+        catch {
             Write-Host "  Public DNS ($dnsServer): Failed" -ForegroundColor Yellow
         }
     }
-} catch {
+}
+catch {
     $networkDiag.Warnings += "Could not fully test DNS"
 }
 #endregion
@@ -208,7 +217,8 @@ foreach ($endpoint in $TestEndpoints) {
             }
 
             Write-Host "  $endpoint : Reachable ($([math]::Round($avgLatency, 2))ms)" -ForegroundColor Green
-        } else {
+        }
+        else {
             # Try HTTP/HTTPS if ping fails (some servers block ICMP)
             try {
                 $httpTest = Invoke-WebRequest -Uri "https://$endpoint" -Method Head -TimeoutSec 5 -ErrorAction SilentlyContinue
@@ -220,7 +230,8 @@ foreach ($endpoint in $TestEndpoints) {
                         AvgLatency = "N/A"
                     }
                     Write-Host "  $endpoint : Reachable (HTTPS)" -ForegroundColor Green
-                } else {
+                }
+                else {
                     $connectivityInfo = @{
                         Endpoint = $endpoint
                         Status = "Unreachable"
@@ -228,7 +239,8 @@ foreach ($endpoint in $TestEndpoints) {
                     }
                     Write-Host "  $endpoint : Unreachable" -ForegroundColor Red
                 }
-            } catch {
+            }
+            catch {
                 $connectivityInfo = @{
                     Endpoint = $endpoint
                     Status = "Unreachable"
@@ -239,7 +251,8 @@ foreach ($endpoint in $TestEndpoints) {
         }
 
         $networkDiag.Connectivity += $connectivityInfo
-    } catch {
+    }
+    catch {
         Write-Host "  $endpoint : Test Failed" -ForegroundColor Yellow
     }
 }
@@ -258,25 +271,29 @@ try {
     if ($networkPerf) {
         Write-Host "Network performance metrics collected" -ForegroundColor Green
     }
-} catch {
+}
+catch {
     Write-Host "Could not collect network performance metrics" -ForegroundColor Yellow
 }
 #endregion
 
 # Determine overall status
-$reachableCount = ($networkDiag.Connectivity | Where-Object {$_.Status -match "Reachable"}).Count
+$reachableCount = ($networkDiag.Connectivity | Where-Object { $_.Status -match "Reachable" }).Count
 $totalTests = $networkDiag.Connectivity.Count
 
 if ($networkDiag.Issues.Count -eq 0 -and $reachableCount -eq $totalTests) {
     $networkDiag.OverallStatus = "Excellent"
     $statusColor = "Green"
-} elseif ($networkDiag.Issues.Count -eq 0 -and $reachableCount -ge ($totalTests * 0.8)) {
+}
+elseif ($networkDiag.Issues.Count -eq 0 -and $reachableCount -ge ($totalTests * 0.8)) {
     $networkDiag.OverallStatus = "Good"
     $statusColor = "Green"
-} elseif ($networkDiag.Issues.Count -le 2) {
+}
+elseif ($networkDiag.Issues.Count -le 2) {
     $networkDiag.OverallStatus = "Degraded"
     $statusColor = "Yellow"
-} else {
+}
+else {
     $networkDiag.OverallStatus = "Poor"
     $statusColor = "Red"
 }
@@ -284,7 +301,7 @@ if ($networkDiag.Issues.Count -eq 0 -and $reachableCount -eq $totalTests) {
 #region Display Summary
 Write-Host "`n=== Network Diagnostic Summary ===" -ForegroundColor Cyan
 Write-Host "Overall Status: $($networkDiag.OverallStatus)" -ForegroundColor $statusColor
-Write-Host "Endpoints Reachable: $reachableCount / $totalTests" -ForegroundColor $(if ($reachableCount -eq $totalTests) {'Green'} elseif ($reachableCount -ge ($totalTests * 0.8)) {'Yellow'} else {'Red'})
+Write-Host "Endpoints Reachable: $reachableCount / $totalTests" -ForegroundColor $(if ($reachableCount -eq $totalTests) { 'Green' } elseif ($reachableCount -ge ($totalTests * 0.8)) { 'Yellow' } else { 'Red' })
 
 if ($networkDiag.Issues.Count -gt 0) {
     Write-Host "`nIssues Found:" -ForegroundColor Red

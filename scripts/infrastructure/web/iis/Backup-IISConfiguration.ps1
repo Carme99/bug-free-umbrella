@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Backup and restore IIS configuration.
 
@@ -107,7 +107,8 @@ if ($Restore) {
     Write-Host "`n[!] IIS needs to be restarted for changes to take effect" -ForegroundColor Yellow
     Write-Host "[*] Run: iisreset /noforce" -ForegroundColor Cyan
 
-} else {
+}
+else {
     # Create backup
     Write-Host "`n[*] Creating IIS configuration backup..." -ForegroundColor Cyan
 

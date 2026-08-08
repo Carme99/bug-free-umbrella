@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Configures Windows Server to use English (UK) regional settings system-wide.
 
@@ -46,16 +46,16 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$TimeZone = "GMT Standard Time",
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ApplyToExistingUsers,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$SkipTimeZone,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$SkipKeyboard
 )
 
@@ -64,7 +64,7 @@ param(
 function Write-Log {
     param([string]$Message, [string]$Type = "INFO")
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $color = switch($Type) {
+    $color = switch ($Type) {
         "ERROR" { "Red" }
         "SUCCESS" { "Green" }
         "WARNING" { "Yellow" }
@@ -101,7 +101,8 @@ function Load-RegistryHive {
         if ($LASTEXITCODE -eq 0) {
             Write-Log "Successfully loaded registry hive: $HiveName" "SUCCESS"
             return $true  # We loaded it
-        } else {
+        }
+        else {
             Write-Log "Failed to load registry hive: $result" "ERROR"
             return $false
         }
@@ -137,7 +138,8 @@ function Unload-RegistryHive {
         $result = & reg unload $HiveName 2>&1
         if ($LASTEXITCODE -eq 0) {
             Write-Log "Successfully unloaded registry hive: $HiveName" "SUCCESS"
-        } else {
+        }
+        else {
             Write-Log "Warning: Could not unload registry hive: $result" "WARNING"
         }
     }
@@ -270,7 +272,8 @@ try {
         $copyResult = & reg copy "HKCU\Control Panel\International" "HKU\DEFAULT_USER\Control Panel\International" /s /f 2>&1
         if ($LASTEXITCODE -eq 0) {
             Write-Log "Settings applied to default user profile" "SUCCESS"
-        } else {
+        }
+        else {
             Write-Log "Warning: Could not copy settings to default user profile: $copyResult" "WARNING"
         }
 
@@ -309,7 +312,8 @@ try {
 
         if ($process.ExitCode -eq 0 -or $null -eq $process.ExitCode) {
             Write-Log "System-wide settings applied via XML" "SUCCESS"
-        } else {
+        }
+        else {
             Write-Log "XML application completed with exit code: $($process.ExitCode)" "WARNING"
         }
 
@@ -351,16 +355,19 @@ if ($ApplyToExistingUsers) {
 
                     if ($LASTEXITCODE -eq 0) {
                         Write-Log "  Profile '$userName' updated" "SUCCESS"
-                    } else {
+                    }
+                    else {
                         Write-Log "  Could not copy settings to '$userName': $copyResult" "WARNING"
                     }
 
                     # Unload hive
                     Unload-RegistryHive -HiveName $userHive -WeLoadedIt $userHiveLoaded
-                } else {
+                }
+                else {
                     Write-Log "  Could not load registry for '$userName' (may be logged in)" "WARNING"
                 }
-            } else {
+            }
+            else {
                 Write-Log "  NTUSER.DAT not found for '$userName'" "WARNING"
             }
         }

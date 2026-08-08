@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Resets Windows Update components to resolve update issues on Windows Server 2016-2022.
 
@@ -42,13 +42,13 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$FullReset,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$RunDismRepair = $true,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$LegacyReset
 )
 
@@ -58,7 +58,7 @@ param(
 function Write-Log {
     param([string]$Message, [string]$Type = "INFO")
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $color = switch($Type) {
+    $color = switch ($Type) {
         "ERROR" { "Red" }
         "SUCCESS" { "Green" }
         "WARNING" { "Yellow" }
@@ -146,48 +146,48 @@ if (-not $LegacyReset -and $RunDismRepair) {
 # Skipped when the DISM repair succeeded, unless -LegacyReset forces them.
 if ($LegacyReset -or -not $dismRepairSucceeded) {
 
-# Re-register Windows Update DLLs
-Write-Log "Re-registering Windows Update DLLs..." "INFO"
-$dlls = @(
-    "atl.dll", "urlmon.dll", "mshtml.dll", "shdocvw.dll", "browseui.dll",
-    "jscript.dll", "vbscript.dll", "scrrun.dll", "msxml.dll", "msxml3.dll",
-    "msxml6.dll", "actxprxy.dll", "softpub.dll", "wintrust.dll", "dssenh.dll",
-    "rsaenh.dll", "gpkcsp.dll", "sccbase.dll", "slbcsp.dll", "cryptdlg.dll",
-    "oleaut32.dll", "ole32.dll", "shell32.dll", "initpki.dll", "wuapi.dll",
-    "wuaueng.dll", "wuaueng1.dll", "wucltui.dll", "wups.dll", "wups2.dll",
-    "wuweb.dll", "qmgr.dll", "qmgrprxy.dll", "wucltux.dll", "muweb.dll", "wuwebv.dll"
-)
+    # Re-register Windows Update DLLs
+    Write-Log "Re-registering Windows Update DLLs..." "INFO"
+    $dlls = @(
+        "atl.dll", "urlmon.dll", "mshtml.dll", "shdocvw.dll", "browseui.dll",
+        "jscript.dll", "vbscript.dll", "scrrun.dll", "msxml.dll", "msxml3.dll",
+        "msxml6.dll", "actxprxy.dll", "softpub.dll", "wintrust.dll", "dssenh.dll",
+        "rsaenh.dll", "gpkcsp.dll", "sccbase.dll", "slbcsp.dll", "cryptdlg.dll",
+        "oleaut32.dll", "ole32.dll", "shell32.dll", "initpki.dll", "wuapi.dll",
+        "wuaueng.dll", "wuaueng1.dll", "wucltui.dll", "wups.dll", "wups2.dll",
+        "wuweb.dll", "qmgr.dll", "qmgrprxy.dll", "wucltux.dll", "muweb.dll", "wuwebv.dll"
+    )
 
-$registeredCount = 0
-foreach ($dll in $dlls) {
-    try {
-        Start-Process "regsvr32.exe" -ArgumentList "/s $dll" -Wait -WindowStyle Hidden -ErrorAction SilentlyContinue
-        $registeredCount++
-    }
-    catch {
-        Write-Log "Failed to register: $dll" "WARNING"
-    }
-}
-Write-Log "Re-registered $registeredCount DLLs" "SUCCESS"
-
-# Reset Windows Update policies
-Write-Log "Resetting Windows Update policies..." "INFO"
-$regPaths = @(
-    "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate",
-    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate"
-)
-
-foreach ($regPath in $regPaths) {
-    if (Test-Path $regPath) {
+    $registeredCount = 0
+    foreach ($dll in $dlls) {
         try {
-            Remove-Item -Path $regPath -Recurse -Force -ErrorAction SilentlyContinue
-            Write-Log "Removed registry path: $regPath" "SUCCESS"
+            Start-Process "regsvr32.exe" -ArgumentList "/s $dll" -Wait -WindowStyle Hidden -ErrorAction SilentlyContinue
+            $registeredCount++
         }
         catch {
-            Write-Log "Failed to remove registry path: $regPath - $($_.Exception.Message)" "WARNING"
+            Write-Log "Failed to register: $dll" "WARNING"
         }
     }
-}
+    Write-Log "Re-registered $registeredCount DLLs" "SUCCESS"
+
+    # Reset Windows Update policies
+    Write-Log "Resetting Windows Update policies..." "INFO"
+    $regPaths = @(
+        "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate",
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate"
+    )
+
+    foreach ($regPath in $regPaths) {
+        if (Test-Path $regPath) {
+            try {
+                Remove-Item -Path $regPath -Recurse -Force -ErrorAction SilentlyContinue
+                Write-Log "Removed registry path: $regPath" "SUCCESS"
+            }
+            catch {
+                Write-Log "Failed to remove registry path: $regPath - $($_.Exception.Message)" "WARNING"
+            }
+        }
+    }
 
 } # end legacy reset steps (skipped when DISM repair succeeded)
 

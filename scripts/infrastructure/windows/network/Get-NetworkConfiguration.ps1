@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Documents complete network configuration for Windows Server 2016-2022.
 
@@ -45,19 +45,19 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeRouting,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeShares,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeFirewall,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -91,7 +91,7 @@ $script:report = @{
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
 
-    $color = switch($Level) {
+    $color = switch ($Level) {
         'Warning' { 'Yellow' }
         'Error' { 'Red' }
         'Success' { 'Green' }
@@ -106,7 +106,7 @@ function Get-NetworkAdapters {
 
     $adapters = Get-NetAdapter | Sort-Object InterfaceIndex
 
-    foreach($adapter in $adapters) {
+    foreach ($adapter in $adapters) {
         $adapterInfo = [PSCustomObject]@{
             Name = $adapter.Name
             InterfaceDescription = $adapter.InterfaceDescription
@@ -122,7 +122,7 @@ function Get-NetworkAdapters {
 
         $script:report.Adapters += $adapterInfo
 
-        $statusColor = if($adapter.Status -eq 'Up') { 'Success' } else { 'Warning' }
+        $statusColor = if ($adapter.Status -eq 'Up') { 'Success' } else { 'Warning' }
         Write-ColorOutput "  $($adapter.Name): $($adapter.Status) - $($adapter.LinkSpeed)" -Level $statusColor
     }
 
@@ -134,7 +134,7 @@ function Get-IPConfiguration {
 
     $ipConfigs = Get-NetIPConfiguration
 
-    foreach($config in $ipConfigs) {
+    foreach ($config in $ipConfigs) {
         # IPv4 addresses
         $ipv4Addresses = $config.IPv4Address.IPAddress -join ', '
         $ipv4DefaultGateway = $config.IPv4DefaultGateway.NextHop -join ', '
@@ -163,13 +163,13 @@ function Get-IPConfiguration {
         $script:report.IPConfig += $ipInfo
 
         Write-Host "  $($config.InterfaceAlias):"
-        if($ipv4Addresses) {
+        if ($ipv4Addresses) {
             Write-Host "    IPv4: $ipv4Addresses" -ForegroundColor Gray
-            if($ipv4DefaultGateway) {
+            if ($ipv4DefaultGateway) {
                 Write-Host "    Gateway: $ipv4DefaultGateway" -ForegroundColor Gray
             }
         }
-        if($dnsServers) {
+        if ($dnsServers) {
             Write-Host "    DNS: $dnsServers" -ForegroundColor Gray
         }
     }
@@ -180,7 +180,7 @@ function Get-DNSConfiguration {
 
     $dnsClientConfig = Get-DnsClient
 
-    foreach($dns in $dnsClientConfig) {
+    foreach ($dns in $dnsClientConfig) {
         $dnsServers = (Get-DnsClientServerAddress -InterfaceIndex $dns.InterfaceIndex -ErrorAction SilentlyContinue).ServerAddresses -join ', '
 
         $dnsInfo = [PSCustomObject]@{
@@ -201,9 +201,9 @@ function Get-DNSConfiguration {
 function Get-RoutingTable {
     Write-Host "`nGathering routing table..." -ForegroundColor Cyan
 
-    $routes = Get-NetRoute | Where-Object {$_.DestinationPrefix -ne '::/0'} | Sort-Object RouteMetric
+    $routes = Get-NetRoute | Where-Object { $_.DestinationPrefix -ne '::/0' } | Sort-Object RouteMetric
 
-    foreach($route in $routes) {
+    foreach ($route in $routes) {
         $routeInfo = [PSCustomObject]@{
             DestinationPrefix = $route.DestinationPrefix
             NextHop = $route.NextHop
@@ -226,7 +226,7 @@ function Get-NetworkShares {
     try {
         $shares = Get-SmbShare -ErrorAction Stop
 
-        foreach($share in $shares) {
+        foreach ($share in $shares) {
             $shareInfo = [PSCustomObject]@{
                 Name = $share.Name
                 Path = $share.Path
@@ -254,7 +254,7 @@ function Get-FirewallStatus {
 
     $profiles = Get-NetFirewallProfile
 
-    foreach($profile in $profiles) {
+    foreach ($profile in $profiles) {
         $script:report.Firewall[$profile.Name] = @{
             Enabled = $profile.Enabled
             DefaultInboundAction = $profile.DefaultInboundAction
@@ -266,8 +266,8 @@ function Get-FirewallStatus {
             LogMaxSizeKilobytes = $profile.LogMaxSizeKilobytes
         }
 
-        $statusText = if($profile.Enabled) { "Enabled" } else { "Disabled" }
-        $statusColor = if($profile.Enabled) { 'Success' } else { 'Warning' }
+        $statusText = if ($profile.Enabled) { "Enabled" } else { "Disabled" }
+        $statusColor = if ($profile.Enabled) { 'Success' } else { 'Warning' }
         Write-ColorOutput "  $($profile.Name): $statusText" -Level $statusColor
     }
 }
@@ -287,12 +287,12 @@ function Show-Summary {
     Write-Host "`nIP Configuration:" -ForegroundColor Cyan
     $script:report.IPConfig | Format-Table InterfaceAlias, IPv4Address, IPv4Gateway, DNSServers -AutoSize
 
-    if($script:report.Routes.Count -gt 0) {
+    if ($script:report.Routes.Count -gt 0) {
         Write-Host "`nTop 10 Routes:" -ForegroundColor Cyan
         $script:report.Routes | Select-Object -First 10 | Format-Table DestinationPrefix, NextHop, InterfaceAlias, RouteMetric -AutoSize
     }
 
-    if($script:report.Shares.Count -gt 0) {
+    if ($script:report.Shares.Count -gt 0) {
         Write-Host "`nNetwork Shares:" -ForegroundColor Cyan
         $script:report.Shares | Format-Table Name, Path, Description, CurrentUsers -AutoSize
     }
@@ -460,26 +460,26 @@ Get-NetworkAdapters
 Get-IPConfiguration
 Get-DNSConfiguration
 
-if($IncludeRouting) {
+if ($IncludeRouting) {
     Get-RoutingTable
 }
 
-if($IncludeShares) {
+if ($IncludeShares) {
     Get-NetworkShares
 }
 
-if($IncludeFirewall) {
+if ($IncludeFirewall) {
     Get-FirewallStatus
 }
 
 Show-Summary
 
-if($ExportHTML) {
+if ($ExportHTML) {
     Write-Host "Generating HTML report..." -ForegroundColor Cyan
     Export-HTMLReport
 }
 
-if($ExportCSV) {
+if ($ExportCSV) {
     Write-Host "Generating CSV report..." -ForegroundColor Cyan
     Export-CSVReport
 }

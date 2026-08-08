@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Generates comprehensive disk usage report and suggests cleanup targets for Windows Server 2016-2022.
 
@@ -44,17 +44,17 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidatePattern('^[A-Z]$')]
     [string]$DriveLetter,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportReport,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ShowCleanupOnly,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$MinimumFolderSizeMB = 100
 )
 
@@ -83,7 +83,7 @@ $script:reportData = @{
 function Write-Log {
     param([string]$Message, [string]$Type = "INFO")
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $color = switch($Type) {
+    $color = switch ($Type) {
         "ERROR" { "Red" }
         "SUCCESS" { "Green" }
         "WARNING" { "Yellow" }
@@ -108,7 +108,7 @@ function Get-FolderSize {
 
     try {
         $size = (Get-ChildItem -Path $Path -Recurse -File -ErrorAction SilentlyContinue |
-                 Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
+                Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
         return [long]$size
     }
     catch {
@@ -262,7 +262,7 @@ function Get-CleanupSuggestions {
     foreach ($logPath in $logPaths) {
         if (Test-Path $logPath) {
             $oldLogs = Get-ChildItem -Path $logPath -Recurse -File -Filter *.log -ErrorAction SilentlyContinue |
-                       Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-90) }
+                Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-90) }
             $oldLogSize = ($oldLogs | Measure-Object -Property Length -Sum).Sum
 
             if ($oldLogSize -gt 100MB) {

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Manages system restore points on Windows servers and workstations.
 
@@ -118,18 +118,19 @@ switch ($Action) {
                 Write-Host ""
 
                 $restorePoints | Format-Table -AutoSize -Property @(
-                    @{Label="Sequence"; Expression={$_.SequenceNumber}},
-                    @{Label="Created"; Expression={$_.CreationTime.ToString('yyyy-MM-dd HH:mm:ss')}},
-                    @{Label="Description"; Expression={$_.Description}},
-                    @{Label="Type"; Expression={
-                        switch ($_.RestorePointType) {
-                            0 { "Application Install" }
-                            1 { "Application Uninstall" }
-                            12 { "Modify Settings" }
-                            13 { "Cancelled Operation" }
-                            default { "Unknown ($($_.RestorePointType))" }
+                    @{Label = "Sequence"; Expression = { $_.SequenceNumber } },
+                    @{Label = "Created"; Expression = { $_.CreationTime.ToString('yyyy-MM-dd HH:mm:ss') } },
+                    @{Label = "Description"; Expression = { $_.Description } },
+                    @{Label = "Type"; Expression = {
+                            switch ($_.RestorePointType) {
+                                0 { "Application Install" }
+                                1 { "Application Uninstall" }
+                                12 { "Modify Settings" }
+                                13 { "Cancelled Operation" }
+                                default { "Unknown ($($_.RestorePointType))" }
+                            }
                         }
-                    }}
+                    }
                 )
 
                 # Show most recent

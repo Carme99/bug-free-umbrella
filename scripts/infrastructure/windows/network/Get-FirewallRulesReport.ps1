@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Documents and exports Windows Firewall rules for Windows Server 2016-2022.
 
@@ -50,26 +50,26 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
-    [ValidateSet('Inbound','Outbound','All')]
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('Inbound', 'Outbound', 'All')]
     [string]$Direction = 'All',
 
-    [Parameter(Mandatory=$false)]
-    [ValidateSet('Enabled','Disabled','All')]
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('Enabled', 'Disabled', 'All')]
     [string]$Enabled = 'Enabled',
 
-    [Parameter(Mandatory=$false)]
-    [ValidateSet('Allow','Block','All')]
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('Allow', 'Block', 'All')]
     [string]$Action = 'All',
 
-    [Parameter(Mandatory=$false)]
-    [ValidateSet('Domain','Private','Public','Any','All')]
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('Domain', 'Private', 'Public', 'Any', 'All')]
     [string]$Profile = 'All',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -112,7 +112,7 @@ $script:report = @{
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
 
-    $color = switch($Level) {
+    $color = switch ($Level) {
         'Warning' { 'Yellow' }
         'Error' { 'Red' }
         'Success' { 'Green' }
@@ -129,32 +129,32 @@ function Get-FirewallRules {
     $rules = Get-NetFirewallRule
 
     # Apply filters
-    if($Direction -ne 'All') {
-        $rules = $rules | Where-Object {$_.Direction -eq $Direction}
+    if ($Direction -ne 'All') {
+        $rules = $rules | Where-Object { $_.Direction -eq $Direction }
     }
 
-    if($Enabled -eq 'Enabled') {
-        $rules = $rules | Where-Object {$_.Enabled -eq 'True'}
+    if ($Enabled -eq 'Enabled') {
+        $rules = $rules | Where-Object { $_.Enabled -eq 'True' }
     }
-    elseif($Enabled -eq 'Disabled') {
-        $rules = $rules | Where-Object {$_.Enabled -eq 'False'}
-    }
-
-    if($Action -ne 'All') {
-        $rules = $rules | Where-Object {$_.Action -eq $Action}
+    elseif ($Enabled -eq 'Disabled') {
+        $rules = $rules | Where-Object { $_.Enabled -eq 'False' }
     }
 
-    if($Profile -ne 'All') {
-        $rules = $rules | Where-Object {$_.Profile -match $Profile}
+    if ($Action -ne 'All') {
+        $rules = $rules | Where-Object { $_.Action -eq $Action }
+    }
+
+    if ($Profile -ne 'All') {
+        $rules = $rules | Where-Object { $_.Profile -match $Profile }
     }
 
     Write-ColorOutput "  Found $($rules.Count) matching firewall rules" -Level Info
     Write-Host "  Collecting rule details..." -ForegroundColor Gray
 
     $ruleCount = 0
-    foreach($rule in $rules) {
+    foreach ($rule in $rules) {
         $ruleCount++
-        if($ruleCount % 100 -eq 0) {
+        if ($ruleCount % 100 -eq 0) {
             Write-Progress -Activity "Processing firewall rules" -Status "Processed $ruleCount of $($rules.Count)" -PercentComplete (($ruleCount / $rules.Count) * 100)
         }
 
@@ -171,13 +171,13 @@ function Get-FirewallRules {
             Direction = $rule.Direction
             Action = $rule.Action
             Profile = $rule.Profile
-            LocalPort = if($portFilter.LocalPort) { $portFilter.LocalPort -join ',' } else { 'Any' }
-            RemotePort = if($portFilter.RemotePort) { $portFilter.RemotePort -join ',' } else { 'Any' }
-            Protocol = if($portFilter.Protocol) { $portFilter.Protocol } else { 'Any' }
-            Program = if($appFilter.Program) { $appFilter.Program } else { 'Any' }
-            Service = if($serviceFilter.Service) { $serviceFilter.Service } else { 'Any' }
-            LocalAddress = if($addressFilter.LocalAddress) { $addressFilter.LocalAddress -join ',' } else { 'Any' }
-            RemoteAddress = if($addressFilter.RemoteAddress) { $addressFilter.RemoteAddress -join ',' } else { 'Any' }
+            LocalPort = if ($portFilter.LocalPort) { $portFilter.LocalPort -join ',' } else { 'Any' }
+            RemotePort = if ($portFilter.RemotePort) { $portFilter.RemotePort -join ',' } else { 'Any' }
+            Protocol = if ($portFilter.Protocol) { $portFilter.Protocol } else { 'Any' }
+            Program = if ($appFilter.Program) { $appFilter.Program } else { 'Any' }
+            Service = if ($serviceFilter.Service) { $serviceFilter.Service } else { 'Any' }
+            LocalAddress = if ($addressFilter.LocalAddress) { $addressFilter.LocalAddress -join ',' } else { 'Any' }
+            RemoteAddress = if ($addressFilter.RemoteAddress) { $addressFilter.RemoteAddress -join ',' } else { 'Any' }
             Description = $rule.Description
             Group = $rule.Group
             EdgeTraversal = $rule.EdgeTraversalPolicy
@@ -188,21 +188,21 @@ function Get-FirewallRules {
         # Update statistics
         $script:report.Summary.TotalRules++
 
-        if($rule.Direction -eq 'Inbound') {
+        if ($rule.Direction -eq 'Inbound') {
             $script:report.Summary.InboundRules++
         }
         else {
             $script:report.Summary.OutboundRules++
         }
 
-        if($rule.Action -eq 'Allow') {
+        if ($rule.Action -eq 'Allow') {
             $script:report.Summary.AllowRules++
         }
         else {
             $script:report.Summary.BlockRules++
         }
 
-        if($rule.Enabled -eq 'True') {
+        if ($rule.Enabled -eq 'True') {
             $script:report.Summary.EnabledRules++
         }
         else {
@@ -218,7 +218,7 @@ function Get-FirewallProfiles {
 
     $profiles = Get-NetFirewallProfile
 
-    foreach($profile in $profiles) {
+    foreach ($profile in $profiles) {
         $script:report.Profiles[$profile.Name] = @{
             Enabled = $profile.Enabled
             DefaultInboundAction = $profile.DefaultInboundAction
@@ -235,8 +235,8 @@ function Get-FirewallProfiles {
             LogIgnored = $profile.LogIgnored
         }
 
-        $statusText = if($profile.Enabled) { "Enabled" } else { "Disabled" }
-        $statusColor = if($profile.Enabled) { 'Success' } else { 'Warning' }
+        $statusText = if ($profile.Enabled) { "Enabled" } else { "Disabled" }
+        $statusColor = if ($profile.Enabled) { 'Success' } else { 'Warning' }
         Write-ColorOutput "  $($profile.Name): $statusText (In: $($profile.DefaultInboundAction), Out: $($profile.DefaultOutboundAction))" -Level $statusColor
     }
 }
@@ -261,8 +261,8 @@ function Show-Summary {
     Write-Host "  Enabled: $($script:report.Summary.EnabledRules) | Disabled: $($script:report.Summary.DisabledRules)"
 
     Write-Host "`nFirewall Profiles:" -ForegroundColor Cyan
-    foreach($profile in $script:report.Profiles.GetEnumerator()) {
-        $statusText = if($profile.Value.Enabled) { "Enabled" } else { "Disabled" }
+    foreach ($profile in $script:report.Profiles.GetEnumerator()) {
+        $statusText = if ($profile.Value.Enabled) { "Enabled" } else { "Disabled" }
         Write-Host "  $($profile.Key): $statusText"
         Write-Host "    Default Inbound: $($profile.Value.DefaultInboundAction)"
         Write-Host "    Default Outbound: $($profile.Value.DefaultOutboundAction)"
@@ -430,12 +430,12 @@ Get-FirewallProfiles
 Get-FirewallRules
 Show-Summary
 
-if($ExportHTML) {
+if ($ExportHTML) {
     Write-Host "Generating HTML report..." -ForegroundColor Cyan
     Export-HTMLReport
 }
 
-if($ExportCSV) {
+if ($ExportCSV) {
     Write-Host "Generating CSV report..." -ForegroundColor Cyan
     Export-CSVReport
 }

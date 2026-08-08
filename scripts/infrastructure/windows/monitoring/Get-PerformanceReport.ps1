@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Generates comprehensive performance metrics and bottleneck analysis for Windows Server.
 
@@ -51,22 +51,22 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$DurationMinutes = 5,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$SampleInterval = 5,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeDiskIO,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeNetworkStats,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -119,7 +119,7 @@ $script:report = @{
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
 
-    $color = switch($Level) {
+    $color = switch ($Level) {
         'Warning' { 'Yellow' }
         'Error' { 'Red' }
         'Success' { 'Green' }
@@ -146,7 +146,7 @@ function Collect-PerformanceData {
         '\Memory\% Committed Bytes In Use'
     )
 
-    if($IncludeDiskIO) {
+    if ($IncludeDiskIO) {
         $counters += '\PhysicalDisk(_Total)\Disk Reads/sec'
         $counters += '\PhysicalDisk(_Total)\Disk Writes/sec'
         $counters += '\PhysicalDisk(_Total)\Avg. Disk sec/Read'
@@ -154,7 +154,7 @@ function Collect-PerformanceData {
         $counters += '\PhysicalDisk(_Total)\Current Disk Queue Length'
     }
 
-    if($IncludeNetworkStats) {
+    if ($IncludeNetworkStats) {
         $counters += '\Network Interface(*)\Bytes Total/sec'
     }
 
@@ -164,7 +164,7 @@ function Collect-PerformanceData {
     $script:report.Memory.TotalGB = [math]::Round($totalMemoryMB / 1024, 2)
 
     # Collect samples
-    for($i = 1; $i -le $sampleCount; $i++) {
+    for ($i = 1; $i -le $sampleCount; $i++) {
         $percentComplete = [math]::Round(($i / $sampleCount) * 100, 0)
         Write-Progress -Activity "Collecting Performance Data" -Status "$percentComplete% Complete" -PercentComplete $percentComplete
 
@@ -172,12 +172,12 @@ function Collect-PerformanceData {
             $sample = Get-Counter -Counter $counters -ErrorAction Stop
 
             # CPU
-            $cpuSample = $sample.CounterSamples | Where-Object {$_.Path -like '*Processor(_Total)*'}
+            $cpuSample = $sample.CounterSamples | Where-Object { $_.Path -like '*Processor(_Total)*' }
             $cpuValue = [math]::Round($cpuSample.CookedValue, 2)
             $script:report.CPU.Samples += $cpuValue
 
             # Memory
-            $availableMemMB = ($sample.CounterSamples | Where-Object {$_.Path -like '*Available MBytes*'}).CookedValue
+            $availableMemMB = ($sample.CounterSamples | Where-Object { $_.Path -like '*Available MBytes*' }).CookedValue
             $usedMemoryMB = $totalMemoryMB - $availableMemMB
             $usedMemoryGB = [math]::Round($usedMemoryMB / 1024, 2)
             $usedMemoryPercent = [math]::Round(($usedMemoryMB / $totalMemoryMB) * 100, 2)
@@ -189,12 +189,12 @@ function Collect-PerformanceData {
             }
 
             # Disk I/O (if enabled)
-            if($IncludeDiskIO) {
-                $diskReads = ($sample.CounterSamples | Where-Object {$_.Path -like '*Disk Reads/sec*'}).CookedValue
-                $diskWrites = ($sample.CounterSamples | Where-Object {$_.Path -like '*Disk Writes/sec*'}).CookedValue
-                $diskReadLatency = ($sample.CounterSamples | Where-Object {$_.Path -like '*Avg. Disk sec/Read*'}).CookedValue
-                $diskWriteLatency = ($sample.CounterSamples | Where-Object {$_.Path -like '*Avg. Disk sec/Write*'}).CookedValue
-                $diskQueue = ($sample.CounterSamples | Where-Object {$_.Path -like '*Current Disk Queue*'}).CookedValue
+            if ($IncludeDiskIO) {
+                $diskReads = ($sample.CounterSamples | Where-Object { $_.Path -like '*Disk Reads/sec*' }).CookedValue
+                $diskWrites = ($sample.CounterSamples | Where-Object { $_.Path -like '*Disk Writes/sec*' }).CookedValue
+                $diskReadLatency = ($sample.CounterSamples | Where-Object { $_.Path -like '*Avg. Disk sec/Read*' }).CookedValue
+                $diskWriteLatency = ($sample.CounterSamples | Where-Object { $_.Path -like '*Avg. Disk sec/Write*' }).CookedValue
+                $diskQueue = ($sample.CounterSamples | Where-Object { $_.Path -like '*Current Disk Queue*' }).CookedValue
 
                 $script:report.DiskIO += @{
                     Timestamp = Get-Date
@@ -207,19 +207,19 @@ function Collect-PerformanceData {
             }
 
             # Network (if enabled)
-            if($IncludeNetworkStats) {
-                $networkSamples = $sample.CounterSamples | Where-Object {$_.Path -like '*Network Interface*Bytes Total*'}
-                foreach($netSample in $networkSamples) {
+            if ($IncludeNetworkStats) {
+                $networkSamples = $sample.CounterSamples | Where-Object { $_.Path -like '*Network Interface*Bytes Total*' }
+                foreach ($netSample in $networkSamples) {
                     $adapterName = $netSample.InstanceName
                     $bytesPerSec = $netSample.CookedValue
 
-                    $existing = $script:report.Network | Where-Object {$_.AdapterName -eq $adapterName}
-                    if(-not $existing) {
+                    $existing = $script:report.Network | Where-Object { $_.AdapterName -eq $adapterName }
+                    if (-not $existing) {
                         $script:report.Network += @{
                             AdapterName = $adapterName
                             Samples = @()
                         }
-                        $existing = $script:report.Network | Where-Object {$_.AdapterName -eq $adapterName}
+                        $existing = $script:report.Network | Where-Object { $_.AdapterName -eq $adapterName }
                     }
 
                     $existing.Samples += @{
@@ -234,7 +234,7 @@ function Collect-PerformanceData {
             Write-Warning "Error collecting sample $i : $($_.Exception.Message)"
         }
 
-        if($i -lt $sampleCount) {
+        if ($i -lt $sampleCount) {
             Start-Sleep -Seconds $SampleInterval
         }
     }
@@ -247,7 +247,7 @@ function Analyze-PerformanceData {
     Write-Host "`nAnalyzing performance data..." -ForegroundColor Cyan
 
     # CPU Analysis
-    if($script:report.CPU.Samples.Count -gt 0) {
+    if ($script:report.CPU.Samples.Count -gt 0) {
         $cpuStats = $script:report.CPU.Samples | Measure-Object -Average -Minimum -Maximum
         $script:report.CPU.Average = [math]::Round($cpuStats.Average, 2)
         $script:report.CPU.Min = [math]::Round($cpuStats.Minimum, 2)
@@ -261,19 +261,19 @@ function Analyze-PerformanceData {
         Write-Host "  CPU: Avg=$($script:report.CPU.Average)%, Min=$($script:report.CPU.Min)%, Max=$($script:report.CPU.Max)%, 95th=%$($script:report.CPU.Peak95Percentile)%"
 
         # CPU Bottleneck detection
-        if($script:report.CPU.Average -gt 80) {
+        if ($script:report.CPU.Average -gt 80) {
             $script:report.Bottlenecks += "High average CPU utilization ($($script:report.CPU.Average)%)"
         }
-        if($script:report.CPU.Peak95Percentile -gt 90) {
+        if ($script:report.CPU.Peak95Percentile -gt 90) {
             $script:report.Bottlenecks += "CPU spikes detected (95th percentile: $($script:report.CPU.Peak95Percentile)%)"
         }
     }
 
     # Memory Analysis
-    if($script:report.Memory.Samples.Count -gt 0) {
-        $avgUsedGB = ($script:report.Memory.Samples | ForEach-Object {$_.UsedGB} | Measure-Object -Average).Average
-        $avgUsedPercent = ($script:report.Memory.Samples | ForEach-Object {$_.UsedPercent} | Measure-Object -Average).Average
-        $peakSample = $script:report.Memory.Samples | Sort-Object {$_.UsedPercent} -Descending | Select-Object -First 1
+    if ($script:report.Memory.Samples.Count -gt 0) {
+        $avgUsedGB = ($script:report.Memory.Samples | ForEach-Object { $_.UsedGB } | Measure-Object -Average).Average
+        $avgUsedPercent = ($script:report.Memory.Samples | ForEach-Object { $_.UsedPercent } | Measure-Object -Average).Average
+        $peakSample = $script:report.Memory.Samples | Sort-Object { $_.UsedPercent } -Descending | Select-Object -First 1
 
         $script:report.Memory.AverageUsedGB = [math]::Round($avgUsedGB, 2)
         $script:report.Memory.AverageUsedPercent = [math]::Round($avgUsedPercent, 2)
@@ -283,39 +283,39 @@ function Analyze-PerformanceData {
         Write-Host "  Memory: Avg=$($script:report.Memory.AverageUsedPercent)%, Peak=$($script:report.Memory.PeakUsedPercent)%"
 
         # Memory bottleneck detection
-        if($script:report.Memory.AverageUsedPercent -gt 85) {
+        if ($script:report.Memory.AverageUsedPercent -gt 85) {
             $script:report.Bottlenecks += "High memory utilization ($($script:report.Memory.AverageUsedPercent)%)"
         }
     }
 
     # Disk I/O Analysis
-    if($script:report.DiskIO.Count -gt 0) {
-        $avgReads = ($script:report.DiskIO | ForEach-Object {$_.ReadsPerSec} | Measure-Object -Average).Average
-        $avgWrites = ($script:report.DiskIO | ForEach-Object {$_.WritesPerSec} | Measure-Object -Average).Average
-        $avgReadLatency = ($script:report.DiskIO | ForEach-Object {$_.ReadLatencyMs} | Measure-Object -Average).Average
-        $avgWriteLatency = ($script:report.DiskIO | ForEach-Object {$_.WriteLatencyMs} | Measure-Object -Average).Average
-        $avgQueue = ($script:report.DiskIO | ForEach-Object {$_.QueueLength} | Measure-Object -Average).Average
+    if ($script:report.DiskIO.Count -gt 0) {
+        $avgReads = ($script:report.DiskIO | ForEach-Object { $_.ReadsPerSec } | Measure-Object -Average).Average
+        $avgWrites = ($script:report.DiskIO | ForEach-Object { $_.WritesPerSec } | Measure-Object -Average).Average
+        $avgReadLatency = ($script:report.DiskIO | ForEach-Object { $_.ReadLatencyMs } | Measure-Object -Average).Average
+        $avgWriteLatency = ($script:report.DiskIO | ForEach-Object { $_.WriteLatencyMs } | Measure-Object -Average).Average
+        $avgQueue = ($script:report.DiskIO | ForEach-Object { $_.QueueLength } | Measure-Object -Average).Average
 
         Write-Host "  Disk I/O: Reads=$([math]::Round($avgReads, 2))/s, Writes=$([math]::Round($avgWrites, 2))/s"
         Write-Host "  Disk Latency: Read=$([math]::Round($avgReadLatency, 2))ms, Write=$([math]::Round($avgWriteLatency, 2))ms"
         Write-Host "  Disk Queue: Avg=$([math]::Round($avgQueue, 2))"
 
         # Disk bottleneck detection
-        if($avgReadLatency -gt 25 -or $avgWriteLatency -gt 25) {
+        if ($avgReadLatency -gt 25 -or $avgWriteLatency -gt 25) {
             $script:report.Bottlenecks += "High disk latency detected (Read: $([math]::Round($avgReadLatency, 2))ms, Write: $([math]::Round($avgWriteLatency, 2))ms)"
         }
-        if($avgQueue -gt 2) {
+        if ($avgQueue -gt 2) {
             $script:report.Bottlenecks += "High disk queue length ($([math]::Round($avgQueue, 2)))"
         }
     }
 
     # Network Analysis
-    if($script:report.Network.Count -gt 0) {
+    if ($script:report.Network.Count -gt 0) {
         Write-Host "  Network Adapters:"
-        foreach($adapter in $script:report.Network) {
-            if($adapter.Samples.Count -gt 0) {
-                $avgMbps = ($adapter.Samples | ForEach-Object {$_.MbitsPerSec} | Measure-Object -Average).Average
-                $peakMbps = ($adapter.Samples | ForEach-Object {$_.MbitsPerSec} | Measure-Object -Maximum).Maximum
+        foreach ($adapter in $script:report.Network) {
+            if ($adapter.Samples.Count -gt 0) {
+                $avgMbps = ($adapter.Samples | ForEach-Object { $_.MbitsPerSec } | Measure-Object -Average).Average
+                $peakMbps = ($adapter.Samples | ForEach-Object { $_.MbitsPerSec } | Measure-Object -Maximum).Maximum
                 Write-Host "    $($adapter.AdapterName): Avg=$([math]::Round($avgMbps, 2)) Mbps, Peak=$([math]::Round($peakMbps, 2)) Mbps"
             }
         }
@@ -329,16 +329,16 @@ function Get-TopProcesses {
     $script:report.TopProcesses.ByCPU = Get-Process |
         Sort-Object CPU -Descending |
         Select-Object -First 10 ProcessName, Id,
-        @{Name='CPU(s)';Expression={[math]::Round($_.CPU, 2)}},
-        @{Name='MemoryMB';Expression={[math]::Round($_.WorkingSet64/1MB, 2)}},
-        @{Name='Threads';Expression={$_.Threads.Count}}
+        @{Name = 'CPU(s)'; Expression = { [math]::Round($_.CPU, 2) } },
+        @{Name = 'MemoryMB'; Expression = { [math]::Round($_.WorkingSet64 / 1MB, 2) } },
+        @{Name = 'Threads'; Expression = { $_.Threads.Count } }
 
     # Top Memory processes
     $script:report.TopProcesses.ByMemory = Get-Process |
         Sort-Object WorkingSet64 -Descending |
         Select-Object -First 10 ProcessName, Id,
-        @{Name='MemoryMB';Expression={[math]::Round($_.WorkingSet64/1MB, 2)}},
-        @{Name='CPU(s)';Expression={[math]::Round($_.CPU, 2)}}
+        @{Name = 'MemoryMB'; Expression = { [math]::Round($_.WorkingSet64 / 1MB, 2) } },
+        @{Name = 'CPU(s)'; Expression = { [math]::Round($_.CPU, 2) } }
 
     Write-Host "  Captured top 10 processes by CPU and Memory"
 }
@@ -362,9 +362,9 @@ function Show-Summary {
     Write-Host "  Average Used: $($script:report.Memory.AverageUsedGB) GB ($($script:report.Memory.AverageUsedPercent)%)"
     Write-Host "  Peak Used: $($script:report.Memory.PeakUsedGB) GB ($($script:report.Memory.PeakUsedPercent)%)"
 
-    if($script:report.Bottlenecks.Count -gt 0) {
+    if ($script:report.Bottlenecks.Count -gt 0) {
         Write-Host "`nPerformance Bottlenecks Detected:" -ForegroundColor Yellow
-        foreach($bottleneck in $script:report.Bottlenecks) {
+        foreach ($bottleneck in $script:report.Bottlenecks) {
             Write-ColorOutput "  ! $bottleneck" -Level Warning
         }
     }
@@ -496,7 +496,7 @@ function Export-CSVReport {
     $reportPath = "$ReportDir\PerformanceData_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 
     $csvData = @()
-    for($i = 0; $i -lt $script:report.CPU.Samples.Count; $i++) {
+    for ($i = 0; $i -lt $script:report.CPU.Samples.Count; $i++) {
         $csvData += [PSCustomObject]@{
             Sample = $i + 1
             CPU = $script:report.CPU.Samples[$i]
@@ -520,12 +520,12 @@ Analyze-PerformanceData
 Get-TopProcesses
 Show-Summary
 
-if($ExportHTML) {
+if ($ExportHTML) {
     Write-Host "Generating HTML report..." -ForegroundColor Cyan
     Export-HTMLReport
 }
 
-if($ExportCSV) {
+if ($ExportCSV) {
     Write-Host "Generating CSV report..." -ForegroundColor Cyan
     Export-CSVReport
 }

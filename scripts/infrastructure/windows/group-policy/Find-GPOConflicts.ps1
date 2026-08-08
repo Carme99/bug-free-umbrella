@@ -108,11 +108,11 @@ try {
 
     foreach ($gpo in $partiallyDisabledGPOs) {
         $issues += [PSCustomObject]@{
-            Type        = "Partially Disabled GPO"
-            Severity    = "Warning"
-            GPOName     = $gpo.DisplayName
+            Type = "Partially Disabled GPO"
+            Severity = "Warning"
+            GPOName = $gpo.DisplayName
             Description = "GPO has $($gpo.GpoStatus)"
-            Impact      = "Some settings may not apply as expected"
+            Impact = "Some settings may not apply as expected"
             Recommendation = "Review if this is intentional, otherwise enable all settings"
         }
     }
@@ -138,11 +138,11 @@ try {
             if ($linkCount -gt 0) {
                 $emptyLinkedCount++
                 $issues += [PSCustomObject]@{
-                    Type        = "Empty Linked GPO"
-                    Severity    = "Warning"
-                    GPOName     = $gpo.DisplayName
+                    Type = "Empty Linked GPO"
+                    Severity = "Warning"
+                    GPOName = $gpo.DisplayName
                     Description = "GPO is empty but linked to $linkCount location(s)"
-                    Impact      = "Unnecessary processing overhead"
+                    Impact = "Unnecessary processing overhead"
                     Recommendation = "Remove links or delete GPO if not needed"
                 }
             }
@@ -158,11 +158,11 @@ try {
 
     foreach ($duplicate in $duplicateNames) {
         $issues += [PSCustomObject]@{
-            Type        = "Duplicate GPO Names"
-            Severity    = "High"
-            GPOName     = $duplicate.Name
+            Type = "Duplicate GPO Names"
+            Severity = "High"
+            GPOName = $duplicate.Name
             Description = "Multiple GPOs ($($duplicate.Count)) with the same name"
-            Impact      = "Confusion in management and troubleshooting"
+            Impact = "Confusion in management and troubleshooting"
             Recommendation = "Rename GPOs to have unique names"
         }
     }
@@ -193,11 +193,11 @@ try {
 
     if ($loopbackGPOs.Count -gt 1) {
         $issues += [PSCustomObject]@{
-            Type        = "Multiple Loopback Policies"
-            Severity    = "High"
-            GPOName     = ($loopbackGPOs.DisplayName -join ", ")
+            Type = "Multiple Loopback Policies"
+            Severity = "High"
+            GPOName = ($loopbackGPOs.DisplayName -join ", ")
             Description = "$($loopbackGPOs.Count) GPOs configure loopback processing"
-            Impact      = "Conflicting loopback modes may cause unexpected behavior"
+            Impact = "Conflicting loopback modes may cause unexpected behavior"
             Recommendation = "Consolidate loopback processing configuration into single GPO"
         }
     }
@@ -221,11 +221,11 @@ try {
                         $similarNames += $similarity
 
                         $warnings += [PSCustomObject]@{
-                            Type        = "Similar GPO Names"
-                            Severity    = "Low"
-                            GPOName     = $similarity
+                            Type = "Similar GPO Names"
+                            Severity = "Low"
+                            GPOName = $similarity
                             Description = "GPOs have similar names"
-                            Impact      = "May indicate duplicate policies or cause confusion"
+                            Impact = "May indicate duplicate policies or cause confusion"
                             Recommendation = "Review if these are duplicate policies"
                         }
                     }
@@ -254,11 +254,11 @@ try {
             if ($authenticatedUsersDenied) {
                 $securityFilterIssues++
                 $issues += [PSCustomObject]@{
-                    Type        = "Security Filtering Issue"
-                    Severity    = "Medium"
-                    GPOName     = $gpo.DisplayName
+                    Type = "Security Filtering Issue"
+                    Severity = "Medium"
+                    GPOName = $gpo.DisplayName
                     Description = "Authenticated Users explicitly denied GpoApply"
-                    Impact      = "GPO may not apply as expected without specific security group filtering"
+                    Impact = "GPO may not apply as expected without specific security group filtering"
                     Recommendation = "Ensure appropriate security groups are added for GPO application"
                 }
             }
@@ -271,11 +271,11 @@ try {
             if (-not $applyPermissions) {
                 $securityFilterIssues++
                 $issues += [PSCustomObject]@{
-                    Type        = "No Apply Permissions"
-                    Severity    = "High"
-                    GPOName     = $gpo.DisplayName
+                    Type = "No Apply Permissions"
+                    Severity = "High"
+                    GPOName = $gpo.DisplayName
                     Description = "No security principals have GpoApply permission"
-                    Impact      = "GPO will not apply to any users or computers"
+                    Impact = "GPO will not apply to any users or computers"
                     Recommendation = "Add appropriate security principals with GpoApply permission"
                 }
             }
@@ -298,11 +298,11 @@ try {
 
         foreach ($ou in $blockedOUs) {
             $warnings += [PSCustomObject]@{
-                Type        = "Inheritance Blocked"
-                Severity    = "Medium"
-                GPOName     = "N/A"
+                Type = "Inheritance Blocked"
+                Severity = "Medium"
+                GPOName = "N/A"
                 Description = "OU '$($ou.Name)' has GPO inheritance blocked"
-                Impact      = "Parent GPOs will not apply to this OU"
+                Impact = "Parent GPOs will not apply to this OU"
                 Recommendation = "Ensure this is intentional and necessary"
             }
         }
@@ -367,10 +367,10 @@ try {
 
     <h2>Summary</h2>
     <table>
-        <tr><td><strong>High Severity Issues</strong></td><td>$(($allFindings | Where-Object Severity -eq 'High').Count)</td></tr>
-        <tr><td><strong>Medium Severity Issues</strong></td><td>$(($allFindings | Where-Object Severity -eq 'Medium').Count)</td></tr>
-        <tr><td><strong>Warnings</strong></td><td>$(($allFindings | Where-Object Severity -eq 'Warning').Count)</td></tr>
-        <tr><td><strong>Low Priority</strong></td><td>$(($allFindings | Where-Object Severity -eq 'Low').Count)</td></tr>
+        <tr><td><strong>High Severity Issues</strong></td><td>$(($allFindings | Where-Object Severity -EQ 'High').Count)</td></tr>
+        <tr><td><strong>Medium Severity Issues</strong></td><td>$(($allFindings | Where-Object Severity -EQ 'Medium').Count)</td></tr>
+        <tr><td><strong>Warnings</strong></td><td>$(($allFindings | Where-Object Severity -EQ 'Warning').Count)</td></tr>
+        <tr><td><strong>Low Priority</strong></td><td>$(($allFindings | Where-Object Severity -EQ 'Low').Count)</td></tr>
     </table>
 
     <h2>Issues and Conflicts</h2>
@@ -386,13 +386,14 @@ try {
 "@
 
     foreach ($finding in $allFindings | Sort-Object -Property @{Expression = {
-        switch ($_.Severity) {
-            'High' { 1 }
-            'Medium' { 2 }
-            'Warning' { 3 }
-            'Low' { 4 }
-        }
-    }}, Type) {
+                switch ($_.Severity) {
+                    'High' { 1 }
+                    'Medium' { 2 }
+                    'Warning' { 3 }
+                    'Low' { 4 }
+                }
+            }
+        }, Type) {
         $rowClass = switch ($finding.Severity) {
             'High' { 'high' }
             'Medium' { 'medium' }
@@ -424,10 +425,10 @@ try {
     # Display summary
     Write-Host "`n=== Analysis Complete ===" -ForegroundColor Green
     Write-Host "Total Issues Found: $($allFindings.Count)" -ForegroundColor Cyan
-    Write-Host "  High Severity: $(($allFindings | Where-Object Severity -eq 'High').Count)" -ForegroundColor Red
-    Write-Host "  Medium Severity: $(($allFindings | Where-Object Severity -eq 'Medium').Count)" -ForegroundColor Yellow
-    Write-Host "  Warnings: $(($allFindings | Where-Object Severity -eq 'Warning').Count)" -ForegroundColor Yellow
-    Write-Host "  Low Priority: $(($allFindings | Where-Object Severity -eq 'Low').Count)" -ForegroundColor Cyan
+    Write-Host "  High Severity: $(($allFindings | Where-Object Severity -EQ 'High').Count)" -ForegroundColor Red
+    Write-Host "  Medium Severity: $(($allFindings | Where-Object Severity -EQ 'Medium').Count)" -ForegroundColor Yellow
+    Write-Host "  Warnings: $(($allFindings | Where-Object Severity -EQ 'Warning').Count)" -ForegroundColor Yellow
+    Write-Host "  Low Priority: $(($allFindings | Where-Object Severity -EQ 'Low').Count)" -ForegroundColor Cyan
 
 }
 catch {

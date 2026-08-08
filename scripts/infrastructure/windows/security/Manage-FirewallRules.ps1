@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Audits and manages Windows Firewall rules with security compliance checks.
 
@@ -64,39 +64,39 @@
     Use with caution when disabling or removing rules
 #>
 
-[CmdletBinding(SupportsShouldProcess=$true)]
+[CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [Parameter(Mandatory=$true)]
-    [ValidateSet('Audit','Export','Enable','Disable','Remove','ComplianceCheck')]
+    [Parameter(Mandatory = $true)]
+    [ValidateSet('Audit', 'Export', 'Enable', 'Disable', 'Remove', 'ComplianceCheck')]
     [string]$Action,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$RuleName = '*',
 
-    [Parameter(Mandatory=$false)]
-    [ValidateSet('Domain','Private','Public','Any')]
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('Domain', 'Private', 'Public', 'Any')]
     [string]$Profile = 'Any',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ShowDisabled,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$ExportPath,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IdentifyRisks,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$RemoteAddress,
 
-    [Parameter(Mandatory=$false)]
-    [ValidateSet('TCP','UDP','ICMPv4','ICMPv6','Any')]
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('TCP', 'UDP', 'ICMPv4', 'ICMPv6', 'Any')]
     [string]$Protocol,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -142,8 +142,8 @@ if ($Profile -ne 'Any') {
 
 try {
     $rules = @(Get-NetFirewallRule @filterParams -ErrorAction SilentlyContinue | Where-Object {
-        $ShowDisabled -or $_.Enabled -eq $true
-    })
+            $ShowDisabled -or $_.Enabled -eq $true
+        })
 
     Write-Host "[+] Found $($rules.Count) matching rules" -ForegroundColor Green
 
@@ -450,7 +450,8 @@ try {
         Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
     }
 
-} catch {
+}
+catch {
     Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }

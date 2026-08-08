@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Performs comprehensive network diagnostics and troubleshooting.
 
@@ -367,7 +367,8 @@ try {
             $issuesHtml += "<li>$([System.Net.WebUtility]::HtmlEncode("$issue"))</li>"
         }
         $issuesHtml += "</ul>"
-    } else {
+    }
+    else {
         $issuesHtml = "<p style='color: green;'><strong>No issues detected</strong></p>"
     }
 

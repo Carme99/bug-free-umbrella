@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Analyzes Windows Security Event logs for suspicious activities and security incidents.
 
@@ -62,32 +62,32 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$Hours = 24,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$Days,
 
-    [Parameter(Mandatory=$false)]
-    [ValidateSet('FailedLogins','AccountChanges','PrivilegeUse','PolicyChanges','All')]
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('FailedLogins', 'AccountChanges', 'PrivilegeUse', 'PolicyChanges', 'All')]
     [string]$EventTypes = 'All',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$ComputerName = $env:COMPUTERNAME,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$MaxEvents = 1000,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$Threshold = 10,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ShowSummaryOnly
 )
 
@@ -129,51 +129,51 @@ $summary = @{}
 # Event ID mappings
 $eventMap = @{
     FailedLogins = @(
-        @{ID=4625; Description="Failed Login Attempt"},
-        @{ID=4740; Description="Account Lockout"},
-        @{ID=4767; Description="Account Unlocked"},
-        @{ID=4771; Description="Kerberos Pre-Authentication Failed"}
+        @{ID = 4625; Description = "Failed Login Attempt" },
+        @{ID = 4740; Description = "Account Lockout" },
+        @{ID = 4767; Description = "Account Unlocked" },
+        @{ID = 4771; Description = "Kerberos Pre-Authentication Failed" }
     )
     AccountChanges = @(
-        @{ID=4720; Description="User Account Created"},
-        @{ID=4722; Description="User Account Enabled"},
-        @{ID=4723; Description="Password Change Attempted"},
-        @{ID=4724; Description="Password Reset Attempted"},
-        @{ID=4725; Description="User Account Disabled"},
-        @{ID=4726; Description="User Account Deleted"},
-        @{ID=4738; Description="User Account Changed"},
-        @{ID=4781; Description="Account Name Changed"}
+        @{ID = 4720; Description = "User Account Created" },
+        @{ID = 4722; Description = "User Account Enabled" },
+        @{ID = 4723; Description = "Password Change Attempted" },
+        @{ID = 4724; Description = "Password Reset Attempted" },
+        @{ID = 4725; Description = "User Account Disabled" },
+        @{ID = 4726; Description = "User Account Deleted" },
+        @{ID = 4738; Description = "User Account Changed" },
+        @{ID = 4781; Description = "Account Name Changed" }
     )
     PrivilegeUse = @(
-        @{ID=4672; Description="Special Privileges Assigned to Logon"},
-        @{ID=4673; Description="Privileged Service Called"},
-        @{ID=4674; Description="Operation Attempted on Privileged Object"},
-        @{ID=4985; Description="State of Transaction Changed"}
+        @{ID = 4672; Description = "Special Privileges Assigned to Logon" },
+        @{ID = 4673; Description = "Privileged Service Called" },
+        @{ID = 4674; Description = "Operation Attempted on Privileged Object" },
+        @{ID = 4985; Description = "State of Transaction Changed" }
     )
     PolicyChanges = @(
-        @{ID=4704; Description="User Right Assigned"},
-        @{ID=4705; Description="User Right Removed"},
-        @{ID=4706; Description="Trust to Domain Created"},
-        @{ID=4707; Description="Trust to Domain Removed"},
-        @{ID=4713; Description="Kerberos Policy Changed"},
-        @{ID=4716; Description="Trusted Domain Information Modified"},
-        @{ID=4719; Description="System Audit Policy Changed"},
-        @{ID=4739; Description="Domain Policy Changed"},
-        @{ID=4817; Description="Auditing Settings Changed"}
+        @{ID = 4704; Description = "User Right Assigned" },
+        @{ID = 4705; Description = "User Right Removed" },
+        @{ID = 4706; Description = "Trust to Domain Created" },
+        @{ID = 4707; Description = "Trust to Domain Removed" },
+        @{ID = 4713; Description = "Kerberos Policy Changed" },
+        @{ID = 4716; Description = "Trusted Domain Information Modified" },
+        @{ID = 4719; Description = "System Audit Policy Changed" },
+        @{ID = 4739; Description = "Domain Policy Changed" },
+        @{ID = 4817; Description = "Auditing Settings Changed" }
     )
     GroupChanges = @(
-        @{ID=4727; Description="Security-Enabled Global Group Created"},
-        @{ID=4728; Description="Member Added to Security-Enabled Global Group"},
-        @{ID=4729; Description="Member Removed from Security-Enabled Global Group"},
-        @{ID=4732; Description="Member Added to Security-Enabled Local Group"},
-        @{ID=4733; Description="Member Removed from Security-Enabled Local Group"},
-        @{ID=4756; Description="Member Added to Security-Enabled Universal Group"},
-        @{ID=4757; Description="Member Removed from Security-Enabled Universal Group"}
+        @{ID = 4727; Description = "Security-Enabled Global Group Created" },
+        @{ID = 4728; Description = "Member Added to Security-Enabled Global Group" },
+        @{ID = 4729; Description = "Member Removed from Security-Enabled Global Group" },
+        @{ID = 4732; Description = "Member Added to Security-Enabled Local Group" },
+        @{ID = 4733; Description = "Member Removed from Security-Enabled Local Group" },
+        @{ID = 4756; Description = "Member Added to Security-Enabled Universal Group" },
+        @{ID = 4757; Description = "Member Removed from Security-Enabled Universal Group" }
     )
     ServiceChanges = @(
-        @{ID=4697; Description="Service Installed"},
-        @{ID=7045; Description="Service Installed (System Log)"},
-        @{ID=7040; Description="Service Start Type Changed"}
+        @{ID = 4697; Description = "Service Installed" },
+        @{ID = 7045; Description = "Service Installed (System Log)" },
+        @{ID = 7040; Description = "Service Start Type Changed" }
     )
 }
 

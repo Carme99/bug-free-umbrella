@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Monitors SSL/TLS certificate expiration for local and remote certificates.
 
@@ -56,33 +56,33 @@
     Remote endpoint checks require internet/network connectivity
 #>
 
-[CmdletBinding(DefaultParameterSetName='Local')]
+[CmdletBinding(DefaultParameterSetName = 'Local')]
 param(
-    [Parameter(ParameterSetName='Local')]
+    [Parameter(ParameterSetName = 'Local')]
     [switch]$CheckLocal,
 
-    [Parameter(ParameterSetName='Remote')]
+    [Parameter(ParameterSetName = 'Remote')]
     [switch]$CheckRemote,
 
-    [Parameter(ParameterSetName='Remote', Mandatory=$true)]
+    [Parameter(ParameterSetName = 'Remote', Mandatory = $true)]
     [string[]]$Endpoints,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$WarningDays = 30,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$CriticalDays = 7,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$CertStorePath,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeExpired,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -116,7 +116,7 @@ $script:report = @{
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
 
-    $color = switch($Level) {
+    $color = switch ($Level) {
         'Critical' { 'Red' }
         'Error' { 'Red' }
         'Warning' { 'Yellow' }
@@ -136,21 +136,21 @@ function Get-CertificateStatus {
     $now = Get-Date
     $daysUntilExpiry = ($NotAfter - $now).Days
 
-    if($NotAfter -lt $now) {
+    if ($NotAfter -lt $now) {
         return @{
             Status = 'Expired'
             DaysUntilExpiry = $daysUntilExpiry
             Color = 'Critical'
         }
     }
-    elseif($daysUntilExpiry -le $CriticalDays) {
+    elseif ($daysUntilExpiry -le $CriticalDays) {
         return @{
             Status = 'Critical'
             DaysUntilExpiry = $daysUntilExpiry
             Color = 'Critical'
         }
     }
-    elseif($daysUntilExpiry -le $WarningDays) {
+    elseif ($daysUntilExpiry -le $WarningDays) {
         return @{
             Status = 'Warning'
             DaysUntilExpiry = $daysUntilExpiry
@@ -175,24 +175,24 @@ function Get-LocalCertificates {
         'Cert:\LocalMachine\Remote Desktop'
     )
 
-    if($CertStorePath) {
+    if ($CertStorePath) {
         $storePaths = @($CertStorePath)
     }
 
-    foreach($storePath in $storePaths) {
+    foreach ($storePath in $storePaths) {
         Write-Verbose "Checking store: $storePath"
 
-        if(Test-Path $storePath) {
+        if (Test-Path $storePath) {
             try {
                 $certs = Get-ChildItem -Path $storePath -ErrorAction Stop
 
                 Write-Host "  Found $($certs.Count) certificate(s) in $storePath" -ForegroundColor Gray
 
-                foreach($cert in $certs) {
+                foreach ($cert in $certs) {
                     $status = Get-CertificateStatus -NotAfter $cert.NotAfter -NotBefore $cert.NotBefore
 
                     # Skip expired certs unless IncludeExpired is specified
-                    if($status.Status -eq 'Expired' -and -not $IncludeExpired) {
+                    if ($status.Status -eq 'Expired' -and -not $IncludeExpired) {
                         continue
                     }
 
@@ -215,7 +215,7 @@ function Get-LocalCertificates {
                     $script:report.Certificates += $certInfo
                     $script:report.Summary.TotalCertificates++
 
-                    switch($status.Status) {
+                    switch ($status.Status) {
                         'Expired' { $script:report.Summary.Expired++ }
                         'Critical' { $script:report.Summary.Critical++ }
                         'Warning' { $script:report.Summary.Warning++ }
@@ -223,7 +223,7 @@ function Get-LocalCertificates {
                     }
 
                     # Display cert info
-                    $displayName = if($cert.FriendlyName) { $cert.FriendlyName } else { $cert.Subject }
+                    $displayName = if ($cert.FriendlyName) { $cert.FriendlyName } else { $cert.Subject }
                     $statusText = "[$($status.Status.ToUpper())] $displayName - Expires: $($cert.NotAfter.ToString('yyyy-MM-dd')) ($($status.DaysUntilExpiry) days)"
 
                     Write-ColorOutput "    $statusText" -Level $status.Color
@@ -242,21 +242,21 @@ function Get-LocalCertificates {
 function Get-RemoteCertificates {
     Write-Host "`nChecking remote HTTPS endpoints..." -ForegroundColor Cyan
 
-    foreach($endpoint in $Endpoints) {
+    foreach ($endpoint in $Endpoints) {
         Write-Host "  Testing: $endpoint" -ForegroundColor Gray
 
         try {
             # Parse URL
             $uri = [System.Uri]$endpoint
             $hostname = $uri.Host
-            $port = if($uri.Port -ne -1) { $uri.Port } else { 443 }
+            $port = if ($uri.Port -ne -1) { $uri.Port } else { 443 }
 
             # Create TCP connection
             $tcpClient = New-Object System.Net.Sockets.TcpClient
             $tcpClient.Connect($hostname, $port)
 
             # Create SSL stream
-            $sslStream = New-Object System.Net.Security.SslStream($tcpClient.GetStream(), $false, {$true})
+            $sslStream = New-Object System.Net.Security.SslStream($tcpClient.GetStream(), $false, { $true })
             $sslStream.AuthenticateAsClient($hostname)
 
             # Get certificate
@@ -266,7 +266,7 @@ function Get-RemoteCertificates {
             $status = Get-CertificateStatus -NotAfter $cert2.NotAfter -NotBefore $cert2.NotBefore
 
             # Skip expired certs unless IncludeExpired is specified
-            if($status.Status -eq 'Expired' -and -not $IncludeExpired) {
+            if ($status.Status -eq 'Expired' -and -not $IncludeExpired) {
                 $sslStream.Close()
                 $tcpClient.Close()
                 continue
@@ -291,7 +291,7 @@ function Get-RemoteCertificates {
             $script:report.Certificates += $certInfo
             $script:report.Summary.TotalCertificates++
 
-            switch($status.Status) {
+            switch ($status.Status) {
                 'Expired' { $script:report.Summary.Expired++ }
                 'Critical' { $script:report.Summary.Critical++ }
                 'Warning' { $script:report.Summary.Warning++ }
@@ -318,24 +318,24 @@ function Show-Summary {
     Write-Host "Scan Time: $($script:report.ScanTime)"
     Write-Host "`nTotal Certificates: $($script:report.Summary.TotalCertificates)"
 
-    if($script:report.Summary.Expired -gt 0) {
+    if ($script:report.Summary.Expired -gt 0) {
         Write-ColorOutput "Expired: $($script:report.Summary.Expired)" -Level Critical
     }
-    if($script:report.Summary.Critical -gt 0) {
+    if ($script:report.Summary.Critical -gt 0) {
         Write-ColorOutput "Critical (expires in $CriticalDays days): $($script:report.Summary.Critical)" -Level Critical
     }
-    if($script:report.Summary.Warning -gt 0) {
+    if ($script:report.Summary.Warning -gt 0) {
         Write-ColorOutput "Warning (expires in $WarningDays days): $($script:report.Summary.Warning)" -Level Warning
     }
     Write-ColorOutput "Healthy: $($script:report.Summary.Healthy)" -Level Success
 
     # Show critical certificates
-    $criticalCerts = $script:report.Certificates | Where-Object {$_.Status -in @('Expired', 'Critical')} | Sort-Object DaysUntilExpiry
+    $criticalCerts = $script:report.Certificates | Where-Object { $_.Status -in @('Expired', 'Critical') } | Sort-Object DaysUntilExpiry
 
-    if($criticalCerts) {
+    if ($criticalCerts) {
         Write-Host "`nCertificates Requiring Immediate Attention:" -ForegroundColor Red
-        foreach($cert in $criticalCerts) {
-            $name = if($cert.FriendlyName) { $cert.FriendlyName } else { $cert.Subject }
+        foreach ($cert in $criticalCerts) {
+            $name = if ($cert.FriendlyName) { $cert.FriendlyName } else { $cert.Subject }
             Write-Host "  - $name" -ForegroundColor Red
             Write-Host "    Expires: $($cert.NotAfter.ToString('yyyy-MM-dd')) ($($cert.DaysUntilExpiry) days)" -ForegroundColor Red
             Write-Host "    Location: $($cert.StorePath)" -ForegroundColor Gray
@@ -466,22 +466,22 @@ Write-Host "Server: $($script:report.ServerName)"
 Write-Host "Warning Threshold: $WarningDays days"
 Write-Host "Critical Threshold: $CriticalDays days"
 
-if($CheckLocal -or (-not $CheckRemote -and -not $Endpoints)) {
+if ($CheckLocal -or (-not $CheckRemote -and -not $Endpoints)) {
     Get-LocalCertificates
 }
 
-if($CheckRemote -or $Endpoints) {
+if ($CheckRemote -or $Endpoints) {
     Get-RemoteCertificates
 }
 
 Show-Summary
 
-if($ExportHTML) {
+if ($ExportHTML) {
     Write-Host "Generating HTML report..." -ForegroundColor Cyan
     Export-HTMLReport
 }
 
-if($ExportCSV) {
+if ($ExportCSV) {
     Write-Host "Generating CSV report..." -ForegroundColor Cyan
     Export-CSVReport
 }

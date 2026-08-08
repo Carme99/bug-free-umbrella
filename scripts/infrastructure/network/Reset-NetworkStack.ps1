@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Resets Windows network stack to resolve connectivity issues.
 
@@ -135,77 +135,77 @@ try {
     Write-Host "`nResetting Winsock catalog..." -ForegroundColor Yellow
 
     if ($PSCmdlet.ShouldProcess("Winsock catalog", "Reset")) {
-    try {
-        $winsockReset = netsh winsock reset 2>&1
-        Write-Host "✓ Winsock reset successful" -ForegroundColor Green
-        $operations += [PSCustomObject]@{
-            Operation = "Winsock Reset"
-            Status = "Success"
-            Message = "Winsock catalog reset successfully"
+        try {
+            $winsockReset = netsh winsock reset 2>&1
+            Write-Host "✓ Winsock reset successful" -ForegroundColor Green
+            $operations += [PSCustomObject]@{
+                Operation = "Winsock Reset"
+                Status = "Success"
+                Message = "Winsock catalog reset successfully"
+            }
+            $successCount++
+            $restartRequired = $true
         }
-        $successCount++
-        $restartRequired = $true
-    }
-    catch {
-        Write-Warning "Winsock reset failed: $_"
-        $operations += [PSCustomObject]@{
-            Operation = "Winsock Reset"
-            Status = "Failed"
-            Message = $_.Exception.Message
+        catch {
+            Write-Warning "Winsock reset failed: $_"
+            $operations += [PSCustomObject]@{
+                Operation = "Winsock Reset"
+                Status = "Failed"
+                Message = $_.Exception.Message
+            }
+            $failCount++
         }
-        $failCount++
-    }
     }
 
     # Reset TCP/IP stack
     Write-Host "`nResetting TCP/IP stack..." -ForegroundColor Yellow
 
     if ($PSCmdlet.ShouldProcess("TCP/IP stack", "Reset")) {
-    try {
-        $tcpipReset = netsh int ip reset 2>&1
-        Write-Host "✓ TCP/IP stack reset successful" -ForegroundColor Green
-        $operations += [PSCustomObject]@{
-            Operation = "TCP/IP Reset"
-            Status = "Success"
-            Message = "TCP/IP stack reset successfully"
+        try {
+            $tcpipReset = netsh int ip reset 2>&1
+            Write-Host "✓ TCP/IP stack reset successful" -ForegroundColor Green
+            $operations += [PSCustomObject]@{
+                Operation = "TCP/IP Reset"
+                Status = "Success"
+                Message = "TCP/IP stack reset successfully"
+            }
+            $successCount++
+            $restartRequired = $true
         }
-        $successCount++
-        $restartRequired = $true
-    }
-    catch {
-        Write-Warning "TCP/IP reset failed: $_"
-        $operations += [PSCustomObject]@{
-            Operation = "TCP/IP Reset"
-            Status = "Failed"
-            Message = $_.Exception.Message
+        catch {
+            Write-Warning "TCP/IP reset failed: $_"
+            $operations += [PSCustomObject]@{
+                Operation = "TCP/IP Reset"
+                Status = "Failed"
+                Message = $_.Exception.Message
+            }
+            $failCount++
         }
-        $failCount++
-    }
     }
 
     # Reset IPv6
     Write-Host "`nResetting IPv6 configuration..." -ForegroundColor Yellow
 
     if ($PSCmdlet.ShouldProcess("IPv6 configuration", "Reset")) {
-    try {
-        $ipv6Reset = netsh int ipv6 reset 2>&1
-        Write-Host "✓ IPv6 reset successful" -ForegroundColor Green
-        $operations += [PSCustomObject]@{
-            Operation = "IPv6 Reset"
-            Status = "Success"
-            Message = "IPv6 configuration reset successfully"
+        try {
+            $ipv6Reset = netsh int ipv6 reset 2>&1
+            Write-Host "✓ IPv6 reset successful" -ForegroundColor Green
+            $operations += [PSCustomObject]@{
+                Operation = "IPv6 Reset"
+                Status = "Success"
+                Message = "IPv6 configuration reset successfully"
+            }
+            $successCount++
         }
-        $successCount++
-    }
-    catch {
-        Write-Warning "IPv6 reset failed: $_"
-        $operations += [PSCustomObject]@{
-            Operation = "IPv6 Reset"
-            Status = "Failed"
-            Message = $_.Exception.Message
+        catch {
+            Write-Warning "IPv6 reset failed: $_"
+            $operations += [PSCustomObject]@{
+                Operation = "IPv6 Reset"
+                Status = "Failed"
+                Message = $_.Exception.Message
+            }
+            $failCount++
         }
-        $failCount++
-    }
     }
 
     # Flush DNS cache
@@ -349,29 +349,29 @@ try {
 
     # Release and renew DHCP
     if ($PSCmdlet.ShouldProcess("DHCP leases", "Renew")) {
-    Write-Host "`nRenewing DHCP leases..." -ForegroundColor Yellow
+        Write-Host "`nRenewing DHCP leases..." -ForegroundColor Yellow
 
-    try {
-        $releaseResult = ipconfig /release 2>&1
-        Start-Sleep -Seconds 2
-        $renewResult = ipconfig /renew 2>&1
-        Write-Host "✓ DHCP lease renewed" -ForegroundColor Green
-        $operations += [PSCustomObject]@{
-            Operation = "Renew DHCP"
-            Status = "Success"
-            Message = "DHCP lease released and renewed"
+        try {
+            $releaseResult = ipconfig /release 2>&1
+            Start-Sleep -Seconds 2
+            $renewResult = ipconfig /renew 2>&1
+            Write-Host "✓ DHCP lease renewed" -ForegroundColor Green
+            $operations += [PSCustomObject]@{
+                Operation = "Renew DHCP"
+                Status = "Success"
+                Message = "DHCP lease released and renewed"
+            }
+            $successCount++
         }
-        $successCount++
-    }
-    catch {
-        Write-Warning "DHCP renewal failed: $_"
-        $operations += [PSCustomObject]@{
-            Operation = "Renew DHCP"
-            Status = "Failed"
-            Message = $_.Exception.Message
+        catch {
+            Write-Warning "DHCP renewal failed: $_"
+            $operations += [PSCustomObject]@{
+                Operation = "Renew DHCP"
+                Status = "Failed"
+                Message = $_.Exception.Message
+            }
+            $failCount++
         }
-        $failCount++
-    }
     }
 
     # Display summary

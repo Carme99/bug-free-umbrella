@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Identifies and reports on inactive Active Directory user accounts.
 
@@ -55,28 +55,28 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$DaysInactive = 90,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeDisabled,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$SearchBase,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExcludeServiceAccounts,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$HighlightPrivileged,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$WhatIfDisable
 )
 
@@ -301,7 +301,7 @@ try {
         </tr>
 "@
 
-        foreach ($result in ($results | Sort-Object -Property @{Expression={$_.IsPrivileged}; Descending=$true}, LastLogon)) {
+        foreach ($result in ($results | Sort-Object -Property @{Expression = { $_.IsPrivileged }; Descending = $true }, LastLogon)) {
             $rowClass = if ($result.IsPrivileged) { "privileged" } elseif (-not $result.Enabled) { "disabled" } else { "" }
             $html += @"
         <tr class="$rowClass">
@@ -329,7 +329,8 @@ try {
         Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
     }
 
-} catch {
+}
+catch {
     Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }
