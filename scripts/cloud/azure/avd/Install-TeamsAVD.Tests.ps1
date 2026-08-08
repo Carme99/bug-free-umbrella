@@ -1,3 +1,29 @@
+<#
+.SYNOPSIS
+    Pester test suite for the Install-TeamsAVD.ps1 script.
+
+.DESCRIPTION
+    Validates the behavior of Install-TeamsAVD.ps1, which installs Microsoft Teams
+    (classic) on Azure Virtual Desktop session hosts, installs the WebView2 runtime,
+    and applies the AVD-specific registry configuration required for Teams
+    optimization. Tests cover parameter validation, WebView2 runtime installation,
+    Teams installation and user-profile cleanup, registry configuration, and the
+    installation summary output. All external cmdlets are mocked so the suite runs
+    without network access or administrative privileges.
+
+.EXAMPLE
+    PS C:\> Invoke-Pester .\Install-TeamsAVD.Tests.ps1
+
+    Runs the full test suite against the Install-TeamsAVD.ps1 script in the same folder.
+
+.NOTES
+    File Name  : Install-TeamsAVD.Tests.ps1
+    Author     : Microsoft 365 / AVD Scripting Team
+    Prerequisite: PowerShell 7.0, Pester 5
+    Version    : 1.0.0
+    Date       : 2025-01-01
+#>
+
 BeforeAll {
     # Import the script to test
     $scriptPath = "$PSScriptRoot/Install-TeamsAVD.ps1"

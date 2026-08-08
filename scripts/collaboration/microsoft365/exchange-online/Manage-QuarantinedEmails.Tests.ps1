@@ -1,3 +1,29 @@
+<#
+.SYNOPSIS
+    Pester test suite for the Manage-QuarantinedEmails.ps1 script.
+
+.DESCRIPTION
+    Validates the behavior of Manage-QuarantinedEmails.ps1, which connects to
+    Exchange Online, retrieves quarantined messages for review, and performs
+    release/delete actions on selected messages. Tests cover parameter validation,
+    quarantine message retrieval and filtering, bulk action handling, and output
+    formatting. Exchange Online cmdlets (Connect-ExchangeOnline, Get-EXOMailbox,
+    Get-QuarantineMessage, etc.) are mocked so the suite runs without a real
+    tenant connection.
+
+.EXAMPLE
+    PS C:\> Invoke-Pester .\Manage-QuarantinedEmails.Tests.ps1
+
+    Runs the full test suite against the Manage-QuarantinedEmails.ps1 script in the same folder.
+
+.NOTES
+    File Name  : Manage-QuarantinedEmails.Tests.ps1
+    Author     : Microsoft 365 Scripting Team
+    Prerequisite: PowerShell 7.0, Pester 5, ExchangeOnlineManagement module
+    Version    : 1.0.0
+    Date       : 2025-01-01
+#>
+
 BeforeAll {
     # Import the script to test
     $scriptPath = "$PSScriptRoot/Manage-QuarantinedEmails.ps1"
