@@ -364,19 +364,29 @@ function Initialize-NetworkDefaults {
 }
 
 function Start-TypedTranscript {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$Path)
     if ([string]::IsNullOrWhiteSpace($Path)) { return }
     try {
         $dir = Split-Path -Path $Path -Parent
         if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-        Start-Transcript -Path $Path -Append -ErrorAction Stop | Out-Null
+        if ($PSCmdlet.ShouldProcess($Path, 'Start transcript')) {
+            Start-Transcript -Path $Path -Append -ErrorAction Stop | Out-Null
+        }
         Write-Log -Level Debug -Message "Transcript started" -Context @{ Path = $Path }
     }
     catch { Write-Log -Level Warn -Message "Transcript start failed" -Context @{ Path = $Path; Error = $_.Exception.Message } }
 }
 
 function Stop-TypedTranscript {
-    try { Stop-Transcript | Out-Null } catch { Write-Log -Level Debug -Message "Transcript stop failed" -Context @{ Error = $_.Exception.Message } }
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+    try {
+        if ($PSCmdlet.ShouldProcess('Transcript', 'Stop transcript')) {
+            Stop-Transcript | Out-Null
+        }
+    }
+    catch { Write-Log -Level Debug -Message "Transcript stop failed" -Context @{ Error = $_.Exception.Message } }
 }
 
 function Test-Admin {
@@ -691,6 +701,7 @@ function Get-LatestUninstallToolUrl {
 }
 
 function Install-DotnetUninstallTool {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$UrlOverride)
     $existing = Get-DotnetUninstallToolPath
     if ($existing) { Write-Log -Level Ok -Message "Uninstall tool present" -Context @{ Path = $existing }; return $true }
@@ -764,6 +775,7 @@ function Install-DotnetUninstallTool {
 # ========================= REMOVAL ========================= #
 
 function Remove-AspNetCoreChannel {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$MajorMinor, [ValidateSet('x64', 'x86')][string]$ArchLimit)
     $tool = Get-DotnetUninstallToolPath
     if (-not $tool) { Write-Log -Level Warn -Message "Uninstall tool not found"; return $false }
@@ -883,6 +895,7 @@ function Summarize-DiskUsage {
 }
 
 function Invoke-PostPatchCleanup {
+    [CmdletBinding(SupportsShouldProcess)]
     param([ValidateSet('x64', 'x86')][string]$ArchToClean)
     $tool = Get-DotnetUninstallToolPath
     if (-not $tool) { Write-Log -Level Warn -Message "Uninstall tool not found"; return @() }
@@ -1013,7 +1026,8 @@ function Invoke-RuntimeUpdatePlan {
 }
 
 function Invoke-ExecutionPlan {
-    param([Parameter(Mandatory)][object[]]$Plan, [switch]$WhatIf)
+    [CmdletBinding(SupportsShouldProcess)]
+    param([Parameter(Mandatory)][object[]]$Plan)
     $results = @()
 
     foreach ($item in $Plan) {
@@ -1026,7 +1040,7 @@ function Invoke-ExecutionPlan {
 
                     # Download
                     Write-Log -Level Info -Message "Downloading $($item.FileName)..."
-                    if (-not $WhatIf) {
+                    if ($PSCmdlet.ShouldProcess($item.DownloadUrl, "Download $($item.FileName)")) {
                         Save-FileWithRetry -Url $item.DownloadUrl -Destination $tempFile
 
                         # Hash verification (mandatory with fallback)
@@ -1048,14 +1062,11 @@ function Invoke-ExecutionPlan {
 
                     # Install
                     Write-Log -Level Info -Message "Installing $($item.TargetVersion)..."
-                    if (-not $WhatIf) {
+                    if ($PSCmdlet.ShouldProcess($item.TargetVersion, "Install $($item.Product) $($item.Channel)")) {
                         $installResult = Install-Exe -Path $tempFile -Arguments "/quiet /norestart"
                         # FIX: Check if $installResult exists before accessing properties
                         if ($installResult -and $installResult.RebootRequired) { $script:RebootRequired = $true }
                         Remove-Item -Path $tempFile -Force -ErrorAction SilentlyContinue
-                    }
-                    else {
-                        Write-Log -Level Info -Message "[WhatIf] Would install $($item.TargetVersion)"
                     }
 
                     $results += [PSCustomObject]@{
@@ -1073,7 +1084,7 @@ function Invoke-ExecutionPlan {
                 }
 
                 'Remove' {
-                    if (-not $WhatIf) {
+                    if ($PSCmdlet.ShouldProcess($item.Channel, "Remove $($item.Product) channel")) {
                         Remove-AspNetCoreChannel -MajorMinor $item.Channel -ArchLimit $item.Architecture
                     }
                     $results += [PSCustomObject]@{
@@ -1176,6 +1187,7 @@ function Get-SystemStatus {
 # ========================= ROLLBACK SUPPORT ========================= #
 
 function New-SystemSnapshot {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$SnapshotLabel = "DotNetMaintainer")
 
     # Checkpoint-Computer (System Restore) is only available on client operating systems
@@ -1190,9 +1202,11 @@ function New-SystemSnapshot {
     if ($IsWindows -and $isClientOS -and (Get-Command "Checkpoint-Computer" -ErrorAction SilentlyContinue)) {
         try {
             Write-Log -Level Info -Message "Creating system restore point"
-            Checkpoint-Computer -Description $SnapshotLabel -RestorePointType MODIFY_SETTINGS -ErrorAction Stop
-            Write-Log -Level Ok -Message "System restore point created"
-            return $true
+            if ($PSCmdlet.ShouldProcess($SnapshotLabel, 'Create system restore point')) {
+                Checkpoint-Computer -Description $SnapshotLabel -RestorePointType MODIFY_SETTINGS -ErrorAction Stop
+                Write-Log -Level Ok -Message "System restore point created"
+                return $true
+            }
         }
         catch {
             Write-Log -Level Warn -Message "Restore point creation failed" -Context @{ Error = $_.Exception.Message }

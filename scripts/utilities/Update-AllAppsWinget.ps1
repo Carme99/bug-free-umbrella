@@ -329,6 +329,8 @@ function Invoke-WingetWithRetry {
 }
 
 function Update-AllApplications {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
     Write-Log "Starting application update process..." -Level Info
 
     try {
@@ -365,14 +367,16 @@ function Update-AllApplications {
         # Update all applications
         Write-Log "Starting update of all applications..." -Level Info
 
-        $updateOutput = Invoke-WingetWithRetry -Arguments "upgrade --all --silent --accept-package-agreements --accept-source-agreements --source $UpdateSource"
+        if ($PSCmdlet.ShouldProcess("all applications (source: $UpdateSource)", "Run winget upgrade --all")) {
+            $updateOutput = Invoke-WingetWithRetry -Arguments "upgrade --all --silent --accept-package-agreements --accept-source-agreements --source $UpdateSource"
 
-        # Log the output
-        foreach ($line in $updateOutput) {
-            Write-Log $line -Level Info
+            # Log the output
+            foreach ($line in $updateOutput) {
+                Write-Log $line -Level Info
+            }
+
+            Write-Log "Application update process completed" -Level Success
         }
-
-        Write-Log "Application update process completed" -Level Success
 
         # Verify updates
         Write-Log "Verifying updates..." -Level Info
