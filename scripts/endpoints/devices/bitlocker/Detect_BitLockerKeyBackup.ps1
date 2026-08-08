@@ -90,7 +90,11 @@ function Test-AzureADBitLockerBackup {
         $systemDrive = $env:SystemDrive
 
         # Get the BitLocker Management event log events with ID 845 and Level 4 (Information) from the past nDays
-        $events = Get-WinEvent -FilterHashTable @{LogName = "Microsoft-Windows-BitLocker/BitLocker Management"; ID = 845; Level = 4; StartTime = $pastDate } -ErrorAction Stop
+<<<<<<< HEAD
+        $events = Get-WinEvent -FilterHashtable @{LogName = "Microsoft-Windows-BitLocker/BitLocker Management"; ID = 845; Level = 4; StartTime = $pastDate } -ErrorAction Stop
+=======
+        $events = Get-WinEvent -FilterHashtable @{LogName="Microsoft-Windows-BitLocker/BitLocker Management"; ID=845; Level=4; StartTime=$pastDate} -ErrorAction Stop
+>>>>>>> d9c7f54 (fix: correct -FilterHashtable casing in BitLocker detection (PSUseCorrectCasing))
 
         # If events exist, check if any of them are for the system drive
         if ($events) {
