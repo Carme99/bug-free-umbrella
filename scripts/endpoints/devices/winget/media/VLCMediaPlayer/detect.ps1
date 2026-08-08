@@ -50,7 +50,8 @@ function Invoke-WingetWithRetry {
 
             Write-Verbose "Winget exited with code 0x$($process.ExitCode.ToString('X8')) on attempt $attempt" -Verbose:$false
             if ($stderr) { Write-Verbose "Winget stderr: $stderr" -Verbose:$false }
-        } catch { }
+        }
+        catch { }
         Start-Sleep -Seconds 2
         $attempt++
     }
@@ -89,16 +90,18 @@ try {
     $name = if ($nameMatch) { $nameMatch.Matches[0].Groups[2].Value.Trim() } else { $ID }
     if ($packageInfo -match "No installed package found") { Write-Host "$name is not installed."; exit 0 }
     if ($packageInfo -match '\bVersion\s+Available\b') {
-        $verInstalled, $verAvailable = (-split $packageInfo[-1])[-3,-2]
+        $verInstalled, $verAvailable = (-split $packageInfo[-1])[-3, -2]
         Write-Host "Update available for $name. Current: $verInstalled, Available: $verAvailable"
         [pscustomobject] @{ Name = $name; InstalledVersion = $verInstalled; AvailableVersion = $verAvailable }
         exit 1
-    } else {
+    }
+    else {
         if ($packageInfo -match '\d+(\.\d+)+') {
             $versionInstalled = (-split $packageInfo[-1])[-2]
             Write-Host "$name is up to date (version $versionInstalled)"
             exit 0
         }
     }
-} catch { Write-Error "Detection failed: $($_.Exception.Message)"; exit 0 }
+}
+catch { Write-Error "Detection failed: $($_.Exception.Message)"; exit 0 }
 #endregion

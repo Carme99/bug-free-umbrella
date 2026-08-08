@@ -32,7 +32,8 @@ try {
 
     if (-not $storeApp) {
         $issues += "Microsoft Store app is not installed"
-    } elseif ($storeApp.Status -ne "Ok") {
+    }
+    elseif ($storeApp.Status -ne "Ok") {
         $issues += "Microsoft Store app is in error state: $($storeApp.Status)"
     }
 
@@ -61,7 +62,8 @@ try {
     Write-Host "Microsoft Store apps are healthy"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking Store apps health: $_"
     exit 1
 }

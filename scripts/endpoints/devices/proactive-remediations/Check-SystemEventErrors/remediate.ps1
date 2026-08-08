@@ -61,7 +61,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during system event remediation: $_"
     exit 1
 }

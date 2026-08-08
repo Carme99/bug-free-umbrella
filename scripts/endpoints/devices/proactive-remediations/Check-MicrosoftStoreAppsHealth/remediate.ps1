@@ -25,7 +25,8 @@ try {
             # Re-register the package
             Add-AppxPackage -DisableDevelopmentMode -Register "$($package.InstallLocation)\AppXManifest.xml" -ErrorAction SilentlyContinue
             $remediationActions += "Re-registered $($package.Name)"
-        } catch {
+        }
+        catch {
             Write-Host "Warning: Could not re-register $($package.Name): $_"
         }
     }
@@ -46,13 +47,15 @@ try {
         foreach ($action in $remediationActions) {
             Write-Host "  - $action"
         }
-    } else {
+    }
+    else {
         Write-Host "No Store apps required remediation"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during Store apps remediation: $_"
     exit 1
 }

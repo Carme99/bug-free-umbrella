@@ -65,7 +65,8 @@ try {
                         if ($LASTEXITCODE -eq 0) {
                             $remediationActions += "Removed stale credential: $target"
                         }
-                    } catch {
+                    }
+                    catch {
                         Write-Host "Warning: Could not remove credential $target : $_"
                     }
                     break
@@ -79,13 +80,15 @@ try {
         foreach ($action in $remediationActions) {
             Write-Host "  - $action"
         }
-    } else {
+    }
+    else {
         Write-Host "No stale credentials found to remove"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during Credential Manager remediation: $_"
     exit 1
 }

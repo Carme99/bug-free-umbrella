@@ -42,7 +42,8 @@ foreach ($profile in $profiles) {
     try {
         $lastUse = [Management.ManagementDateTimeConverter]::ToDateTime($profile.LastUseTime)
         $age = ((Get-Date) - $lastUse).Days
-    } catch {
+    }
+    catch {
         # Unparseable LastUseTime - skip this profile
         continue
     }
@@ -58,7 +59,8 @@ foreach ($profile in $profiles) {
             # registry entry and can delete loaded profiles).
             Remove-CimInstance -InputObject $profile -ErrorAction Stop
             $removed += "$profileName ($sizeBefore GB)"
-        } catch {
+        }
+        catch {
             Write-Host "Could not remove $profileName : $($_.Exception.Message)"
         }
     }
@@ -66,7 +68,8 @@ foreach ($profile in $profiles) {
 
 if ($removed.Count -gt 0) {
     Write-Host "Removed $($removed.Count) stale profile(s): $($removed -join '; ')"
-} else {
+}
+else {
     Write-Host "No profiles removed"
 }
 exit 0

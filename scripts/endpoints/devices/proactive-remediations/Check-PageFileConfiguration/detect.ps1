@@ -45,7 +45,8 @@ try {
         if ($compSys.AutomaticManagedPagefile -eq $false) {
             $issues += "Page file is disabled (not recommended)"
         }
-    } else {
+    }
+    else {
         # Explicitly configured (custom) page file - report as informational;
         # only flag when the initial size is below the configurable ratio.
         $totalRAM = (Get-WmiObject -Class Win32_ComputerSystem).TotalPhysicalMemory / 1GB
@@ -89,7 +90,8 @@ try {
     Write-Host "Page file is properly configured"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking page file configuration: $_"
     exit 1
 }

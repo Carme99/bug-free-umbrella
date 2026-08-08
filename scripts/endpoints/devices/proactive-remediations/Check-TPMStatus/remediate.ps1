@@ -28,7 +28,8 @@ try {
         try {
             Initialize-Tpm -AllowClear -AllowPhysicalPresence -ErrorAction SilentlyContinue
             $remediationActions += "Attempted TPM initialization"
-        } catch {
+        }
+        catch {
             $remediationActions += "TPM initialization failed - may require BIOS/UEFI intervention"
         }
     }
@@ -45,7 +46,8 @@ try {
                     $remediationActions += "Attempted to take TPM ownership"
                 }
             }
-        } catch {
+        }
+        catch {
             $remediationActions += "Could not take TPM ownership automatically"
         }
     }
@@ -64,13 +66,15 @@ try {
         foreach ($action in $remediationActions) {
             Write-Host "  - $action"
         }
-    } else {
+    }
+    else {
         Write-Host "TPM is already in a healthy state"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during TPM remediation: $_"
     exit 1
 }

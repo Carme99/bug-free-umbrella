@@ -59,7 +59,8 @@ try {
     Write-Host "Windows Defender is healthy and up to date"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking Defender status: $_"
     exit 1
 }

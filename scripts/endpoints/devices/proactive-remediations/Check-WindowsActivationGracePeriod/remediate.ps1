@@ -21,7 +21,8 @@ try {
 
     if ($LASTEXITCODE -eq 0) {
         $remediationActions += "Triggered Windows activation"
-    } else {
+    }
+    else {
         $remediationActions += "Activation initiated (may require additional time)"
     }
 
@@ -41,7 +42,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during grace period remediation: $_"
     exit 1
 }

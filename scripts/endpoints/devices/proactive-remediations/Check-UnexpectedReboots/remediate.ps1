@@ -36,7 +36,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during unexpected reboot remediation: $_"
     exit 1
 }

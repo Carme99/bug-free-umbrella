@@ -41,7 +41,8 @@ try {
         # Run cleanmgr
         Start-Process -FilePath "cleanmgr.exe" -ArgumentList "/sagerun:1" -WindowStyle Hidden -Wait -ErrorAction SilentlyContinue
         $remediationActions += "Executed disk cleanup"
-    } catch {
+    }
+    catch {
         Write-Host "Warning: Could not complete disk cleanup: $_"
     }
 
@@ -51,7 +52,8 @@ try {
         Write-Host "Scheduling disk check for $systemDrive on next reboot..."
         chkdsk $systemDrive /F /R /X 2>&1 | Out-Null
         $remediationActions += "Scheduled disk check for next reboot"
-    } catch {
+    }
+    catch {
         Write-Host "Warning: Could not schedule disk check: $_"
     }
 
@@ -62,7 +64,8 @@ try {
         try {
             Optimize-Volume -DriveLetter $volume.DriveLetter -Verbose -ErrorAction SilentlyContinue
             $remediationActions += "Optimized volume $($volume.DriveLetter):"
-        } catch {
+        }
+        catch {
             Write-Host "Warning: Could not optimize volume $($volume.DriveLetter): $_"
         }
     }
@@ -75,13 +78,15 @@ try {
         Write-Host ""
         Write-Host "Note: Disk errors may require a system restart to fully repair"
         Write-Host "Hardware failures require physical disk replacement"
-    } else {
+    }
+    else {
         Write-Host "No disk maintenance actions were necessary"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during disk health remediation: $_"
     exit 1
 }

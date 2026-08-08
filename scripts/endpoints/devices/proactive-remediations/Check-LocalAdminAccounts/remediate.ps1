@@ -22,7 +22,8 @@ try {
         try {
             Disable-LocalUser -Name "Administrator" -ErrorAction Stop
             $remediationActions += "Disabled built-in Administrator account"
-        } catch {
+        }
+        catch {
             Write-Host "Warning: Could not disable Administrator account: $_"
         }
     }
@@ -36,7 +37,8 @@ try {
         foreach ($action in $remediationActions) {
             Write-Host "  - $action"
         }
-    } else {
+    }
+    else {
         Write-Host "  - No automatic remediation performed"
     }
 
@@ -46,7 +48,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during local administrator remediation: $_"
     exit 1
 }

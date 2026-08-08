@@ -47,19 +47,20 @@ try {
         if ($null -eq $Cert) { return }
         if ($Cert.NotAfter -lt (Get-Date)) {
             [void]$script:expiredCerts.Add([PSCustomObject]@{
-                Subject = $Cert.Subject
-                Thumbprint = $Cert.Thumbprint
-                Expiry = $Cert.NotAfter
-                Store = $StoreLabel
-            })
-        } elseif ($Cert.NotAfter -lt $warningDate) {
+                    Subject = $Cert.Subject
+                    Thumbprint = $Cert.Thumbprint
+                    Expiry = $Cert.NotAfter
+                    Store = $StoreLabel
+                })
+        }
+        elseif ($Cert.NotAfter -lt $warningDate) {
             [void]$script:expiringSoon.Add([PSCustomObject]@{
-                Subject = $Cert.Subject
-                Thumbprint = $Cert.Thumbprint
-                Expiry = $Cert.NotAfter
-                DaysUntilExpiry = ($Cert.NotAfter - (Get-Date)).Days
-                Store = $StoreLabel
-            })
+                    Subject = $Cert.Subject
+                    Thumbprint = $Cert.Thumbprint
+                    Expiry = $Cert.NotAfter
+                    DaysUntilExpiry = ($Cert.NotAfter - (Get-Date)).Days
+                    Store = $StoreLabel
+                })
         }
     }
 
@@ -81,7 +82,8 @@ try {
                 [Array]::Copy($Blob, $dataStart, $certBytes, 0, $length)
                 try {
                     return New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList (, $certBytes)
-                } catch {
+                }
+                catch {
                     return $null
                 }
             }
@@ -104,7 +106,8 @@ try {
                 if ($null -ne $cert) {
                     Add-CertificateResult $cert $StoreLabel
                 }
-            } catch {
+            }
+            catch {
                 # Unparseable certificate entry - skip it
             }
         }
@@ -154,7 +157,8 @@ try {
             $certificatesPath = "Registry::HKEY_USERS\$hiveKey\SOFTWARE\Microsoft\SystemCertificates\My\Certificates"
             $userName = Split-Path $profile.LocalPath -Leaf
             Test-CertStoreRegistry $certificatesPath "User $userName ($sid)\My"
-        } finally {
+        }
+        finally {
             if ($loadedByUs) {
                 & reg.exe unload "HKU\$hiveKey" 2>$null | Out-Null
                 # If the unload fails (hive in use) the hive stays mounted under
@@ -192,7 +196,8 @@ try {
     Write-Host "No expired or expiring certificates found"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking certificate expiry: $_"
     exit 1
 }

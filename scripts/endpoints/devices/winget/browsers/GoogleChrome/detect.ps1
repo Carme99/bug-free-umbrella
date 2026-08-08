@@ -48,7 +48,8 @@ function Invoke-WingetWithRetry {
 
             Write-Verbose "Winget exited with code 0x$($process.ExitCode.ToString('X8')) on attempt $attempt" -Verbose:$false
             if ($stderr) { Write-Verbose "Winget stderr: $stderr" -Verbose:$false }
-        } catch { }
+        }
+        catch { }
         Start-Sleep -Seconds 2
         $attempt++
     }
@@ -84,7 +85,8 @@ try {
     $packageInfo = Invoke-WingetWithRetry -Arguments "list --exact --id $ID --accept-source-agreements"
     $name = if ($packageInfo | Select-String -Pattern "^($ID)\s+(.+?)\s+\d") { $Matches[2].Trim() } else { $ID }
     if ($packageInfo -match "No installed package found") { Write-Host "$name not installed."; exit 0 }
-    if ($packageInfo -match '\bVersion\s+Available\b') { $v = (-split $packageInfo[-1])[-3,-2]; Write-Host "Update available: $($v[0]) -> $($v[1])"; exit 1 }
+    if ($packageInfo -match '\bVersion\s+Available\b') { $v = (-split $packageInfo[-1])[-3, -2]; Write-Host "Update available: $($v[0]) -> $($v[1])"; exit 1 }
     Write-Host "$name is up to date."; exit 0
-} catch { exit 0 }
+}
+catch { exit 0 }
 #endregion

@@ -50,7 +50,8 @@ try {
                     Write-Host "Adding recovery password protector for $($vol.MountPoint)"
                     $newProtector = Add-BitLockerKeyProtector -MountPoint $vol.MountPoint -RecoveryPassword -ErrorAction Stop
                     $recoveryKeys = @($newProtector)
-                } catch {
+                }
+                catch {
                     $errorMsg = "Failed to add recovery key for $($vol.MountPoint): $($_.Exception.Message)"
                     Write-Host $errorMsg
                     $failed += $errorMsg
@@ -64,7 +65,8 @@ try {
                     BackupToAAD-BitLockerKeyProtector -MountPoint $vol.MountPoint -KeyProtectorId $key.KeyProtectorId -ErrorAction Stop
                     $escrowed += "$($vol.MountPoint)"
                     Write-Host "Escrowed recovery key for $($vol.MountPoint)"
-                } catch {
+                }
+                catch {
                     $errorMsg = "Failed to escrow $($vol.MountPoint): $($_.Exception.Message)"
                     Write-Host $errorMsg
                     $failed += $errorMsg
@@ -88,7 +90,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Error "Failed to remediate BitLocker keys: $($_.Exception.Message)"
     Write-Error $_.ScriptStackTrace
     exit 1

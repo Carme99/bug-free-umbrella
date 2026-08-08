@@ -58,13 +58,15 @@ try {
         foreach ($action in $remediationActions) {
             Write-Host "  - $action"
         }
-    } else {
+    }
+    else {
         Write-Host "No remediation actions were necessary"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during Defender remediation: $_"
     exit 1
 }

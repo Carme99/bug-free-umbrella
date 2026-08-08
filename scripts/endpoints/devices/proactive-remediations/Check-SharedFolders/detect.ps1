@@ -64,7 +64,8 @@ try {
     Write-Host "No unauthorized network shares detected"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking network shares: $_"
     exit 1
 }

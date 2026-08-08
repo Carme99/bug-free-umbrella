@@ -50,14 +50,16 @@ try {
         if ($LASTEXITCODE -eq 0) {
             $remediationActions += "Configured NT5DS time sync (domain controller, reliable)"
         }
-    } elseif ($isDomainJoined) {
+    }
+    elseif ($isDomainJoined) {
         # Domain members use NT5DS - do NOT override with manual NTP, which
         # would break the documented domain time topology
         $configResult = w32tm /config /syncfromflags:domhier /update 2>&1
         if ($LASTEXITCODE -eq 0) {
             $remediationActions += "Configured NT5DS time sync from the domain hierarchy"
         }
-    } else {
+    }
+    else {
         # Workgroup device - manual sync from time.windows.com. /reliable is
         # only meaningful on domain controllers, so it is never set here.
         $configResult = w32tm /config /manualpeerlist:"time.windows.com" /syncfromflags:manual /update 2>&1
@@ -75,7 +77,8 @@ try {
     $syncResult = w32tm /resync /force 2>&1
     if ($LASTEXITCODE -eq 0) {
         $remediationActions += "Forced time synchronization"
-    } else {
+    }
+    else {
         $remediationActions += "Attempted time sync (may take a few minutes to complete)"
     }
 
@@ -86,7 +89,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during time sync remediation: $_"
     exit 1
 }

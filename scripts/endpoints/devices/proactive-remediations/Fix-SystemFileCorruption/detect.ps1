@@ -23,7 +23,8 @@ try {
 
     if ($dismResult -match "The component store is repairable") {
         $issues += "Component store corruption detected (repairable)"
-    } elseif ($dismResult -match "The component store corruption was detected") {
+    }
+    elseif ($dismResult -match "The component store corruption was detected") {
         $issues += "Component store corruption detected"
     }
 
@@ -47,7 +48,8 @@ try {
     Write-Host "No system file corruption detected"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking system file integrity: $_"
     exit 1
 }

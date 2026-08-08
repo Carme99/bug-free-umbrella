@@ -96,7 +96,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during health improvement remediation: $_"
     exit 1
 }

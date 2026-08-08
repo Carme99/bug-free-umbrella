@@ -43,7 +43,8 @@ try {
             }
             exit 1
         }
-    } catch {
+    }
+    catch {
         Write-Host "Note: Could not check Windows Update for drivers: $_"
     }
 
@@ -58,7 +59,8 @@ try {
     Write-Host "All drivers appear to be up to date"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking driver status: $_"
     exit 1
 }

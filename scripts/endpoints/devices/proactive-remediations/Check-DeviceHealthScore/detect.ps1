@@ -64,7 +64,8 @@ try {
         if ($uptimeDays -gt 30) {
             $uptimeScore -= 10
             $healthReport.Issues += "Excessive uptime: $uptimeDays days"
-        } elseif ($uptimeDays -gt 14) {
+        }
+        elseif ($uptimeDays -gt 14) {
             $uptimeScore -= 5
             $healthReport.Issues += "High uptime: $uptimeDays days"
         }
@@ -89,7 +90,8 @@ try {
         $crashScore -= [Math]::Min($crashCount * 3, 15)
         $healthReport.Issues += "System crashes: $crashCount events"
         Write-Host "  Crashes: $crashCount | Score: $crashScore/100"
-    } else {
+    }
+    else {
         Write-Host "  Crashes: 0 | Score: $crashScore/100"
     }
     $healthReport.Categories.CrashStability = $crashScore
@@ -110,7 +112,8 @@ try {
         $appScore -= [Math]::Min([Math]::Floor($appCrashCount / 2), 10)
         $healthReport.Issues += "Application crashes: $appCrashCount events"
         Write-Host "  App Crashes: $appCrashCount | Score: $appScore/100"
-    } else {
+    }
+    else {
         Write-Host "  App Crashes: 0 | Score: $appScore/100"
     }
     $healthReport.Categories.ApplicationStability = $appScore
@@ -131,7 +134,8 @@ try {
         $serviceScore -= [Math]::Min([Math]::Floor($serviceFailCount / 3), 10)
         $healthReport.Issues += "Service failures: $serviceFailCount events"
         Write-Host "  Service Failures: $serviceFailCount | Score: $serviceScore/100"
-    } else {
+    }
+    else {
         Write-Host "  Service Failures: 0 | Score: $serviceScore/100"
     }
     $healthReport.Categories.ServiceHealth = $serviceScore
@@ -151,7 +155,8 @@ try {
         $criticalScore -= [Math]::Min($criticalCount * 2, 15)
         $healthReport.Issues += "Critical system errors: $criticalCount events"
         Write-Host "  Critical Errors: $criticalCount | Score: $criticalScore/100"
-    } else {
+    }
+    else {
         Write-Host "  Critical Errors: 0 | Score: $criticalScore/100"
     }
     $healthReport.Categories.SystemErrors = $criticalScore
@@ -204,13 +209,15 @@ try {
         if ($bootTimeSec -gt 180) {
             $bootScore -= 10
             $healthReport.Issues += "Very slow boot: $bootTimeSec seconds"
-        } elseif ($bootTimeSec -gt 120) {
+        }
+        elseif ($bootTimeSec -gt 120) {
             $bootScore -= 5
             $healthReport.Issues += "Slow boot: $bootTimeSec seconds"
         }
 
         Write-Host "  Boot Time: $bootTimeSec sec | Score: $bootScore/100"
-    } else {
+    }
+    else {
         Write-Host "  Boot Time: No data | Score: $bootScore/100"
     }
     $healthReport.Categories.BootPerformance = $bootScore
@@ -235,7 +242,8 @@ try {
                 $healthReport.Issues += "Antivirus signatures outdated: $($defender.AntivirusSignatureAge) days old"
             }
         }
-    } else {
+    }
+    else {
         # Defender module not available (likely server with third-party AV)
         Write-Host "  Defender module not available - skipping AV checks"
         Write-Host "  (Third-party antivirus or server environment detected)"
@@ -246,24 +254,24 @@ try {
 
     # Calculate final health score (weighted average)
     $finalScore = [Math]::Round((
-        ($healthReport.Categories.Uptime * 0.10) +
-        ($healthReport.Categories.CrashStability * 0.20) +
-        ($healthReport.Categories.ApplicationStability * 0.10) +
-        ($healthReport.Categories.ServiceHealth * 0.10) +
-        ($healthReport.Categories.SystemErrors * 0.15) +
-        ($healthReport.Categories.HardwareHealth * 0.20) +
-        ($healthReport.Categories.BootPerformance * 0.05) +
-        ($healthReport.Categories.SecurityPosture * 0.10)
-    ), 0)
+            ($healthReport.Categories.Uptime * 0.10) +
+            ($healthReport.Categories.CrashStability * 0.20) +
+            ($healthReport.Categories.ApplicationStability * 0.10) +
+            ($healthReport.Categories.ServiceHealth * 0.10) +
+            ($healthReport.Categories.SystemErrors * 0.15) +
+            ($healthReport.Categories.HardwareHealth * 0.20) +
+            ($healthReport.Categories.BootPerformance * 0.05) +
+            ($healthReport.Categories.SecurityPosture * 0.10)
+        ), 0)
 
     $healthReport.TotalScore = $finalScore
 
     # Determine health status
     $healthStatus = if ($finalScore -ge 90) { "EXCELLENT" }
-                    elseif ($finalScore -ge 80) { "GOOD" }
-                    elseif ($finalScore -ge 70) { "FAIR" }
-                    elseif ($finalScore -ge 50) { "POOR" }
-                    else { "CRITICAL" }
+    elseif ($finalScore -ge 80) { "GOOD" }
+    elseif ($finalScore -ge 70) { "FAIR" }
+    elseif ($finalScore -ge 50) { "POOR" }
+    else { "CRITICAL" }
 
     Write-Host ""
     Write-Host "==================================="
@@ -327,7 +335,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error calculating device health score: $_"
     exit 1
 }

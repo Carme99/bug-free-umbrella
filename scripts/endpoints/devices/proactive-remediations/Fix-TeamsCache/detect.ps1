@@ -73,7 +73,7 @@ try {
                 if (Test-Path $cachePath) {
                     try {
                         $cacheSize = (Get-ChildItem -Path $cachePath -Recurse -ErrorAction SilentlyContinue |
-                            Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
+                                Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
 
                         if ($null -ne $cacheSize) {
                             $totalCacheSize += $cacheSize
@@ -82,7 +82,8 @@ try {
                                 $cacheIssues += "Large cache in $userName at $(Split-Path $cachePath -Leaf): $cacheSizeMB MB"
                             }
                         }
-                    } catch {
+                    }
+                    catch {
                         Write-Host "Could not calculate size for $cachePath"
                     }
                 }
@@ -99,7 +100,7 @@ try {
             # Check for old log files
             if (Test-Path "$teamsAppData\logs") {
                 $oldLogs = @(Get-ChildItem -Path "$teamsAppData\logs" -Recurse -ErrorAction SilentlyContinue |
-                    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) })
+                        Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) })
 
                 if ($oldLogs.Count -gt 50) {
                     $cacheIssues += "Many old log files in ${userName}: $($oldLogs.Count) files older than 30 days"
@@ -126,12 +127,14 @@ try {
         Write-Host "Teams cache issues detected:"
         $cacheIssues | ForEach-Object { Write-Host "  - $_" }
         exit 1
-    } else {
+    }
+    else {
         Write-Host "Teams cache is healthy (Size: $totalCacheSizeMB MB)"
         exit 0
     }
 
-} catch {
+}
+catch {
     Write-Host "Error checking Teams cache: $($_.Exception.Message)"
     exit 0
 }

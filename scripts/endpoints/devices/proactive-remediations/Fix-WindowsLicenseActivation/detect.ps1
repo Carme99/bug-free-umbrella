@@ -29,15 +29,19 @@ try {
     if ($activationStatus -match "License Status: Licensed") {
         Write-Host "Windows is properly activated and licensed"
         exit 0
-    } else {
+    }
+    else {
         # Check for specific activation states
         if ($activationStatus -match "License Status: Notification") {
             $issues += "Windows is in notification mode (grace period or unlicensed)"
-        } elseif ($activationStatus -match "License Status: Unlicensed") {
+        }
+        elseif ($activationStatus -match "License Status: Unlicensed") {
             $issues += "Windows is unlicensed"
-        } elseif ($activationStatus -match "License Status: Out-of-tolerance") {
+        }
+        elseif ($activationStatus -match "License Status: Out-of-tolerance") {
             $issues += "Windows is out of tolerance (requires reactivation)"
-        } else {
+        }
+        else {
             $issues += "Windows activation status is unknown or problematic"
         }
     }
@@ -64,7 +68,8 @@ try {
     Write-Host "Windows is properly activated"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking Windows activation: $_"
     exit 1
 }

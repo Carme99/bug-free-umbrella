@@ -210,7 +210,8 @@ try {
     Write-Host "`nNo hardware errors detected - hardware health is good"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking hardware errors: $_"
     exit 1
 }

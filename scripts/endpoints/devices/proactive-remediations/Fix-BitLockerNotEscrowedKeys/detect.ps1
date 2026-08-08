@@ -63,7 +63,8 @@ try {
     Write-Host "All BitLocker volumes have a recovery password protector"
     exit 0
 
-} catch {
+}
+catch {
     Write-Error "Failed to check BitLocker status: $($_.Exception.Message)"
     Write-Error $_.ScriptStackTrace
     exit 1

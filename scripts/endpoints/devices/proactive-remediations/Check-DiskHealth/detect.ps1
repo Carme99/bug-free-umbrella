@@ -69,7 +69,8 @@ try {
     Write-Host "All disks are healthy"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking disk health: $_"
     exit 1
 }

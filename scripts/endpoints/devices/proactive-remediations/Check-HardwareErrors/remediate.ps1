@@ -76,7 +76,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during hardware error remediation: $_"
     exit 1
 }

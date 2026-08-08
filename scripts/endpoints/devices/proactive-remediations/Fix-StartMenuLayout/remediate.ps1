@@ -41,7 +41,8 @@ try {
             try {
                 Remove-Item -Path $tileDataPath -Recurse -Force -ErrorAction Stop
                 $remediationActions += "Removed corrupted tile database for user: $($profile.Name)"
-            } catch {
+            }
+            catch {
                 Write-Host "Warning: Could not remove tile database for $($profile.Name): $_"
             }
         }
@@ -53,7 +54,8 @@ try {
             try {
                 Remove-Item -Path "$startMenuCache\*" -Recurse -Force -ErrorAction Stop
                 $remediationActions += "Cleared Start Menu cache for user: $($profile.Name)"
-            } catch {
+            }
+            catch {
                 Write-Host "Warning: Could not clear Start Menu cache for $($profile.Name): $_"
             }
         }
@@ -72,13 +74,15 @@ try {
         }
         Write-Host ""
         Write-Host "Note: Users may need to sign out and sign back in for changes to take full effect"
-    } else {
+    }
+    else {
         Write-Host "No Start Menu remediation was necessary"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during Start Menu remediation: $_"
     exit 1
 }

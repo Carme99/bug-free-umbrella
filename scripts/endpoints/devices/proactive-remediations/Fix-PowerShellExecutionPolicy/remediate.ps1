@@ -34,8 +34,8 @@ try {
 
     # Effective policy (Process scope excluded - see detect.ps1 NOTES)
     $effectivePolicy = (Get-ExecutionPolicy -List |
-        Where-Object { $_.Scope -ne 'Process' -and $_.ExecutionPolicy -ne 'Undefined' } |
-        Select-Object -First 1).ExecutionPolicy
+            Where-Object { $_.Scope -ne 'Process' -and $_.ExecutionPolicy -ne 'Undefined' } |
+            Select-Object -First 1).ExecutionPolicy
 
     if ($effectivePolicy -eq $desiredPolicy) {
         Write-Host "PowerShell execution policy is already correctly configured (effective: $effectivePolicy)"
@@ -57,7 +57,8 @@ try {
                 exit 1
             }
             $remediationActions += "Set LocalMachine execution policy to $desiredPolicy (was: $currentPolicy)"
-        } catch {
+        }
+        catch {
             Write-Host "Error setting execution policy: $_"
             exit 1
         }
@@ -68,8 +69,8 @@ try {
     # CurrentUser scope) still overrides LocalMachine, the device remains
     # non-compliant and LocalMachine changes cannot fix it - report it honestly.
     $effectiveAfter = (Get-ExecutionPolicy -List |
-        Where-Object { $_.Scope -ne 'Process' -and $_.ExecutionPolicy -ne 'Undefined' } |
-        Select-Object -First 1).ExecutionPolicy
+            Where-Object { $_.Scope -ne 'Process' -and $_.ExecutionPolicy -ne 'Undefined' } |
+            Select-Object -First 1).ExecutionPolicy
 
     if ($effectiveAfter -ne $desiredPolicy) {
         Write-Host "Remediation incomplete: effective execution policy is still '$effectiveAfter'. It is controlled by a higher-priority scope (Group Policy MachinePolicy/UserPolicy or the CurrentUser scope) that LocalMachine changes cannot override. Review Group Policy on this device."
@@ -81,13 +82,15 @@ try {
         foreach ($action in $remediationActions) {
             Write-Host "  - $action"
         }
-    } else {
+    }
+    else {
         Write-Host "PowerShell execution policy was already set correctly"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during PowerShell execution policy remediation: $_"
     exit 1
 }

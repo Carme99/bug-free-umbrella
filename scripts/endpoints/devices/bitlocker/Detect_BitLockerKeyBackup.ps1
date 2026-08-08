@@ -27,10 +27,10 @@ function Test-DeviceJoinStatus {
         }
 
         # Check the result for "AzureAdJoined : YES" - if it exists, the device is Azure AD joined
-        $AzureAdJoined = if($result -match "AzureAdJoined : YES"){"Yes"} else {"No"}
+        $AzureAdJoined = if ($result -match "AzureAdJoined : YES") { "Yes" } else { "No" }
 
         # Similarly, check the result for "DomainJoined : YES" - if it exists, the device is Domain joined
-        $DomainJoined = if($result -match "DomainJoined : YES"){"Yes"} else {"No"}
+        $DomainJoined = if ($result -match "DomainJoined : YES") { "Yes" } else { "No" }
 
         # Retrieve the hostname of the device
         $hostname = $env:COMPUTERNAME
@@ -77,7 +77,7 @@ function Test-AzureADBitLockerBackup {
     #>
     [CmdletBinding()]
     param (
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         [int]
         $nDays = 1
     )
@@ -90,13 +90,13 @@ function Test-AzureADBitLockerBackup {
         $systemDrive = $env:SystemDrive
 
         # Get the BitLocker Management event log events with ID 845 and Level 4 (Information) from the past nDays
-        $events = Get-WinEvent -FilterHashTable @{LogName="Microsoft-Windows-BitLocker/BitLocker Management"; ID=845; Level=4; StartTime=$pastDate} -ErrorAction Stop
+        $events = Get-WinEvent -FilterHashTable @{LogName = "Microsoft-Windows-BitLocker/BitLocker Management"; ID = 845; Level = 4; StartTime = $pastDate } -ErrorAction Stop
 
         # If events exist, check if any of them are for the system drive
         if ($events) {
             foreach ($event in $events) {
                 $eventData = [xml]$event.ToXml()
-                $volume = $eventData.Event.EventData.Data | Where-Object {$_.Name -eq 'VolumeMountPoint'} | Select-Object -ExpandProperty '#text'
+                $volume = $eventData.Event.EventData.Data | Where-Object { $_.Name -eq 'VolumeMountPoint' } | Select-Object -ExpandProperty '#text'
                 if ($volume -eq $systemDrive) {
                     Write-Host "BitLocker key backup to Azure AD for the system drive ($systemDrive) was successful in the past $nDays day(s)." -ForegroundColor Green
                     return 0
@@ -105,7 +105,8 @@ function Test-AzureADBitLockerBackup {
 
             Write-Host "No events found in the past $nDays day(s) indicating successful BitLocker key backup to Azure AD for the system drive ($systemDrive)." -ForegroundColor Yellow
             return 1
-        } else {
+        }
+        else {
             Write-Host "No events found in the past $nDays day(s) indicating successful BitLocker key backup to Azure AD." -ForegroundColor Yellow
             return 1
         }
@@ -131,7 +132,7 @@ function Test-OSBitLockerStatus {
     #>
 
     # Identify the system drive
-    $systemDrive = [Environment]::GetFolderPath("System").Substring(0,2)
+    $systemDrive = [Environment]::GetFolderPath("System").Substring(0, 2)
 
     # Get the BitLocker volume status for the system drive
     $BitLockerVolume = Get-BitLockerVolume -MountPoint $systemDrive
@@ -205,11 +206,11 @@ function Get-BitLockerVolumeInfo {
     param (
     )
 
-    Begin {
+    begin {
         Write-Host "Starting BitLocker volume information retrieval process." -ForegroundColor Cyan
     }
 
-    Process {
+    process {
         try {
             # Get BitLocker volumes
             $BitLockerVolumes = Get-BitLockerVolume -ErrorAction Stop
@@ -237,7 +238,7 @@ function Get-BitLockerVolumeInfo {
         }
     }
 
-    End {
+    end {
         Write-Host "BitLocker volume information retrieval process completed." -ForegroundColor Cyan
         return $volumeInfoString
     }
@@ -282,7 +283,7 @@ Write-Host "`n`n"
 # Then it exits the script with a success status code (0).
 if ($bitlockerBackupStatus -eq 0) {
     Write-Host "OK $([datetime]::Now) : $txtStatus"
-    Exit 0
+    exit 0
 }
 
 # If the BitLocker key backup to Azure AD has failed ($bitlockerBackupStatus equals 1),
@@ -290,7 +291,7 @@ if ($bitlockerBackupStatus -eq 0) {
 # Then it exits the script with an error status code (1). This will call the Remediation script.
 elseif ($bitlockerBackupStatus -eq 1) {
     Write-Host "FAIL $([datetime]::Now) : $txtStatus"
-    Exit 1
+    exit 1
 }
 
 # If the value of $bitlockerBackupStatus is anything other than 0 or 1,
@@ -299,7 +300,7 @@ elseif ($bitlockerBackupStatus -eq 1) {
 #   but something is wrong, something that can't be fix with Remediation script.
 else {
     Write-Host "WARNING $([datetime]::Now) : $txtStatus"
-    Exit 0
+    exit 0
 }
 
 #endregion Main

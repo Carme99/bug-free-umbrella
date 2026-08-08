@@ -27,7 +27,8 @@ try {
         try {
             Stop-Service -Name "ClipSVC" -Force -ErrorAction Stop
             $remediationActions += "Stopped Client License Service (ClipSVC)"
-        } catch {
+        }
+        catch {
             Write-Host "Warning: Could not stop ClipSVC: $_"
         }
     }
@@ -38,7 +39,8 @@ try {
         try {
             Remove-Item -Path $tokensPath -Force -ErrorAction Stop
             $remediationActions += "Removed Store licensing cache: $tokensPath"
-        } catch {
+        }
+        catch {
             Write-Host "Warning: Could not remove licensing cache: $_"
         }
     }
@@ -49,7 +51,8 @@ try {
             Start-Service -Name "ClipSVC" -ErrorAction Stop
             Start-Sleep -Seconds 2
             $remediationActions += "Started Client License Service (ClipSVC)"
-        } catch {
+        }
+        catch {
             Write-Host "Warning: Could not start ClipSVC: $_"
         }
     }
@@ -62,7 +65,8 @@ try {
             Add-AppxPackage -DisableDevelopmentMode -Register "$($storeApp.InstallLocation)\AppXManifest.xml" -ErrorAction SilentlyContinue
             $remediationActions += "Re-registered Microsoft Store app"
         }
-    } catch {
+    }
+    catch {
         Write-Host "Note: Could not re-register Store app: $_"
     }
 
@@ -70,7 +74,8 @@ try {
     try {
         Start-Process "wsreset.exe" -WindowStyle Hidden -ErrorAction SilentlyContinue
         $remediationActions += "Reset Windows Store cache"
-    } catch {
+    }
+    catch {
         Write-Host "Note: Could not run wsreset: $_"
     }
 
@@ -81,13 +86,15 @@ try {
         }
         Write-Host ""
         Write-Host "Note: Users may need to sign out and back in for changes to take effect"
-    } else {
+    }
+    else {
         Write-Host "No Store licensing remediation was necessary"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during Windows Store licensing remediation: $_"
     exit 1
 }

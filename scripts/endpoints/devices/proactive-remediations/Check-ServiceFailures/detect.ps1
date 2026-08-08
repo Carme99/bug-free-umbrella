@@ -144,7 +144,8 @@ try {
     Write-Host "`nNo significant service failures detected"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking service failures: $_"
     exit 1
 }

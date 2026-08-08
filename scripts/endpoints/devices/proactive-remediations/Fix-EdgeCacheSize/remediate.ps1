@@ -42,7 +42,7 @@ try {
             if (Test-Path $cachePath) {
                 try {
                     $cacheSize = (Get-ChildItem -Path $cachePath -Recurse -File -ErrorAction SilentlyContinue |
-                        Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
+                            Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
 
                     # Clear cache
                     Remove-Item -Path "$cachePath\*" -Recurse -Force -ErrorAction SilentlyContinue
@@ -50,7 +50,8 @@ try {
                     if ($cacheSize) {
                         $totalCleared += $cacheSize
                     }
-                } catch {
+                }
+                catch {
                     Write-Host "Warning: Could not clear cache at $cachePath : $_"
                 }
             }
@@ -68,13 +69,15 @@ try {
         foreach ($action in $remediationActions) {
             Write-Host "  - $action"
         }
-    } else {
+    }
+    else {
         Write-Host "No Edge cache to clear"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during Edge cache remediation: $_"
     exit 1
 }

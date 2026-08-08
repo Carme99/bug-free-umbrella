@@ -37,12 +37,13 @@ try {
     # the first scope whose policy is not 'Undefined' wins. Process scope is
     # excluded - see the NOTES section.
     $effectivePolicy = (Get-ExecutionPolicy -List |
-        Where-Object { $_.Scope -ne 'Process' -and $_.ExecutionPolicy -ne 'Undefined' } |
-        Select-Object -First 1).ExecutionPolicy
+            Where-Object { $_.Scope -ne 'Process' -and $_.ExecutionPolicy -ne 'Undefined' } |
+            Select-Object -First 1).ExecutionPolicy
 
     if ([string]::IsNullOrEmpty($effectivePolicy)) {
         $issues += "No effective execution policy could be determined"
-    } else {
+    }
+    else {
         if ($effectivePolicy -ne $desiredPolicy) {
             $issues += "Effective execution policy is '$effectivePolicy' (should be '$desiredPolicy')"
         }
@@ -69,7 +70,8 @@ try {
     Write-Host "PowerShell execution policy is properly configured: $effectivePolicy"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking PowerShell execution policy: $_"
     exit 1
 }

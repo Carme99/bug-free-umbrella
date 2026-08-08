@@ -23,7 +23,8 @@ try {
         try {
             Disable-WindowsOptionalFeature -Online -FeatureName "SMB1Protocol" -NoRestart -ErrorAction Stop | Out-Null
             $remediationActions += "Disabled SMBv1 Windows Optional Feature"
-        } catch {
+        }
+        catch {
             Write-Host "Warning: Could not disable SMBv1 feature: $_"
         }
     }
@@ -34,7 +35,8 @@ try {
         try {
             Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force -ErrorAction Stop
             $remediationActions += "Disabled SMBv1 in SMB server configuration"
-        } catch {
+        }
+        catch {
             Write-Host "Warning: Could not disable SMBv1 in server config: $_"
         }
     }
@@ -53,13 +55,15 @@ try {
         }
         Write-Host ""
         Write-Host "Note: A system restart may be required to fully disable SMBv1"
-    } else {
+    }
+    else {
         Write-Host "SMBv1 was already disabled"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during SMBv1 remediation: $_"
     exit 1
 }

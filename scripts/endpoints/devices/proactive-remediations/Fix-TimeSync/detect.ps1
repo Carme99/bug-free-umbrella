@@ -27,7 +27,8 @@ try {
     $syncStatus = w32tm /query /status 2>&1
     if ($LASTEXITCODE -ne 0) {
         $issues += "Time sync status check failed - service may not be configured"
-    } else {
+    }
+    else {
         # Check if time source is configured
         if ($syncStatus -match "Source: Local CMOS Clock") {
             $issues += "Time source is set to Local CMOS Clock (should sync from network)"
@@ -43,7 +44,8 @@ try {
                     if ($hoursSinceSync -gt 24) {
                         $issues += "Last successful sync was over 24 hours ago"
                     }
-                } catch {
+                }
+                catch {
                     # Unable to parse date, might be an issue
                 }
             }
@@ -66,7 +68,8 @@ try {
     Write-Host "Time synchronization is healthy"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking time sync status: $_"
     exit 1
 }

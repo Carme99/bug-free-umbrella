@@ -32,7 +32,8 @@ try {
         try {
             Disable-NetAdapterPowerManagement -Name $adapter.Name -ErrorAction Stop
             $remediationActions += "Disabled power management on $($adapter.Name)"
-        } catch {
+        }
+        catch {
             Write-Host "Warning: Could not disable power management on $($adapter.Name): $_"
         }
     }
@@ -42,13 +43,15 @@ try {
         foreach ($action in $remediationActions) {
             Write-Host "  - $action"
         }
-    } else {
+    }
+    else {
         Write-Host "No network adapters required power management changes"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during network adapter remediation: $_"
     exit 1
 }

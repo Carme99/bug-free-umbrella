@@ -87,7 +87,8 @@ try {
     Write-Host "Local administrator accounts are properly configured"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking local administrator accounts: $_"
     exit 1
 }

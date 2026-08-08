@@ -66,7 +66,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during OneDrive KFM remediation: $_"
     exit 1
 }

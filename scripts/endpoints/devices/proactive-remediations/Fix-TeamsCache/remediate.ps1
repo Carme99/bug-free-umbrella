@@ -34,10 +34,12 @@ try {
         if ($teamsStillRunning) {
             Write-Host "Warning: Could not stop all Teams processes"
             # Continue anyway as cache might still be clearable
-        } else {
+        }
+        else {
             Write-Host "Teams processes stopped successfully"
         }
-    } else {
+    }
+    else {
         Write-Host "Teams is not running"
     }
 
@@ -83,7 +85,7 @@ try {
                 try {
                     # Calculate size before deletion
                     $sizeBefore = (Get-ChildItem -Path $cachePath -Recurse -ErrorAction SilentlyContinue |
-                        Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
+                            Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
 
                     # Remove cache contents
                     Get-ChildItem -Path $cachePath -Recurse -ErrorAction SilentlyContinue |
@@ -92,7 +94,8 @@ try {
                     $clearedSize += $sizeBefore
 
                     Write-Host "Cleared $(Split-Path $cachePath -Leaf) for $userName successfully"
-                } catch {
+                }
+                catch {
                     Write-Host "Warning: Could not fully clear $cachePath for $userName : $($_.Exception.Message)"
                     $failedPaths += $cachePath
                 }
@@ -110,7 +113,8 @@ try {
                 $oldLogs | Remove-Item -Force -ErrorAction SilentlyContinue
 
                 Write-Host "Removed $logCount old log files for $userName"
-            } catch {
+            }
+            catch {
                 Write-Host "Warning: Could not clear old logs for ${userName}: $($_.Exception.Message)"
             }
         }
@@ -133,7 +137,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during Teams cache remediation: $($_.Exception.Message)"
     exit 1
 }

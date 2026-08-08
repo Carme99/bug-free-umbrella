@@ -17,7 +17,7 @@ try {
     $remediationActions = @()
 
     # Schedule memory diagnostic for next reboot
-    $schedResult = bcdedit /set {default} bootstatuspolicy ignoreallfailures
+    $schedResult = bcdedit /set { default } bootstatuspolicy ignoreallfailures
     $memDiagResult = MdSched.exe /v
 
     if ($LASTEXITCODE -eq 0) {
@@ -42,7 +42,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error scheduling memory diagnostic: $_"
     exit 1
 }

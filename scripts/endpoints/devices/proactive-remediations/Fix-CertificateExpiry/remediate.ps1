@@ -46,7 +46,8 @@ try {
                 [Array]::Copy($Blob, $dataStart, $certBytes, 0, $length)
                 try {
                     return New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 -ArgumentList (, $certBytes)
-                } catch {
+                }
+                catch {
                     return $null
                 }
             }
@@ -57,6 +58,7 @@ try {
     }
 
     function Remove-ExpiredFromCertStoreRegistry {
+        [CmdletBinding(SupportsShouldProcess)]
         # $CertificatesPath points at ...\SystemCertificates\My\Certificates
         param([string]$CertificatesPath, [string]$StoreLabel)
         if (-not (Test-Path $CertificatesPath)) { return }
@@ -68,10 +70,13 @@ try {
                 $cert = Get-CertificateFromBlob $blob
                 if ($null -ne $cert -and $cert.NotAfter -lt (Get-Date)) {
                     # Remove the certificate entry from the store
-                    Remove-Item -Path $certKey.PSPath -Force -ErrorAction Stop
-                    $script:remediationActions += "Removed expired certificate: $($cert.Subject) ($StoreLabel)"
+                    if ($PSCmdlet.ShouldProcess($certKey.PSPath, 'Remove expired certificate')) {
+                        Remove-Item -Path $certKey.PSPath -Force -ErrorAction Stop
+                        $script:remediationActions += "Removed expired certificate: $($cert.Subject) ($StoreLabel)"
+                    }
                 }
-            } catch {
+            }
+            catch {
                 Write-Host "Warning: Could not remove certificate in $StoreLabel : $_"
             }
         }
@@ -90,7 +95,8 @@ try {
                         # Remove expired certificate
                         Remove-Item -Path "$storePath\$($cert.Thumbprint)" -Force -ErrorAction Stop
                         $script:remediationActions += "Removed expired certificate: $($cert.Subject) ($storePath)"
-                    } catch {
+                    }
+                    catch {
                         Write-Host "Warning: Could not remove certificate $($cert.Subject): $_"
                     }
                 }
@@ -124,7 +130,8 @@ try {
             $certificatesPath = "Registry::HKEY_USERS\$hiveKey\SOFTWARE\Microsoft\SystemCertificates\My\Certificates"
             $userName = Split-Path $profile.LocalPath -Leaf
             Remove-ExpiredFromCertStoreRegistry $certificatesPath "User $userName ($sid)\My"
-        } finally {
+        }
+        finally {
             if ($loadedByUs) {
                 & reg.exe unload "HKU\$hiveKey" 2>$null | Out-Null
             }
@@ -140,13 +147,15 @@ try {
         foreach ($action in $script:remediationActions) {
             Write-Host "  - $action"
         }
-    } else {
+    }
+    else {
         Write-Host "No expired certificates found to remove"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during certificate remediation: $_"
     exit 1
 }

@@ -74,7 +74,8 @@ try {
 
     if ($LASTEXITCODE -eq 0) {
         $remediationActions += "DISM RestoreHealth completed successfully"
-    } else {
+    }
+    else {
         $remediationActions += "DISM RestoreHealth completed with warnings (exit code: $LASTEXITCODE)"
     }
 
@@ -84,9 +85,11 @@ try {
 
     if ($sfcResult -match "did not find any integrity violations") {
         $remediationActions += "SFC scan completed - no violations found"
-    } elseif ($sfcResult -match "successfully repaired") {
+    }
+    elseif ($sfcResult -match "successfully repaired") {
         $remediationActions += "SFC successfully repaired corrupted files"
-    } else {
+    }
+    else {
         $remediationActions += "SFC scan completed"
     }
 
@@ -101,7 +104,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during system file remediation: $_"
     exit 1
 }

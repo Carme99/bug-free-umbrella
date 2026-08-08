@@ -40,7 +40,8 @@ $profiles = Get-CimInstance Win32_UserProfile | Where-Object {
 foreach ($profile in $profiles) {
     try {
         $lastUse = [Management.ManagementDateTimeConverter]::ToDateTime($profile.LastUseTime)
-    } catch {
+    }
+    catch {
         # Unparseable LastUseTime - skip this profile
         continue
     }

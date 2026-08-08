@@ -47,7 +47,8 @@ try {
     Write-Host "Event log sizes are within normal limits"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking event log sizes: $_"
     exit 1
 }

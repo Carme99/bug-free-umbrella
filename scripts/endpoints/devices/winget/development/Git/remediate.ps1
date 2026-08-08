@@ -51,7 +51,8 @@ function Invoke-WingetWithRetry {
 
             Write-Verbose "Winget exited with code 0x$($process.ExitCode.ToString('X8')) on attempt $attempt" -Verbose:$false
             if ($stderr) { Write-Verbose "Winget stderr: $stderr" -Verbose:$false }
-        } catch { }
+        }
+        catch { }
         Start-Sleep -Seconds 2
         $attempt++
     }
@@ -112,7 +113,7 @@ try {
     }
 
     if ($packageInfo -match '\bVersion\s+Available\b') {
-        $v = (-split $packageInfo[-1])[-3,-2]
+        $v = (-split $packageInfo[-1])[-3, -2]
         Write-Host "Installing Git update ($($v[0]) -> $($v[1]))..."
 
         Invoke-WingetWithRetry -Arguments "upgrade -e --id $ID --silent --accept-package-agreements --accept-source-agreements" | Out-Null
@@ -127,5 +128,6 @@ try {
         Write-Error "Verification failed"; exit 1
     }
     Write-Host "$name is up to date."; exit 0
-} catch { Write-Error "Failed: $_"; exit 1 }
+}
+catch { Write-Error "Failed: $_"; exit 1 }
 #endregion

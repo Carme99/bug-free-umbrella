@@ -34,7 +34,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error generating battery report: $_"
     exit 1
 }

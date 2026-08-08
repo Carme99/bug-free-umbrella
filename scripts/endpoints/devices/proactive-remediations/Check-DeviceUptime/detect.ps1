@@ -44,7 +44,8 @@ try {
         if ($uptimeDays -gt $maxUptimeDays) {
             $issues += "Device has been running for $uptimeDays days (threshold: $maxUptimeDays days)"
             $issues += "Reboot recommended to maintain system health and install updates"
-        } elseif ($uptimeDays -gt $warningUptimeDays) {
+        }
+        elseif ($uptimeDays -gt $warningUptimeDays) {
             Write-Host "  Warning: Approaching reboot threshold ($uptimeDays / $maxUptimeDays days)"
         }
 
@@ -72,7 +73,8 @@ try {
         $uptimePercent = 100  # Assume 100% uptime
         Write-Host "  Uptime Percentage: $uptimePercent% (since last boot)"
 
-    } else {
+    }
+    else {
         $issues += "Unable to retrieve system boot time"
     }
 
@@ -87,7 +89,8 @@ try {
     Write-Host "`nDevice uptime is within acceptable limits"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking device uptime: $_"
     exit 1
 }
