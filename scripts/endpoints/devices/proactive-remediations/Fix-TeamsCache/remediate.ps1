@@ -5,7 +5,9 @@
 .DESCRIPTION
     This remediation script fixes Microsoft Teams cache problems by:
     - Closing Microsoft Teams if running
-    - Clearing Teams cache directories
+    - Clearing Teams cache directories for EVERY user profile (in SYSTEM context
+      $env:APPDATA points at the SYSTEM profile, so user caches must be
+      enumerated explicitly - the detect script scans per-user profiles)
     - Removing old log files
     - Preserving user settings and credentials
     - Restarting Teams (optional)
@@ -17,17 +19,6 @@
 
 try {
     Write-Host "Starting Microsoft Teams cache remediation..."
-
-    # Define Teams cache paths
-    $teamsAppData = "$env:APPDATA\Microsoft\Teams"
-    $teamsCacheLocations = @(
-        "$teamsAppData\Application Cache",
-        "$teamsAppData\Cache",
-        "$teamsAppData\GPUCache",
-        "$teamsAppData\IndexedDB",
-        "$teamsAppData\Local Storage",
-        "$teamsAppData\tmp"
-    )
 
     # Stop Teams process if running
     Write-Host "Checking for running Teams processes..."
@@ -50,46 +41,78 @@ try {
         Write-Host "Teams is not running"
     }
 
+    # Enumerate user profiles the same way detect.ps1 does. In SYSTEM context
+    # $env:APPDATA is the SYSTEM profile - clearing only that would never
+    # converge with the per-user detection. Every non-special profile is
+    # enumerated so caches of users who are not currently logged on are also
+    # cleared.
+    $userProfiles = Get-CimInstance Win32_UserProfile | Where-Object {
+        $_.Special -eq $false -and $_.LocalPath -notmatch 'systemprofile|defaultuser'
+    }
+
+    if (-not $userProfiles -or $userProfiles.Count -eq 0) {
+        Write-Host "No eligible user profiles found"
+        exit 0
+    }
+
     # Clear cache directories
     $clearedSize = 0
     $failedPaths = @()
 
-    foreach ($cachePath in $teamsCacheLocations) {
-        if (Test-Path $cachePath) {
-            try {
-                Write-Host "Clearing cache: $(Split-Path $cachePath -Leaf)..."
+    foreach ($userProfile in $userProfiles) {
+        $teamsAppData = Join-Path $userProfile.LocalPath "AppData\Roaming\Microsoft\Teams"
 
-                # Calculate size before deletion
-                $sizeBefore = (Get-ChildItem -Path $cachePath -Recurse -ErrorAction SilentlyContinue |
-                    Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
+        if (-not (Test-Path $teamsAppData)) {
+            continue
+        }
 
-                # Remove cache contents
-                Get-ChildItem -Path $cachePath -Recurse -ErrorAction SilentlyContinue |
-                    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+        $userName = Split-Path $userProfile.LocalPath -Leaf
+        Write-Host "Clearing Teams cache for user: $userName"
 
-                $clearedSize += $sizeBefore
+        $teamsCacheLocations = @(
+            "$teamsAppData\Application Cache",
+            "$teamsAppData\Cache",
+            "$teamsAppData\GPUCache",
+            "$teamsAppData\IndexedDB",
+            "$teamsAppData\Local Storage",
+            "$teamsAppData\tmp"
+        )
 
-                Write-Host "Cleared $(Split-Path $cachePath -Leaf) successfully"
-            } catch {
-                Write-Host "Warning: Could not fully clear $cachePath : $($_.Exception.Message)"
-                $failedPaths += $cachePath
+        foreach ($cachePath in $teamsCacheLocations) {
+            if (Test-Path $cachePath) {
+                try {
+                    # Calculate size before deletion
+                    $sizeBefore = (Get-ChildItem -Path $cachePath -Recurse -ErrorAction SilentlyContinue |
+                        Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
+
+                    # Remove cache contents
+                    Get-ChildItem -Path $cachePath -Recurse -ErrorAction SilentlyContinue |
+                        Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+
+                    $clearedSize += $sizeBefore
+
+                    Write-Host "Cleared $(Split-Path $cachePath -Leaf) for $userName successfully"
+                } catch {
+                    Write-Host "Warning: Could not fully clear $cachePath for $userName : $($_.Exception.Message)"
+                    $failedPaths += $cachePath
+                }
             }
         }
-    }
 
-    # Clear old log files (keep last 7 days)
-    if (Test-Path "$teamsAppData\logs") {
-        try {
-            Write-Host "Clearing old log files..."
-            $oldLogs = Get-ChildItem -Path "$teamsAppData\logs" -Recurse -ErrorAction SilentlyContinue |
-                Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) }
+        # Clear old log files (keep last 7 days) for this user
+        if (Test-Path "$teamsAppData\logs") {
+            try {
+                Write-Host "Clearing old log files for $userName..."
+                $oldLogs = Get-ChildItem -Path "$teamsAppData\logs" -Recurse -ErrorAction SilentlyContinue |
+                    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) }
 
-            $logCount = $oldLogs.Count
-            $oldLogs | Remove-Item -Force -ErrorAction SilentlyContinue
+                $logCount = @($oldLogs).Count
+                $oldLogs | Remove-Item -Force -ErrorAction SilentlyContinue
 
-            Write-Host "Removed $logCount old log files"
-        } catch {
-            Write-Host "Warning: Could not clear old logs: $($_.Exception.Message)"
+                Write-Host "Removed $logCount old log files for $userName"
+            } catch {
+                Write-Host "Warning: Could not clear old logs for ${userName}: $($_.Exception.Message)"
+            }
         }
     }
 

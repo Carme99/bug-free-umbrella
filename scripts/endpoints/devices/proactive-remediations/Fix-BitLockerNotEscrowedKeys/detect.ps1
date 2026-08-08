@@ -1,15 +1,22 @@
 <#
 .SYNOPSIS
-    Detect BitLocker keys not escrowed to Azure AD
+    Detect BitLocker volumes missing a recovery password protector
 
 .DESCRIPTION
-    Checks BitLocker volumes for recovery keys and verifies escrow status.
-    Returns exit code 1 if any volumes need key escrow.
+    Checks BitLocker volumes for a RecoveryPassword key protector. Escrow
+    (BackupToAAD-BitLockerKeyProtector) can only back up an existing protector,
+    so the actionable non-compliant state is a volume with NO recovery password
+    protector. Returns exit code 1 if any volumes need a recovery key.
 
 .NOTES
     For Intune Proactive Remediations
-    Exit 0 = Compliant (all keys escrowed)
-    Exit 1 = Non-compliant (keys need escrow)
+    Exit 0 = Compliant (all volumes have a recovery password protector)
+    Exit 1 = Non-compliant (volumes missing a recovery password protector)
+
+    Documented limitation: actual Azure AD escrow status is NOT verified here
+    (that requires Graph API access to informationProtection/bitlocker/recoveryKeys).
+    A volume whose recovery password exists but was never escrowed to Azure AD
+    is not flagged by this script.
 #>
 
 [CmdletBinding()]
@@ -37,26 +44,23 @@ try {
 
     foreach ($vol in $bitlockerVolumes) {
         if ($vol.VolumeStatus -eq 'FullyEncrypted' -or $vol.VolumeStatus -eq 'EncryptionInProgress') {
-            # Check if recovery key exists
-            $recoveryKeys = $vol.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' }
+            # Check if a RecoveryPassword key protector exists
+            $recoveryKeys = @($vol.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' })
 
             if ($recoveryKeys.Count -eq 0) {
-                $notEscrowed += "$($vol.MountPoint) - No recovery key"
-            }
-            else {
-                # In a real implementation, check Azure AD escrow status via Graph API
-                # For now, assume keys need escrow if they exist
-                $notEscrowed += "$($vol.MountPoint) - Recovery key not verified in Azure AD"
+                # No recovery password protector - remediate.ps1 will add one and
+                # escrow it (escrow can only back up an existing protector)
+                $notEscrowed += "$($vol.MountPoint) - No recovery password protector"
             }
         }
     }
 
     if ($notEscrowed.Count -gt 0) {
-        Write-Host "BitLocker keys need escrow: $($notEscrowed -join '; ')"
+        Write-Host "BitLocker volumes missing a recovery key: $($notEscrowed -join '; ')"
         exit 1
     }
 
-    Write-Host "All BitLocker keys properly escrowed"
+    Write-Host "All BitLocker volumes have a recovery password protector"
     exit 0
 
 } catch {

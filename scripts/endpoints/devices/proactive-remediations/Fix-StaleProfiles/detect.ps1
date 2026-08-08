@@ -1,19 +1,24 @@
 <#
 .SYNOPSIS
-    Detect stale user profiles not accessed recently
+    Detect stale user profiles not used recently
 
 .DESCRIPTION
-    Scans user profiles in C:\Users for profiles that haven't been accessed
-    within the configured threshold. Excludes system profiles (Public, Default).
-    Reports profile age and size for stale profiles.
+    Scans user profiles via Win32_UserProfile for profiles whose documented
+    LastUseTime is older than the configured threshold. Excludes system profiles
+    (Public, Default, systemprofile, defaultuser). Reports profile age and size
+    for stale profiles.
 
 .NOTES
     For Intune Proactive Remediations
     Exit 0 = Compliant (no stale profiles)
     Exit 1 = Non-compliant (stale profiles found)
 
-    Default Threshold: 90 days since last access
-    Excluded Profiles: Public, Default, Default User, All Users
+    Default Threshold: 90 days since last use
+    Loaded profiles are excluded - they are in use and must never be flagged.
+
+    Uses Win32_UserProfile.LastUseTime instead of filesystem LastAccessTime
+    (NTFS last-access updates are frequently disabled, making the filesystem
+    property unreliable).
 #>
 
 [CmdletBinding()]
@@ -21,21 +26,30 @@ param()
 
 # Configuration
 $STALE_PROFILE_AGE_DAYS = 90  # Consider profiles stale after this many days
-$PROFILE_PATH = "C:\Users"
 
 $staleProfiles = @()
 
-$profiles = Get-ChildItem $PROFILE_PATH -Directory -ErrorAction SilentlyContinue | Where-Object {
-    $_.Name -notmatch '^(Public|Default|Default User|All Users)$'
+$profiles = Get-CimInstance Win32_UserProfile | Where-Object {
+    $_.Special -eq $false -and
+    $_.LocalPath -and
+    $_.LocalPath -notmatch 'systemprofile|defaultuser' -and
+    $_.Loaded -eq $false -and
+    $_.LastUseTime
 }
 
 foreach ($profile in $profiles) {
-    $lastAccess = $profile.LastAccessTime
-    $age = ((Get-Date) - $lastAccess).Days
+    try {
+        $lastUse = [Management.ManagementDateTimeConverter]::ToDateTime($profile.LastUseTime)
+    } catch {
+        # Unparseable LastUseTime - skip this profile
+        continue
+    }
+    $age = ((Get-Date) - $lastUse).Days
 
     if ($age -gt $STALE_PROFILE_AGE_DAYS) {
-        $sizeGB = [math]::Round((Get-ChildItem $profile.FullName -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum / 1GB, 2)
-        $staleProfiles += "$($profile.Name) ($age days old, $sizeGB GB)"
+        $profileName = Split-Path $profile.LocalPath -Leaf
+        $sizeGB = [math]::Round((Get-ChildItem $profile.LocalPath -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum / 1GB, 2)
+        $staleProfiles += "$profileName ($age days old, $sizeGB GB)"
     }
 }
 

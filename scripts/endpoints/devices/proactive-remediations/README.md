@@ -355,6 +355,17 @@ All scripts run in SYSTEM context and have full admin rights. Ensure:
 - Test thoroughly
 - Monitor for unexpected behavior
 
+### SYSTEM-context limitations (Fix-CredentialManager)
+
+Fix-CredentialManager runs as SYSTEM, so `cmdkey /list` only enumerates the
+**SYSTEM credential store** - per-user credential stores are not visible from
+this context and are neither flagged nor modified. By-design credentials that
+Windows creates and regenerates automatically (`virtualapp/didlogical`,
+`_MSLITE_`, `MicrosoftAccount`, `WindowsLive`) are deliberately excluded from
+detection and remediation. The pair only flags/removes generic
+(application-created) credentials, never Windows domain credentials
+(`Domain:target=...`).
+
 ### Logging
 
 Intune captures all Write-Host output. Use descriptive messages:

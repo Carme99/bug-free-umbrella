@@ -43,9 +43,13 @@ try {
         $catalog = $searchCatalog.GetCatalog("SystemIndex")
         $catalogStatus = $catalog.GetCatalogStatus()
 
-        # Status codes: 0 = idle/complete, 1 = indexing, 2 = paused, 3 = recovering, 4 = full crawl
-        if ($catalogStatus -ge 3) {
-            Write-Host "Search index is in recovery or problematic state. Status code: $catalogStatus"
+        # CATALOG_STATUS enum values are NOT documented on MS Learn and the exact
+        # mapping is UNVERIFIED. Per the commonly shipped enum (IDLE=0, QUERYING=1,
+        # INDEXING=2, PAUSED=3, RECOVERING=4, FULL_CRAWL=5), indexing/rebuild/full
+        # crawl are legitimate transient states and must NOT be flagged. Be
+        # conservative: only a paused (3) or recovering (4) index is actionable.
+        if ($catalogStatus -in @(3, 4)) {
+            Write-Host "Search index is paused or recovering. Status code: $catalogStatus"
             exit 1
         }
     } catch {

@@ -24,28 +24,16 @@ try {
     }
 
     foreach ($adapter in $adapters) {
-        # Disable power management using registry
-        $regPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4D36E972-E325-11CE-BFC1-08002BE10318}"
-
-        # Find the adapter's registry key
-        $adapterKeys = Get-ChildItem -Path $regPath -ErrorAction SilentlyContinue
-        foreach ($key in $adapterKeys) {
-            $netCfgInstanceId = (Get-ItemProperty -Path $key.PSPath -Name "NetCfgInstanceId" -ErrorAction SilentlyContinue).NetCfgInstanceId
-
-            if ($netCfgInstanceId -eq $adapter.InterfaceGuid) {
-                # Disable power management
-                Set-ItemProperty -Path $key.PSPath -Name "PnPCapabilities" -Value 24 -ErrorAction SilentlyContinue
-                $remediationActions += "Disabled power management on $($adapter.Name)"
-            }
-        }
-
-        # Also try using WMI method
-        $powerMgmt = Get-WmiObject -Class MSPower_DeviceEnable -Namespace root\wmi -ErrorAction SilentlyContinue |
-            Where-Object { $_.InstanceName -like "*$($adapter.InterfaceGuid)*" }
-
-        if ($powerMgmt -and $powerMgmt.Enable -eq $true) {
-            $powerMgmt.Enable = $false
-            $powerMgmt.Put() | Out-Null
+        # Use the documented NetAdapter cmdlet instead of the undocumented
+        # PnPCapabilities=24 registry value / MSPower_DeviceEnable WMI class.
+        # Disable-NetAdapterPowerManagement disables the "Allow the computer to
+        # turn off this device to save power" setting (and the other power
+        # management features) that the detect script flags.
+        try {
+            Disable-NetAdapterPowerManagement -Name $adapter.Name -ErrorAction Stop
+            $remediationActions += "Disabled power management on $($adapter.Name)"
+        } catch {
+            Write-Host "Warning: Could not disable power management on $($adapter.Name): $_"
         }
     }
 

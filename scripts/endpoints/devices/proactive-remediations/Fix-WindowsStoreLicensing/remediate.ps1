@@ -16,41 +16,42 @@
 try {
     $remediationActions = @()
 
-    # Ensure Client License Service is started
+    # Reset Store license cache using the documented sequence (MS Learn:
+    # "Rebuild the tokens.dat file"): stop ClipSVC, delete tokens.dat from
+    # %ProgramData% (the only documented location), restart ClipSVC so it
+    # rebuilds the file. Deleting while ClipSVC is running can corrupt the
+    # licensing state.
     $storeService = Get-Service -Name "ClipSVC" -ErrorAction SilentlyContinue
 
-    if ($storeService) {
-        if ($storeService.Status -ne "Running") {
-            try {
-                Start-Service -Name "ClipSVC" -ErrorAction Stop
-                $remediationActions += "Started Client License Service (ClipSVC)"
-            } catch {
-                Write-Host "Warning: Could not start ClipSVC: $_"
-            }
-        }
-    }
-
-    # Reset Store license cache
-    $licensingPaths = @(
-        "$env:ProgramData\Microsoft\Windows\ClipSVC\tokens.dat",
-        "$env:LOCALAPPDATA\Microsoft\Windows\ClipSVC\tokens.dat"
-    )
-
-    foreach ($path in $licensingPaths) {
-        if (Test-Path $path) {
-            try {
-                Remove-Item -Path $path -Force -ErrorAction Stop
-                $remediationActions += "Removed Store licensing cache: $path"
-            } catch {
-                Write-Host "Warning: Could not remove licensing cache: $_"
-            }
-        }
-    }
-
-    # Restart Client License Service to rebuild cache
     if ($storeService -and $storeService.Status -eq "Running") {
-        Restart-Service -Name "ClipSVC" -Force -ErrorAction SilentlyContinue
-        $remediationActions += "Restarted Client License Service"
+        try {
+            Stop-Service -Name "ClipSVC" -Force -ErrorAction Stop
+            $remediationActions += "Stopped Client License Service (ClipSVC)"
+        } catch {
+            Write-Host "Warning: Could not stop ClipSVC: $_"
+        }
+    }
+
+    $tokensPath = "$env:ProgramData\Microsoft\Windows\ClipSVC\tokens.dat"
+
+    if (Test-Path $tokensPath) {
+        try {
+            Remove-Item -Path $tokensPath -Force -ErrorAction Stop
+            $remediationActions += "Removed Store licensing cache: $tokensPath"
+        } catch {
+            Write-Host "Warning: Could not remove licensing cache: $_"
+        }
+    }
+
+    # Restart Client License Service - it rebuilds tokens.dat on startup
+    if ($storeService) {
+        try {
+            Start-Service -Name "ClipSVC" -ErrorAction Stop
+            Start-Sleep -Seconds 2
+            $remediationActions += "Started Client License Service (ClipSVC)"
+        } catch {
+            Write-Host "Warning: Could not start ClipSVC: $_"
+        }
     }
 
     # Re-register Store app

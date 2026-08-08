@@ -4,7 +4,9 @@
 
 .DESCRIPTION
     Remediates BitLocker volumes by backing up recovery keys to Azure AD.
-    Attempts to escrow all recovery keys for encrypted volumes.
+    Volumes that have no RecoveryPassword key protector first get one added
+    (Add-BitLockerKeyProtector) so escrow is possible - this converges with
+    detect.ps1, which flags exactly that state.
 
 .NOTES
     For Intune Proactive Remediations
@@ -38,7 +40,23 @@ try {
 
     foreach ($vol in $bitlockerVolumes) {
         if ($vol.VolumeStatus -eq 'FullyEncrypted' -or $vol.VolumeStatus -eq 'EncryptionInProgress') {
-            $recoveryKeys = $vol.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' }
+            $recoveryKeys = @($vol.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' })
+
+            # Escrow can only back up an existing RecoveryPassword protector.
+            # If the volume has none (the state detect.ps1 flags), create one
+            # first so the pair converges.
+            if ($recoveryKeys.Count -eq 0) {
+                try {
+                    Write-Host "Adding recovery password protector for $($vol.MountPoint)"
+                    $newProtector = Add-BitLockerKeyProtector -MountPoint $vol.MountPoint -RecoveryPassword -ErrorAction Stop
+                    $recoveryKeys = @($newProtector)
+                } catch {
+                    $errorMsg = "Failed to add recovery key for $($vol.MountPoint): $($_.Exception.Message)"
+                    Write-Host $errorMsg
+                    $failed += $errorMsg
+                    continue
+                }
+            }
 
             foreach ($key in $recoveryKeys) {
                 try {
