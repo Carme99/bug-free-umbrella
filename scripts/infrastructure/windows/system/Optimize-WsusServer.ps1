@@ -1295,6 +1295,7 @@ function Optimize-WsusUpdates {
             @{ Name = "Expired updates"; Flag = "DeclineExpiredUpdates" },
             @{ Name = "Obsolete computers"; Flag = "CleanupObsoleteComputers" },
             @{ Name = "Unused content files"; Flag = "CleanupUnneededContentFiles" },
+            @{ Name = "Obsolete update revisions"; Flag = "CompressUpdates" },
             @{ Name = "Superseded updates"; Flag = "DeclineSupersededUpdates" }
         )
 
