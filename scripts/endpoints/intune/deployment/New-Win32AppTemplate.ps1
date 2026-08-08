@@ -221,7 +221,9 @@ catch {
     Detection script for $AppName (MSI-based)
 
 .DESCRIPTION
-    Checks if $AppName is installed by verifying MSI product code.
+    Checks if $AppName is installed by verifying MSI product code
+    against the uninstall registry (avoids Win32_Product, which
+    triggers MSI repair).
 #>
 
 # Configure these values for your app
@@ -229,10 +231,15 @@ catch {
 `$expectedVersion = "1.0.0"  # Optional
 
 try {
-    `$installedProducts = Get-WmiObject -Class Win32_Product | Where-Object { `$_.IdentifyingNumber -eq `$productCode }
+    # Check 64-bit and 32-bit uninstall registry locations
+    `$regPaths = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\`$productCode",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\`$productCode"
+    )
+    `$regEntry = `$regPaths | Where-Object { Test-Path `$_ } | Select-Object -First 1
 
-    if (`$installedProducts) {
-        `$version = `$installedProducts.Version
+    if (`$regEntry) {
+        `$version = (Get-ItemProperty -Path `$regEntry).DisplayVersion
 
         if (`$expectedVersion -and `$version -ne `$expectedVersion) {
             Write-Output "Wrong version: `$version (Expected: `$expectedVersion)"
@@ -306,7 +313,7 @@ $requirementScript = @"
 
 try {
     # Check OS version
-    `$os = Get-WmiObject -Class Win32_OperatingSystem
+    `$os = Get-CimInstance -ClassName Win32_OperatingSystem
     `$osVersion = [System.Version]`$os.Version
 
     # Require Windows 10 or later (10.0+)
@@ -327,7 +334,7 @@ try {
 
     # Check RAM (in GB)
     `$requiredRAMGB = 2
-    `$totalRAMGB = [math]::Round((Get-WmiObject -Class Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 2)
+    `$totalRAMGB = [math]::Round((Get-CimInstance -ClassName Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 2)
 
     if (`$totalRAMGB -lt `$requiredRAMGB) {
         Write-Output "Insufficient RAM: `$totalRAMGB GB (Required: `$requiredRAMGB GB)"
@@ -400,7 +407,7 @@ This package contains all files needed to deploy **$AppName** as a Win32 app in 
 $InstallCommand
 ``````
 
-$(if ($UninstallCommand) { "**Uninstall command:**`n``````````n$UninstallCommand`n```````" } else { "**Uninstall command:** (Configure based on your app)" })
+$(if ($UninstallCommand) { "**Uninstall command:**" + "`n" + '``````' + "`n" + $UninstallCommand + "`n" + '``````' } else { "**Uninstall command:** (Configure based on your app)" })
 
 **Install behavior:** System
 **Device restart behavior:** Determine behavior based on return codes

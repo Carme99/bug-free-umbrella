@@ -1,15 +1,19 @@
 <#
 .SYNOPSIS
-    Reports on winget-managed application update compliance across Intune-managed devices.
+    TEMPLATE: winget-managed application update compliance report (SAMPLE DATA).
 
 .DESCRIPTION
-    This script generates a compliance report for applications managed via winget:
-    - Queries all managed devices
-    - Retrieves installed winget applications
-    - Checks for available updates
-    - Identifies outdated applications
-    - Generates compliance report
-    - Exports to HTML or CSV
+    This is a FORMATTING TEMPLATE for a winget application compliance report.
+    It does NOT query real winget inventory - the sample data below is generated
+    with Get-Random and is provided ONLY so you can preview the report layout.
+
+    To build a real report you must first collect per-device winget inventory
+    (e.g. via Intune proactive remediations writing to custom attributes or
+    Log Analytics), then replace Get-SampleComplianceData with a query against
+    that data source.
+
+    Output files are suffixed -SAMPLE so they cannot be mistaken for real
+    compliance data.
 
 .PARAMETER TenantId
     Azure AD Tenant ID (optional if already connected).
@@ -165,8 +169,13 @@ function Get-DeviceWingetData {
     }
 }
 
-function Get-SimulatedComplianceData {
-    # This is sample data - replace with actual Intune inventory query
+function Get-SampleComplianceData {
+    # SAMPLE DATA - NOT REAL COMPLIANCE DATA
+    Write-Host "`n⚠ ⚠ ⚠  WARNING: SAMPLE DATA  ⚠ ⚠ ⚠" -ForegroundColor Red
+    Write-Host "  This report contains FABRICATED sample data (Get-Random) for" -ForegroundColor Red
+    Write-Host "  formatting/preview purposes ONLY. It is NOT real compliance data." -ForegroundColor Red
+    Write-Host "  Do NOT use this output for decisions, reporting, or audits." -ForegroundColor Red
+    Write-Host "  Replace Get-SampleComplianceData with a real inventory query before use." -ForegroundColor Red
     Write-Host "`nGenerating sample compliance data..." -ForegroundColor Yellow
     Write-Host "  (In production, this would query actual device inventory)" -ForegroundColor Gray
 
@@ -210,6 +219,7 @@ function Get-SimulatedComplianceData {
 function Show-Summary {
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "  Winget Update Compliance Summary" -ForegroundColor Cyan
+    Write-Host "  (SAMPLE DATA - FORMATTING PREVIEW ONLY)" -ForegroundColor Red
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "Scan Time: $($script:report.ScanTime)"
     Write-Host "Total Devices Scanned: $($script:report.TotalDevices)"
@@ -226,13 +236,13 @@ function Show-Summary {
 }
 
 function Export-HTMLReport {
-    $reportPath = "$ReportDir\WingetCompliance_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+    $reportPath = "$ReportDir\WingetCompliance_SAMPLE_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
 
     $html = @"
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Winget Update Compliance Report</title>
+    <title>Winget Update Compliance Report (SAMPLE)</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f5f5f5; }
         .container { max-width: 1400px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -255,8 +265,9 @@ function Export-HTMLReport {
 </head>
 <body>
     <div class="container">
-        <h1>Winget Update Compliance Report</h1>
+        <h1>Winget Update Compliance Report (SAMPLE)</h1>
         <p><strong>Generated:</strong> $($script:report.ScanTime)</p>
+        <p style="color:#dc3545;font-weight:bold">⚠ SAMPLE DATA - formatting preview only. Not real compliance data.</p>
 
         <div class="summary">
             <div class="metric">
@@ -314,7 +325,7 @@ function Export-HTMLReport {
 }
 
 function Export-CSVReport {
-    $reportPath = "$ReportDir\WingetCompliance_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+    $reportPath = "$ReportDir\WingetCompliance_SAMPLE_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 
     $script:report.Applications | Export-Csv -Path $reportPath -NoTypeInformation -Encoding UTF8
     Write-ColorOutput "CSV report exported to: $reportPath" -Level Success
@@ -323,13 +334,14 @@ function Export-CSVReport {
 # Main execution
 Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "  Winget Update Compliance Reporter" -ForegroundColor Cyan
+Write-Host "  TEMPLATE - OUTPUTS SAMPLE DATA ONLY" -ForegroundColor Yellow
 Write-Host "========================================`n" -ForegroundColor Cyan
 
 Connect-GraphAPI
 Get-DeviceWingetData
 
 # Generate sample data (replace with actual inventory query in production)
-Get-SimulatedComplianceData
+Get-SampleComplianceData
 
 Show-Summary
 
@@ -343,6 +355,8 @@ if($ExportCSV) {
     Export-CSVReport
 }
 
-Write-Host "Note: This script provides a framework for winget compliance reporting." -ForegroundColor Yellow
-Write-Host "For full functionality, implement custom inventory collection via Intune proactive remediations." -ForegroundColor Yellow
+Write-Host "⚠ This script is a TEMPLATE and outputs SAMPLE DATA for formatting purposes only." -ForegroundColor Red
+Write-Host "  Do not use these numbers for decisions, reporting, or audits." -ForegroundColor Red
+Write-Host "  For real compliance data, implement custom inventory collection via Intune" -ForegroundColor Yellow
+Write-Host "  proactive remediations and replace Get-SampleComplianceData with a real query." -ForegroundColor Yellow
 Write-Host "`n========================================`n" -ForegroundColor Cyan

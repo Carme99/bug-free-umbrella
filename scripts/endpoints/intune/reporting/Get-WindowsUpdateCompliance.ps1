@@ -1,43 +1,44 @@
 <#
 .SYNOPSIS
-    Generates Windows Update compliance report for devices, including AutoPatch status.
+    Generates a Defender protection state report for Windows devices, including AutoPatch status.
 
 .DESCRIPTION
-    This script analyzes Windows Update compliance across all managed Windows devices.
-    Especially useful for environments using Windows Autopatch.
+    This script analyzes Defender protection state (windowsProtectionState) across all
+    managed Windows devices. It does NOT report Windows Update compliance - the Graph
+    API does not expose per-device update compliance through this endpoint, so this
+    report honestly reflects what the data shows: endpoint protection health and the
+    last AV health report time per device.
 
     Reports on:
-    - Windows Update installation status
-    - Security updates compliance
-    - Feature updates compliance
-    - Devices needing updates
-    - Update installation failures
-    - Days since last update check
+    - Defender protection state (Protected / Not Protected)
+    - Antivirus engine status
+    - Last AV health report time per device
+    - Days since last AV health report
     - AutoPatch ring membership (if applicable)
 
 .PARAMETER ExportFormat
     Report format: HTML, CSV, or Both (default: Both).
 
 .PARAMETER ShowNonCompliantOnly
-    Only show devices that are not up-to-date.
+    Only show devices that are not Protected (or have not reported).
 
 .PARAMETER IncludeAutoPatchInfo
     Include AutoPatch deployment ring information.
 
 .PARAMETER DaysOutdated
-    Highlight devices that haven't updated in X days (default: 30).
+    Highlight devices that haven't reported AV health in X days (default: 30).
 
 .EXAMPLE
     .\Get-WindowsUpdateCompliance.ps1
-    Generates full Windows Update compliance report.
+    Generates full Defender protection state report.
 
 .EXAMPLE
     .\Get-WindowsUpdateCompliance.ps1 -ShowNonCompliantOnly
-    Shows only devices that need updates.
+    Shows only devices that are not Protected.
 
 .EXAMPLE
     .\Get-WindowsUpdateCompliance.ps1 -IncludeAutoPatchInfo -DaysOutdated 60
-    Includes AutoPatch info and highlights devices not updated in 60+ days.
+    Includes AutoPatch info and highlights devices not reporting in 60+ days.
 
 .NOTES
     Requires Microsoft.Graph PowerShell module
@@ -78,7 +79,7 @@ $modulePath = Join-Path $PSScriptRoot "IntuneGraphHelper.psm1"
 Import-Module $modulePath -Force
 
 Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "Windows Update Compliance Report" -ForegroundColor Cyan
+Write-Host "Defender Protection State Report" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
 
 # Connect to Microsoft Graph
@@ -147,7 +148,7 @@ try {
     }
 
     # Process each device
-    Write-Host "`nAnalyzing Windows Update compliance..." -ForegroundColor Cyan
+    Write-Host "`nAnalyzing Defender protection state..." -ForegroundColor Cyan
     $report = @()
     $counter = 0
 
@@ -157,52 +158,30 @@ try {
 
         $deviceId = $device.Id
 
-        # Get Windows Update compliance
-        $updateCompliance = "Unknown"
-        $securityUpdateStatus = "Unknown"
-        $featureUpdateStatus = "Unknown"
-        $lastUpdateCheck = "Unknown"
-        $daysOutOfDate = "N/A"
-        $pendingUpdates = 0
+        # Get Defender protection state (this endpoint reports AV health, NOT Windows Update compliance)
+        $protectionState = "Unknown"
+        $antivirusStatus = "Unknown"
+        $lastHealthReport = "Unknown"
+        $daysSinceLastReport = "N/A"
 
         try {
-            # Try to get device update states
-            $windowsUpdateStates = Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/beta/deviceManagement/managedDevices/$deviceId/windowsProtectionState" -ErrorAction SilentlyContinue
+            $protectionStateData = Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/beta/deviceManagement/managedDevices/$deviceId/windowsProtectionState" -ErrorAction SilentlyContinue
 
-            if ($windowsUpdateStates) {
-                # Parse update information
-                if ($windowsUpdateStates.malwareProtectionEnabled -eq $true) {
-                    $securityUpdateStatus = "Protected"
+            if ($protectionStateData) {
+                $antivirusStatus = if ($protectionStateData.antivirusEnabled -eq $true) { "Enabled" } else { "Not Enabled" }
+                $protectionState = if ($protectionStateData.malwareProtectionEnabled -eq $true) { "Protected" } else { "Not Protected" }
+
+                # Last AV health report time
+                if ($protectionStateData.lastReportedDateTime) {
+                    $lastReported = $protectionStateData.lastReportedDateTime
+                    if ($lastReported -is [string]) { $lastReported = [datetime]::Parse($lastReported) }
+                    $lastHealthReport = $lastReported.ToString("yyyy-MM-dd HH:mm:ss")
+                    $daysSinceLastReport = [math]::Round((New-TimeSpan -Start $lastReported -End (Get-Date)).TotalDays, 1)
                 }
-
-                # Get last scan time
-                if ($windowsUpdateStates.lastReportedDateTime) {
-                    $lastUpdateCheck = $windowsUpdateStates.lastReportedDateTime.ToString("yyyy-MM-dd HH:mm:ss")
-                    $daysOutOfDate = [math]::Round((New-TimeSpan -Start $windowsUpdateStates.lastReportedDateTime -End (Get-Date)).TotalDays, 1)
-                }
-            }
-
-            # Try to get pending updates
-            $deviceConfigStates = Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/beta/deviceManagement/managedDevices/$deviceId/deviceConfigurationStates" -ErrorAction SilentlyContinue
-
-            # Determine overall compliance
-            if ($device.ComplianceState -eq "compliant") {
-                $updateCompliance = "Compliant"
-            }
-            elseif ($device.ComplianceState -eq "noncompliant") {
-                $updateCompliance = "Non-Compliant"
-            }
-            else {
-                $updateCompliance = "Unknown"
-            }
-
-            # Check if device is outdated
-            if ($daysOutOfDate -ne "N/A" -and $daysOutOfDate -gt $DaysOutdated) {
-                $updateCompliance = "Outdated ($daysOutOfDate days)"
             }
         }
         catch {
-            # Unable to get update info
+            # Unable to get protection state
         }
 
         # Get AutoPatch ring if available
@@ -215,7 +194,7 @@ try {
 
         # Apply filters
         if ($ShowNonCompliantOnly) {
-            if ($updateCompliance -eq "Compliant") {
+            if ($protectionState -eq "Protected") {
                 continue
             }
         }
@@ -225,9 +204,10 @@ try {
             DeviceName = $device.DeviceName
             UserPrincipalName = $device.UserPrincipalName
             OSVersion = $device.OsVersion
-            UpdateCompliance = $updateCompliance
-            LastUpdateCheck = $lastUpdateCheck
-            DaysSinceLastCheck = $daysOutOfDate
+            ProtectionState = $protectionState
+            AntivirusStatus = $antivirusStatus
+            LastHealthReport = $lastHealthReport
+            DaysSinceLastReport = $daysSinceLastReport
             ComplianceState = $device.ComplianceState
             LastSyncDateTime = if ($device.LastSyncDateTime) { $device.LastSyncDateTime.ToString("yyyy-MM-dd HH:mm:ss") } else { "Never" }
             Manufacturer = $device.Manufacturer
@@ -246,20 +226,20 @@ try {
 
     # Display summary
     Write-Host "`n========================================" -ForegroundColor Cyan
-    Write-Host "WINDOWS UPDATE COMPLIANCE SUMMARY" -ForegroundColor Cyan
+    Write-Host "DEFENDER PROTECTION STATE SUMMARY" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
 
     $totalDevices = $report.Count
-    $compliant = ($report | Where-Object { $_.UpdateCompliance -eq "Compliant" }).Count
-    $nonCompliant = ($report | Where-Object { $_.UpdateCompliance -match "Non-Compliant|Outdated" }).Count
-    $unknown = ($report | Where-Object { $_.UpdateCompliance -eq "Unknown" }).Count
-    $outdated = ($report | Where-Object { $_.DaysSinceLastCheck -ne "N/A" -and [double]$_.DaysSinceLastCheck -gt $DaysOutdated }).Count
+    $protected = ($report | Where-Object { $_.ProtectionState -eq "Protected" }).Count
+    $notProtected = ($report | Where-Object { $_.ProtectionState -eq "Not Protected" }).Count
+    $unknown = ($report | Where-Object { $_.ProtectionState -eq "Unknown" }).Count
+    $stale = ($report | Where-Object { $_.DaysSinceLastReport -ne "N/A" -and [double]$_.DaysSinceLastReport -gt $DaysOutdated }).Count
 
     Write-Host "Total Windows Devices:   $totalDevices" -ForegroundColor White
-    Write-Host "Compliant:               $compliant ($(if($totalDevices -gt 0){'{0:P0}' -f ($compliant/$totalDevices)}else{'N/A'}))" -ForegroundColor Green
-    Write-Host "Non-Compliant:           $nonCompliant ($(if($totalDevices -gt 0){'{0:P0}' -f ($nonCompliant/$totalDevices)}else{'N/A'}))" -ForegroundColor Red
+    Write-Host "Protected:               $protected ($(if($totalDevices -gt 0){'{0:P0}' -f ($protected/$totalDevices)}else{'N/A'}))" -ForegroundColor Green
+    Write-Host "Not Protected:           $notProtected ($(if($totalDevices -gt 0){'{0:P0}' -f ($notProtected/$totalDevices)}else{'N/A'}))" -ForegroundColor Red
     Write-Host "Unknown Status:          $unknown" -ForegroundColor Yellow
-    Write-Host "Outdated (${DaysOutdated}+ days):  $outdated" -ForegroundColor $(if($outdated -gt 0){'Yellow'}else{'Green'})
+    Write-Host "No AV Report (${DaysOutdated}+ days):  $stale" -ForegroundColor $(if($stale -gt 0){'Yellow'}else{'Green'})
 
     if ($IncludeAutoPatchInfo) {
         Write-Host "`nAutoPatch Ring Distribution:" -ForegroundColor Cyan
@@ -277,39 +257,39 @@ try {
     }
 
     # Sort report
-    $report = $report | Sort-Object UpdateCompliance, DeviceName
+    $report = $report | Sort-Object ProtectionState, DeviceName
 
     # Export reports
     $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
     $outputPath = $ReportDir
 
     if ($ExportFormat -eq 'HTML' -or $ExportFormat -eq 'Both') {
-        $htmlPath = Join-Path $outputPath "WindowsUpdateCompliance_$timestamp.html"
-        Export-IntuneReportToHTML -Data $report -Title "Windows Update Compliance Report" -FilePath $htmlPath
+        $htmlPath = Join-Path $outputPath "DefenderProtectionState_$timestamp.html"
+        Export-IntuneReportToHTML -Data $report -Title "Defender Protection State Report" -FilePath $htmlPath
     }
 
     if ($ExportFormat -eq 'CSV' -or $ExportFormat -eq 'Both') {
-        $csvPath = Join-Path $outputPath "WindowsUpdateCompliance_$timestamp.csv"
-        Export-IntuneReportToCSV -Data $report -Title "WindowsUpdateCompliance" -FilePath $csvPath
+        $csvPath = Join-Path $outputPath "DefenderProtectionState_$timestamp.csv"
+        Export-IntuneReportToCSV -Data $report -Title "DefenderProtectionState" -FilePath $csvPath
     }
 
     # Recommendations
-    if ($nonCompliant -gt 0 -or $outdated -gt 0) {
+    if ($notProtected -gt 0 -or $stale -gt 0) {
         Write-Host "`n⚠ RECOMMENDATIONS:" -ForegroundColor Yellow
 
-        if ($nonCompliant -gt 0) {
-            Write-Host "  - $nonCompliant devices are not compliant with update policies" -ForegroundColor Yellow
-            Write-Host "  - Review Windows Update for Business settings" -ForegroundColor Yellow
+        if ($notProtected -gt 0) {
+            Write-Host "  - $notProtected devices are not Protected by Defender" -ForegroundColor Yellow
+            Write-Host "  - Review Defender AV configuration and device health" -ForegroundColor Yellow
         }
 
-        if ($outdated -gt 0) {
-            Write-Host "  - $outdated devices haven't checked for updates in ${DaysOutdated}+ days" -ForegroundColor Yellow
+        if ($stale -gt 0) {
+            Write-Host "  - $stale devices haven't reported AV health in ${DaysOutdated}+ days" -ForegroundColor Yellow
             Write-Host "  - Verify devices are online and connected to network" -ForegroundColor Yellow
-            Write-Host "  - Check for update service connectivity issues" -ForegroundColor Yellow
+            Write-Host "  - Check for Defender service connectivity issues" -ForegroundColor Yellow
         }
     }
 
-    Write-Host "`n✓ Windows Update compliance audit completed!" -ForegroundColor Green
+    Write-Host "`n✓ Defender protection state audit completed!" -ForegroundColor Green
 }
 catch {
     Write-Host "`n✗ Error: $($_.Exception.Message)" -ForegroundColor Red
