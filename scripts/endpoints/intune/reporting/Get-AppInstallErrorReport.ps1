@@ -37,19 +37,19 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$AppName,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$Days = 7,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$Top,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -80,7 +80,7 @@ $script:report = @{
 
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
-    $color = switch($Level) { 'Success' { 'Green' } 'Warning' { 'Yellow' } 'Error' { 'Red' } default { 'Cyan' } }
+    $color = switch ($Level) { 'Success' { 'Green' } 'Warning' { 'Yellow' } 'Error' { 'Red' } default { 'Cyan' } }
     Write-Host $Message -ForegroundColor $color
 }
 
@@ -88,7 +88,7 @@ Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "  App Installation Error Report" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
 
-Connect-MgGraph -Scopes "DeviceManagementApps.Read.All","DeviceManagementManagedDevices.Read.All" -NoWelcome
+Connect-MgGraph -Scopes "DeviceManagementApps.Read.All", "DeviceManagementManagedDevices.Read.All" -NoWelcome
 
 Write-Host "Querying app installation status..." -ForegroundColor Cyan
 $cutoffDate = (Get-Date).AddDays(-$Days)
@@ -96,13 +96,13 @@ $cutoffDate = (Get-Date).AddDays(-$Days)
 try {
     $apps = Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/beta/deviceAppManagement/mobileApps" -Method GET
     
-    foreach($app in $apps.value) {
-        if($AppName -and $app.displayName -notlike "*$AppName*") { continue }
+    foreach ($app in $apps.value) {
+        if ($AppName -and $app.displayName -notlike "*$AppName*") { continue }
         
         $status = Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/beta/deviceAppManagement/mobileApps/$($app.id)/deviceStatuses" -Method GET
         
-        foreach($deviceStatus in $status.value) {
-            if($deviceStatus.installState -eq 'failed' -and $deviceStatus.lastSyncDateTime -gt $cutoffDate) {
+        foreach ($deviceStatus in $status.value) {
+            if ($deviceStatus.installState -eq 'failed' -and $deviceStatus.lastSyncDateTime -gt $cutoffDate) {
                 $failure = [PSCustomObject]@{
                     AppName = $app.displayName
                     DeviceName = $deviceStatus.deviceName
@@ -134,13 +134,13 @@ Write-ColorOutput "Total Failures: $($script:report.Summary.TotalFailures)" -Lev
 Write-Host "Unique Apps: $($script:report.Summary.UniqueApps)"
 Write-Host "Unique Devices: $($script:report.Summary.UniqueDevices)"
 
-if($script:report.Failures.Count -gt 0) {
+if ($script:report.Failures.Count -gt 0) {
     Write-Host "`nTop Failures:" -ForegroundColor Cyan
-    $displayCount = if($Top) { $Top } else { 20 }
+    $displayCount = if ($Top) { $Top } else { 20 }
     $script:report.Failures | Select-Object -First $displayCount | Format-Table AppName, DeviceName, ErrorCode, LastSync -AutoSize
 }
 
-if($ExportHTML) {
+if ($ExportHTML) {
     $html = @"
 <!DOCTYPE html><html><head><title>App Installation Failures</title>
 <style>body{font-family:'Segoe UI',sans-serif;margin:20px}table{width:100%;border-collapse:collapse}
@@ -155,7 +155,7 @@ $(foreach($f in $script:report.Failures){"<tr><td>$($f.AppName)</td><td>$($f.Dev
     Write-ColorOutput "`nHTML report: $reportPath" -Level Success
 }
 
-if($ExportCSV) {
+if ($ExportCSV) {
     $csvPath = "$ReportDir\AppInstallErrors_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
     $script:report.Failures | Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
     Write-ColorOutput "CSV report: $csvPath" -Level Success

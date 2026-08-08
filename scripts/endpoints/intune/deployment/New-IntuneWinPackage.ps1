@@ -41,16 +41,16 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$SourceFolder,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$OutputFolder,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$SetupFile,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$ContentPrepToolPath
 )
 
@@ -252,7 +252,7 @@ $failed = ($packagesCreated | Where-Object { $_.Status -ne "Success" }).Count
 
 Write-Host "Total Processed:  $($packagesCreated.Count)" -ForegroundColor White
 Write-Host "Successful:       $successful" -ForegroundColor Green
-Write-Host "Failed:           $failed" -ForegroundColor $(if($failed -gt 0){'Red'}else{'Green'})
+Write-Host "Failed:           $failed" -ForegroundColor $(if ($failed -gt 0) { 'Red' }else { 'Green' })
 
 if ($successful -gt 0) {
     Write-Host "`nPackages Created:" -ForegroundColor Cyan

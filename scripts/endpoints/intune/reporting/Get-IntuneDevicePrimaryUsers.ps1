@@ -66,9 +66,9 @@ param(
 
     [Parameter(Mandatory = $false)]
     [ValidateSet(
-        "extensionAttribute1","extensionAttribute2","extensionAttribute3","extensionAttribute4","extensionAttribute5",
-        "extensionAttribute6","extensionAttribute7","extensionAttribute8","extensionAttribute9","extensionAttribute10",
-        "extensionAttribute11","extensionAttribute12","extensionAttribute13","extensionAttribute14","extensionAttribute15"
+        "extensionAttribute1", "extensionAttribute2", "extensionAttribute3", "extensionAttribute4", "extensionAttribute5",
+        "extensionAttribute6", "extensionAttribute7", "extensionAttribute8", "extensionAttribute9", "extensionAttribute10",
+        "extensionAttribute11", "extensionAttribute12", "extensionAttribute13", "extensionAttribute14", "extensionAttribute15"
     )]
     [string]$FriendlyModelAttribute = "extensionAttribute1",
 
@@ -91,18 +91,18 @@ function Write-Log {
     #>
     param(
         [Parameter(Mandatory)][string]$Message,
-        [ValidateSet("INFO","WARN","ERROR","SUCCESS","DEBUG")]
+        [ValidateSet("INFO", "WARN", "ERROR", "SUCCESS", "DEBUG")]
         [string]$Level = "INFO"
     )
 
-    if ($Quiet -and $Level -in @("INFO","DEBUG")) { return }
+    if ($Quiet -and $Level -in @("INFO", "DEBUG")) { return }
 
     switch ($Level) {
-        "INFO"    { Write-Host $Message -ForegroundColor Cyan }
-        "WARN"    { Write-Warning $Message }
-        "ERROR"   { Write-Host $Message -ForegroundColor Red }
+        "INFO" { Write-Host $Message -ForegroundColor Cyan }
+        "WARN" { Write-Warning $Message }
+        "ERROR" { Write-Host $Message -ForegroundColor Red }
         "SUCCESS" { Write-Host $Message -ForegroundColor Green }
-        "DEBUG"   { Write-Host $Message -ForegroundColor DarkGray }
+        "DEBUG" { Write-Host $Message -ForegroundColor DarkGray }
     }
 }
 
@@ -183,7 +183,7 @@ function Resolve-InputTokens {
                 $props = $first.PSObject.Properties.Name
 
                 # Try to find a likely device name column
-                $col = @("DeviceName","deviceName","Name","ComputerName","Computer","Hostname","Host") |
+                $col = @("DeviceName", "deviceName", "Name", "ComputerName", "Computer", "Hostname", "Host") |
                     Where-Object { $props -contains $_ } |
                     Select-Object -First 1
 
@@ -315,11 +315,11 @@ function Get-ManagedDeviceDetails {
     param([Parameter(Mandatory)][string]$ManagedDeviceId)
 
     $select = @(
-        "id","deviceName","azureAdDeviceId","userPrincipalName","lastSyncDateTime",
-        "manufacturer","model","serialNumber",
-        "operatingSystem","osVersion",
-        "totalStorageSpaceInBytes","freeStorageSpaceInBytes","physicalMemoryInBytes",
-        "processorArchitecture","hardwareInformation"
+        "id", "deviceName", "azureAdDeviceId", "userPrincipalName", "lastSyncDateTime",
+        "manufacturer", "model", "serialNumber",
+        "operatingSystem", "osVersion",
+        "totalStorageSpaceInBytes", "freeStorageSpaceInBytes", "physicalMemoryInBytes",
+        "processorArchitecture", "hardwareInformation"
     ) -join ","
 
     $uri = "https://graph.microsoft.com/beta/deviceManagement/managedDevices/{0}?`$select={1}" -f $ManagedDeviceId, $select
@@ -346,7 +346,7 @@ function Get-RegisteredOwnerUser {
 
     $safeName = Escape-ODataString -Value $DeviceName
 
-    $aadMatches = Get-MgDevice -Filter "displayName eq '$safeName'" -Property Id,DisplayName -ErrorAction SilentlyContinue
+    $aadMatches = Get-MgDevice -Filter "displayName eq '$safeName'" -Property Id, DisplayName -ErrorAction SilentlyContinue
     foreach ($dev in ($aadMatches | ForEach-Object { $_ })) {
 
         $owners = Get-MgDeviceRegisteredOwner -DeviceId $dev.Id -All -ErrorAction SilentlyContinue
@@ -549,54 +549,54 @@ try {
 
             # Add result to collection
             $results.Add([pscustomobject]@{
-                DeviceName             = $deviceName
-                LastSeen               = $lastSeen
+                    DeviceName = $deviceName
+                    LastSeen = $lastSeen
 
-                PrimaryUserDisplayName = $primaryUserDisplayName
-                PrimaryUserUPN         = $primaryUserUPN
-                Source                 = $source
+                    PrimaryUserDisplayName = $primaryUserDisplayName
+                    PrimaryUserUPN = $primaryUserUPN
+                    Source = $source
 
-                FriendlyModel          = $friendlyModel
-                Manufacturer           = $manufacturer
-                Model                  = $model
-                SerialNumber           = $serialNumber
-                OperatingSystem        = $os
-                OSVersion              = $osVersion
+                    FriendlyModel = $friendlyModel
+                    Manufacturer = $manufacturer
+                    Model = $model
+                    SerialNumber = $serialNumber
+                    OperatingSystem = $os
+                    OSVersion = $osVersion
 
-                CPU                    = $cpuFriendly
-                CPUArchitecture        = $cpuArch
+                    CPU = $cpuFriendly
+                    CPUArchitecture = $cpuArch
 
-                RAM_GB                 = $ramGB
-                StorageTotal_GB        = $storageTotalGB
-                StorageFree_GB         = $storageFreeGB
-                StorageFree_Percent    = $storageFreePct
-            })
+                    RAM_GB = $ramGB
+                    StorageTotal_GB = $storageTotalGB
+                    StorageFree_GB = $storageFreeGB
+                    StorageFree_Percent = $storageFreePct
+                })
         }
         catch {
             # Add error result
             $results.Add([pscustomobject]@{
-                DeviceName             = $token
-                LastSeen               = $null
+                    DeviceName = $token
+                    LastSeen = $null
 
-                PrimaryUserDisplayName = $null
-                PrimaryUserUPN         = $null
-                Source                 = "Error: $($_.Exception.Message)"
+                    PrimaryUserDisplayName = $null
+                    PrimaryUserUPN = $null
+                    Source = "Error: $($_.Exception.Message)"
 
-                FriendlyModel          = $null
-                Manufacturer           = $null
-                Model                  = $null
-                SerialNumber           = $null
-                OperatingSystem        = $null
-                OSVersion              = $null
+                    FriendlyModel = $null
+                    Manufacturer = $null
+                    Model = $null
+                    SerialNumber = $null
+                    OperatingSystem = $null
+                    OSVersion = $null
 
-                CPU                    = $null
-                CPUArchitecture        = $null
+                    CPU = $null
+                    CPUArchitecture = $null
 
-                RAM_GB                 = $null
-                StorageTotal_GB        = $null
-                StorageFree_GB         = $null
-                StorageFree_Percent    = $null
-            })
+                    RAM_GB = $null
+                    StorageTotal_GB = $null
+                    StorageFree_GB = $null
+                    StorageFree_Percent = $null
+                })
         }
     }
 

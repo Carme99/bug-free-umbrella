@@ -77,10 +77,10 @@ try {
 
         foreach ($assignment in $assignments.value) {
             $targetType = if ($assignment.target.'@odata.type' -match "allLicensedUsersAssignmentTarget") { "All Users" }
-                         elseif ($assignment.target.'@odata.type' -match "allDevicesAssignmentTarget") { "All Devices" }
-                         elseif ($assignment.target.'@odata.type' -match "groupAssignmentTarget") { "Group: $($assignment.target.groupId)" }
-                         elseif ($assignment.target.'@odata.type' -match "exclusionGroupAssignmentTarget") { "Excluded Group: $($assignment.target.groupId)" }
-                         else { "Unknown" }
+            elseif ($assignment.target.'@odata.type' -match "allDevicesAssignmentTarget") { "All Devices" }
+            elseif ($assignment.target.'@odata.type' -match "groupAssignmentTarget") { "Group: $($assignment.target.groupId)" }
+            elseif ($assignment.target.'@odata.type' -match "exclusionGroupAssignmentTarget") { "Excluded Group: $($assignment.target.groupId)" }
+            else { "Unknown" }
 
             $assignmentReport += [PSCustomObject]@{
                 PolicyName = $policy.displayName
@@ -100,9 +100,9 @@ try {
 
         foreach ($assignment in $assignments.value) {
             $targetType = if ($assignment.target.'@odata.type' -match "allLicensedUsersAssignmentTarget") { "All Users" }
-                         elseif ($assignment.target.'@odata.type' -match "allDevicesAssignmentTarget") { "All Devices" }
-                         elseif ($assignment.target.'@odata.type' -match "groupAssignmentTarget") { "Group: $($assignment.target.groupId)" }
-                         else { "Unknown" }
+            elseif ($assignment.target.'@odata.type' -match "allDevicesAssignmentTarget") { "All Devices" }
+            elseif ($assignment.target.'@odata.type' -match "groupAssignmentTarget") { "Group: $($assignment.target.groupId)" }
+            else { "Unknown" }
 
             $assignmentReport += [PSCustomObject]@{
                 PolicyName = $policy.displayName
@@ -122,9 +122,9 @@ try {
 
         foreach ($assignment in $assignments.value) {
             $targetType = if ($assignment.target.'@odata.type' -match "allLicensedUsersAssignmentTarget") { "All Users" }
-                         elseif ($assignment.target.'@odata.type' -match "allDevicesAssignmentTarget") { "All Devices" }
-                         elseif ($assignment.target.'@odata.type' -match "groupAssignmentTarget") { "Group: $($assignment.target.groupId)" }
-                         else { "Unknown" }
+            elseif ($assignment.target.'@odata.type' -match "allDevicesAssignmentTarget") { "All Devices" }
+            elseif ($assignment.target.'@odata.type' -match "groupAssignmentTarget") { "Group: $($assignment.target.groupId)" }
+            else { "Unknown" }
 
             $assignmentReport += [PSCustomObject]@{
                 PolicyName = $policy.name
@@ -156,7 +156,8 @@ try {
 
     if ($Format -eq "CSV") {
         $assignmentReport | Export-Csv -Path $reportPath -NoTypeInformation
-    } else {
+    }
+    else {
         # Generate HTML report
         $htmlReport = ConvertTo-IntuneHtmlReport -Data $assignmentReport -Title "Intune Policy Assignment Report" -Description "Generated on $(Get-Date)"
         $htmlReport | Out-File -FilePath $reportPath -Encoding UTF8
@@ -171,7 +172,8 @@ try {
     Write-Host "  Compliance Policies: $(($assignmentReport | Where-Object { $_.PolicyType -eq 'Compliance Policy' }).Count)"
     Write-Host "  Settings Catalog: $(($assignmentReport | Where-Object { $_.PolicyType -eq 'Settings Catalog' }).Count)"
 
-} catch {
+}
+catch {
     Write-Error "Error generating policy assignment report: $_"
     exit 1
 }

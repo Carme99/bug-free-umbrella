@@ -61,34 +61,34 @@
     Custom sources require appropriate certificates/authentication
 #>
 
-[CmdletBinding(DefaultParameterSetName='Add')]
+[CmdletBinding(DefaultParameterSetName = 'Add')]
 param(
-    [Parameter(Mandatory=$true, ParameterSetName='Add')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'Add')]
     [string]$SourceName,
 
-    [Parameter(Mandatory=$true, ParameterSetName='Add')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'Add')]
     [string]$SourceURL,
 
-    [Parameter(Mandatory=$false, ParameterSetName='Add')]
-    [ValidateSet('Microsoft.Rest','Microsoft.PreIndexed.Package')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Add')]
+    [ValidateSet('Microsoft.Rest', 'Microsoft.PreIndexed.Package')]
     [string]$SourceType = 'Microsoft.Rest',
 
-    [Parameter(Mandatory=$false, ParameterSetName='Add')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Add')]
     [switch]$RemoveDefaultSources,
 
-    [Parameter(Mandatory=$false, ParameterSetName='Reset')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Reset')]
     [switch]$ResetSources,
 
-    [Parameter(Mandatory=$false, ParameterSetName='Export')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Export')]
     [switch]$ExportConfig,
 
-    [Parameter(Mandatory=$false, ParameterSetName='Import')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Import')]
     [string]$ImportConfig,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$OutputPath = ".",
 
-    [Parameter(Mandatory=$false, ParameterSetName='Add')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Add')]
     [switch]$GenerateIntuneScript
 )
 
@@ -96,7 +96,7 @@ param(
 
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
-    $color = switch($Level) {
+    $color = switch ($Level) {
         'Success' { 'Green' }
         'Warning' { 'Yellow' }
         'Error' { 'Red' }
@@ -112,7 +112,7 @@ function Get-WingetPath {
     }
     catch {
         $wingetExe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction SilentlyContinue
-        if($wingetExe) {
+        if ($wingetExe) {
             return $wingetExe[-1].Path
         }
         return $null
@@ -121,7 +121,7 @@ function Get-WingetPath {
 
 function Get-CurrentSources {
     $wingetPath = Get-WingetPath
-    if(-not $wingetPath) {
+    if (-not $wingetPath) {
         Write-ColorOutput "Winget not found" -Level Error
         return @()
     }
@@ -140,7 +140,7 @@ function Get-CurrentSources {
 
 function Add-CustomSource {
     $wingetPath = Get-WingetPath
-    if(-not $wingetPath) { return }
+    if (-not $wingetPath) { return }
 
     Write-Host "`nAdding custom source: $SourceName" -ForegroundColor Cyan
     Write-Host "  URL: $SourceURL" -ForegroundColor Gray
@@ -156,17 +156,21 @@ function Add-CustomSource {
 }
 
 function Remove-DefaultSources {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
     $wingetPath = Get-WingetPath
-    if(-not $wingetPath) { return }
+    if (-not $wingetPath) { return }
 
     Write-Host "`nRemoving default sources..." -ForegroundColor Yellow
 
     $defaultSources = @('winget', 'msstore')
 
-    foreach($source in $defaultSources) {
+    foreach ($source in $defaultSources) {
         try {
-            & $wingetPath source remove --name $source 2>&1 | Out-Null
-            Write-ColorOutput "  Removed: $source" -Level Success
+            if ($PSCmdlet.ShouldProcess($source, 'Remove winget source')) {
+                & $wingetPath source remove --name $source 2>&1 | Out-Null
+                Write-ColorOutput "  Removed: $source" -Level Success
+            }
         }
         catch {
             Write-ColorOutput "  Could not remove $source (may not exist)" -Level Warning
@@ -175,14 +179,18 @@ function Remove-DefaultSources {
 }
 
 function Reset-WingetSources {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
     $wingetPath = Get-WingetPath
-    if(-not $wingetPath) { return }
+    if (-not $wingetPath) { return }
 
     Write-Host "`nResetting winget sources to defaults..." -ForegroundColor Cyan
 
     try {
-        & $wingetPath source reset --force
-        Write-ColorOutput "Successfully reset winget sources" -Level Success
+        if ($PSCmdlet.ShouldProcess('winget', 'Reset sources to defaults')) {
+            & $wingetPath source reset --force
+            Write-ColorOutput "Successfully reset winget sources" -Level Success
+        }
     }
     catch {
         Write-ColorOutput "Failed to reset sources: $($_.Exception.Message)" -Level Error
@@ -206,12 +214,12 @@ function Import-SourceConfig {
     param([string]$ConfigPath)
 
     $wingetPath = Get-WingetPath
-    if(-not $wingetPath) {
+    if (-not $wingetPath) {
         Write-ColorOutput "Winget not found - cannot import configuration" -Level Error
         return
     }
 
-    if(-not (Test-Path $ConfigPath)) {
+    if (-not (Test-Path $ConfigPath)) {
         Write-ColorOutput "Configuration file not found: $ConfigPath" -Level Error
         return
     }
@@ -222,20 +230,20 @@ function Import-SourceConfig {
         $config = Get-Content -Path $ConfigPath -Raw | ConvertFrom-Json
 
         $sources = @()
-        if($config.Sources) {
+        if ($config.Sources) {
             $sources = @($config.Sources)
         }
-        elseif($config -is [System.Array]) {
+        elseif ($config -is [System.Array]) {
             $sources = @($config)
         }
 
         $removeSources = @()
-        if($config.RemoveSources) {
+        if ($config.RemoveSources) {
             $removeSources = @($config.RemoveSources)
         }
 
         # Remove sources first
-        foreach($source in $removeSources) {
+        foreach ($source in $removeSources) {
             try {
                 & $wingetPath source remove --name $source.Name 2>&1 | Out-Null
                 Write-ColorOutput "  Removed: $($source.Name)" -Level Success
@@ -246,12 +254,12 @@ function Import-SourceConfig {
         }
 
         # Add/update sources
-        foreach($source in $sources) {
+        foreach ($source in $sources) {
             $sourceName = $source.Name
             $sourceArg = $source.Arg
-            $sourceType = if($source.Type) { $source.Type } else { 'Microsoft.Rest' }
+            $sourceType = if ($source.Type) { $source.Type } else { 'Microsoft.Rest' }
 
-            if(-not $sourceName -or -not $sourceArg) {
+            if (-not $sourceName -or -not $sourceArg) {
                 Write-ColorOutput "  Skipping invalid source entry (Name and Arg are required)" -Level Warning
                 continue
             }
@@ -270,6 +278,8 @@ function Import-SourceConfig {
 }
 
 function New-IntuneDeploymentScript {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
     $scriptContent = @"
 <#
 .SYNOPSIS
@@ -317,7 +327,7 @@ catch {
 }
 "@
 
-    if($RemoveDefaultSources) {
+    if ($RemoveDefaultSources) {
         $scriptContent += @"
 
 # Remove default sources
@@ -328,9 +338,10 @@ Write-Host "Removing default sources..."
     }
 
     $scriptPath = Join-Path $OutputPath "Deploy-WingetSource_$SourceName.ps1"
-    $scriptContent | Out-File -FilePath $scriptPath -Encoding UTF8
-
-    Write-ColorOutput "`nIntune deployment script generated: $scriptPath" -Level Success
+    if ($PSCmdlet.ShouldProcess($scriptPath, 'Write Intune deployment script')) {
+        $scriptContent | Out-File -FilePath $scriptPath -Encoding UTF8
+        Write-ColorOutput "`nIntune deployment script generated: $scriptPath" -Level Success
+    }
     Write-Host "`nTo deploy:" -ForegroundColor Cyan
     Write-Host "  1. Upload to Intune as Win32 app or PowerShell script" -ForegroundColor Gray
     Write-Host "  2. Deploy to device groups" -ForegroundColor Gray
@@ -345,23 +356,23 @@ Write-Host "========================================`n" -ForegroundColor Cyan
 Write-Host "Current Configuration:" -ForegroundColor Cyan
 Get-CurrentSources
 
-if($ResetSources) {
+if ($ResetSources) {
     Reset-WingetSources
 }
-elseif($ExportConfig) {
+elseif ($ExportConfig) {
     Export-SourceConfig
 }
-elseif($ImportConfig) {
+elseif ($ImportConfig) {
     Import-SourceConfig -ConfigPath $ImportConfig
 }
 else {
-    if($RemoveDefaultSources) {
+    if ($RemoveDefaultSources) {
         Remove-DefaultSources
     }
 
     Add-CustomSource
 
-    if($GenerateIntuneScript) {
+    if ($GenerateIntuneScript) {
         New-IntuneDeploymentScript
     }
 }

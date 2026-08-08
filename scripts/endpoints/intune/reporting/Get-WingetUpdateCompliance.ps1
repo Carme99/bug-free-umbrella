@@ -53,22 +53,22 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$TenantId,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$ApplicationFilter,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeUpToDate,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$Top
 )
 
@@ -98,7 +98,7 @@ $script:report = @{
 
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
-    $color = switch($Level) {
+    $color = switch ($Level) {
         'Success' { 'Green' }
         'Warning' { 'Yellow' }
         'Error' { 'Red' }
@@ -112,18 +112,19 @@ function Connect-GraphAPI {
 
     try {
         $context = Get-MgContext
-        if(-not $context) {
+        if (-not $context) {
             $params = @{
                 Scopes = @(
                     "DeviceManagementManagedDevices.Read.All",
                     "DeviceManagementConfiguration.Read.All"
                 )
             }
-            if($TenantId) { $params.TenantId = $TenantId }
+            if ($TenantId) { $params.TenantId = $TenantId }
 
             Connect-MgGraph @params
             Write-ColorOutput "  Connected successfully" -Level Success
-        } else {
+        }
+        else {
             Write-ColorOutput "  Already connected to tenant: $($context.TenantId)" -Level Success
         }
     }
@@ -143,7 +144,7 @@ function Get-DeviceWingetData {
             All = $true
         }
 
-        if($Top) {
+        if ($Top) {
             $params.Remove('All')
             $params.Top = $Top
         }
@@ -180,35 +181,36 @@ function Get-SampleComplianceData {
     Write-Host "  (In production, this would query actual device inventory)" -ForegroundColor Gray
 
     $sampleApps = @(
-        @{App="Google Chrome"; Current="120.0.6099"; Available="121.0.6167"; Status="Outdated"}
-        @{App="Microsoft Teams"; Current="1.6.00.36361"; Available="1.7.00.1234"; Status="Outdated"}
-        @{App="7-Zip"; Current="23.01"; Available="24.01"; Status="Outdated"}
-        @{App="Visual Studio Code"; Current="1.85.0"; Available="1.85.0"; Status="UpToDate"}
-        @{App="Adobe Reader"; Current="23.008.20421"; Available="24.001.20604"; Status="Outdated"}
+        @{App = "Google Chrome"; Current = "120.0.6099"; Available = "121.0.6167"; Status = "Outdated" }
+        @{App = "Microsoft Teams"; Current = "1.6.00.36361"; Available = "1.7.00.1234"; Status = "Outdated" }
+        @{App = "7-Zip"; Current = "23.01"; Available = "24.01"; Status = "Outdated" }
+        @{App = "Visual Studio Code"; Current = "1.85.0"; Available = "1.85.0"; Status = "UpToDate" }
+        @{App = "Adobe Reader"; Current = "23.008.20421"; Available = "24.001.20604"; Status = "Outdated" }
     )
 
-    foreach($app in $sampleApps) {
+    foreach ($app in $sampleApps) {
         $appData = [PSCustomObject]@{
             ApplicationName = $app.App
             InstalledVersion = $app.Current
             AvailableVersion = $app.Available
             Status = $app.Status
             DeviceCount = Get-Random -Minimum 50 -Maximum 500
-            OutdatedCount = if($app.Status -eq "Outdated") { Get-Random -Minimum 20 -Maximum 200 } else { 0 }
+            OutdatedCount = if ($app.Status -eq "Outdated") { Get-Random -Minimum 20 -Maximum 200 } else { 0 }
         }
 
-        if($ApplicationFilter) {
-            if($appData.ApplicationName -like $ApplicationFilter) {
+        if ($ApplicationFilter) {
+            if ($appData.ApplicationName -like $ApplicationFilter) {
                 $script:report.Applications += $appData
             }
         }
-        elseif($app.Status -eq "Outdated" -or $IncludeUpToDate) {
+        elseif ($app.Status -eq "Outdated" -or $IncludeUpToDate) {
             $script:report.Applications += $appData
         }
 
-        if($app.Status -eq "Outdated") {
+        if ($app.Status -eq "Outdated") {
             $script:report.OutdatedApps++
-        } else {
+        }
+        else {
             $script:report.UpToDateApps++
         }
     }
@@ -227,7 +229,7 @@ function Show-Summary {
     Write-ColorOutput "Outdated Applications: $($script:report.OutdatedApps)" -Level Warning
     Write-ColorOutput "Up-to-Date Applications: $($script:report.UpToDateApps)" -Level Success
 
-    if($script:report.Applications.Count -gt 0) {
+    if ($script:report.Applications.Count -gt 0) {
         Write-Host "`nApplication Update Status:" -ForegroundColor Cyan
         $script:report.Applications | Format-Table ApplicationName, InstalledVersion, AvailableVersion, Status, DeviceCount, OutdatedCount -AutoSize
     }
@@ -345,12 +347,12 @@ Get-SampleComplianceData
 
 Show-Summary
 
-if($ExportHTML) {
+if ($ExportHTML) {
     Write-Host "Generating HTML report..." -ForegroundColor Cyan
     Export-HTMLReport
 }
 
-if($ExportCSV) {
+if ($ExportCSV) {
     Write-Host "Generating CSV report..." -ForegroundColor Cyan
     Export-CSVReport
 }

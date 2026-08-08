@@ -42,17 +42,17 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
-    [ValidateSet('JSON','CSV','Console')]
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('JSON', 'CSV', 'Console')]
     [string]$ExportFormat = 'Console',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$OutputPath,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$SourceFilter,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeSystemApps
 )
 
@@ -71,7 +71,7 @@ function Get-WingetPath {
 
 function Get-WingetPackages {
     $wingetPath = Get-WingetPath
-    if(-not $wingetPath) { return @() }
+    if (-not $wingetPath) { return @() }
 
     Write-Host "Enumerating winget packages..." -ForegroundColor Cyan
 
@@ -84,21 +84,21 @@ function Get-WingetPackages {
         # Skip header lines
         $dataLines = $lines | Select-Object -Skip 2
 
-        foreach($line in $dataLines) {
+        foreach ($line in $dataLines) {
             # Parse winget list output format
-            if($line -match '^\s*(.+?)\s+(.+?)\s+([\d\.]+)\s*(<\s*([\d\.]+))?\s*(.*)$') {
+            if ($line -match '^\s*(.+?)\s+(.+?)\s+([\d\.]+)\s*(<\s*([\d\.]+))?\s*(.*)$') {
                 $name = $matches[1].Trim()
                 $id = $matches[2].Trim()
                 $version = $matches[3].Trim()
-                $availableVersion = if($matches[5]) { $matches[5].Trim() } else { $version }
+                $availableVersion = if ($matches[5]) { $matches[5].Trim() } else { $version }
                 $source = $matches[6].Trim()
 
                 # Apply filters
-                if($SourceFilter -and $source -notlike "*$SourceFilter*") {
+                if ($SourceFilter -and $source -notlike "*$SourceFilter*") {
                     continue
                 }
 
-                if(-not $IncludeSystemApps -and $source -like "*msstore*") {
+                if (-not $IncludeSystemApps -and $source -like "*msstore*") {
                     continue
                 }
 
@@ -124,25 +124,26 @@ function Get-WingetPackages {
 }
 
 function Export-Data {
-    if($script:packages.Count -eq 0) {
+    if ($script:packages.Count -eq 0) {
         Write-Warning "No packages to export"
         return
     }
 
-    switch($ExportFormat) {
+    switch ($ExportFormat) {
         'JSON' {
             $jsonData = $script:packages | ConvertTo-Json -Depth 10
 
-            if($OutputPath) {
+            if ($OutputPath) {
                 $jsonData | Out-File -FilePath $OutputPath -Encoding UTF8
                 Write-Host "Exported to: $OutputPath" -ForegroundColor Green
-            } else {
+            }
+            else {
                 Write-Output $jsonData
             }
         }
 
         'CSV' {
-            if(-not $OutputPath) {
+            if (-not $OutputPath) {
                 $OutputPath = "$env:TEMP\winget-packages_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
             }
 

@@ -41,20 +41,20 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$Days = 30,
 
-    [Parameter(Mandatory=$false)]
-    [ValidateSet('All','Compliant','NonCompliant','Unknown')]
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('All', 'Compliant', 'NonCompliant', 'Unknown')]
     [string]$Status = 'All',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$ProfileName,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -86,7 +86,7 @@ $script:report = @{
 
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
-    $color = switch($Level) { 'Success' { 'Green' } 'Warning' { 'Yellow' } 'Error' { 'Red' } default { 'Cyan' } }
+    $color = switch ($Level) { 'Success' { 'Green' } 'Warning' { 'Yellow' } 'Error' { 'Red' } default { 'Cyan' } }
     Write-Host $Message -ForegroundColor $color
 }
 
@@ -97,8 +97,8 @@ Write-Host "========================================`n" -ForegroundColor Cyan
 Write-ColorOutput "Connecting to Microsoft Graph..." -Level Info
 try {
     $context = Get-MgContext
-    if(-not $context) {
-        Connect-MgGraph -Scopes "DeviceManagementManagedDevices.Read.All","DeviceManagementServiceConfig.Read.All"
+    if (-not $context) {
+        Connect-MgGraph -Scopes "DeviceManagementManagedDevices.Read.All", "DeviceManagementServiceConfig.Read.All"
     }
     Write-ColorOutput "  Connected successfully" -Level Success
 }
@@ -113,17 +113,17 @@ $cutoffDate = (Get-Date).AddDays(-$Days)
 try {
     $devices = Get-MgDeviceManagementManagedDevice -Filter "deviceEnrollmentType eq 'windowsAutoEnrollment' or deviceEnrollmentType eq 'windowsAutopilotEnrollment' or deviceEnrollmentType eq 'windowsBulkAzureDomainJoin'" -All
     
-    foreach($device in $devices) {
-        if($device.EnrolledDateTime -lt $cutoffDate) { continue }
+    foreach ($device in $devices) {
+        if ($device.EnrolledDateTime -lt $cutoffDate) { continue }
         
         # Report the actual device compliance state - do NOT present it as deployment success/failure
         $complianceStatus = switch ($device.ComplianceState) {
             'compliant' { 'Compliant' }
-            'unknown'   { 'Unknown' }
-            default     { 'NonCompliant' }
+            'unknown' { 'Unknown' }
+            default { 'NonCompliant' }
         }
         
-        if($Status -ne 'All' -and $complianceStatus -ne $Status) { continue }
+        if ($Status -ne 'All' -and $complianceStatus -ne $Status) { continue }
         
         $deployment = [PSCustomObject]@{
             DeviceName = $device.DeviceName
@@ -155,12 +155,12 @@ Write-ColorOutput "Compliant: $($script:report.Summary.Compliant)" -Level Succes
 Write-ColorOutput "NonCompliant: $($script:report.Summary.NonCompliant)" -Level Error
 Write-ColorOutput "Unknown: $($script:report.Summary.Unknown)" -Level Warning
 
-if($script:report.Deployments.Count -gt 0) {
+if ($script:report.Deployments.Count -gt 0) {
     Write-Host "`nRecent Deployments:" -ForegroundColor Cyan
     $script:report.Deployments | Select-Object -First 20 | Format-Table DeviceName, EnrollmentDate, Compliance, UserPrincipalName -AutoSize
 }
 
-if($ExportHTML) {
+if ($ExportHTML) {
     $reportPath = "$ReportDir\AutopilotReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
     $html = @"
 <!DOCTYPE html>
@@ -179,7 +179,7 @@ $(foreach($d in $script:report.Deployments){$c=$d.Compliance.ToLower();"<tr><td>
     Write-ColorOutput "`nHTML report: $reportPath" -Level Success
 }
 
-if($ExportCSV) {
+if ($ExportCSV) {
     $csvPath = "$ReportDir\AutopilotReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
     $script:report.Deployments | Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
     Write-ColorOutput "CSV report: $csvPath" -Level Success
