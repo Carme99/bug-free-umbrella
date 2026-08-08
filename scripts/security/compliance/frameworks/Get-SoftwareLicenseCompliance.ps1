@@ -86,7 +86,7 @@ foreach ($path in $registryPaths) {
                 # Check for Office license
                 if ($productName -match "Microsoft Office|Microsoft 365") {
                     try {
-                        $officeLicense = Get-WmiObject -Query "SELECT * FROM SoftwareLicensingProduct WHERE ApplicationID = '0ff1ce15-a989-479d-af46-f275c6370663' AND LicenseStatus = 1" -ErrorAction SilentlyContinue
+                        $officeLicense = Get-CimInstance -Query "SELECT * FROM SoftwareLicensingProduct WHERE ApplicationID = '0ff1ce15-a989-479d-af46-f275c6370663' AND LicenseStatus = 1" -ErrorAction SilentlyContinue
                         if ($officeLicense) {
                             $licenseKey = $officeLicense.ProductKeyID
                             $licenseStatus = "Licensed"
@@ -101,7 +101,7 @@ foreach ($path in $registryPaths) {
                 # Check for Windows license
                 if ($productName -match "Windows|Microsoft Windows") {
                     try {
-                        $windowsLicense = Get-WmiObject -Query "SELECT * FROM SoftwareLicensingProduct WHERE ApplicationID = '55c92734-d682-4d71-983e-d6ec3f16059f' AND LicenseStatus = 1" -ErrorAction SilentlyContinue
+                        $windowsLicense = Get-CimInstance -Query "SELECT * FROM SoftwareLicensingProduct WHERE ApplicationID = '55c92734-d682-4d71-983e-d6ec3f16059f' AND LicenseStatus = 1" -ErrorAction SilentlyContinue
                         if ($windowsLicense) {
                             $licenseKey = $windowsLicense.ProductKeyID
                             $licenseStatus = "Licensed"

@@ -3,21 +3,18 @@
     Performs comprehensive security compliance scanning against industry frameworks.
 
 .DESCRIPTION
-    Multi-framework security compliance scanner that validates systems against:
-    - CIS Benchmarks (Windows, Linux)
+    Multi-framework security compliance scanner that validates Windows systems against:
+    - CIS Benchmarks (Windows)
     - NIST 800-53 controls
     - PCI-DSS requirements
-    - HIPAA security rule
-    - SOC 2 Type II controls
-    - ISO 27001 requirements
 
     Generates detailed compliance reports with remediation guidance.
 
 .PARAMETER Framework
-    Compliance framework to test against: 'CIS', 'NIST', 'PCI-DSS', 'HIPAA', 'SOC2', 'ISO27001', 'All'
+    Compliance framework to test against: 'CIS', 'NIST', 'PCI-DSS', 'All'
 
 .PARAMETER TargetSystem
-    Target system type: 'Windows', 'Linux', 'Cloud', 'Network'
+    Target system type: 'Windows' (the implemented checks use Windows-only cmdlets)
 
 .PARAMETER Severity
     Minimum severity to report: 'Critical', 'High', 'Medium', 'Low', 'All'. Default: 'All'
@@ -52,11 +49,11 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $true)]
-    [ValidateSet('CIS', 'NIST', 'PCI-DSS', 'HIPAA', 'SOC2', 'ISO27001', 'All')]
+    [ValidateSet('CIS', 'NIST', 'PCI-DSS', 'All')]
     [string]$Framework,
 
     [Parameter(Mandatory = $true)]
-    [ValidateSet('Windows', 'Linux', 'Cloud', 'Network')]
+    [ValidateSet('Windows')]
     [string]$TargetSystem,
 
     [Parameter(Mandatory = $false)]
@@ -168,18 +165,19 @@ function Test-CISWindowsCompliance {
         }
     }
 
-    # CIS 18.3.1 - LAPS AdmPwd GPO Extension
-    $lapsInstalled = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\GPExtensions\{D76B9641-3288-4f75-942D-087DE603E3EA}' -ErrorAction SilentlyContinue
-    if (-not $lapsInstalled) {
+    # CIS 18.3.1 - LAPS AdmPwd GPO Extension (legacy) / Windows LAPS
+    $legacyLapsInstalled = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon\GPExtensions\{D76B9641-3288-4f75-942D-087DE603E3EA}' -ErrorAction SilentlyContinue
+    $windowsLapsConfigured = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\LAPS' -ErrorAction SilentlyContinue
+    if (-not $legacyLapsInstalled -and -not $windowsLapsConfigured) {
         $findings += @{
             ControlID = "CIS-18.3.1"
             Title = "LAPS Installation"
-            Description = "Local Administrator Password Solution (LAPS) should be installed"
+            Description = "Local Administrator Password Solution (LAPS) should be installed and configured"
             Severity = "High"
             Status = "Non-Compliant"
             CurrentValue = "Not Installed"
             ExpectedValue = "Installed"
-            Remediation = "Install LAPS from Microsoft Download Center"
+            Remediation = "Deploy Windows LAPS (built into Windows 10 20H2+/Server 20H2+, enabled via the ADMX-backed policy under HKLM:\SOFTWARE\Policies\Microsoft\Windows\LAPS) - https://learn.microsoft.com/en-us/windows-server/identity/laps/laps-overview"
         }
     }
 
@@ -206,15 +204,15 @@ function Test-NISTCompliance {
     }
 
     # AC-7 - Unsuccessful Logon Attempts
-    $lockoutThreshold = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters' -ErrorAction SilentlyContinue).LockoutThreshold
-    if ($lockoutThreshold -gt 5 -or $lockoutThreshold -eq 0) {
+    $lockoutBadCount = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters' -ErrorAction SilentlyContinue).LockoutBadCount
+    if ($lockoutBadCount -gt 5 -or $lockoutBadCount -eq 0) {
         $findings += @{
             ControlID = "NIST-AC-7"
             Title = "Account Lockout Threshold"
             Description = "Account lockout threshold should be 5 or fewer invalid logon attempts"
             Severity = "High"
             Status = "Non-Compliant"
-            CurrentValue = $lockoutThreshold
+            CurrentValue = $lockoutBadCount
             ExpectedValue = "5 or less"
             Remediation = "Configure account lockout policy in Group Policy"
         }
@@ -236,6 +234,48 @@ function Test-NISTCompliance {
     }
 
     return $findings
+}
+
+# Helper function to read a value from the exported security policy (secedit INI)
+function Get-SecurityPolicyValue {
+    [CmdletBinding()]
+    param(
+        [string]$Section,
+        [string]$Name
+    )
+
+    $tempFile = Join-Path $env:TEMP ("secpol_{0}.cfg" -f [Guid]::NewGuid().ToString('N'))
+
+    try {
+        $null = secedit /export /cfg $tempFile /quiet
+
+        if (-not (Test-Path -LiteralPath $tempFile)) {
+            throw "Failed to export security policy"
+        }
+
+        $content = Get-Content -LiteralPath $tempFile -ErrorAction Stop
+        $currentSection = ""
+        foreach ($line in $content) {
+            if ($line -match '^\[(.+)\]$') {
+                $currentSection = $matches[1]
+            }
+            elseif ($line -match '^(.+?)\s*=\s*(.*)$' -and $currentSection -eq $Section) {
+                if ($matches[1].Trim() -eq $Name) {
+                    return $matches[2].Trim()
+                }
+            }
+        }
+        return $null
+    }
+    catch {
+        Write-Verbose "Failed to read security policy value '$Section\$Name': $($_.Exception.Message)"
+        return $null
+    }
+    finally {
+        if (Test-Path -LiteralPath $tempFile) {
+            Remove-Item -LiteralPath $tempFile -Force -ErrorAction SilentlyContinue
+        }
+    }
 }
 
 # PCI-DSS Requirements
@@ -261,23 +301,34 @@ function Test-PCIDSSCompliance {
     }
 
     # Requirement 2.2.4 - Configure system security parameters
-    $tlsVersion = [Net.ServicePointManager]::SecurityProtocol
-    if ($tlsVersion -notmatch "Tls12|Tls13") {
+    # TLS enforcement is determined by the Schannel registry policy, not the
+    # process-local [Net.ServicePointManager]::SecurityProtocol default.
+    $schannelBase = 'HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols'
+    $tls12Client = Get-ItemProperty -Path (Join-Path $schannelBase 'TLS 1.2\Client') -ErrorAction SilentlyContinue
+    $tls13Client = Get-ItemProperty -Path (Join-Path $schannelBase 'TLS 1.3\Client') -ErrorAction SilentlyContinue
+
+    $tls12Enabled = ($tls12Client.Enabled -eq 1 -and $tls12Client.DisabledByDefault -eq 0)
+    # TLS 1.3 is absent on older Windows; when the key is present it must also be enabled
+    $tls13Compliant = if ($null -eq $tls13Client) { $true } else { ($tls13Client.Enabled -eq 1 -and $tls13Client.DisabledByDefault -eq 0) }
+
+    if (-not ($tls12Enabled -and $tls13Compliant)) {
         $findings += @{
             ControlID = "PCI-DSS-2.2.4"
             Title = "TLS Configuration"
-            Description = "TLS 1.2 or higher should be enforced"
+            Description = "TLS 1.2 or higher should be enforced at the operating system level (Schannel)"
             Severity = "Critical"
             Status = "Non-Compliant"
-            CurrentValue = $tlsVersion
-            ExpectedValue = "TLS 1.2 or TLS 1.3"
-            Remediation = "Configure TLS 1.2+ in registry and disable older protocols"
+            CurrentValue = "TLS 1.2 enforced: $tls12Enabled; TLS 1.3 compliant: $tls13Compliant"
+            ExpectedValue = "TLS 1.2 enabled (and TLS 1.3 where present) with Enabled = 1 and DisabledByDefault = 0"
+            Remediation = "Set 'Enabled' = 1 and 'DisabledByDefault' = 0 under 'HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.2\Client' (and 'TLS 1.3\Client' where supported), then disable older protocols"
         }
     }
 
     # Requirement 8.2.3 - Password complexity
-    $passComplexity = (Get-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Lsa' -ErrorAction SilentlyContinue).PasswordComplexity
-    if ($passComplexity -ne 1) {
+    # 'PasswordComplexity' is not a documented value under HKLM\...\Control\Lsa;
+    # read it from the exported security policy the same way Test-CISBenchmark.ps1 does.
+    $passComplexity = Get-SecurityPolicyValue -Section 'System Access' -Name 'PasswordComplexity'
+    if ($passComplexity -ne '1') {
         $findings += @{
             ControlID = "PCI-DSS-8.2.3"
             Title = "Password Complexity"
@@ -286,7 +337,7 @@ function Test-PCIDSSCompliance {
             Status = "Non-Compliant"
             CurrentValue = "Disabled"
             ExpectedValue = "Enabled"
-            Remediation = "Enable password complexity in Group Policy"
+            Remediation = "Enable password complexity in Group Policy (Security Options > Accounts: Limit local account use of blank passwords / Password Policy > Password must meet complexity requirements)"
         }
     }
 

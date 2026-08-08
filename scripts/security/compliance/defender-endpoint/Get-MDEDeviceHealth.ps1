@@ -101,20 +101,20 @@ $results = @{
 Write-Host "Monitoring Microsoft Defender for Endpoint devices..." -ForegroundColor Cyan
 
 # WARNING: This script is a FRAMEWORK TEMPLATE and requires implementation of actual MDE API calls
-# It will NOT produce real data without Microsoft Graph API or WindowsDefenderATP API integration
+# It will NOT produce real data without Microsoft Graph API or Microsoft Defender for Endpoint API integration
 #
 # Required implementation:
 # - Microsoft Graph API: DeviceManagement.Read.All permission
-# - Or Windows Defender ATP API: Machine.Read.All permission
+# - Or Microsoft Defender for Endpoint API: Machine.Read.All / Machine.ReadWrite.All permission
 #
 # Example API call:
 # $headers = @{ Authorization = "Bearer $token" }
-# $devices = Invoke-RestMethod -Uri "https://api.securitycenter.microsoft.com/api/machines" -Headers $headers
+# $devices = Invoke-RestMethod -Uri "https://api.security.microsoft.com/api/machines" -Headers $headers
 
 try {
     Write-Host "`nWARNING: This script is a framework template - no live API data available" -ForegroundColor Yellow
     Write-Host "`nAuthenticating to Microsoft Defender API..." -ForegroundColor Yellow
-    Write-Host "Note: Full implementation requires Microsoft Graph or WindowsDefenderATP API access" -ForegroundColor Gray
+    Write-Host "Note: Full implementation requires Microsoft Graph or Microsoft Defender for Endpoint API access" -ForegroundColor Gray
 
     # Simulated device health analysis
     Write-Host "`nRetrieving device inventory..." -ForegroundColor Yellow
@@ -201,9 +201,9 @@ switch ($OutputFormat) {
         Write-Host "Status: MDE monitoring framework ready" -ForegroundColor Green
         Write-Host "`nNext Steps:" -ForegroundColor Yellow
         Write-Host "1. Configure Microsoft Graph API access" -ForegroundColor White
-        Write-Host "2. Grant DeviceManagement.Read.All permission (or Machine.Read.All for WindowsDefenderATP API)" -ForegroundColor White
+        Write-Host "2. Grant DeviceManagement.Read.All permission (or Machine.Read.All / Machine.ReadWrite.All for the Microsoft Defender for Endpoint API)" -ForegroundColor White
         Write-Host "3. Implement API authentication" -ForegroundColor White
-        Write-Host "4. Connect to https://api.securitycenter.microsoft.com" -ForegroundColor White
+        Write-Host "4. Connect to https://api.security.microsoft.com" -ForegroundColor White
     }
 
     'HTML' {
@@ -237,9 +237,9 @@ switch ($OutputFormat) {
         <p>This script provides the framework for MDE device monitoring. To enable live data:</p>
         <ol>
             <li>Register an Azure AD application</li>
-            <li>Grant <strong>DeviceManagement.Read.All</strong> (Microsoft Graph) or <strong>Machine.Read.All</strong> (WindowsDefenderATP API) permission</li>
+            <li>Grant <strong>DeviceManagement.Read.All</strong> (Microsoft Graph) or <strong>Machine.Read.All</strong> / <strong>Machine.ReadWrite.All</strong> (Microsoft Defender for Endpoint API) permission</li>
             <li>Implement OAuth2 authentication</li>
-            <li>Connect to Microsoft Defender ATP API: <code>https://api.securitycenter.microsoft.com</code></li>
+            <li>Connect to Microsoft Defender for Endpoint API: <code>https://api.security.microsoft.com</code></li>
         </ol>
         <p><strong>Sample API Endpoints:</strong></p>
         <ul>

@@ -73,7 +73,7 @@ try {
     # Check if system has a battery
     Write-Host "`nDetecting battery..." -ForegroundColor Yellow
 
-    $battery = Get-WmiObject -Class Win32_Battery -ErrorAction SilentlyContinue
+    $battery = Get-CimInstance -ClassName Win32_Battery -ErrorAction SilentlyContinue
 
     if (-not $battery) {
         Write-Host "No battery detected. This appears to be a desktop system." -ForegroundColor Yellow
@@ -126,10 +126,11 @@ try {
         $wearLevel = "N/A"
     }
 
-    # Estimate runtime
+    # Estimate runtime: EstimatedRunTime is meaningless while on AC power (WMI/CIM
+    # reports a sentinel value); use BatteryStatus (2 = On AC Power) instead.
     $estimatedRunTime = $battery.EstimatedRunTime
-    if ($estimatedRunTime -eq 71582788) {
-        $estimatedRunTimeText = "On AC Power / Fully Charged"
+    if ($battery.BatteryStatus -eq 2) {
+        $estimatedRunTimeText = "On AC Power"
     }
     elseif ($estimatedRunTime) {
         $hours = [math]::Floor($estimatedRunTime / 60)
@@ -161,8 +162,8 @@ try {
         Write-Host "  Recommendation: Consider battery replacement" -ForegroundColor Yellow
     }
 
-    # Get additional battery details from WMI
-    $portableBattery = Get-WmiObject -Class Win32_PortableBattery -ErrorAction SilentlyContinue
+    # Get additional battery details from CIM
+    $portableBattery = Get-CimInstance -ClassName Win32_PortableBattery -ErrorAction SilentlyContinue
 
     if ($portableBattery) {
         $manufacturer = $portableBattery.Manufacturer
