@@ -383,7 +383,8 @@ $results.Summary = @{
     LowFindings = $lowCount
     ComplianceScore = if ($results.Findings.Count -gt 0) {
         [math]::Round((1 - ($criticalCount * 4 + $highCount * 3 + $mediumCount * 2 + $lowCount) / ($results.Findings.Count * 4)) * 100, 2)
-    } else { 100 }
+    }
+    else { 100 }
 }
 
 # Output results
@@ -399,7 +400,7 @@ switch ($OutputFormat) {
 
         if ($results.Findings.Count -gt 0) {
             Write-Host "`n=== Top Findings ===" -ForegroundColor Cyan
-            foreach ($finding in ($results.Findings | Sort-Object { @('Critical','High','Medium','Low').IndexOf($_.Severity) } | Select-Object -First 10)) {
+            foreach ($finding in ($results.Findings | Sort-Object { @('Critical', 'High', 'Medium', 'Low').IndexOf($_.Severity) } | Select-Object -First 10)) {
                 $color = switch ($finding.Severity) {
                     'Critical' { 'Red' }
                     'High' { 'DarkRed' }
@@ -451,7 +452,7 @@ switch ($OutputFormat) {
     <table>
         <tr><th>Control ID</th><th>Title</th><th>Severity</th><th>Status</th><th>Current Value</th><th>Expected Value</th>$(if ($RemediationGuidance) { '<th>Remediation</th>' })</tr>
 "@
-        foreach ($finding in ($results.Findings | Sort-Object { @('Critical','High','Medium','Low').IndexOf($_.Severity) })) {
+        foreach ($finding in ($results.Findings | Sort-Object { @('Critical', 'High', 'Medium', 'Low').IndexOf($_.Severity) })) {
             $severityClass = $finding.Severity.ToLower()
             $html += "<tr class='$severityClass'><td>$([System.Net.WebUtility]::HtmlEncode("$($finding.ControlID)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($finding.Title)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($finding.Severity)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($finding.Status)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($finding.CurrentValue)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($finding.ExpectedValue)"))</td>"
             if ($RemediationGuidance) {

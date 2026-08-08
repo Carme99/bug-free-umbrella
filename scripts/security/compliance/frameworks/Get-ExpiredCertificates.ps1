@@ -134,7 +134,8 @@ foreach ($Location in $StoreLocations) {
                 $Results += $CertInfo
             }
 
-        } catch {
+        }
+        catch {
             Write-Verbose "Error scanning $Location\$StoreName : $($_.Exception.Message)"
         }
     }
@@ -156,7 +157,8 @@ Write-Host "`n[3/3] Certificate Details..." -ForegroundColor Yellow
 
 if ($Results.Count -eq 0) {
     Write-Host "`n  ✓ No expired or expiring certificates found!" -ForegroundColor Green
-} else {
+}
+else {
     # Sort by days until expiry (expired first)
     $Results = $Results | Sort-Object DaysUntilExpiry
 
@@ -332,7 +334,8 @@ if ($ExportReport) {
         }
 
         $HTML += "</table>"
-    } else {
+    }
+    else {
         $HTML += "<p style='color: #27ae60; font-size: 18px; font-weight: bold;'>✓ No expired or expiring certificates found!</p>"
     }
 
@@ -359,7 +362,8 @@ Write-Host ""
 if ($IssuesFound) {
     Write-Host "⚠ Certificate scan completed with issues found.`n" -ForegroundColor Yellow
     exit 1
-} else {
+}
+else {
     Write-Host "✓ Certificate scan completed. No issues found.`n" -ForegroundColor Green
     exit 0
 }

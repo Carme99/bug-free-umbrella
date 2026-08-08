@@ -128,10 +128,12 @@ try {
         $reposUrl = "$baseUrl/orgs/$Owner/repos?per_page=100"
         $reposResponse = Invoke-RestMethod -Uri $reposUrl -Headers $headers -Method Get
         $repositories = $reposResponse | Select-Object -ExpandProperty name
-    } else {
+    }
+    else {
         $repositories = @($Repository)
     }
-} catch {
+}
+catch {
     Write-Error "Failed to retrieve repositories: $($_.Exception.Message)"
     exit 1
 }
@@ -167,7 +169,8 @@ foreach ($repo in $repositories) {
 
             $successRate = if ($totalRuns -gt 0) {
                 [math]::Round((($successfulRuns + $skippedRuns) / $totalRuns) * 100, 2)
-            } else { 0 }
+            }
+            else { 0 }
 
             # Calculate average duration
             $completedRuns = $recentRuns | Where-Object { $_.conclusion -and $_.updated_at }
@@ -176,7 +179,8 @@ foreach ($repo in $repositories) {
                     ([datetime]$_.updated_at - [datetime]$_.created_at).TotalMinutes
                 }
                 [math]::Round(($durations | Measure-Object -Average).Average, 2)
-            } else {
+            }
+            else {
                 0
             }
 
@@ -210,7 +214,8 @@ foreach ($repo in $repositories) {
                 Status = if ($successRate -ge 90) { 'Healthy' } elseif ($successRate -ge 70) { 'Warning' } else { 'Critical' }
             }
         }
-    } catch {
+    }
+    catch {
         Write-Warning "Failed to analyze workflows for $repo : $($_.Exception.Message)"
     }
 }
@@ -232,7 +237,8 @@ if ($IncludeRunners) {
                 Labels = ($runner.labels | Select-Object -ExpandProperty name) -join ', '
             }
         }
-    } catch {
+    }
+    catch {
         Write-Warning "Failed to analyze runners: $($_.Exception.Message)"
     }
 }
@@ -250,7 +256,8 @@ if ($IncludeBilling) {
             IncludedMinutes = $billingResponse.included_minutes
             MinutesUsedBreakdown = $billingResponse.minutes_used_breakdown
         }
-    } catch {
+    }
+    catch {
         Write-Warning "Failed to retrieve billing information (requires admin access): $($_.Exception.Message)"
     }
 }
@@ -262,7 +269,8 @@ $warningWorkflows = ($results.Workflows | Where-Object { $_.Status -eq 'Warning'
 $criticalWorkflows = ($results.Workflows | Where-Object { $_.Status -eq 'Critical' }).Count
 $avgSuccessRate = if ($totalWorkflows -gt 0) {
     [math]::Round(($results.Workflows.SuccessRate | Measure-Object -Average).Average, 2)
-} else { 0 }
+}
+else { 0 }
 
 $results.Summary = @{
     TotalWorkflows = $totalWorkflows

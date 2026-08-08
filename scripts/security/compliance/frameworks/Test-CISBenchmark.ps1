@@ -197,44 +197,44 @@ Write-Host "[*] Testing Password Policies..." -ForegroundColor Cyan
 # 1.1.1 Enforce password history
 $testResults += Test-CISControl -ControlID "1.1.1" -Description "Enforce password history" `
     -TestScript {
-        $value = $secPolicy['System Access']['PasswordHistorySize']
-        [int]$value -ge 24
-    } -Recommendation "Set to 24 or more passwords remembered"
+    $value = $secPolicy['System Access']['PasswordHistorySize']
+    [int]$value -ge 24
+} -Recommendation "Set to 24 or more passwords remembered"
 
 # 1.1.2 Maximum password age
 $testResults += Test-CISControl -ControlID "1.1.2" -Description "Maximum password age" `
     -TestScript {
-        $value = $secPolicy['System Access']['MaximumPasswordAge']
-        [int]$value -le 365 -and [int]$value -gt 0
-    } -Recommendation "Set to 365 or fewer days (but not 0)"
+    $value = $secPolicy['System Access']['MaximumPasswordAge']
+    [int]$value -le 365 -and [int]$value -gt 0
+} -Recommendation "Set to 365 or fewer days (but not 0)"
 
 # 1.1.3 Minimum password age
 $testResults += Test-CISControl -ControlID "1.1.3" -Description "Minimum password age" `
     -TestScript {
-        $value = $secPolicy['System Access']['MinimumPasswordAge']
-        [int]$value -ge 1
-    } -Recommendation "Set to 1 or more days"
+    $value = $secPolicy['System Access']['MinimumPasswordAge']
+    [int]$value -ge 1
+} -Recommendation "Set to 1 or more days"
 
 # 1.1.4 Minimum password length
 $testResults += Test-CISControl -ControlID "1.1.4" -Description "Minimum password length" `
     -TestScript {
-        $value = $secPolicy['System Access']['MinimumPasswordLength']
-        [int]$value -ge 14
-    } -Recommendation "Set to 14 or more characters"
+    $value = $secPolicy['System Access']['MinimumPasswordLength']
+    [int]$value -ge 14
+} -Recommendation "Set to 14 or more characters"
 
 # 1.1.5 Password complexity
 $testResults += Test-CISControl -ControlID "1.1.5" -Description "Password must meet complexity requirements" `
     -TestScript {
-        $value = $secPolicy['System Access']['PasswordComplexity']
-        [int]$value -eq 1
-    } -Recommendation "Set to Enabled"
+    $value = $secPolicy['System Access']['PasswordComplexity']
+    [int]$value -eq 1
+} -Recommendation "Set to Enabled"
 
 # 1.1.6 Reversible encryption
 $testResults += Test-CISControl -ControlID "1.1.6" -Description "Store passwords using reversible encryption" `
     -TestScript {
-        $value = $secPolicy['System Access']['ClearTextPassword']
-        [int]$value -eq 0
-    } -Recommendation "Set to Disabled"
+    $value = $secPolicy['System Access']['ClearTextPassword']
+    [int]$value -eq 0
+} -Recommendation "Set to Disabled"
 
 # ==================================================================
 # ACCOUNT LOCKOUT POLICY (CIS Section 1.2)
@@ -244,23 +244,23 @@ Write-Host "[*] Testing Account Lockout Policies..." -ForegroundColor Cyan
 # 1.2.1 Account lockout duration
 $testResults += Test-CISControl -ControlID "1.2.1" -Description "Account lockout duration" `
     -TestScript {
-        $value = $secPolicy['System Access']['LockoutDuration']
-        [int]$value -ge 15
-    } -Recommendation "Set to 15 or more minutes"
+    $value = $secPolicy['System Access']['LockoutDuration']
+    [int]$value -ge 15
+} -Recommendation "Set to 15 or more minutes"
 
 # 1.2.2 Account lockout threshold
 $testResults += Test-CISControl -ControlID "1.2.2" -Description "Account lockout threshold" `
     -TestScript {
-        $value = $secPolicy['System Access']['LockoutBadCount']
-        [int]$value -le 5 -and [int]$value -gt 0
-    } -Recommendation "Set to 5 or fewer invalid logon attempts (but not 0)"
+    $value = $secPolicy['System Access']['LockoutBadCount']
+    [int]$value -le 5 -and [int]$value -gt 0
+} -Recommendation "Set to 5 or fewer invalid logon attempts (but not 0)"
 
 # 1.2.3 Reset account lockout counter
 $testResults += Test-CISControl -ControlID "1.2.3" -Description "Reset account lockout counter after" `
     -TestScript {
-        $value = $secPolicy['System Access']['ResetLockoutCount']
-        [int]$value -ge 15
-    } -Recommendation "Set to 15 or more minutes"
+    $value = $secPolicy['System Access']['ResetLockoutCount']
+    [int]$value -ge 15
+} -Recommendation "Set to 15 or more minutes"
 
 # ==================================================================
 # AUDIT POLICIES (CIS Section 17.1-17.9)
@@ -283,50 +283,50 @@ function Test-AuditPolicy {
 # 17.1.1 Audit Credential Validation
 $testResults += Test-CISControl -ControlID "17.1.1" -Description "Audit Credential Validation" `
     -TestScript {
-        Test-AuditPolicy -Subcategory "Credential Validation" -Expected "Success and Failure"
-    } -Recommendation "Set to 'Success and Failure'"
+    Test-AuditPolicy -Subcategory "Credential Validation" -Expected "Success and Failure"
+} -Recommendation "Set to 'Success and Failure'"
 
 # 17.2.1 Audit Application Group Management
 $testResults += Test-CISControl -ControlID "17.2.1" -Description "Audit Application Group Management" `
     -TestScript {
-        Test-AuditPolicy -Subcategory "Application Group Management" -Expected "Success and Failure"
-    } -Recommendation "Set to 'Success and Failure'" -RequiredLevel 2
+    Test-AuditPolicy -Subcategory "Application Group Management" -Expected "Success and Failure"
+} -Recommendation "Set to 'Success and Failure'" -RequiredLevel 2
 
 # 17.3.1 Audit Process Creation
 $testResults += Test-CISControl -ControlID "17.3.1" -Description "Audit Process Creation" `
     -TestScript {
-        Test-AuditPolicy -Subcategory "Process Creation" -Expected "Success"
-    } -Recommendation "Set to 'Success'"
+    Test-AuditPolicy -Subcategory "Process Creation" -Expected "Success"
+} -Recommendation "Set to 'Success'"
 
 # 17.5.1 Audit Account Lockout
 $testResults += Test-CISControl -ControlID "17.5.1" -Description "Audit Account Lockout" `
     -TestScript {
-        Test-AuditPolicy -Subcategory "Account Lockout" -Expected "Failure"
-    } -Recommendation "Set to 'Failure'"
+    Test-AuditPolicy -Subcategory "Account Lockout" -Expected "Failure"
+} -Recommendation "Set to 'Failure'"
 
 # 17.5.2 Audit Logoff
 $testResults += Test-CISControl -ControlID "17.5.2" -Description "Audit Logoff" `
     -TestScript {
-        Test-AuditPolicy -Subcategory "Logoff" -Expected "Success"
-    } -Recommendation "Set to 'Success'"
+    Test-AuditPolicy -Subcategory "Logoff" -Expected "Success"
+} -Recommendation "Set to 'Success'"
 
 # 17.5.3 Audit Logon
 $testResults += Test-CISControl -ControlID "17.5.3" -Description "Audit Logon" `
     -TestScript {
-        Test-AuditPolicy -Subcategory "Logon" -Expected "Success and Failure"
-    } -Recommendation "Set to 'Success and Failure'"
+    Test-AuditPolicy -Subcategory "Logon" -Expected "Success and Failure"
+} -Recommendation "Set to 'Success and Failure'"
 
 # 17.6.1 Audit Sensitive Privilege Use
 $testResults += Test-CISControl -ControlID "17.6.1" -Description "Audit Sensitive Privilege Use" `
     -TestScript {
-        Test-AuditPolicy -Subcategory "Sensitive Privilege Use" -Expected "Success and Failure"
-    } -Recommendation "Set to 'Success and Failure'" -RequiredLevel 2
+    Test-AuditPolicy -Subcategory "Sensitive Privilege Use" -Expected "Success and Failure"
+} -Recommendation "Set to 'Success and Failure'" -RequiredLevel 2
 
 # 17.9.1 Audit Security System Extension
 $testResults += Test-CISControl -ControlID "17.9.1" -Description "Audit Security System Extension" `
     -TestScript {
-        Test-AuditPolicy -Subcategory "Security System Extension" -Expected "Success"
-    } -Recommendation "Set to 'Success'"
+    Test-AuditPolicy -Subcategory "Security System Extension" -Expected "Success"
+} -Recommendation "Set to 'Success'"
 
 # Filter out null results (controls not applicable to current level)
 $testResults = $testResults | Where-Object { $null -ne $_ }
@@ -375,7 +375,7 @@ Write-Host "Total Controls:      $total" -ForegroundColor White
 Write-Host "Passed:              $passed" -ForegroundColor Green
 Write-Host "Failed:              $failed" -ForegroundColor Red
 Write-Host "Errors:              $errors" -ForegroundColor Yellow
-Write-Host "Compliance Rate:     $compliancePercent%" -ForegroundColor $(if ($compliancePercent -ge 80) {"Green"} elseif ($compliancePercent -ge 60) {"Yellow"} else {"Red"})
+Write-Host "Compliance Rate:     $compliancePercent%" -ForegroundColor $(if ($compliancePercent -ge 80) { "Green" } elseif ($compliancePercent -ge 60) { "Yellow" } else { "Red" })
 Write-Host "==================================================================`n" -ForegroundColor Cyan
 
 # Export HTML report if requested
@@ -486,6 +486,7 @@ Write-Host "Compliance test complete!`n" -ForegroundColor Green
 # Exit with appropriate code
 if ($failed -gt 0) {
     exit 1
-} else {
+}
+else {
     exit 0
 }

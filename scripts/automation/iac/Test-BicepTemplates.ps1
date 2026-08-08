@@ -102,7 +102,8 @@ Write-Host "Validating Bicep templates..." -ForegroundColor Cyan
 try {
     $bicepVersion = bicep --version
     Write-Host "Bicep CLI version: $bicepVersion" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Error "Bicep CLI not found. Install from: https://aka.ms/bicep-install"
     exit 1
 }
@@ -111,9 +112,11 @@ try {
 $templates = @()
 if (Test-Path $TemplatePath -PathType Container) {
     $templates = Get-ChildItem -Path $TemplatePath -Filter "*.bicep" -Recurse
-} elseif (Test-Path $TemplatePath -PathType Leaf) {
+}
+elseif (Test-Path $TemplatePath -PathType Leaf) {
     $templates = @(Get-Item $TemplatePath)
-} else {
+}
+else {
     Write-Error "Template path not found: $TemplatePath"
     exit 1
 }
@@ -139,11 +142,13 @@ foreach ($template in $templates) {
         if ($LASTEXITCODE -eq 0) {
             $templateResult.SyntaxValid = $true
             Write-Host "  ✓ Syntax validation passed" -ForegroundColor Green
-        } else {
+        }
+        else {
             $templateResult.Errors += "Syntax validation failed: $buildOutput"
             Write-Host "  ✗ Syntax validation failed" -ForegroundColor Red
         }
-    } catch {
+    }
+    catch {
         $templateResult.Errors += "Build error: $($_.Exception.Message)"
     }
 
@@ -152,11 +157,13 @@ foreach ($template in $templates) {
         $lintOutput = bicep lint $template.FullName 2>&1
         if ($LASTEXITCODE -eq 0 -and -not $lintOutput) {
             Write-Host "  ✓ Lint analysis passed" -ForegroundColor Green
-        } else {
+        }
+        else {
             $templateResult.BestPracticeIssues += [string]$lintOutput
             Write-Host "  ⚠ Lint: $lintOutput" -ForegroundColor Yellow
         }
-    } catch {
+    }
+    catch {
         $templateResult.BestPracticeIssues += "Lint error: $($_.Exception.Message)"
     }
 
@@ -199,10 +206,12 @@ foreach ($template in $templates) {
                 $whatIfResult = Invoke-Expression $whatIfCmd 2>&1
                 $templateResult.WhatIfResult = $whatIfResult
                 Write-Host "  ✓ What-if analysis completed" -ForegroundColor Green
-            } catch {
+            }
+            catch {
                 $templateResult.Warnings += "What-if analysis failed: $($_.Exception.Message)"
             }
-        } else {
+        }
+        else {
             $templateResult.Warnings += "SubscriptionId and ResourceGroupName required for what-if analysis"
         }
     }

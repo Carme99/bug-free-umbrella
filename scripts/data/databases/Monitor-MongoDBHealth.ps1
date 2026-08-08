@@ -127,7 +127,8 @@ if ($Credential) {
     finally {
         [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstrPtr)
     }
-} elseif ($Username -and $Password) {
+}
+elseif ($Username -and $Password) {
     $bstrPtr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Password)
     try {
         $password = [Runtime.InteropServices.Marshal]::PtrToStringAuto($bstrPtr)

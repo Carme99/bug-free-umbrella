@@ -83,15 +83,18 @@ try {
             $TPMVersion = $TPM.ManufacturerVersion
             Write-Host "  [✓] TPM Present and Ready (Version: $TPMVersion)" -ForegroundColor Green
             Add-Result "TPM (Trusted Platform Module)" "Enabled" "Present and ready, Version: $TPMVersion" ""
-        } else {
+        }
+        else {
             Write-Host "  [!] TPM Present but Not Ready" -ForegroundColor Yellow
             Add-Result "TPM (Trusted Platform Module)" "Disabled" "Present but not ready" "Initialize TPM in BIOS/UEFI settings"
         }
-    } else {
+    }
+    else {
         Write-Host "  [✗] TPM Not Present" -ForegroundColor Red
         Add-Result "TPM (Trusted Platform Module)" "Not Available" "No TPM detected" "Enable TPM in BIOS/UEFI or upgrade hardware"
     }
-} catch {
+}
+catch {
     Write-Host "  [✗] Unable to check TPM: $($_.Exception.Message)" -ForegroundColor Red
     Add-Result "TPM (Trusted Platform Module)" "Failed" "Unable to check TPM status" "Verify TPM is enabled in BIOS/UEFI"
 }
@@ -104,11 +107,13 @@ try {
     if ($SecureBoot) {
         Write-Host "  [✓] Secure Boot Enabled" -ForegroundColor Green
         Add-Result "Secure Boot" "Enabled" "UEFI Secure Boot is active" ""
-    } else {
+    }
+    else {
         Write-Host "  [✗] Secure Boot Disabled" -ForegroundColor Red
         Add-Result "Secure Boot" "Disabled" "Secure Boot is not enabled" "Enable Secure Boot in UEFI firmware settings"
     }
-} catch {
+}
+catch {
     Write-Host "  [!] Secure Boot Not Supported (Legacy BIOS)" -ForegroundColor Yellow
     Add-Result "Secure Boot" "Not Available" "System using Legacy BIOS" "Convert to UEFI and enable Secure Boot"
 }
@@ -121,14 +126,17 @@ try {
     if ($DevGuard.VirtualizationBasedSecurityStatus -eq 2) {
         Write-Host "  [✓] VBS Running" -ForegroundColor Green
         Add-Result "Virtualization-Based Security (VBS)" "Enabled" "VBS is running" ""
-    } elseif ($DevGuard.VirtualizationBasedSecurityStatus -eq 1) {
+    }
+    elseif ($DevGuard.VirtualizationBasedSecurityStatus -eq 1) {
         Write-Host "  [!] VBS Enabled but Not Running" -ForegroundColor Yellow
         Add-Result "Virtualization-Based Security (VBS)" "Disabled" "VBS enabled but not running" "Reboot system or check hardware virtualization"
-    } else {
+    }
+    else {
         Write-Host "  [✗] VBS Not Enabled" -ForegroundColor Red
         Add-Result "Virtualization-Based Security (VBS)" "Disabled" "VBS is not enabled" "Enable via Group Policy or Intune"
     }
-} catch {
+}
+catch {
     Write-Host "  [✗] Unable to check VBS status" -ForegroundColor Red
     Add-Result "Virtualization-Based Security (VBS)" "Not Available" "Cannot determine VBS status" "Ensure Windows 10/11 Pro/Enterprise"
 }
@@ -141,14 +149,17 @@ try {
     if ($DevGuard.SecurityServicesRunning -contains 1) {
         Write-Host "  [✓] Credential Guard Running" -ForegroundColor Green
         Add-Result "Credential Guard" "Enabled" "Credential Guard is running" ""
-    } elseif ($DevGuard.SecurityServicesConfigured -contains 1) {
+    }
+    elseif ($DevGuard.SecurityServicesConfigured -contains 1) {
         Write-Host "  [!] Credential Guard Configured but Not Running" -ForegroundColor Yellow
         Add-Result "Credential Guard" "Disabled" "Configured but not running" "Reboot system or check VBS prerequisites"
-    } else {
+    }
+    else {
         Write-Host "  [✗] Credential Guard Not Configured" -ForegroundColor Red
         Add-Result "Credential Guard" "Disabled" "Not configured" "Enable via Group Policy: Computer Config > Admin Templates > System > Device Guard"
     }
-} catch {
+}
+catch {
     Write-Host "  [✗] Unable to check Credential Guard" -ForegroundColor Red
     Add-Result "Credential Guard" "Not Available" "Cannot determine status" "Requires Windows 10/11 Enterprise and compatible hardware"
 }
@@ -163,7 +174,8 @@ try {
         if ($OSVolume.ProtectionStatus -eq 'On') {
             Write-Host "  [✓] BitLocker Enabled on OS Drive ($($OSVolume.MountPoint))" -ForegroundColor Green
             Add-Result "BitLocker Drive Encryption" "Enabled" "OS drive encrypted: $($OSVolume.MountPoint) - $($OSVolume.EncryptionPercentage)%" ""
-        } else {
+        }
+        else {
             Write-Host "  [✗] BitLocker Not Enabled on OS Drive" -ForegroundColor Red
             Add-Result "BitLocker Drive Encryption" "Disabled" "OS drive not encrypted" "Enable BitLocker via Control Panel or Intune policy"
         }
@@ -172,11 +184,13 @@ try {
         if ($OSVolume.EncryptionMethod) {
             Write-Host "      Encryption Method: $($OSVolume.EncryptionMethod)" -ForegroundColor Gray
         }
-    } else {
+    }
+    else {
         Write-Host "  [!] No OS Volume Found for BitLocker Check" -ForegroundColor Yellow
         Add-Result "BitLocker Drive Encryption" "Not Available" "Cannot detect OS volume" "Verify BitLocker support"
     }
-} catch {
+}
+catch {
     Write-Host "  [✗] BitLocker Not Available: $($_.Exception.Message)" -ForegroundColor Red
     Add-Result "BitLocker Drive Encryption" "Not Available" "BitLocker not available on this system" "Requires Windows 10/11 Pro or Enterprise"
 }
@@ -189,7 +203,8 @@ try {
     if ($Defender.AntivirusEnabled) {
         Write-Host "  [✓] Windows Defender Antivirus Enabled" -ForegroundColor Green
         Add-Result "Windows Defender Antivirus" "Enabled" "Antivirus protection active" ""
-    } else {
+    }
+    else {
         Write-Host "  [✗] Windows Defender Antivirus Disabled" -ForegroundColor Red
         Add-Result "Windows Defender Antivirus" "Disabled" "Antivirus protection disabled" "Enable Windows Defender or ensure third-party AV is active"
     }
@@ -197,24 +212,28 @@ try {
     if ($Defender.RealTimeProtectionEnabled) {
         Write-Host "  [✓] Real-Time Protection Enabled" -ForegroundColor Green
         Add-Result "Windows Defender Real-Time Protection" "Enabled" "Real-time scanning active" ""
-    } else {
+    }
+    else {
         Write-Host "  [✗] Real-Time Protection Disabled" -ForegroundColor Red
         Add-Result "Windows Defender Real-Time Protection" "Disabled" "Real-time scanning disabled" "Enable real-time protection in Windows Security"
     }
 
     if ($Defender.BehaviorMonitorEnabled) {
         Write-Host "  [✓] Behavior Monitoring Enabled" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "  [!] Behavior Monitoring Disabled" -ForegroundColor Yellow
     }
 
     if ($Defender.IoavProtectionEnabled) {
         Write-Host "  [✓] Cloud-Delivered Protection Enabled" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "  [!] Cloud-Delivered Protection Disabled" -ForegroundColor Yellow
     }
 
-} catch {
+}
+catch {
     Write-Host "  [!] Windows Defender Status Unknown (Third-party AV may be active)" -ForegroundColor Yellow
     Add-Result "Windows Defender" "Not Available" "Cannot determine status - third-party AV may be in use" ""
 }
@@ -228,7 +247,8 @@ try {
     foreach ($Profile in $Firewall) {
         if ($Profile.Enabled) {
             Write-Host "  [✓] $($Profile.Name) Profile: Enabled" -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Host "  [✗] $($Profile.Name) Profile: Disabled" -ForegroundColor Red
             $AllEnabled = $false
         }
@@ -236,10 +256,12 @@ try {
 
     if ($AllEnabled) {
         Add-Result "Windows Firewall" "Enabled" "All firewall profiles enabled" ""
-    } else {
+    }
+    else {
         Add-Result "Windows Firewall" "Disabled" "One or more firewall profiles disabled" "Enable all firewall profiles in Windows Security"
     }
-} catch {
+}
+catch {
     Write-Host "  [✗] Unable to check Windows Firewall" -ForegroundColor Red
     Add-Result "Windows Firewall" "Failed" "Cannot determine firewall status" "Check Windows Security settings"
 }
@@ -256,11 +278,13 @@ try {
     if ($BootMode -eq "UEFI" -or $BootMode -eq 2) {
         Write-Host "  [✓] UEFI Boot Mode" -ForegroundColor Green
         Add-Result "Boot Mode" "Enabled" "System using UEFI firmware" ""
-    } else {
+    }
+    else {
         Write-Host "  [!] Legacy BIOS Mode" -ForegroundColor Yellow
         Add-Result "Boot Mode" "Disabled" "System using Legacy BIOS" "Convert to UEFI for enhanced security features"
     }
-} catch {
+}
+catch {
     Write-Host "  [!] Unable to determine boot mode" -ForegroundColor Yellow
     Add-Result "Boot Mode" "Not Available" "Cannot determine boot mode" ""
 }
@@ -274,10 +298,12 @@ try {
     if ($DEP -eq 3) {
         Write-Host "  [✓] DEP (Data Execution Prevention): Enabled for all programs" -ForegroundColor Green
         Add-Result "DEP (Data Execution Prevention)" "Enabled" "Enabled for all programs and services" ""
-    } elseif ($DEP -eq 2) {
+    }
+    elseif ($DEP -eq 2) {
         Write-Host "  [!] DEP: Enabled for essential Windows programs only" -ForegroundColor Yellow
         Add-Result "DEP (Data Execution Prevention)" "Enabled" "Enabled for essential programs only" "Enable for all programs in System Properties"
-    } else {
+    }
+    else {
         Write-Host "  [✗] DEP: Not properly configured" -ForegroundColor Red
         Add-Result "DEP (Data Execution Prevention)" "Disabled" "Not properly configured" "Enable DEP for all programs"
     }
@@ -286,11 +312,13 @@ try {
     $ExploitGuard = Get-ProcessMitigation -System -ErrorAction SilentlyContinue
     if ($ExploitGuard) {
         Write-Host "  [✓] Windows Defender Exploit Guard: Available" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "  [!] Windows Defender Exploit Guard: Status unknown" -ForegroundColor Yellow
     }
 
-} catch {
+}
+catch {
     Write-Host "  [!] Unable to fully check exploit protection" -ForegroundColor Yellow
     Add-Result "Exploit Protection" "Not Available" "Cannot determine full exploit protection status" ""
 }
@@ -304,12 +332,14 @@ try {
     if ($WUService.Status -eq 'Running') {
         Write-Host "  [✓] Windows Update Service: Running" -ForegroundColor Green
         Add-Result "Windows Update Service" "Enabled" "Service is running" ""
-    } else {
+    }
+    else {
         Write-Host "  [!] Windows Update Service: $($WUService.Status)" -ForegroundColor Yellow
         Add-Result "Windows Update Service" "Disabled" "Service is $($WUService.Status)" "Ensure Windows Update service is running"
     }
 
-} catch {
+}
+catch {
     Write-Host "  [✗] Unable to check Windows Update service" -ForegroundColor Red
     Add-Result "Windows Update Service" "Failed" "Cannot determine service status" "Check Services.msc"
 }
@@ -344,7 +374,8 @@ if ($ShowRecommendations -or $DisabledFeatures -gt 0) {
             Write-Host "  Status: $($Item.Status)" -ForegroundColor $(if ($Item.Status -eq 'Disabled') { 'Red' } else { 'Yellow' })
             Write-Host "  → $($Item.Recommendation)" -ForegroundColor Cyan
         }
-    } else {
+    }
+    else {
         Write-Host "`n✓ All critical security features are enabled!" -ForegroundColor Green
     }
 }
@@ -456,7 +487,8 @@ Write-Host ""
 if ($IssuesFound) {
     Write-Host "⚠ Security assessment completed with missing features.`n" -ForegroundColor Yellow
     exit 1
-} else {
+}
+else {
     Write-Host "✓ Security assessment completed. All features enabled.`n" -ForegroundColor Green
     exit 0
 }

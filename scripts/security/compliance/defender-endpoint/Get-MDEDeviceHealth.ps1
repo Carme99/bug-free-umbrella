@@ -178,7 +178,8 @@ try {
         }
     }
 
-} catch {
+}
+catch {
     Write-Error "Error accessing Defender for Endpoint: $($_.Exception.Message)"
 }
 

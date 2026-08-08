@@ -48,26 +48,26 @@
     Use with caution on production servers
 #>
 
-[CmdletBinding(SupportsShouldProcess=$true)]
+[CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [Parameter(Mandatory=$true)]
-    [ValidateSet('Analyze','Optimize','Restore')]
+    [Parameter(Mandatory = $true)]
+    [ValidateSet('Analyze', 'Optimize', 'Restore')]
     [string]$Mode,
 
-    [Parameter(Mandatory=$false)]
-    [ValidateSet('Minimal','Balanced','Performance')]
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('Minimal', 'Balanced', 'Performance')]
     [string]$Profile = 'Balanced',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$BackupPath,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ApplyChanges,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 

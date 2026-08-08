@@ -28,7 +28,7 @@ if (-not $mysqlCmd) {
     exit 1
 }
 
-$cred = if ($Password) {"-p$Password"} else {""}
+$cred = if ($Password) { "-p$Password" } else { "" }
 $results = @{}
 
 # Get version
@@ -58,7 +58,8 @@ if ($CheckReplication) {
     $replica = mysql -h $Server -u $Username $cred -P $Port -e "SHOW REPLICA STATUS\G" 2>$null
     if ($replica) {
         Write-Host "[+] Replication configured" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "[!] Replication not configured or not a replica" -ForegroundColor Yellow
     }
 }

@@ -61,7 +61,8 @@ try {
     $AdminMembers = Get-LocalGroupMember -Name "Administrators" -ErrorAction Stop
 
     Write-Host "  Found $($AdminMembers.Count) member(s) in Administrators group`n" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Host "  ERROR: Failed to retrieve Administrators group: $($_.Exception.Message)" -ForegroundColor Red
     exit 1
 }
@@ -110,7 +111,8 @@ foreach ($Member in $AdminMembers) {
                 $AccountInfo.PasswordExpires = "Never"
                 $AccountInfo.Notes += "Password never expires"
                 $AccountInfo.Risk = "Medium"
-            } else {
+            }
+            else {
                 $AccountInfo.PasswordExpires = "Yes"
             }
 
@@ -123,7 +125,8 @@ foreach ($Member in $AdminMembers) {
                         $AccountInfo.Notes += "No logon in $($DaysSinceLogon.Days) days"
                         $AccountInfo.Risk = "Medium"
                     }
-                } else {
+                }
+                else {
                     $AccountInfo.Notes += "Account never used"
                     $AccountInfo.Risk = "High"
                 }
@@ -134,30 +137,36 @@ foreach ($Member in $AdminMembers) {
                     $AccountInfo.Risk = "High"
                     $IssuesFound = $true
                 }
-            } else {
+            }
+            else {
                 $AccountInfo.Notes += "Account disabled"
             }
 
-        } catch {
+        }
+        catch {
             $AccountInfo.Notes += "Could not retrieve account details"
         }
 
-    } elseif ($Member.PrincipalSource -eq "ActiveDirectory") {
+    }
+    elseif ($Member.PrincipalSource -eq "ActiveDirectory") {
         $AccountInfo.AccountType = "Domain Account"
         $AccountInfo.Notes += "Domain-based administrator"
 
         # Check if it's a user or group
         if ($Member.ObjectClass -eq "Group") {
             $AccountInfo.Notes += "Domain Group"
-        } else {
+        }
+        else {
             $AccountInfo.Notes += "Domain User"
         }
 
-    } elseif ($Member.PrincipalSource -eq "AzureAD") {
+    }
+    elseif ($Member.PrincipalSource -eq "AzureAD") {
         $AccountInfo.AccountType = "Azure AD Account"
         $AccountInfo.Notes += "Azure AD-based administrator"
 
-    } else {
+    }
+    else {
         $AccountInfo.AccountType = "Unknown"
         $AccountInfo.Notes += "Unknown account source"
         $AccountInfo.Risk = "High"
@@ -373,7 +382,8 @@ Write-Host ""
 if ($IssuesFound) {
     Write-Host "⚠ Audit completed with issues found. Review high-risk accounts.`n" -ForegroundColor Yellow
     exit 1
-} else {
+}
+else {
     Write-Host "✓ Audit completed. No critical issues found.`n" -ForegroundColor Green
     exit 0
 }

@@ -96,7 +96,8 @@ if (-not (Test-Path $DataSource)) {
 
 try {
     $buildData = Get-Content $DataSource -Raw | ConvertFrom-Json
-} catch {
+}
+catch {
     Write-Error "Failed to parse build data: $($_.Exception.Message)"
     exit 1
 }

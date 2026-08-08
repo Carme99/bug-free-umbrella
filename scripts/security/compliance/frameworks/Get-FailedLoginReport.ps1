@@ -84,11 +84,13 @@ try {
 
     Write-Host "    Found: $($FailedLoginEvents.Count) failed login events" -ForegroundColor Green
 
-} catch {
+}
+catch {
     if ($_.Exception.Message -like "*No events were found*") {
         Write-Host "    Found: 0 failed login events" -ForegroundColor Green
         $FailedLoginEvents = @()
-    } else {
+    }
+    else {
         Write-Host "    ERROR: Unable to query event log - $($_.Exception.Message)" -ForegroundColor Red
         Write-Host "    Make sure you're running as Administrator and audit policy is enabled." -ForegroundColor Yellow
         exit 1
@@ -106,11 +108,13 @@ try {
 
     Write-Host "    Found: $($LockoutEvents.Count) lockout events" -ForegroundColor $(if ($LockoutEvents.Count -gt 0) { 'Red' } else { 'Green' })
 
-} catch {
+}
+catch {
     if ($_.Exception.Message -like "*No events were found*") {
         Write-Host "    Found: 0 lockout events" -ForegroundColor Green
         $LockoutEvents = @()
-    } else {
+    }
+    else {
         Write-Verbose "Error querying lockout events: $($_.Exception.Message)"
         $LockoutEvents = @()
     }
@@ -137,12 +141,12 @@ foreach ($Event in $FailedLoginEvents) {
 
         # Map logon type to friendly name
         $LogonTypeDescription = switch ($LogonType) {
-            '2'  { 'Interactive (Console)' }
-            '3'  { 'Network (SMB/File Share)' }
-            '4'  { 'Batch' }
-            '5'  { 'Service' }
-            '7'  { 'Unlock' }
-            '8'  { 'NetworkCleartext' }
+            '2' { 'Interactive (Console)' }
+            '3' { 'Network (SMB/File Share)' }
+            '4' { 'Batch' }
+            '5' { 'Service' }
+            '7' { 'Unlock' }
+            '8' { 'NetworkCleartext' }
             '10' { 'Remote Desktop (RDP)' }
             '11' { 'Cached Credentials' }
             default { "Unknown ($LogonType)" }
@@ -178,7 +182,8 @@ foreach ($Event in $FailedLoginEvents) {
 
         $FailedLogins += $FailedLogin
 
-    } catch {
+    }
+    catch {
         Write-Verbose "Error parsing event: $($_.Exception.Message)"
     }
 }
@@ -203,7 +208,8 @@ if ($LockoutEvents.Count -gt 0) {
 
             $Lockouts += $Lockout
 
-        } catch {
+        }
+        catch {
             Write-Verbose "Error parsing lockout event: $($_.Exception.Message)"
         }
     }
@@ -217,7 +223,7 @@ $UserFailureCounts = $FailedLogins | Group-Object UserName | Sort-Object Count -
 
 # Group by source IP
 $IPFailureCounts = $FailedLogins | Where-Object { $_.SourceIP -and $_.SourceIP -ne '-' } |
-                    Group-Object SourceIP | Sort-Object Count -Descending
+    Group-Object SourceIP | Sort-Object Count -Descending
 
 # Identify potential brute force (more than 5 failures)
 $BruteForceAccounts = $UserFailureCounts | Where-Object { $_.Count -ge 5 }
@@ -454,7 +460,8 @@ Write-Host ""
 if ($FailedLogins.Count -gt 0 -or $Lockouts.Count -gt 0) {
     Write-Host "⚠ Failed login activity detected. Review the report above.`n" -ForegroundColor Yellow
     exit 1
-} else {
+}
+else {
     Write-Host "✓ No failed login attempts found in the specified time period.`n" -ForegroundColor Green
     exit 0
 }

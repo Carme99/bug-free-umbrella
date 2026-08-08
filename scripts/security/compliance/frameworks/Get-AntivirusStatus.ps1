@@ -118,14 +118,17 @@ try {
                     ActionSuccess = $_.ActionSuccess
                 }
             }
-        } catch {
+        }
+        catch {
             $avStatus.WindowsDefender.RecentThreats = 0
         }
-    } else {
+    }
+    else {
         $avStatus.WindowsDefender.Enabled = $false
         $avStatus.Issues += "Could not retrieve Windows Defender status"
     }
-} catch {
+}
+catch {
     $avStatus.WindowsDefender.Error = $_.Exception.Message
     $avStatus.Issues += "Error checking Windows Defender: $($_.Exception.Message)"
 }
@@ -170,7 +173,8 @@ if ($CheckThirdParty) {
                 }
             }
         }
-    } catch {
+    }
+    catch {
         Write-Verbose "Could not query Security Center: $($_.Exception.Message)"
     }
 
@@ -200,9 +204,9 @@ try {
     $firewallProfiles = Get-NetFirewallProfile -ErrorAction SilentlyContinue
 
     $avStatus.Firewall = @{
-        Domain = ($firewallProfiles | Where-Object {$_.Name -eq 'Domain'}).Enabled
-        Private = ($firewallProfiles | Where-Object {$_.Name -eq 'Private'}).Enabled
-        Public = ($firewallProfiles | Where-Object {$_.Name -eq 'Public'}).Enabled
+        Domain = ($firewallProfiles | Where-Object { $_.Name -eq 'Domain' }).Enabled
+        Private = ($firewallProfiles | Where-Object { $_.Name -eq 'Private' }).Enabled
+        Public = ($firewallProfiles | Where-Object { $_.Name -eq 'Public' }).Enabled
     }
 
     foreach ($profile in $firewallProfiles) {
@@ -210,7 +214,8 @@ try {
             $avStatus.Issues += "Windows Firewall is DISABLED for $($profile.Name) profile"
         }
     }
-} catch {
+}
+catch {
     $avStatus.Firewall.Error = $_.Exception.Message
     $avStatus.Issues += "Error checking firewall status"
 }
@@ -220,10 +225,12 @@ try {
 if ($avStatus.Issues.Count -eq 0) {
     $avStatus.OverallStatus = "Protected"
     $statusColor = "Green"
-} elseif ($avStatus.Issues.Count -le 2) {
+}
+elseif ($avStatus.Issues.Count -le 2) {
     $avStatus.OverallStatus = "Warning"
     $statusColor = "Yellow"
-} else {
+}
+else {
     $avStatus.OverallStatus = "At Risk"
     $statusColor = "Red"
 }
@@ -232,10 +239,10 @@ if ($avStatus.Issues.Count -eq 0) {
 Write-Host "`n=== Antivirus Status Summary ===" -ForegroundColor Cyan
 Write-Host "Overall Status: $($avStatus.OverallStatus)" -ForegroundColor $statusColor
 Write-Host "`nWindows Defender:" -ForegroundColor Cyan
-Write-Host "  Enabled: $($avStatus.WindowsDefender.Enabled)" -ForegroundColor $(if ($avStatus.WindowsDefender.Enabled) {'Green'} else {'Red'})
-Write-Host "  Real-Time Protection: $($avStatus.WindowsDefender.RealTimeProtectionEnabled)" -ForegroundColor $(if ($avStatus.WindowsDefender.RealTimeProtectionEnabled) {'Green'} else {'Red'})
+Write-Host "  Enabled: $($avStatus.WindowsDefender.Enabled)" -ForegroundColor $(if ($avStatus.WindowsDefender.Enabled) { 'Green' } else { 'Red' })
+Write-Host "  Real-Time Protection: $($avStatus.WindowsDefender.RealTimeProtectionEnabled)" -ForegroundColor $(if ($avStatus.WindowsDefender.RealTimeProtectionEnabled) { 'Green' } else { 'Red' })
 Write-Host "  Signature Version: $($avStatus.WindowsDefender.AntivirusSignatureVersion)"
-Write-Host "  Signature Age: $($avStatus.WindowsDefender.AntivirusSignatureAge) days" -ForegroundColor $(if ($avStatus.WindowsDefender.AntivirusSignatureAge -le 7) {'Green'} else {'Yellow'})
+Write-Host "  Signature Age: $($avStatus.WindowsDefender.AntivirusSignatureAge) days" -ForegroundColor $(if ($avStatus.WindowsDefender.AntivirusSignatureAge -le 7) { 'Green' } else { 'Yellow' })
 Write-Host "  Last Quick Scan: $($avStatus.WindowsDefender.QuickScanEndTime)"
 Write-Host "  Last Full Scan: $($avStatus.WindowsDefender.FullScanEndTime)"
 
@@ -247,14 +254,15 @@ if ($avStatus.ThirdPartyAV.Count -gt 0) {
 }
 
 Write-Host "`nWindows Firewall:" -ForegroundColor Cyan
-Write-Host "  Domain Profile: $($avStatus.Firewall.Domain)" -ForegroundColor $(if ($avStatus.Firewall.Domain) {'Green'} else {'Red'})
-Write-Host "  Private Profile: $($avStatus.Firewall.Private)" -ForegroundColor $(if ($avStatus.Firewall.Private) {'Green'} else {'Red'})
-Write-Host "  Public Profile: $($avStatus.Firewall.Public)" -ForegroundColor $(if ($avStatus.Firewall.Public) {'Green'} else {'Red'})
+Write-Host "  Domain Profile: $($avStatus.Firewall.Domain)" -ForegroundColor $(if ($avStatus.Firewall.Domain) { 'Green' } else { 'Red' })
+Write-Host "  Private Profile: $($avStatus.Firewall.Private)" -ForegroundColor $(if ($avStatus.Firewall.Private) { 'Green' } else { 'Red' })
+Write-Host "  Public Profile: $($avStatus.Firewall.Public)" -ForegroundColor $(if ($avStatus.Firewall.Public) { 'Green' } else { 'Red' })
 
 if ($avStatus.Issues.Count -gt 0) {
     Write-Host "`n=== Issues Found ===" -ForegroundColor Red
     $avStatus.Issues | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
-} else {
+}
+else {
     Write-Host "`nNo issues found. System is properly protected." -ForegroundColor Green
 }
 #endregion
@@ -273,7 +281,8 @@ if ($OutputFormat -eq 'HTML' -or $OutputFormat -eq 'All') {
 
     $issuesHtml = if ($avStatus.Issues.Count -gt 0) {
         "<ul>" + ($avStatus.Issues | ForEach-Object { "<li style='color: red;'>$_</li>" }) + "</ul>"
-    } else {
+    }
+    else {
         "<p style='color: green;'>No issues found.</p>"
     }
 

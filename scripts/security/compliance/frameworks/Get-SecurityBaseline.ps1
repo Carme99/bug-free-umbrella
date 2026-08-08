@@ -109,7 +109,8 @@ try {
     if ([int]$MinPasswordLength -ge 14) {
         Write-CheckResult "Minimum password length: $MinPasswordLength characters" "PASS"
         Add-Result "Password Policy" "Minimum Length" "14+" $MinPasswordLength "PASS"
-    } else {
+    }
+    else {
         Write-CheckResult "Minimum password length: $MinPasswordLength characters (should be 14+)" "FAIL"
         Add-Result "Password Policy" "Minimum Length" "14+" $MinPasswordLength "FAIL"
     }
@@ -118,7 +119,8 @@ try {
     if ($PasswordComplexity -eq '1') {
         Write-CheckResult "Password complexity: Enabled" "PASS"
         Add-Result "Password Policy" "Complexity" "Enabled" "Enabled" "PASS"
-    } else {
+    }
+    else {
         Write-CheckResult "Password complexity: Disabled" "FAIL"
         Add-Result "Password Policy" "Complexity" "Enabled" "Disabled" "FAIL"
     }
@@ -127,7 +129,8 @@ try {
     if ([int]$MaxPasswordAge -le 60 -and [int]$MaxPasswordAge -gt 0) {
         Write-CheckResult "Maximum password age: $MaxPasswordAge days" "PASS"
         Add-Result "Password Policy" "Maximum Age" "≤60 days" "$MaxPasswordAge days" "PASS"
-    } else {
+    }
+    else {
         Write-CheckResult "Maximum password age: $MaxPasswordAge days (should be ≤60)" "FAIL"
         Add-Result "Password Policy" "Maximum Age" "≤60 days" "$MaxPasswordAge days" "FAIL"
     }
@@ -136,14 +139,17 @@ try {
     if ([int]$PasswordHistorySize -ge 24) {
         Write-CheckResult "Password history: $PasswordHistorySize passwords remembered" "PASS"
         Add-Result "Password Policy" "History Size" "24+" "$PasswordHistorySize" "PASS"
-    } else {
+    }
+    else {
         Write-CheckResult "Password history: $PasswordHistorySize passwords (should be 24+)" "FAIL"
         Add-Result "Password Policy" "History Size" "24+" "$PasswordHistorySize" "FAIL"
     }
-} catch {
+}
+catch {
     Write-CheckResult "Failed to check password policy: $($_.Exception.Message)" "FAIL"
     Add-Result "Password Policy" "Check" "Success" "Failed" "FAIL"
-} finally {
+}
+finally {
     # Always clean up the exported policy file, even on parse failure
     if (Test-Path -LiteralPath $secpolFile) {
         Remove-Item -LiteralPath $secpolFile -Force -ErrorAction SilentlyContinue
@@ -164,7 +170,8 @@ try {
         if ($ThresholdValue -ge 5 -and $ThresholdValue -le 10) {
             Write-CheckResult "Account lockout threshold: $LockoutThreshold" "PASS"
             Add-Result "Account Lockout" "Threshold" "5-10 attempts" $LockoutThreshold "PASS"
-        } else {
+        }
+        else {
             Write-CheckResult "Account lockout threshold: $LockoutThreshold (should be 5-10)" "FAIL"
             Add-Result "Account Lockout" "Threshold" "5-10 attempts" $LockoutThreshold "FAIL"
         }
@@ -172,7 +179,8 @@ try {
 
     Write-CheckResult "Lockout duration: $LockoutDuration" "INFO"
     Add-Result "Account Lockout" "Duration" "30+ minutes" $LockoutDuration "INFO"
-} catch {
+}
+catch {
     Write-CheckResult "Failed to check account lockout policy: $($_.Exception.Message)" "FAIL"
     Add-Result "Account Lockout" "Check" "Success" "Failed" "FAIL"
 }
@@ -186,12 +194,14 @@ try {
         if ($Profile.Enabled) {
             Write-CheckResult "$($Profile.Name) profile: Enabled" "PASS"
             Add-Result "Windows Firewall" "$($Profile.Name) Profile" "Enabled" "Enabled" "PASS"
-        } else {
+        }
+        else {
             Write-CheckResult "$($Profile.Name) profile: Disabled" "FAIL"
             Add-Result "Windows Firewall" "$($Profile.Name) Profile" "Enabled" "Disabled" "FAIL"
         }
     }
-} catch {
+}
+catch {
     Write-CheckResult "Failed to check firewall status: $($_.Exception.Message)" "FAIL"
     Add-Result "Windows Firewall" "Check" "Success" "Failed" "FAIL"
 }
@@ -206,7 +216,8 @@ try {
     if ($EnableLUA.EnableLUA -eq 1) {
         Write-CheckResult "UAC: Enabled" "PASS"
         Add-Result "UAC" "Enabled" "Yes" "Yes" "PASS"
-    } else {
+    }
+    else {
         Write-CheckResult "UAC: Disabled" "FAIL"
         Add-Result "UAC" "Enabled" "Yes" "No" "FAIL"
     }
@@ -214,11 +225,13 @@ try {
     if ($ConsentPromptBehaviorAdmin.ConsentPromptBehaviorAdmin -ge 2) {
         Write-CheckResult "UAC prompt for administrators: Configured" "PASS"
         Add-Result "UAC" "Prompt Behavior" "Prompt" "Configured" "PASS"
-    } else {
+    }
+    else {
         Write-CheckResult "UAC prompt for administrators: Not configured properly" "FAIL"
         Add-Result "UAC" "Prompt Behavior" "Prompt" "Not Configured" "FAIL"
     }
-} catch {
+}
+catch {
     Write-CheckResult "Failed to check UAC settings: $($_.Exception.Message)" "FAIL"
     Add-Result "UAC" "Check" "Success" "Failed" "FAIL"
 }
@@ -231,7 +244,8 @@ try {
     if ($DefenderStatus.AntivirusEnabled) {
         Write-CheckResult "Antivirus: Enabled" "PASS"
         Add-Result "Windows Defender" "Antivirus" "Enabled" "Enabled" "PASS"
-    } else {
+    }
+    else {
         Write-CheckResult "Antivirus: Disabled" "FAIL"
         Add-Result "Windows Defender" "Antivirus" "Enabled" "Disabled" "FAIL"
     }
@@ -239,7 +253,8 @@ try {
     if ($DefenderStatus.RealTimeProtectionEnabled) {
         Write-CheckResult "Real-time protection: Enabled" "PASS"
         Add-Result "Windows Defender" "Real-Time Protection" "Enabled" "Enabled" "PASS"
-    } else {
+    }
+    else {
         Write-CheckResult "Real-time protection: Disabled" "FAIL"
         Add-Result "Windows Defender" "Real-Time Protection" "Enabled" "Disabled" "FAIL"
     }
@@ -249,11 +264,13 @@ try {
     if ($DefAge.Days -le 7) {
         Write-CheckResult "Antivirus definitions: $($DefenderStatus.AntivirusSignatureLastUpdated.ToString('yyyy-MM-dd')) (Up to date)" "PASS"
         Add-Result "Windows Defender" "Definitions" "≤7 days old" "$($DefAge.Days) days old" "PASS"
-    } else {
+    }
+    else {
         Write-CheckResult "Antivirus definitions: $($DefenderStatus.AntivirusSignatureLastUpdated.ToString('yyyy-MM-dd')) (Outdated)" "FAIL"
         Add-Result "Windows Defender" "Definitions" "≤7 days old" "$($DefAge.Days) days old" "FAIL"
     }
-} catch {
+}
+catch {
     Write-CheckResult "Windows Defender not available or error checking: $($_.Exception.Message)" "WARN"
     Add-Result "Windows Defender" "Check" "Success" "Not Available" "WARN"
 }
@@ -278,18 +295,21 @@ try {
             if ($AuditPol -match "$Audit.*Success and Failure") {
                 Write-CheckResult "$Audit events: Success and Failure" "PASS"
                 Add-Result "Audit Policy" $Audit "Success and Failure" "Configured" "PASS"
-            } elseif ($AuditPol -match "$Audit.*Success") {
+            }
+            elseif ($AuditPol -match "$Audit.*Success") {
                 Write-CheckResult "$Audit events: Success only (should include Failure)" "WARN"
                 Add-Result "Audit Policy" $Audit "Success and Failure" "Success only" "WARN"
                 $AuditCompliant = $false
-            } else {
+            }
+            else {
                 Write-CheckResult "$Audit events: Not configured" "FAIL"
                 Add-Result "Audit Policy" $Audit "Success and Failure" "Not configured" "FAIL"
                 $AuditCompliant = $false
             }
         }
     }
-} catch {
+}
+catch {
     Write-CheckResult "Failed to check audit policy: $($_.Exception.Message)" "FAIL"
     Add-Result "Audit Policy" "Check" "Success" "Failed" "FAIL"
 }
@@ -304,11 +324,14 @@ try {
     # state when Get-SmbServerConfiguration is unavailable.
     if ($null -ne $SMBServerConfig) {
         $SMB1Enabled = $SMBServerConfig.EnableSMB1Protocol
-    } elseif ($SMB1.State -eq 'Enabled') {
+    }
+    elseif ($SMB1.State -eq 'Enabled') {
         $SMB1Enabled = $true
-    } elseif ($SMB1.State -eq 'Disabled') {
+    }
+    elseif ($SMB1.State -eq 'Disabled') {
         $SMB1Enabled = $false
-    } else {
+    }
+    else {
         # Feature absent and no server configuration: SMBv1 is not active
         $SMB1Enabled = $false
     }
@@ -316,10 +339,12 @@ try {
     if ($SMB1Enabled -eq $false) {
         Write-CheckResult "SMBv1: Disabled (Secure)" "PASS"
         Add-Result "SMB Security" "SMBv1" "Disabled" "Disabled" "PASS"
-    } elseif ($SMB1Enabled -eq $true) {
+    }
+    elseif ($SMB1Enabled -eq $true) {
         Write-CheckResult "SMBv1: Enabled (Security Risk)" "FAIL"
         Add-Result "SMB Security" "SMBv1" "Disabled" "Enabled" "FAIL"
-    } else {
+    }
+    else {
         Write-CheckResult "SMBv1: Status unknown" "WARN"
         Add-Result "SMB Security" "SMBv1" "Disabled" "Unknown" "WARN"
     }
@@ -328,11 +353,13 @@ try {
     if ($SMBServerConfig -and $SMBServerConfig.EncryptData) {
         Write-CheckResult "SMB encryption: Enabled" "PASS"
         Add-Result "SMB Security" "Encryption" "Enabled" "Enabled" "PASS"
-    } else {
+    }
+    else {
         Write-CheckResult "SMB encryption: Disabled (Consider enabling)" "WARN"
         Add-Result "SMB Security" "Encryption" "Enabled" "Disabled" "WARN"
     }
-} catch {
+}
+catch {
     Write-CheckResult "Failed to check SMB security: $($_.Exception.Message)" "WARN"
     Add-Result "SMB Security" "Check" "Success" "Failed" "WARN"
 }
@@ -346,7 +373,8 @@ try {
     if ($RDPEnabled.fDenyTSConnections -eq 1) {
         Write-CheckResult "Remote Desktop: Disabled" "INFO"
         Add-Result "Remote Desktop" "Enabled" "Disabled (Recommended)" "Disabled" "INFO"
-    } else {
+    }
+    else {
         Write-CheckResult "Remote Desktop: Enabled (Ensure NLA is required)" "WARN"
         Add-Result "Remote Desktop" "Enabled" "Disabled (Recommended)" "Enabled" "WARN"
 
@@ -357,12 +385,14 @@ try {
         if ($NLA.UserAuthentication -eq 1) {
             Write-CheckResult "  Network Level Authentication: Required" "PASS"
             Add-Result "Remote Desktop" "NLA" "Required" "Required" "PASS"
-        } else {
+        }
+        else {
             Write-CheckResult "  Network Level Authentication: Not required" "FAIL"
             Add-Result "Remote Desktop" "NLA" "Required" "Not Required" "FAIL"
         }
     }
-} catch {
+}
+catch {
     Write-CheckResult "Failed to check Remote Desktop security: $($_.Exception.Message)" "WARN"
     Add-Result "Remote Desktop" "Check" "Success" "Failed" "WARN"
 }
@@ -375,7 +405,8 @@ try {
     if ($AdminAccount.Enabled -eq $false) {
         Write-CheckResult "Built-in Administrator account: Disabled" "PASS"
         Add-Result "Security Options" "Built-in Admin" "Disabled" "Disabled" "PASS"
-    } else {
+    }
+    else {
         Write-CheckResult "Built-in Administrator account: Enabled (Should be disabled)" "FAIL"
         Add-Result "Security Options" "Built-in Admin" "Disabled" "Enabled" "FAIL"
     }
@@ -385,14 +416,17 @@ try {
     if ($GuestAccount -and $GuestAccount.Enabled -eq $false) {
         Write-CheckResult "Guest account: Disabled" "PASS"
         Add-Result "Security Options" "Guest Account" "Disabled" "Disabled" "PASS"
-    } elseif ($GuestAccount -and $GuestAccount.Enabled -eq $true) {
+    }
+    elseif ($GuestAccount -and $GuestAccount.Enabled -eq $true) {
         Write-CheckResult "Guest account: Enabled (Should be disabled)" "FAIL"
         Add-Result "Security Options" "Guest Account" "Disabled" "Enabled" "FAIL"
-    } else {
+    }
+    else {
         Write-CheckResult "Guest account: Not found" "INFO"
         Add-Result "Security Options" "Guest Account" "Disabled" "Not Found" "INFO"
     }
-} catch {
+}
+catch {
     Write-CheckResult "Failed to check security options: $($_.Exception.Message)" "WARN"
     Add-Result "Security Options" "Check" "Success" "Failed" "WARN"
 }
@@ -415,7 +449,8 @@ Write-Host "Warnings: $WarningChecks" -ForegroundColor Yellow
 if ($TotalChecks -eq 0) {
     Write-Warning "No checks were performed; compliance score cannot be computed."
     $CompliancePercent = 0
-} else {
+}
+else {
     $CompliancePercent = [math]::Round(($PassedChecks / $TotalChecks) * 100, 2)
 }
 Write-Host "`nCompliance Score: $CompliancePercent%" -ForegroundColor $(if ($CompliancePercent -ge 80) { 'Green' } elseif ($CompliancePercent -ge 60) { 'Yellow' } else { 'Red' })
@@ -543,7 +578,8 @@ if ($ExportReport) {
 if ($IssuesFound) {
     Write-Host "`n⚠ Security baseline check completed with issues found.`n" -ForegroundColor Yellow
     exit 1
-} else {
+}
+else {
     Write-Host "`n✓ Security baseline check completed successfully.`n" -ForegroundColor Green
     exit 0
 }
