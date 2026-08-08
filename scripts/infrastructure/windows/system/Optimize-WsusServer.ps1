@@ -1,5 +1,5 @@
 #Requires -Version 5.1
-#Requires -Modules SqlServer, UpdateServices, WebAdministration
+#Requires -Modules SqlServer, UpdateServices, IISAdministration
 #Requires -RunAsAdministrator
 
 <#
@@ -891,20 +891,20 @@ function Get-WsusIISConfig {
     param()
 
     try {
-        $iisPath = "IIS:\AppPools\WsusPool"
+        Import-Module IISAdministration -ErrorAction Stop
 
-        Import-Module WebAdministration -ErrorAction Stop
+        $appPool = Get-IISAppPool -Name "WsusPool"
 
         $config = @{
-            QueueLength = (Get-ItemProperty -Path $iisPath -Name queueLength).Value
-            CpuResetInterval = (Get-ItemProperty -Path $iisPath -Name cpu.resetInterval).Value.TotalMinutes
-            RecyclingMemory = (Get-ItemProperty -Path $iisPath -Name recycling.periodicRestart.memory).Value
-            RecyclingPrivateMemory = (Get-ItemProperty -Path $iisPath -Name recycling.periodicRestart.privateMemory).Value
+            QueueLength = $appPool.QueueLength
+            CpuResetInterval = $appPool.Cpu.ResetInterval.TotalMinutes
+            RecyclingMemory = $appPool.Recycling.PeriodicRestart.Memory
+            RecyclingPrivateMemory = $appPool.Recycling.PeriodicRestart.PrivateMemory
         }
 
         # Get site-specific settings
-        $sitePath = "IIS:\Sites\WSUS Administration"
-        $webConfigPath = Get-WebConfigFile -PSPath $sitePath | Select-Object -ExpandProperty FullName
+        $site = Get-IISSite -Name "WSUS Administration"
+        $webConfigPath = Join-Path $site.Applications[0].VirtualDirectories[0].PhysicalPath "web.config"
 
         if (Test-Path $webConfigPath) {
             # Load XML safely to prevent XXE attacks
@@ -914,9 +914,10 @@ function Get-WsusIISConfig {
         }
 
         # Load balancer capabilities
-        $appPath = "IIS:\Sites\WSUS Administration\ClientWebService"
-        if (Test-Path $appPath) {
-            $config.LoadBalancerCapabilities = (Get-WebConfiguration -Filter "//applicationPool" -PSPath $appPath).processModel.loadBalancerCapabilities
+        # ApplicationPoolProcessModel exposes no typed LoadBalancerCapabilities property,
+        # so read the raw processModel.loadBalancerCapabilities attribute instead.
+        if ($null -ne $site.Applications["/ClientWebService"]) {
+            $config.LoadBalancerCapabilities = $appPool.ProcessModel.GetAttributeValue("loadBalancerCapabilities")
         }
 
         return $config
@@ -986,17 +987,18 @@ function Set-WsusIISConfig {
     try {
         Write-Log "Applying recommended IIS settings..." -Level Info
 
-        $iisPath = "IIS:\AppPools\WsusPool"
-
         # App pool settings
-        Set-ItemProperty -Path $iisPath -Name queueLength -Value $RecommendedSettings.QueueLength
-        Set-ItemProperty -Path $iisPath -Name cpu.resetInterval -Value (New-TimeSpan -Minutes $RecommendedSettings.CpuResetInterval)
-        Set-ItemProperty -Path $iisPath -Name recycling.periodicRestart.memory -Value $RecommendedSettings.RecyclingMemory
-        Set-ItemProperty -Path $iisPath -Name recycling.periodicRestart.privateMemory -Value $RecommendedSettings.RecyclingPrivateMemory
+        $serverManager = Get-IISServerManager
+        $appPool = $serverManager.ApplicationPools["WsusPool"]
+        $appPool.QueueLength = $RecommendedSettings.QueueLength
+        $appPool.Cpu.ResetInterval = New-TimeSpan -Minutes $RecommendedSettings.CpuResetInterval
+        $appPool.Recycling.PeriodicRestart.Memory = $RecommendedSettings.RecyclingMemory
+        $appPool.Recycling.PeriodicRestart.PrivateMemory = $RecommendedSettings.RecyclingPrivateMemory
+        $serverManager.CommitChanges()
 
         # Web.config settings require unlocking and modifying the file
-        $sitePath = "IIS:\Sites\WSUS Administration"
-        $webConfigPath = Get-WebConfigFile -PSPath $sitePath | Select-Object -ExpandProperty FullName
+        $site = Get-IISSite -Name "WSUS Administration"
+        $webConfigPath = Join-Path $site.Applications[0].VirtualDirectories[0].PhysicalPath "web.config"
 
         if (Test-Path $webConfigPath) {
             # Backup web.config
@@ -1020,8 +1022,8 @@ function Set-WsusIISConfig {
             Write-Log "Web.config updated successfully" -Level Success
         }
 
-        # Restart app pool
-        Restart-WebAppPool -Name "WsusPool"
+        # Restart app pool (IISAdministration equivalent of Restart-WebAppPool)
+        (Get-IISAppPool -Name "WsusPool").Recycle()
         Write-Log "WSUS App Pool restarted" -Level Success
 
         Write-Log "IIS configuration updated successfully" -Level Success
@@ -1290,9 +1292,9 @@ function Optimize-WsusUpdates {
         # Run all cleanup operations
         $cleanupTasks = @(
             @{ Name = "Unused updates and update revisions"; Flag = "CleanupObsoleteUpdates" },
-            @{ Name = "Expired updates"; Flag = "CleanupUnneededContentFiles" },
+            @{ Name = "Expired updates"; Flag = "DeclineExpiredUpdates" },
             @{ Name = "Obsolete computers"; Flag = "CleanupObsoleteComputers" },
-            @{ Name = "Unused content files"; Flag = "CompressUpdates" },
+            @{ Name = "Unused content files"; Flag = "CleanupUnneededContentFiles" },
             @{ Name = "Superseded updates"; Flag = "DeclineSupersededUpdates" }
         )
 
@@ -1405,20 +1407,32 @@ function Remove-UpdatesByProduct {
 
         try {
             $scope = New-Object Microsoft.UpdateServices.Administration.UpdateScope
-            $scope.ApprovedStates = "Any"
+            # Avoid ApprovedStates.Any when enumerating (MS Learn performance guidance);
+            # cover every non-declined state - declined updates are skipped below anyway.
+            $scope.ApprovedStates = [Microsoft.UpdateServices.Administration.ApprovedStates]::LatestRevisionApproved -bor [Microsoft.UpdateServices.Administration.ApprovedStates]::NotApproved -bor [Microsoft.UpdateServices.Administration.ApprovedStates]::HasStaleUpdateApprovals
 
-            $updates = $WsusServer.GetUpdates($scope) | Where-Object {
-                $_.ProductTitles -contains $productTitle
-            }
+            # Query in per-year arrival-date batches so GetUpdates never loads the
+            # entire catalog into memory at once (OOM protection on large servers).
+            $productUpdateCount = 0
+            for ($year = 1998; $year -le (Get-Date).Year; $year++) {
+                $scope.FromArrivalDate = Get-Date -Year $year -Month 1 -Day 1
+                $scope.ToArrivalDate = Get-Date -Year ($year + 1) -Month 1 -Day 1
 
-            foreach ($update in $updates) {
-                if (-not $update.IsDeclined) {
-                    $update.Decline()
-                    $declinedCount++
+                $updates = $WsusServer.GetUpdates($scope) | Where-Object {
+                    $_.ProductTitles -contains $productTitle
                 }
+
+                foreach ($update in $updates) {
+                    if (-not $update.IsDeclined) {
+                        $update.Decline()
+                        $declinedCount++
+                    }
+                }
+
+                $productUpdateCount += $updates.Count
             }
 
-            Write-Log "  Declined $($updates.Count) updates for: $productTitle" -Level Info
+            Write-Log "  Declined $productUpdateCount updates for: $productTitle" -Level Info
         }
         catch {
             Write-Log "  Error processing $productTitle : $_" -Level Warning
@@ -1445,26 +1459,37 @@ function Remove-UpdatesByTitle {
 
     try {
         $scope = New-Object Microsoft.UpdateServices.Administration.UpdateScope
-        $scope.ApprovedStates = "Any"
-        $updates = $WsusServer.GetUpdates($scope)
+        # Avoid ApprovedStates.Any when enumerating (MS Learn performance guidance);
+        # cover every non-declined state - declined updates are skipped below anyway.
+        $scope.ApprovedStates = [Microsoft.UpdateServices.Administration.ApprovedStates]::LatestRevisionApproved -bor [Microsoft.UpdateServices.Administration.ApprovedStates]::NotApproved -bor [Microsoft.UpdateServices.Administration.ApprovedStates]::HasStaleUpdateApprovals
 
-        $totalUpdates = $updates.Count
+        # Query in per-year arrival-date batches so GetUpdates never loads the
+        # entire catalog into memory at once (OOM protection on large servers).
+        $totalUpdates = 0
         $currentUpdate = 0
 
-        foreach ($update in $updates) {
-            $currentUpdate++
+        for ($year = 1998; $year -le (Get-Date).Year; $year++) {
+            $scope.FromArrivalDate = Get-Date -Year $year -Month 1 -Day 1
+            $scope.ToArrivalDate = Get-Date -Year ($year + 1) -Month 1 -Day 1
 
-            if ($currentUpdate % 100 -eq 0) {
-                $percentComplete = [int](($currentUpdate / $totalUpdates) * 100)
-                Write-Progress-Custom -Activity "Removing Updates by Title" -Status "Checking update $currentUpdate of $totalUpdates" -PercentComplete $percentComplete
-            }
+            $updates = $WsusServer.GetUpdates($scope)
+            $totalUpdates += $updates.Count
 
-            foreach ($titlePattern in $UpdateTitles) {
-                if ($update.Title -like "*$titlePattern*" -and -not $update.IsDeclined) {
-                    $update.Decline()
-                    $declinedCount++
-                    Write-Log "  Declined: $($update.Title)" -Level Info -NoConsole
-                    break
+            foreach ($update in $updates) {
+                $currentUpdate++
+
+                if ($currentUpdate % 100 -eq 0) {
+                    $percentComplete = [int](($currentUpdate / $totalUpdates) * 100)
+                    Write-Progress-Custom -Activity "Removing Updates by Title" -Status "Checking update $currentUpdate of $totalUpdates" -PercentComplete $percentComplete
+                }
+
+                foreach ($titlePattern in $UpdateTitles) {
+                    if ($update.Title -like "*$titlePattern*" -and -not $update.IsDeclined) {
+                        $update.Decline()
+                        $declinedCount++
+                        Write-Log "  Declined: $($update.Title)" -Level Info -NoConsole
+                        break
+                    }
                 }
             }
         }
@@ -1492,30 +1517,40 @@ function Remove-DriverUpdates {
         Write-Progress-Custom -Activity "Removing Driver Updates" -Status "Searching for drivers..."
 
         $scope = New-Object Microsoft.UpdateServices.Administration.UpdateScope
-        $scope.ApprovedStates = "Any"
+        # Avoid ApprovedStates.Any when enumerating (MS Learn performance guidance);
+        # cover every non-declined state - declined updates are skipped below anyway.
+        $scope.ApprovedStates = [Microsoft.UpdateServices.Administration.ApprovedStates]::LatestRevisionApproved -bor [Microsoft.UpdateServices.Administration.ApprovedStates]::NotApproved -bor [Microsoft.UpdateServices.Administration.ApprovedStates]::HasStaleUpdateApprovals
         $scope.Classifications = $WsusServer.GetUpdateClassifications() | Where-Object { $_.Title -eq "Drivers" }
 
-        $updates = $WsusServer.GetUpdates($scope)
-
-        $totalUpdates = $updates.Count
-        Write-Log "Found $totalUpdates driver updates" -Level Info
-
+        # Query in per-year arrival-date batches so GetUpdates never loads the
+        # entire catalog into memory at once (OOM protection on large servers).
+        $totalUpdates = 0
         $currentUpdate = 0
-        foreach ($update in $updates) {
-            $currentUpdate++
 
-            if ($currentUpdate % 50 -eq 0) {
-                $percentComplete = [int](($currentUpdate / $totalUpdates) * 100)
-                Write-Progress-Custom -Activity "Removing Driver Updates" -Status "Processing driver $currentUpdate of $totalUpdates" -PercentComplete $percentComplete
-            }
+        for ($year = 1998; $year -le (Get-Date).Year; $year++) {
+            $scope.FromArrivalDate = Get-Date -Year $year -Month 1 -Day 1
+            $scope.ToArrivalDate = Get-Date -Year ($year + 1) -Month 1 -Day 1
 
-            if (-not $update.IsDeclined) {
-                $update.Decline()
-                $declinedCount++
+            $updates = $WsusServer.GetUpdates($scope)
+            $totalUpdates += $updates.Count
+
+            foreach ($update in $updates) {
+                $currentUpdate++
+
+                if ($currentUpdate % 50 -eq 0) {
+                    $percentComplete = [int](($currentUpdate / $totalUpdates) * 100)
+                    Write-Progress-Custom -Activity "Removing Driver Updates" -Status "Processing driver $currentUpdate of $totalUpdates" -PercentComplete $percentComplete
+                }
+
+                if (-not $update.IsDeclined) {
+                    $update.Decline()
+                    $declinedCount++
+                }
             }
         }
 
         Write-Progress-Custom -Activity "Removing Driver Updates" -Completed
+        Write-Log "Found $totalUpdates driver updates" -Level Info
         Write-Log "Declined $declinedCount driver updates" -Level Info
     }
     catch {
