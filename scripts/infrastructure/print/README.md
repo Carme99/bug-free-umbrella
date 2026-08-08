@@ -252,8 +252,8 @@ Planned additions:
 ## 📚 Additional Resources
 
 - [Print Management Documentation](https://docs.microsoft.com/windows-server/administration/windows-commands/print)
-- [Print Server Best Practices](https://docs.microsoft.com/windows-server/administration/print-and-document-services/)
-- [Troubleshooting Print Services](https://docs.microsoft.com/troubleshoot/windows-server/printing/)
+- [Print Server Best Practices](https://learn.microsoft.com/en-us/troubleshoot/windows-server/printing/troubleshoot-printing-and-best-practices)
+- [Troubleshooting Print Services](https://learn.microsoft.com/en-us/troubleshoot/windows-server/printing/printing-overview)
 
 ---
 

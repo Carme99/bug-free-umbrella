@@ -345,7 +345,7 @@ Before merging, ensure:
 
 - [OWASP SQL Injection Prevention](https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html)
 - [OWASP XXE Prevention](https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html)
-- [PowerShell Security Best Practices](https://docs.microsoft.com/en-us/powershell/scripting/dev-cross-plat/security/security-best-practices)
+- [PowerShell Security Best Practices](https://learn.microsoft.com/en-us/powershell/scripting/security/overview)
 - [PSScriptAnalyzer Rules](https://github.com/PowerShell/PSScriptAnalyzer)
 
 ---

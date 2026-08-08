@@ -1,9 +1,9 @@
-# Proactive Remediation Library
+# Remediation Library
 
 
 > **⚠️ IMPORTANT NOTICE**: The vast majority of scripts in this repository have not been thoroughly tested in production environments. Please test all scripts in a non-production environment first and validate the results before relying on this data for operational decisions.
 
-A collection of ready-to-deploy Intune proactive remediation scripts for common Windows device issues.
+A collection of ready-to-deploy Intune remediation scripts for common Windows device issues.
 
 ## 📋 Overview
 
@@ -389,7 +389,7 @@ Review remediation effectiveness monthly:
 ## 📚 Additional Resources
 
 - [Microsoft Intune Remediations Documentation](https://docs.microsoft.com/en-us/mem/intune/fundamentals/remediations)
-- [PowerShell Exit Codes](https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_exit)
+- [PowerShell Exit Codes](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_language_keywords?view=powershell-7.5)
 - [Windows Cleanup Best Practices](https://docs.microsoft.com/en-us/windows/deployment/update/windows-update-troubleshooting)
 
 ## 🤝 Contributing

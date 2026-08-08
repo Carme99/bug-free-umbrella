@@ -716,7 +716,7 @@ Planned additions:
 
 - [Exchange Online PowerShell](https://docs.microsoft.com/powershell/exchange/exchange-online-powershell)
 - [Microsoft Teams PowerShell](https://docs.microsoft.com/microsoftteams/teams-powershell-overview)
-- [Microsoft Graph PowerShell SDK](https://docs.microsoft.com/graph/powershell/get-started)
+- [Microsoft Graph PowerShell SDK](https://learn.microsoft.com/en-us/powershell/microsoftgraph/get-started)
 - [SharePoint Online Management Shell](https://docs.microsoft.com/powershell/sharepoint/sharepoint-online/introduction-sharepoint-online-management-shell)
 
 ---

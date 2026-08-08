@@ -222,8 +222,8 @@ Planned additions:
 ## 📚 Additional Resources
 
 - [Hyper-V PowerShell Documentation](https://docs.microsoft.com/powershell/module/hyper-v/)
-- [Hyper-V Best Practices](https://docs.microsoft.com/windows-server/virtualization/hyper-v/best-practices-for-running-windows-on-hyper-v)
-- [Hyper-V Troubleshooting](https://docs.microsoft.com/troubleshoot/windows-server/virtualization/)
+- [Hyper-V Best Practices](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/best-practices-analyzer/best-practices-analyzer-for-hyper-v)
+- [Hyper-V Troubleshooting](https://learn.microsoft.com/en-us/troubleshoot/windows-server/virtualization/troubleshoot-hyper-v-virtual-machine-performance)
 
 ---
 

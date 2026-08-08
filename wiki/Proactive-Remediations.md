@@ -1,10 +1,10 @@
-# Proactive Remediations
+# Remediations
 
 Automated detect-and-remediate script pairs for Microsoft Intune that identify and fix common endpoint issues before users report them. These scripts help maintain healthy, compliant devices with minimal IT intervention.
 
 ## Overview
 
-Proactive Remediations (formerly Analytics Remediations) are pairs of PowerShell scripts that:
+Remediations (formerly Proactive Remediations, and originally Analytics Remediations) are pairs of PowerShell scripts that:
 - **Detect** - Identify issues on managed devices
 - **Remediate** - Automatically fix detected problems
 
@@ -147,7 +147,7 @@ Exit 1  # Failure - Could not resolve issue
 
 ---
 
-## How Proactive Remediations Work
+## How Remediations Work
 
 ### Execution Flow
 ```
@@ -891,7 +891,7 @@ Get-IntuneProactiveRemediationStatus -RemediationName "Disk Space Monitor"
 
 ### External Resources
 - **[Microsoft Endpoint Manager](https://endpoint.microsoft.com)** - Intune admin portal
-- **[Proactive Remediations Documentation](https://docs.microsoft.com/en-us/mem/analytics/proactive-remediations)** - Official Microsoft docs
+- **[Remediations Documentation](https://learn.microsoft.com/en-us/intune/device-management/tools/deploy-remediations)** - Official Microsoft docs
 - **[PowerShell Gallery](https://www.powershellgallery.com/)** - Community scripts
 - **[Intune Community](https://techcommunity.microsoft.com/t5/microsoft-intune/bd-p/Microsoft-Intune)** - Microsoft Tech Community
 

@@ -367,7 +367,7 @@ Invoke-RestMethod -Uri "https://monitoring.company.com/api/cicd" `
 - [Azure DevOps REST API Documentation](https://learn.microsoft.com/en-us/rest/api/azure/devops/)
 - [GitHub REST API Documentation](https://docs.github.com/en/rest)
 - [GitLab API Documentation](https://docs.gitlab.com/ee/api/)
-- [PowerShell Script Best Practices](https://learn.microsoft.com/en-us/powershell/scripting/developer/cmdlet/best-practices-for-cmdlet-development)
+- [PowerShell Script Best Practices](https://learn.microsoft.com/en-us/powershell/scripting/developer/cmdlet/strongly-encouraged-development-guidelines)
 
 ---
 

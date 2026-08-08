@@ -47,7 +47,7 @@ scripts/
 ├── infrastructure/ # Windows servers, monitoring, AD
 ├── security/      # Compliance, hardening
 └── utilities/     # General tools
-Tests/             # Pester tests (mirrors the scripts/ layout)
+Tests/             # Pester tests (focused suites; does NOT mirror the scripts/ layout)
 ```
 
 Examples of the concrete layout:
@@ -62,10 +62,12 @@ The layout was restructured in **v3.0.0** to group scripts by technology domain 
 
 ## Testing Strategy
 
-- All tests use **Pester 5.5.0+**. Test files live under `./Tests` and mirror the `scripts/` directory structure.
-- Configuration is centralised in `./Tests/Pester.Config.psd1`, which runs the suite, enables **code coverage** against `./scripts`, and excludes `Integration`-tagged tests by default.
+- The existing test files use **Pester 5.5.0+**. Test files live under `./Tests`, with a few additional suites colocated next to the scripts they test.
+- Test coverage is **limited by design**: only a small number of Pester test files exist (10 as of v4.2.0) for the 350+ scripts in the repository, and the tests do **not** mirror the full `scripts/` directory structure. Most domains currently have no automated tests.
+- Configuration for running the suite locally is centralised in `./Tests/Pester.Config.psd1`, which enables **code coverage** against `./scripts` and excludes `Integration`-tagged tests by default.
 - Each test file follows the `Describe` / `Context` / `It` structure with `#Requires -Modules Pester` at the top.
 - See the `Tests/Common/HelperFunctions.Tests.ps1` file for the shared helper test conventions.
+- **CI does not execute Pester.** The `validate-powershell.yml` workflow runs PSScriptAnalyzer and a PowerShell syntax check only; Pester tests must be run locally (see [Common Development Commands](#common-development-commands)).
 - Always test in **non-production** environments first; most scripts are **NOT recommended** for direct production use until validated.
 
 ---
@@ -77,7 +79,7 @@ Contributors should follow the guidance in [CONTRIBUTING.md](./CONTRIBUTING.md) 
 - Use **semantic commit** messages (`feat:`, `fix:`, `docs:`, etc.) as described in [AGENTS.md](./AGENTS.md).
 - Ensure every script is **PSScriptAnalyzer** compliant by running `Invoke-ScriptAnalyzer` before committing.
 - Include comment-based help (`.SYNOPSIS`, `.DESCRIPTION`, `.EXAMPLE`) on every script.
-- Run Pester tests for your changes and keep the full suite green.
+- Run the relevant Pester tests locally for your changes (note that Pester is not executed in CI).
 - Keep the GitHub **wiki** up to date (it is the primary documentation source); update the relevant pages when you change scripts or paths.
 - Follow the existing script patterns in the same directory.
 
