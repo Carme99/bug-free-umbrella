@@ -1,27 +1,35 @@
-# Define the registry path
-$RegPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeviceInstall\Restrictions\DenyDeviceIDs"
+# Unblock the AMD Radeon driver (DeviceInstallation policy)
+#
+# Documented layout (Policy CSP PreventInstallationOfMatchingDeviceIDs / ADMX
+# DeviceInstall_IDs_Deny): a REG value named "DenyDeviceIDs" directly under
+# HKLM\SOFTWARE\Policies\Microsoft\Windows\DeviceInstall\Restrictions.
+# See https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-deviceinstallation
 
-# Check if the key exists
+# Documented registry location
+$RegPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeviceInstall\Restrictions"
+$RegValueName = "DenyDeviceIDs"
+$RegValue = "PCIVEN_1002&DEV_1681"
+
 if (Test-Path $RegPath) {
-    # Get all existing properties under the key
-    $props = Get-ItemProperty -Path $RegPath
+    # Read the DenyDeviceIDs value (REG_MULTI_SZ array, or a single REG_SZ string)
+    $denyList = @((Get-ItemProperty -Path $RegPath -Name $RegValueName -ErrorAction SilentlyContinue).$RegValueName | Where-Object { $_ })
 
-    # Loop through each named value (excluding system properties)
-    foreach ($name in $props.PSObject.Properties.Name) {
-        $value = $props.$name
+    # Remove the AMD hardware ID from the list
+    $remaining = @($denyList | Where-Object { $_ -ne $RegValue })
 
-        # Check if it matches the AMD device ID and remove it
-        if ($value -eq "PCIVEN_1002&DEV_1681") {
-            Remove-ItemProperty -Path $RegPath -Name $name -ErrorAction SilentlyContinue
-            Write-Output "Removed driver block for AMD device: $name"
-        }
+    if ($remaining.Count -gt 0) {
+        Set-ItemProperty -Path $RegPath -Name $RegValueName -Value $remaining -Type MultiString -Force
+        Write-Output "Removed AMD device block: $RegValue"
+    } elseif ($denyList.Count -gt 0) {
+        # The list only contained the AMD ID - remove the value entirely
+        Remove-ItemProperty -Path $RegPath -Name $RegValueName -ErrorAction SilentlyContinue
+        Write-Output "Removed AMD device block: $RegValue"
+    } else {
+        Write-Output "AMD device block was not present."
     }
 
-    # If the key is now empty, remove it
-    if ((Get-ItemProperty -Path $RegPath).PSObject.Properties.Count -eq 0) {
-        Remove-Item -Path $RegPath -Force
-        Write-Output "Registry key removed as it was empty."
-    }
+    # Clear the retroactive flag so previously blocked devices are no longer denied
+    Remove-ItemProperty -Path $RegPath -Name "DenyDeviceIDsRetroactive" -ErrorAction SilentlyContinue
 } else {
     Write-Output "Registry path does not exist. No action needed."
 }

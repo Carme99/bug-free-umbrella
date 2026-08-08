@@ -163,18 +163,22 @@ try {
         }
     }
 
-    # Check for thermal/overheating issues
-    $thermalEvents = Get-WinEvent -FilterHashtable @{
+    # Check for processor speed throttling by firmware (Event 37, Warning level)
+    # Documented provider is Microsoft-Windows-Kernel-Processor-Power, not Kernel-Power:
+    # "The speed of processor x in group y is being limited by system firmware".
+    # See https://learn.microsoft.com/en-us/troubleshoot/windows-server/setup-upgrade-and-drivers/event-id-37-windows-kernel-processor-power
+    $throttleEvents = Get-WinEvent -FilterHashtable @{
         LogName = 'System'
-        ProviderName = 'Microsoft-Windows-Kernel-Power'
-        ID = 37  # Thermal event
+        ProviderName = 'Microsoft-Windows-Kernel-Processor-Power'
+        ID = 37
+        Level = 3  # Warning
         StartTime = (Get-Date).AddDays(-$daysToCheck)
     } -MaxEvents 10 -ErrorAction SilentlyContinue
 
-    if ($thermalEvents) {
-        $thermalCount = $thermalEvents.Count
-        Write-Host "  Thermal/overheating events: $thermalCount"
-        $issues += "System overheating detected: $thermalCount thermal events"
+    if ($throttleEvents) {
+        $throttleCount = $throttleEvents.Count
+        Write-Host "  Processor speed limited by firmware: $throttleCount"
+        $issues += "Processor speed is being limited by system firmware: $throttleCount event(s) (Warning - check firmware power capping policy)"
     }
 
     # Check for PCI/PCIe errors

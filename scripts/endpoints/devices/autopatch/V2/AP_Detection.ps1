@@ -16,8 +16,10 @@ Start-Transcript -Path $TranscriptPath\$TranscriptName -Append
 # initialize the array
 [PsObject[]]$regkeys = @()
 # populate the array with each object
+# NOTE: "DisableWindowsUpdateAccess" ("Remove access to use all Windows Update features")
+# is not supported on Windows 10+ / Server 2016+; the supported WUaaS control is
+# NoAutoUpdate under ...\WindowsUpdate\AU (see waas-wu-settings).
 $regkeys += [PsObject]@{ Name = "DoNotConnectToWindowsUpdateInternetLocations"; path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\"}
-$regkeys += [PsObject]@{ Name = "DisableWindowsUpdateAccess"; path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\"}
 $regkeys += [PsObject]@{ Name = "NoAutoUpdate"; path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU\"}
 
 

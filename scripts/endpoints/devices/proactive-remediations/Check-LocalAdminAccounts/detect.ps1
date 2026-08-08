@@ -46,8 +46,14 @@ try {
                 }
             }
 
-            # Check if it's an Azure AD account (typically approved)
-            if ($member.PrincipalSource -eq "AzureAD") {
+            # Check if it's a cloud-directory account (typically approved).
+            # Documented PrincipalSource values are "Local", "Active Directory",
+            # "Microsoft Entra group", and "Microsoft Account" (see Get-LocalGroupMember
+            # docs); runtime values on some builds have historically been "AzureAD".
+            # Match case-insensitively against the legacy "AzureAD" value and the
+            # "Microsoft Entra ID"-era values; do not auto-approve Local/AD/MSA sources.
+            # See https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.localaccounts/get-localgroupmember?view=powershell-5.1
+            if ($member.PrincipalSource -match '^(?i)(AzureAD|Microsoft Entra group|Microsoft Entra ID)$') {
                 $isApproved = $true
             }
 

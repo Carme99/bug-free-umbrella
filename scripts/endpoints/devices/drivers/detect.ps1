@@ -1,4 +1,11 @@
-# Detect if the device model matches
+# Detect if the AMD Radeon driver block (DeviceInstallation policy) is applied
+#
+# Documented layout (Policy CSP PreventInstallationOfMatchingDeviceIDs / ADMX
+# DeviceInstall_IDs_Deny): a REG value named "DenyDeviceIDs" directly under
+# HKLM\SOFTWARE\Policies\Microsoft\Windows\DeviceInstall\Restrictions.
+# The OS policy engine never reads a "DenyDeviceIDs" subkey.
+# See https://learn.microsoft.com/en-us/windows/client-management/mdm/policy-csp-deviceinstallation
+
 $DeviceModel = (Get-CimInstance -ClassName Win32_ComputerSystem).Model
 
 if ($DeviceModel -ne "21L8S0VP00") {
@@ -6,11 +13,18 @@ if ($DeviceModel -ne "21L8S0VP00") {
     Exit 0
 }
 
-# Check if the registry key exists
-$RegPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeviceInstall\Restrictions\DenyDeviceIDs"
+# Documented registry location
+$RegPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DeviceInstall\Restrictions"
+$RegValueName = "DenyDeviceIDs"
 $RegValue = "PCIVEN_1002&DEV_1681"
 
-if ((Test-Path $RegPath) -and ((Get-ItemProperty -Path $RegPath).1 -eq $RegValue)) {
+# Read the DenyDeviceIDs value (REG_MULTI_SZ array, or a single REG_SZ string)
+$denyList = @()
+if (Test-Path $RegPath) {
+    $denyList = @((Get-ItemProperty -Path $RegPath -Name $RegValueName -ErrorAction SilentlyContinue).$RegValueName | Where-Object { $_ })
+}
+
+if ($denyList -contains $RegValue) {
     Write-Output "Driver block is already applied."
     Exit 0
 } else {

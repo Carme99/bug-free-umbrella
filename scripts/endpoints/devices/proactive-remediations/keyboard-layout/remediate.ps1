@@ -1,5 +1,9 @@
 # Remediate keyboard layout to UK English
 # Exit 0 if successful, Exit 1 if failed
+#
+# Keyboard layout identifiers (Microsoft keyboard reference):
+#   00000809 = United Kingdom (standard)   https://learn.microsoft.com/en-us/globalization/keyboards/kbduk
+#   00000452 = United Kingdom Extended     https://learn.microsoft.com/en-us/globalization/keyboards/kbdukx
 
 $ErrorActionPreference = 'Stop'
 
@@ -21,9 +25,12 @@ try {
         $ukLanguage = $languageList | Where-Object { $_.LanguageTag -eq 'en-GB' }
     }
 
-    # Ensure UK keyboard layout is set
+    # Ensure UK keyboard layouts are set:
+    #   0809:00000809 = United Kingdom (standard) - kept as the standard-UK path
+    #   0809:00000452 = United Kingdom Extended
     $ukLanguage.InputMethodTips.Clear()
-    $ukLanguage.InputMethodTips.Add('0809:00000809')  # UK Extended keyboard
+    $ukLanguage.InputMethodTips.Add('0809:00000809')  # UK (standard) keyboard
+    $ukLanguage.InputMethodTips.Add('0809:00000452')  # UK Extended keyboard
 
     # Move en-GB to the first position
     $newLanguageList = New-Object System.Collections.Generic.List[Microsoft.InternationalSettings.Commands.WinUserLanguage]
