@@ -50,7 +50,7 @@
 
 .NOTES
     Author: IT Infrastructure Team
-    Requires: IIS 8.0+, WebAdministration module
+    Requires: IIS 8.0+, IISAdministration module
     Requires: Administrator privileges
 #>
 
@@ -75,7 +75,7 @@ param(
     [switch]$ExportCSV
 )
 
-#Requires -Modules WebAdministration
+#Requires -Modules IISAdministration
 #Requires -RunAsAdministrator
 
 # Initialize

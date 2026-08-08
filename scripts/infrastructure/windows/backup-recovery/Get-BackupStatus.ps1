@@ -184,36 +184,61 @@ try {
             $_.BackupTime -gt $cutoffDate
         } | Sort-Object -Property BackupTime -Descending
 
+        # WBBackupSet objects do not document a ResultHR property; derive the latest
+        # run result from Get-WBSummary (LastBackupResultHR, 0 = success) instead.
+        try {
+            $wbSummary = Get-WBSummary -ErrorAction Stop
+            if ($wbSummary -and $null -ne $wbSummary.LastBackupResultHR) {
+                $latestResultHR = $wbSummary.LastBackupResultHR
+                $latestTime = $wbSummary.LastBackupTime
+
+                if ($latestResultHR -ne 0) {
+                    $report.Issues += "Latest backup run failed on ${latestTime}: Error 0x$($latestResultHR.ToString('X'))"
+                }
+
+                Write-Host "`n  Latest run: $latestTime" -ForegroundColor Cyan
+                Write-Host "  Latest run status: $(if ($latestResultHR -eq 0) { 'Success' } else { "Failed (0x$($latestResultHR.ToString('X')))" })" -ForegroundColor $(if ($latestResultHR -eq 0) { 'Green' } else { 'Red' })
+            }
+        }
+        catch {
+            Write-Warning "Could not retrieve backup summary: $_"
+        }
+
         if ($backups) {
             Write-Host "Found $($backups.Count) backup(s)" -ForegroundColor Green
 
             foreach ($backup in $backups) {
+                # Get-WBBackupSet does not document a ResultHR property; guard it so a
+                # $null value is not treated as a failure. 0 = success when present.
+                $backupResultHR = $backup.ResultHR
+                $backupSucceeded = if ($null -ne $backupResultHR) { $backupResultHR -eq 0 } else { $null }
+
                 $backupInfo = @{
                     BackupTime = $backup.BackupTime
                     BackupTarget = $backup.BackupTarget
                     VersionId = $backup.VersionId
                     SnapshotId = $backup.SnapshotId
-                    Success = ($backup.ResultHR -eq 0)
-                    ResultCode = $backup.ResultHR
+                    Success = $backupSucceeded
+                    ResultCode = $backupResultHR
                     Components = @($backup.Component)
                 }
 
                 $report.RecentBackups += $backupInfo
 
-                $statusColor = if ($backup.ResultHR -eq 0) { 'Green' } else { 'Red' }
-                $statusText = if ($backup.ResultHR -eq 0) { 'Success' } else { "Failed (0x$($backup.ResultHR.ToString('X')))" }
+                $statusColor = if ($backupSucceeded -eq $true) { 'Green' } elseif ($backupSucceeded -eq $false) { 'Red' } else { 'Yellow' }
+                $statusText = if ($backupSucceeded -eq $true) { 'Success' } elseif ($backupSucceeded -eq $false) { "Failed (0x$($backupResultHR.ToString('X')))" } else { 'Unknown' }
 
                 Write-Host "`n  Backup: $($backup.BackupTime)" -ForegroundColor Cyan
                 Write-Host "  Status: $statusText" -ForegroundColor $statusColor
                 Write-Host "  Target: $($backup.BackupTarget)" -ForegroundColor Gray
 
-                if ($backup.ResultHR -ne 0) {
-                    $report.Issues += "Backup failed on $($backup.BackupTime): Error 0x$($backup.ResultHR.ToString('X'))"
+                if ($backupSucceeded -eq $false) {
+                    $report.Issues += "Backup failed on $($backup.BackupTime): Error 0x$($backupResultHR.ToString('X'))"
                 }
             }
 
             # Check for recent successful backup
-            $lastSuccessfulBackup = $backups | Where-Object { $_.ResultHR -eq 0 } | Select-Object -First 1
+            $lastSuccessfulBackup = $backups | Where-Object { $null -ne $_.ResultHR -and $_.ResultHR -eq 0 } | Select-Object -First 1
 
             if ($lastSuccessfulBackup) {
                 $daysSinceBackup = ((Get-Date) - $lastSuccessfulBackup.BackupTime).Days
@@ -370,8 +395,19 @@ try {
             $emailSubject = "Backup Status Report - $($env:COMPUTERNAME) - $($report.Status)"
             $emailBody = Get-Content -Path $htmlPath -Raw
 
-            Send-MailMessage -To $EmailTo -Subject $emailSubject -Body $emailBody -BodyAsHtml `
-                -SmtpServer $SMTPServer -From "backup-report@$env:USERDNSDOMAIN"
+            # Send-MailMessage is obsolete; use System.Net.Mail.SmtpClient instead.
+            # The existing call used the SmtpClient defaults (port 25, no SSL).
+            $smtpClient = New-Object System.Net.Mail.SmtpClient($SMTPServer)
+            $mailMessage = New-Object System.Net.Mail.MailMessage
+            $mailMessage.From = (New-Object System.Net.Mail.MailAddress("backup-report@$env:USERDNSDOMAIN"))
+            $mailMessage.To.Add($EmailTo)
+            $mailMessage.Subject = $emailSubject
+            $mailMessage.Body = $emailBody
+            $mailMessage.IsBodyHtml = $true
+
+            $smtpClient.Send($mailMessage)
+            $mailMessage.Dispose()
+            $smtpClient.Dispose()
 
             Write-Host "`nEmail sent to: $EmailTo" -ForegroundColor Green
         }

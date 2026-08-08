@@ -326,8 +326,8 @@ function Clean-IISLogs {
 
     # Try to get IIS log paths from IIS configuration
     try {
-        Import-Module WebAdministration -ErrorAction SilentlyContinue
-        $sites = Get-Website -ErrorAction SilentlyContinue
+        Import-Module IISAdministration -ErrorAction SilentlyContinue
+        $sites = Get-IISSite -ErrorAction SilentlyContinue
         foreach($site in $sites) {
             $logPath = $site.logFile.directory
             if($logPath -and (Test-Path $logPath)) {

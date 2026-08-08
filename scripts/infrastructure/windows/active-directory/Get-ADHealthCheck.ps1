@@ -320,7 +320,13 @@ function Get-ReplicationStatus {
     Write-Host "`nChecking AD replication status..." -ForegroundColor Cyan
 
     try {
-        $replSummary = Get-ADReplicationPartnerMetadata -Target * -Scope Domain
+        # Get-ADReplicationPartnerMetadata -Target does not accept wildcards;
+        # enumerate domain controllers and query each one, aggregating the results.
+        $replSummary = @()
+        $dcs = Get-ADDomainController -Filter *
+        foreach($dc in $dcs) {
+            $replSummary += Get-ADReplicationPartnerMetadata -Target $dc.HostName -Scope Domain
+        }
 
         foreach($repl in $replSummary) {
             $lastSuccess = $repl.LastReplicationSuccess

@@ -391,7 +391,7 @@ function Export-HTMLReport {
                     if($message.Length -gt 200) {
                         $message = $message.Substring(0, 200) + "..."
                     }
-                    $message = [System.Web.HttpUtility]::HtmlEncode($message)
+                    $message = [System.Net.WebUtility]::HtmlEncode($message)
                     "<tr><td>$($event.TimeCreated)</td><td class='$levelClass'>$($event.LevelDisplayName)</td><td>$($event.Source)</td><td>$($event.EventID)</td><td class='event-message' title='$message'>$message</td></tr>"
                 }
                 "</table>"
@@ -405,9 +405,6 @@ function Export-HTMLReport {
 </body>
 </html>
 "@
-
-    # Add System.Web assembly for HTML encoding
-    Add-Type -AssemblyName System.Web
 
     $html | Out-File -FilePath $reportPath -Encoding UTF8
     Write-ColorOutput "HTML report exported to: $reportPath" -Level Success
