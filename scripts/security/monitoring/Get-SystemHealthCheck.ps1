@@ -208,7 +208,7 @@ try {
             $serviceColor = if ($service.Status -eq 'Running') {'Green'} else {'Red'}
             Write-Host "  $($service.DisplayName): $($service.Status)" -ForegroundColor $serviceColor
         } else {
-            Write-Host "  $serviceName: Not Found" -ForegroundColor Yellow
+            Write-Host "  ${serviceName}: Not Found" -ForegroundColor Yellow
         }
     }
 } catch {

@@ -407,7 +407,7 @@ function Build-NotesLine {
         return $FamilyName
     }
 
-    # Use $() to avoid PowerShell treating "$var:" as scoped variable
+    # Use $() to avoid PowerShell treating "${var}:" as scoped variable
     return "$($NotesPrefix): $FamilyName"
 }
 
@@ -688,7 +688,7 @@ try {
                         -ErrorAction Stop
 
                     $stats.ExtUpdated++
-                    Write-Log "Updated $ExtensionAttributeName for $($device.deviceName) using $methodUsed: $familyName" "Verbose"
+                    Write-Log "Updated $ExtensionAttributeName for $($device.deviceName) using ${methodUsed}: $familyName" "Verbose"
                 }
             }
             elseif ($UpdateExtensionAttributes) {

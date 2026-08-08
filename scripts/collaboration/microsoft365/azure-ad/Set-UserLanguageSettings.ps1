@@ -593,3 +593,4 @@ elseif ($nonCompliantCount -gt 0 -and -not $Apply) {
 else {
     exit 0
 }
+}

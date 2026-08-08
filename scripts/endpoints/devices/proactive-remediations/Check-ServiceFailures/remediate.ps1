@@ -40,7 +40,7 @@ try {
                 Write-Host "    ✓ Successfully started $svcName"
             } catch {
                 $remediationActions += "Failed to start service: $svcName - $_"
-                Write-Host "    ✗ Failed to start $svcName: $_"
+                Write-Host "    ✗ Failed to start ${svcName}: $_"
             }
         }
     }

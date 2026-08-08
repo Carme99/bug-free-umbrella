@@ -187,8 +187,8 @@ if ($IncludeSecurityAnalysis) {
         @{Name = "SQL Injection"; Pattern = "(\%27)|(')|(--)|(\%23)|(#)|(union)|(select)|(insert)|(drop)|(update)|(delete)|(exec)"}
         @{Name = "XSS Attempts"; Pattern = "(<script|javascript:|onerror=|onload=)"}
         @{Name = "Path Traversal"; Pattern = "(\.\./|\.\.\\|%2e%2e)"}
-        @{Name = "Command Injection"; Pattern = "(\||;|`|\\$\(|\${)"}
-    }
+        @{Name = 'Command Injection'; Pattern = '(\||;|`|\\$\(|\${)'}
+    )
 
     $analysis.SecurityThreats = @()
     foreach ($pattern in $suspiciousPatterns) {

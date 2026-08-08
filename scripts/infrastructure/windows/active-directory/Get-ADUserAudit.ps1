@@ -253,7 +253,7 @@ try {
                 }
             }
             catch {
-                Write-Warning "Could not process group $groupName: $_"
+                Write-Warning "Could not process group ${groupName}: $_"
             }
         }
 
