@@ -117,8 +117,8 @@ Every script follows a strict contract (enforced by PSScriptAnalyzer settings + 
 flowchart LR
     HELP[Comment-based help] --> PARAM[[CmdletBinding + validation]]
     PARAM --> FLOW{try / catch}
-    FLOW -->|success| OK[Write-Host [+] · exit 0]
-    FLOW -->|error| ERR[Write-Host [-] · exit 1]
+    FLOW -->|success| OK["Write-Host [+] · exit 0"]
+    FLOW -->|error| ERR["Write-Host [-] · exit 1"]
 ```
 
 ## 6. Testing
