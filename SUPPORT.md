@@ -26,18 +26,18 @@ If you've found a bug or have a feature request, please use GitHub Issues:
 
 Before opening an issue, check if your question is answered in the documentation:
 
-- **[Wiki](../../wiki)** - Comprehensive guides and documentation
+- **[Documentation Hub](docs/README.md)** - Comprehensive guides and documentation
 - **[README.md](README.md)** - Project overview and quick start
-- **[Getting Started Guide](../../wiki/Getting-Started)** - Role-based quick start guides
-- **[Troubleshooting Guide](../../wiki/Troubleshooting)** - Common issues and solutions
-- **[FAQ](../../wiki/FAQ)** - Frequently asked questions
-- **[Script Examples](../../wiki/Script-Examples)** - Real-world usage examples
+- **[Getting Started Guide](docs/Getting-Started.md)** - Role-based quick start guides
+- **[Troubleshooting Guide](docs/Troubleshooting.md)** - Common issues and solutions
+- **[FAQ](docs/FAQ.md)** - Frequently asked questions
+- **[Script Examples](docs/Script-Examples.md)** - Real-world usage examples
 
 ### 💬 Questions?
 
 **For general questions:**
 - Open a [GitHub Issue](../../issues/new) with the "question" label
-- Check the [FAQ in the Wiki](../../wiki/FAQ)
+- Check the [FAQ](docs/FAQ.md)
 - Review existing [closed issues](../../issues?q=is%3Aissue+is%3Aclosed) - your question may have been answered before
 
 **Note**: This repository does not have GitHub Discussions enabled. Please use Issues for all questions.
@@ -108,7 +108,7 @@ See [SECURITY.md](SECURITY.md) for our security policy and reporting process.
 
 ### External Help
 - **PowerShell Community**: [r/PowerShell](https://reddit.com/r/powershell)
-- **Microsoft Docs**: [PowerShell Documentation](https://docs.microsoft.com/powershell)
+- **Microsoft Learn**: [PowerShell Documentation](https://learn.microsoft.com/powershell)
 - **Stack Overflow**: Tag your question with `powershell`
 
 ### Related Projects

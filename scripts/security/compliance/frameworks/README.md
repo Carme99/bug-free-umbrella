@@ -444,7 +444,7 @@ When adding new security scripts:
 
 For issues or questions:
 1. Check script's built-in help: `Get-Help .\ScriptName.ps1 -Detailed`
-2. Review [Troubleshooting Guide](../../wiki/Troubleshooting)
+2. Review [Troubleshooting Guide](../../../../docs/Troubleshooting.md)
 3. Test with `-Verbose` parameter for detailed output
 4. Verify prerequisites and permissions
 

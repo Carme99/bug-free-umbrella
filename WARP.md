@@ -80,7 +80,7 @@ Contributors should follow the guidance in [CONTRIBUTING.md](./CONTRIBUTING.md) 
 - Ensure every script is **PSScriptAnalyzer** compliant by running `Invoke-ScriptAnalyzer` before committing.
 - Include comment-based help (`.SYNOPSIS`, `.DESCRIPTION`, `.EXAMPLE`) on every script.
 - Run the relevant Pester tests locally for your changes (note that Pester is not executed in CI).
-- Keep the GitHub **wiki** up to date (it is the primary documentation source); update the relevant pages when you change scripts or paths.
+- Keep the **docs/** directory up to date (it is the primary documentation source); update the relevant pages when you change scripts or paths.
 - Follow the existing script patterns in the same directory.
 
 ---

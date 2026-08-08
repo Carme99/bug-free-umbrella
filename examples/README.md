@@ -73,6 +73,6 @@ Have a great workflow example? See [CONTRIBUTING.md](../CONTRIBUTING.md) for gui
 ## Additional Resources
 
 - [Command Recipes](../docs/RECIPES.md) - Quick cookbook of common IT tasks (⭐ NEW!)
-- [Script Catalog](../wiki/Script-Catalog.md) - Complete script index
-- [Troubleshooting Guide](../wiki/Troubleshooting.md) - Common issues and solutions
-- [Workflows Documentation](../wiki/Workflows.md) - End-to-end process guides
+- [Script Catalog](../docs/Script-Catalog.md) - Complete script index
+- [Troubleshooting Guide](../docs/Troubleshooting.md) - Common issues and solutions
+- [Workflows Documentation](../docs/Workflows.md) - End-to-end process guides

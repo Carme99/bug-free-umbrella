@@ -332,10 +332,10 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for detailed guidelines.
 
 ## Additional Resources
 
-- [PowerShell 7 Migration Guide](https://docs.microsoft.com/en-us/powershell/scripting/whats-new/migrating-from-windows-powershell-51-to-powershell-7)
-- [Module Installation Guide](../../wiki/Getting-Started#module-installation)
-- [Cross-Platform PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell)
+- [PowerShell 7 Migration Guide](https://learn.microsoft.com/en-us/powershell/scripting/whats-new/migrating-from-windows-powershell-51-to-powershell-7)
+- [Module Installation Guide](../../docs/Getting-Started.md#module-installation)
+- [Cross-Platform PowerShell](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell)
 
 ---
 
-**Questions?** [Open an issue](https://github.com/Carme99/bug-free-umbrella/issues) or check the [Wiki](../../wiki)
+**Questions?** [Open an issue](https://github.com/Carme99/bug-free-umbrella/issues) or check the [Documentation Hub](../../docs/README.md)

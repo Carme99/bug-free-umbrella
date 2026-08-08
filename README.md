@@ -2,7 +2,7 @@
 
 > **Because IT shouldn't rain on your parade.**
 
-Your personal collection of 260+ battle-tested PowerShell scripts for when you need to automate *everything* in your enterprise environment.
+Your personal collection of **358 battle-tested PowerShell scripts** for when you need to automate *everything* in your enterprise environment.
 
 <div align="center">
 
@@ -16,16 +16,16 @@ Your personal collection of 260+ battle-tested PowerShell scripts for when you n
 [![Issues](https://img.shields.io/github/issues/Carme99/bug-free-umbrella?style=for-the-badge)](https://github.com/Carme99/bug-free-umbrella/issues)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge)](CONTRIBUTING.md)
 
-[![Scripts](https://img.shields.io/badge/Scripts-260+-FF6B6B?style=for-the-badge&logo=files&logoColor=white)](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Catalog)
-[![Wiki](https://img.shields.io/badge/📚_Full_Documentation-Wiki-4A9EFF?style=for-the-badge)](https://github.com/Carme99/bug-free-umbrella/wiki)
+[![Scripts](https://img.shields.io/badge/Scripts-358-FF6B6B?style=for-the-badge&logo=files&logoColor=white)](docs/Script-Catalog.md)
+[![Docs](https://img.shields.io/badge/📚_Full_Documentation-docs%2F-4A9EFF?style=for-the-badge)](docs/README.md)
 [![Claude Code](https://img.shields.io/badge/Built_with-Claude_Code-8B5CF6?style=for-the-badge&logo=anthropic&logoColor=white)](https://github.com/anthropics/claude-code)
 [![Last Commit](https://img.shields.io/github/last-commit/Carme99/bug-free-umbrella?style=for-the-badge)](https://github.com/Carme99/bug-free-umbrella/commits/main)
 
 ---
 
-### 📚 **[→ Visit the Wiki for Complete Documentation](https://github.com/Carme99/bug-free-umbrella/wiki)** ⭐
+### 📚 **[→ Read the Full Documentation](docs/README.md)** ⭐
 
-**[🚀 Quick Start](https://github.com/Carme99/bug-free-umbrella/wiki/Getting-Started)** • **[📋 Script Catalog](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Catalog)** • **[💡 Examples](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Examples)** • **[🔧 Troubleshooting](https://github.com/Carme99/bug-free-umbrella/wiki/Troubleshooting)**
+**[🚀 Quick Start](docs/Getting-Started.md)** • **[📋 Script Catalog](docs/Script-Catalog.md)** • **[💡 Examples](docs/Script-Examples.md)** • **[🔧 Troubleshooting](docs/Troubleshooting.md)**
 
 </div>
 
@@ -54,9 +54,9 @@ Ever find yourself thinking *"there's got to be a script for this"*? Well, now t
 
 | 🎨 Feature | 📊 What You Get |
 |-----------|----------------|
-| **📱 Intune Management** | 18+ scripts to wrangle your endpoints into submission |
-| **🔧 Proactive Remediations** | 14 pairs of detect/fix scripts that run before users notice issues |
-| **📦 Winget Updates** | 40+ app auto-update templates (set it and forget it) |
+| **📱 Intune Management** | 20+ scripts to wrangle your endpoints into submission |
+| **🔧 Proactive Remediations** | 51 detect/fix pairs that run before users notice issues |
+| **📦 Winget Updates** | 16 app auto-update pairs (set it and forget it) |
 | **🔒 Security & Compliance** | Multi-framework scanning (CIS, NIST, PCI-DSS, HIPAA, SOC2, ISO27001) |
 | **☁️ Cloud Automation** | Azure, AWS, and container management scripts |
 | **🖥️ Server Management** | 30+ scripts for Windows/Linux servers |
@@ -83,26 +83,27 @@ Get-Help .\Get-DeviceComplianceReport.ps1 -Detailed
 
 **Don't know where to start?** Check out our [**Command Recipes**](docs/RECIPES.md) - 80+ copy-paste commands organized by task. It's like Stack Overflow, but it actually works in your environment.
 
-**[→ Full getting started guide](https://github.com/Carme99/bug-free-umbrella/wiki/Getting-Started)**
+**[→ Full getting started guide](docs/Getting-Started.md)**
 
 ---
 
 ## 📁 What's Inside the Toolbox
 
-This isn't just a random pile of scripts. Everything's organized into **7 technology domains** so you can actually find what you need:
+This isn't just a random pile of scripts. Everything's organized into **8 technology domains** so you can actually find what you need:
 
 ```
 🌂 bug-free-umbrella/
-├── ☁️  cloud/          # Azure, AWS, Kubernetes - make the clouds do your bidding
-├── 📱 endpoints/       # Intune, devices, remediation - keep users happy
-├── 🖥️  infrastructure/ # Servers, networking, VMs - the backbone
+├── 📱 endpoints/       # Intune, Winget, remediations - keep users happy
+├── 🖥️ infrastructure/  # Servers, networking, VMs - the backbone
 ├── 🔒 security/        # Compliance, hardening - sleep better at night
-├── ⚙️  automation/     # CI/CD, IaC - because clicking is for chumps
+├── ☁️ cloud/           # Azure, AWS, Kubernetes - make the clouds do your bidding
 ├── 👥 collaboration/   # M365, Teams, Exchange - office productivity++
-└── 🗄️  data/           # Databases, APIs - where the magic happens
+├── 🗄️ data/            # Databases, APIs - where the magic happens
+├── ⚙️ automation/      # CI/CD, IaC - because clicking is for chumps
+└── 🧰 utilities/       # General toolbox - the grab bag of useful stuff
 ```
 
-**[→ Browse the full catalog](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Catalog)**
+**[→ Browse the full catalog](docs/Script-Catalog.md)** · **[→ See how it all fits together](docs/ARCHITECTURE.md)**
 
 ---
 
@@ -116,7 +117,7 @@ New here? **Try these first** - they're the most commonly used scripts in the wi
 
 ### 📱 For Intune Admins
 - **[Get-DeviceComplianceReport.ps1](scripts/endpoints/intune/reporting/)** - Find misbehaving devices fast
-- **[Sync-IntuneDevice.ps1](scripts/endpoints/intune/maintenance/)** - Force that stubborn device to check in
+- **[Find-StaleDevices.ps1](scripts/endpoints/intune/maintenance/)** - Devices that haven't checked in lately
 - **[Check-OutdatedCriticalApps](scripts/endpoints/devices/proactive-remediations/Check-OutdatedCriticalApps/)** - Auto-detect outdated critical apps
 
 </td>
@@ -124,7 +125,7 @@ New here? **Try these first** - they're the most commonly used scripts in the wi
 
 ### 🖥️ For Server Admins
 - **[Monitor-ServerHealth.ps1](scripts/infrastructure/windows/monitoring/)** - 30-second health check
-- **[Invoke-SecurityComplianceScan.ps1](scripts/security/compliance/frameworks/)** - Multi-framework compliance
+- **[Invoke-SecurityComplianceScan.ps1](scripts/security/hardening/)** - Multi-framework compliance
 - **[Get-EventLogReport.ps1](scripts/infrastructure/windows/monitoring/)** - Find issues before users report them
 
 </td>
@@ -134,22 +135,22 @@ New here? **Try these first** - they're the most commonly used scripts in the wi
 
 ### ☁️ For Cloud Engineers
 - **[Monitor-AzureResources.ps1](scripts/cloud/azure/core/)** - Keep tabs on your Azure environment
-- **[Get-AzureCostReport.ps1](scripts/cloud/azure/core/)** - Track spending before surprises
-- **[Kubernetes Health Checks](scripts/cloud/containers/)** - K8s cluster monitoring
+- **[Get-AzureResourceHealth.ps1](scripts/cloud/azure/core/)** - Track resource health and outages
+- **[Get-KubernetesHealthCheck.ps1](scripts/cloud/containers/)** - K8s cluster monitoring
 
 </td>
 <td width="50%">
 
 ### 📦 For Everyone
-- **[Winget Update Templates](scripts/endpoints/devices/winget/)** - Auto-update 40+ apps (Chrome, Zoom, Teams, etc.)
+- **[Winget Update Pairs](scripts/endpoints/devices/winget/)** - Auto-update 16 apps (Chrome, Zoom, Teams, etc.)
 - **[Command Recipes](docs/RECIPES.md)** - 80+ copy-paste commands
-- **[Proactive Remediations](scripts/endpoints/devices/proactive-remediations/)** - 14 auto-fix script pairs
+- **[Proactive Remediations](scripts/endpoints/devices/proactive-remediations/)** - 51 auto-fix script pairs
 
 </td>
 </tr>
 </table>
 
-**[→ Browse all 260+ scripts in the catalog](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Catalog)**
+**[→ Browse all 358 scripts in the catalog](docs/Script-Catalog.md)**
 
 ---
 
@@ -157,10 +158,10 @@ New here? **Try these first** - they're the most commonly used scripts in the wi
 
 Here's what these scripts actually help you do:
 
-- **"My Intune devices won't sync!"** → `Sync-IntuneDevice.ps1` forces sync and shows you why
+- **"My Intune devices won't sync!"** → `Test-IntuneConnectivity.ps1` diagnoses the Graph connection, then `Find-StaleDevices.ps1` lists the laggards
 - **"Which servers need patching?"** → `Monitor-ServerHealth.ps1` + compliance reports
-- **"How much are we spending on Azure?"** → `Get-AzureCostReport.ps1` breaks it down
-- **"Users keep installing outdated software!"** → Winget auto-update templates
+- **"Is my Azure environment healthy?"** → `Get-AzureResourceHealth.ps1` breaks it down
+- **"Users keep installing outdated software!"** → Winget auto-update pairs
 - **"I need to audit 100 servers for CIS compliance!"** → Multi-framework scanner does it all
 - **"Exchange mailbox permissions are a mess!"** → `Get-UserMailboxPermissions.ps1` maps it out
 
@@ -199,11 +200,11 @@ This repo exists because:
 
 | Metric | Count | What It Means |
 |--------|-------|---------------|
-| 📜 **Scripts** | 260+ | Solutions to 260+ real problems |
-| 🏗️ **Domains** | 7 | Organized so you can actually find things |
-| 🔧 **Remediation Pairs** | 14 | Auto-fix scripts running in prod |
-| 📦 **Winget Templates** | 40+ | Apps that update themselves |
-| 📚 **Wiki Pages** | 20+ | Comprehensive docs (actually maintained!) |
+| 📜 **Scripts** | 358 | Solutions to 358 real problems |
+| 🏗️ **Domains** | 8 | Organized so you can actually find things |
+| 🔧 **Remediation Pairs** | 51 | Auto-fix scripts running in prod |
+| 📦 **Winget Pairs** | 16 | Apps that update themselves |
+| 📚 **Docs Pages** | 30+ | In-repo documentation (updated with every PR) |
 | ⭐ **Code Quality** | Variable | Honest software is better than perfect marketing |
 
 </div>
@@ -225,16 +226,17 @@ This is a hobby project (response time: 1-2 weeks typically), but your contribut
 
 ## 📖 Documentation
 
-Everything you need is in the wiki, organized by what you're trying to do:
+All documentation lives **in this repository** under [`docs/`](docs/README.md) — versioned with the code, reviewable in every PR, never stale:
 
 | If You Want To... | Go Here |
 |-------------------|---------|
-| 🆕 **Get started from scratch** | [Getting Started Guide](https://github.com/Carme99/bug-free-umbrella/wiki/Getting-Started) |
-| 🔍 **Find a specific script** | [Script Catalog](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Catalog) |
-| 📖 **See how to use something** | [Script Examples](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Examples) |
-| 🎯 **Solve a specific problem** | [Common Use Cases](https://github.com/Carme99/bug-free-umbrella/wiki/Common-Use-Cases) |
-| 🔥 **Fix something broken** | [Troubleshooting](https://github.com/Carme99/bug-free-umbrella/wiki/Troubleshooting) |
-| ❓ **Answer a quick question** | [FAQ](https://github.com/Carme99/bug-free-umbrella/wiki/FAQ) |
+| 🆕 **Get started from scratch** | [Getting Started](docs/Getting-Started.md) |
+| 🔍 **Find a specific script** | [Script Catalog](docs/Script-Catalog.md) |
+| 📖 **See how to use something** | [Script Examples](docs/Script-Examples.md) |
+| 🎯 **Solve a specific problem** | [Common Use Cases](docs/Common-Use-Cases.md) |
+| 🔥 **Fix something broken** | [Troubleshooting](docs/Troubleshooting.md) |
+| ❓ **Answer a quick question** | [FAQ](docs/FAQ.md) |
+| 🏗️ **Understand the architecture** | [ARCHITECTURE](docs/ARCHITECTURE.md) |
 
 **Plus:** [CHANGELOG](CHANGELOG.md) • [SECURITY](SECURITY.md) • [CONTRIBUTING](CONTRIBUTING.md) • [CODE OF CONDUCT](CODE_OF_CONDUCT.md) • [GOVERNANCE](GOVERNANCE.md)
 
@@ -254,8 +256,6 @@ This entire repository is maintained by one human developer and [Claude Code](ht
 
 ---
 
----
-
 ## 📬 Stay Updated
 
 - 🌟 **[Star this repo](https://github.com/Carme99/bug-free-umbrella)** to get notified of new scripts
@@ -269,7 +269,7 @@ This entire repository is maintained by one human developer and [Claude Code](ht
 
 ### Ready to Automate Your World? 🚀
 
-**[Get Started →](https://github.com/Carme99/bug-free-umbrella/wiki/Getting-Started)** | **[Browse Scripts →](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Catalog)** | **[See Examples →](https://github.com/Carme99/bug-free-umbrella/wiki/Script-Examples)**
+**[Get Started →](docs/Getting-Started.md)** | **[Browse Scripts →](docs/Script-Catalog.md)** | **[See Examples →](docs/Script-Examples.md)**
 
 ---
 

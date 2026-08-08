@@ -595,7 +595,7 @@ Automates the process of keeping user and device group memberships in sync.
 
 For more information about this repository:
 - **[Main README](../../README.md)** - Repository overview
-- **[Script Catalog](../../wiki/Script-Catalog)** - Browse all scripts
+- **[Script Catalog](../../docs/Script-Catalog.md)** - Browse all scripts
 - **[Contributing](../../CONTRIBUTING.md)** - Contribution guidelines
 
 ---
