@@ -59,4 +59,4 @@ jobs:
           Synced from commit: ${{ github.sha }}
           Triggered by: ${{ github.event.head_commit.message }}"
 
-          git push origin master
+          git push origin main
