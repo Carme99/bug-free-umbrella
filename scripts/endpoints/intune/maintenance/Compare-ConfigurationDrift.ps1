@@ -183,7 +183,8 @@ try {
         Write-Host "  Configuration Policies: $($currentSnapshot.ConfigurationPolicies.Count)"
         Write-Host "  Applications: $($currentSnapshot.Applications.Count)"
 
-    } else {
+    }
+    else {
         # Compare against baseline
         if (-not $BaselinePath) {
             Write-Error "Please specify -BaselinePath or use -CreateBaseline to create a new baseline"
@@ -300,7 +301,8 @@ try {
         }
     }
 
-} catch {
+}
+catch {
     Write-Error "Error during configuration drift analysis: $_"
     exit 1
 }

@@ -48,17 +48,17 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet('HTML', 'CSV', 'Both')]
     [string]$ExportFormat = 'Both',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ShowNonCompliantOnly,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeAutoPatchInfo,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$DaysOutdated = 30
 )
 
@@ -239,7 +239,7 @@ try {
     Write-Host "Protected:               $protected ($(if($totalDevices -gt 0){'{0:P0}' -f ($protected/$totalDevices)}else{'N/A'}))" -ForegroundColor Green
     Write-Host "Not Protected:           $notProtected ($(if($totalDevices -gt 0){'{0:P0}' -f ($notProtected/$totalDevices)}else{'N/A'}))" -ForegroundColor Red
     Write-Host "Unknown Status:          $unknown" -ForegroundColor Yellow
-    Write-Host "No AV Report (${DaysOutdated}+ days):  $stale" -ForegroundColor $(if($stale -gt 0){'Yellow'}else{'Green'})
+    Write-Host "No AV Report (${DaysOutdated}+ days):  $stale" -ForegroundColor $(if ($stale -gt 0) { 'Yellow' }else { 'Green' })
 
     if ($IncludeAutoPatchInfo) {
         Write-Host "`nAutoPatch Ring Distribution:" -ForegroundColor Cyan

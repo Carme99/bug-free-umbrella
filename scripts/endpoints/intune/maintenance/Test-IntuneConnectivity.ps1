@@ -92,7 +92,8 @@ foreach ($category in $intuneEndpoints.Keys) {
                 Write-Host "  ✅ $endpoint - Status: $statusCode" -ForegroundColor Green
             }
 
-        } catch {
+        }
+        catch {
             $status = "❌ Failed"
             $statusCode = if ($_.Exception.Response) { $_.Exception.Response.StatusCode.value__ } else { "N/A" }
             $errorMsg = $_.Exception.Message
@@ -131,7 +132,8 @@ try {
     $dnsTest = Resolve-DnsName -Name "login.microsoftonline.com" -ErrorAction Stop
     Write-Host "    ✅ DNS resolution working" -ForegroundColor Green
     $dnsWorking = $true
-} catch {
+}
+catch {
     Write-Host "    ❌ DNS resolution failed" -ForegroundColor Red
     $dnsWorking = $false
 }
@@ -142,7 +144,8 @@ $proxySettings = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\Curren
 if ($proxySettings.ProxyEnable -eq 1) {
     Write-Host "    ⚠️  Proxy enabled: $($proxySettings.ProxyServer)" -ForegroundColor Yellow
     $proxyConfigured = $true
-} else {
+}
+else {
     Write-Host "    ✅ No proxy configured" -ForegroundColor Green
     $proxyConfigured = $false
 }
@@ -154,11 +157,13 @@ try {
     if ($dsregStatus -match "AzureAdJoined\s*:\s*YES") {
         Write-Host "    ✅ Device is Azure AD joined" -ForegroundColor Green
         $azureAdJoined = $true
-    } else {
+    }
+    else {
         Write-Host "    ⚠️  Device is not Azure AD joined" -ForegroundColor Yellow
         $azureAdJoined = $false
     }
-} catch {
+}
+catch {
     Write-Host "    ❌ Could not determine Azure AD join status" -ForegroundColor Red
     $azureAdJoined = $false
 }

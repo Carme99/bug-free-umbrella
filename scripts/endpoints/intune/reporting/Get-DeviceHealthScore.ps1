@@ -79,14 +79,16 @@ function Calculate-DeviceHealthScore {
     # Compliance Status (25 points)
     if ($device.complianceState -eq "compliant") {
         $score += 25
-    } else {
+    }
+    else {
         $issues += "Non-compliant ($($device.complianceState))"
     }
 
     # BitLocker Encryption (20 points)
     if ($device.isEncrypted -eq $true) {
         $score += 20
-    } else {
+    }
+    else {
         $issues += "Not encrypted"
     }
 
@@ -104,10 +106,12 @@ function Calculate-DeviceHealthScore {
 
         if ($daysSinceSync -le 7) {
             $score += 15
-        } elseif ($daysSinceSync -le 14) {
+        }
+        elseif ($daysSinceSync -le 14) {
             $score += 10
             $issues += "Check-in over 7 days ago"
-        } else {
+        }
+        else {
             $issues += "Check-in over 14 days ago"
         }
     }
@@ -129,7 +133,8 @@ function Calculate-DeviceHealthScore {
     # Management State (5 points)
     if ($device.managementState -eq "managed") {
         $score += 5
-    } else {
+    }
+    else {
         $issues += "Not managed properly"
     }
 
@@ -139,10 +144,10 @@ function Calculate-DeviceHealthScore {
         Percentage = [math]::Round(($score / $maxScore) * 100, 1)
         Issues = $issues -join ", "
         HealthRating = if ($score -ge 90) { "Excellent" }
-                      elseif ($score -ge 75) { "Good" }
-                      elseif ($score -ge 60) { "Fair" }
-                      elseif ($score -ge 40) { "Poor" }
-                      else { "Critical" }
+        elseif ($score -ge 75) { "Good" }
+        elseif ($score -ge 60) { "Fair" }
+        elseif ($score -ge 40) { "Poor" }
+        else { "Critical" }
     }
 }
 
@@ -173,7 +178,8 @@ try {
                 LastSyncDate = $device.lastSyncDateTime
                 DaysSinceSync = if ($device.lastSyncDateTime) {
                     [math]::Round(((Get-Date) - [DateTime]::Parse($device.lastSyncDateTime)).TotalDays, 1)
-                } else { "Never" }
+                }
+                else { "Never" }
                 SerialNumber = $device.serialNumber
                 Model = $device.model
                 Issues = $health.Issues
@@ -198,7 +204,8 @@ try {
 
     if ($Format -eq "CSV") {
         $healthReport | Export-Csv -Path $reportPath -NoTypeInformation
-    } else {
+    }
+    else {
         $htmlReport = ConvertTo-IntuneHtmlReport -Data $healthReport -Title "Device Health Score Report" -Description "Generated on $(Get-Date) | Minimum Score: $MinHealthScore"
         $htmlReport | Out-File -FilePath $reportPath -Encoding UTF8
     }
@@ -206,7 +213,8 @@ try {
     Write-Host "`n✅ Report generated successfully:" -ForegroundColor Green
     Write-Host "   $reportPath" -ForegroundColor Cyan
 
-} catch {
+}
+catch {
     Write-Error "Error generating device health score report: $_"
     exit 1
 }

@@ -50,22 +50,22 @@
     Requires permissions: DeviceManagementManagedDevices.ReadWrite.All
 #>
 
-[CmdletBinding(SupportsShouldProcess=$true)]
+[CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [Parameter(Mandatory=$true)]
-    [ValidateSet('Sync','Restart','Retire','Wipe','CollectDiagnostics')]
+    [Parameter(Mandatory = $true)]
+    [ValidateSet('Sync', 'Restart', 'Retire', 'Wipe', 'CollectDiagnostics')]
     [string]$Action,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string[]]$DeviceNames,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$DeviceFilter,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$GroupName,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$NonCompliantOnly
 )
 
@@ -81,7 +81,7 @@ $script:results = @{
 
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
-    $color = switch($Level) { 'Success' { 'Green' } 'Warning' { 'Yellow' } 'Error' { 'Red' } default { 'Cyan' } }
+    $color = switch ($Level) { 'Success' { 'Green' } 'Warning' { 'Yellow' } 'Error' { 'Red' } default { 'Cyan' } }
     Write-Host $Message -ForegroundColor $color
 }
 
@@ -89,8 +89,8 @@ function Connect-ToGraph {
     Write-Host "Connecting to Microsoft Graph..." -ForegroundColor Cyan
     try {
         $context = Get-MgContext
-        if(-not $context) {
-            Connect-MgGraph -Scopes "DeviceManagementManagedDevices.ReadWrite.All","Group.Read.All"
+        if (-not $context) {
+            Connect-MgGraph -Scopes "DeviceManagementManagedDevices.ReadWrite.All", "Group.Read.All"
         }
         Write-ColorOutput "  Connected successfully" -Level Success
     }
@@ -106,30 +106,30 @@ function Get-TargetDevices {
     $devices = @()
     
     try {
-        if($DeviceNames) {
-            foreach($name in $DeviceNames) {
+        if ($DeviceNames) {
+            foreach ($name in $DeviceNames) {
                 $device = Get-MgDeviceManagementManagedDevice -Filter "deviceName eq '$name'" -All
-                if($device) { $devices += $device }
+                if ($device) { $devices += $device }
             }
         }
-        elseif($GroupName) {
+        elseif ($GroupName) {
             $group = Get-MgGroup -Filter "displayName eq '$GroupName'"
-            if($group) {
+            if ($group) {
                 $members = Get-MgGroupMember -GroupId $group.Id -All
-                foreach($member in $members) {
+                foreach ($member in $members) {
                     $device = Get-MgDeviceManagementManagedDevice -ManagedDeviceId $member.Id -ErrorAction SilentlyContinue
-                    if($device) { $devices += $device }
+                    if ($device) { $devices += $device }
                 }
             }
         }
-        elseif($DeviceFilter) {
+        elseif ($DeviceFilter) {
             $devices = Get-MgDeviceManagementManagedDevice -Filter $DeviceFilter -All
         }
         else {
             $devices = Get-MgDeviceManagementManagedDevice -All
         }
 
-        if($NonCompliantOnly) {
+        if ($NonCompliantOnly) {
             $devices = $devices | Where-Object { $_.ComplianceState -ne 'compliant' }
         }
 
@@ -144,14 +144,15 @@ function Get-TargetDevices {
 }
 
 function Invoke-DeviceAction {
+    [CmdletBinding(SupportsShouldProcess)]
     param($Device)
     
     $deviceName = $Device.DeviceName
     $deviceId = $Device.Id
 
-    if($PSCmdlet.ShouldProcess($deviceName, $Action)) {
+    if ($PSCmdlet.ShouldProcess($deviceName, $Action)) {
         try {
-            switch($Action) {
+            switch ($Action) {
                 'Sync' {
                     Invoke-MgSyncDeviceManagementManagedDevice -ManagedDeviceId $deviceId
                     Write-ColorOutput "  [OK] Synced: $deviceName" -Level Success
@@ -204,7 +205,7 @@ Write-Host "========================================`n" -ForegroundColor Cyan
 Connect-ToGraph
 $devices = Get-TargetDevices
 
-if($devices.Count -eq 0) {
+if ($devices.Count -eq 0) {
     Write-ColorOutput "No devices found matching criteria" -Level Warning
     exit 0
 }
@@ -212,7 +213,7 @@ if($devices.Count -eq 0) {
 Write-Host "`nExecuting action: $Action" -ForegroundColor Cyan
 Write-Host "Targeted devices: $($devices.Count)`n" -ForegroundColor Gray
 
-foreach($device in $devices) {
+foreach ($device in $devices) {
     Invoke-DeviceAction -Device $device
 }
 
@@ -222,7 +223,7 @@ Write-Host "========================================" -ForegroundColor Cyan
 Write-Host "Action: $Action"
 Write-Host "Targeted: $($script:results.TargetedDevices)"
 Write-ColorOutput "Successful: $($script:results.SuccessfulActions)" -Level Success
-if($script:results.FailedActions -gt 0) {
+if ($script:results.FailedActions -gt 0) {
     Write-ColorOutput "Failed: $($script:results.FailedActions)" -Level Error
 }
 Write-Host "`n========================================`n" -ForegroundColor Cyan

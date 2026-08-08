@@ -155,7 +155,8 @@ try {
     $usersWithMultipleDevices = ($affinityReport | Where-Object { $_.DeviceCount -gt 1 }).Count
     $avgDevicesPerUser = if ($usersWithDevices -gt 0) {
         [math]::Round(($affinityReport | Where-Object { $_.DeviceCount -gt 0 } | Measure-Object -Property DeviceCount -Average).Average, 2)
-    } else { 0 }
+    }
+    else { 0 }
 
     Write-Host "`nUser-Device Affinity Summary:" -ForegroundColor Yellow
     Write-Host "  Total Users: $totalUsers"
@@ -175,7 +176,8 @@ try {
         # Flatten device details for CSV
         $csvReport = $affinityReport | Select-Object DisplayName, UserPrincipalName, AccountEnabled, Department, JobTitle, DeviceCount, DeviceList
         $csvReport | Export-Csv -Path $reportPath -NoTypeInformation
-    } else {
+    }
+    else {
         # Create enhanced HTML report with device details
         $htmlContent = @"
 <!DOCTYPE html>
@@ -257,7 +259,8 @@ try {
     Write-Host "`n✅ Report generated successfully:" -ForegroundColor Green
     Write-Host "   $reportPath" -ForegroundColor Cyan
 
-} catch {
+}
+catch {
     Write-Error "Error generating user-device affinity report: $_"
     exit 1
 }

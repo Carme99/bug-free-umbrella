@@ -44,17 +44,17 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet('HTML', 'CSV', 'Both')]
     [string]$ExportFormat = 'HTML',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$CheckSettingsCatalog,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$CheckConfigurationProfiles = $true,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$CheckCompliancePolicies
 )
 
@@ -280,7 +280,7 @@ try {
     Write-Host "========================================" -ForegroundColor Cyan
 
     Write-Host "Total Policies Analyzed:  $($allPolicies.Count)" -ForegroundColor White
-    Write-Host "Potential Conflicts:      $($conflicts.Count)" -ForegroundColor $(if($conflicts.Count -gt 0){'Yellow'}else{'Green'})
+    Write-Host "Potential Conflicts:      $($conflicts.Count)" -ForegroundColor $(if ($conflicts.Count -gt 0) { 'Yellow' }else { 'Green' })
 
     if ($conflicts.Count -gt 0) {
         $high = ($conflicts | Where-Object { $_.Severity -eq "High" }).Count

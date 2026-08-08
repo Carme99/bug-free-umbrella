@@ -49,17 +49,17 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet('HTML', 'CSV', 'Both')]
     [string]$ExportFormat = 'Both',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ShowUnencryptedOnly,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ShowMissingKeys,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeNonWindows
 )
 
@@ -238,7 +238,7 @@ try {
     Write-Host "Unknown Status:          $unknown" -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Recovery Keys Backed Up: $keysBackedUp" -ForegroundColor Green
-    Write-Host "No Key Backup:           $noBackup" -ForegroundColor $(if($noBackup -gt 0){'Red'}else{'Green'})
+    Write-Host "No Key Backup:           $noBackup" -ForegroundColor $(if ($noBackup -gt 0) { 'Red' }else { 'Green' })
 
     if ($report.Count -eq 0) {
         Write-Host "`nNo devices match the current filter criteria." -ForegroundColor Yellow
@@ -250,7 +250,7 @@ try {
     Write-Host "`nBreakdown by Encryption Status:" -ForegroundColor Cyan
     $grouped = $report | Group-Object -Property EncryptionStatus
     foreach ($group in $grouped | Sort-Object Count -Descending) {
-        $color = switch($group.Name) {
+        $color = switch ($group.Name) {
             "Encrypted" { "Green" }
             "Not Encrypted" { "Red" }
             default { "Yellow" }

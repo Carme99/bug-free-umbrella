@@ -53,33 +53,33 @@
     Designed for Intune Proactive Remediations
 #>
 
-[CmdletBinding(DefaultParameterSetName='Single')]
+[CmdletBinding(DefaultParameterSetName = 'Single')]
 param(
-    [Parameter(Mandatory=$true, ParameterSetName='Single')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'Single')]
     [string]$AppName,
 
-    [Parameter(Mandatory=$true, ParameterSetName='Single')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'Single')]
     [string]$WingetID,
 
-    [Parameter(Mandatory=$true, ParameterSetName='Single')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'Single')]
     [string]$ProcessName,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$OutputPath = ".",
 
-    [Parameter(Mandatory=$false, ParameterSetName='Single')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'Single')]
     [switch]$ForceUpdate,
 
-    [Parameter(Mandatory=$true, ParameterSetName='Batch')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'Batch')]
     [switch]$GenerateBatch,
 
-    [Parameter(Mandatory=$true, ParameterSetName='Batch')]
+    [Parameter(Mandatory = $true, ParameterSetName = 'Batch')]
     [string]$CSVPath
 )
 
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
-    $color = switch($Level) {
+    $color = switch ($Level) {
         'Success' { 'Green' }
         'Warning' { 'Yellow' }
         'Error' { 'Red' }
@@ -89,6 +89,7 @@ function Write-ColorOutput {
 }
 
 function New-DetectScript {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [string]$Name,
         [string]$ID,
@@ -96,8 +97,12 @@ function New-DetectScript {
         [bool]$Force = $false
     )
 
-    $processCheck = if(-not $Force) {
-@"
+    if (-not $PSCmdlet.ShouldProcess($Name, 'Generate detect script')) {
+        return
+    }
+
+    $processCheck = if (-not $Force) {
+        @"
 try {
 `$process = Get-Process -Name "$Process" -ErrorAction SilentlyContinue
 # Check if there's an available update
@@ -124,8 +129,9 @@ if ((`$lines -match '\bVersion\s+Available\b' -and `$process -eq `$null)) {
     exit 1
 }
 "@
-    } else {
-@"
+    }
+    else {
+        @"
 if (`$lines -match '\bVersion\s+Available\b') {
     `$verInstalled, `$verAvailable = (-split `$lines[-1])[-3,-2]
     Write-Host "Application update available for $Name. Current version is `$verInstalled, version available is `$verAvailable"
@@ -140,7 +146,7 @@ if (`$lines -match '\bVersion\s+Available\b') {
 "@
     }
 
-@"
+    @"
 <#
 .SYNOPSIS
     Detects if $Name has an available update via winget.
@@ -214,6 +220,7 @@ catch {
 }
 
 function New-RemediateScript {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [string]$Name,
         [string]$ID,
@@ -221,8 +228,12 @@ function New-RemediateScript {
         [bool]$Force = $false
     )
 
-    $processCheck = if(-not $Force) {
-@"
+    if (-not $PSCmdlet.ShouldProcess($Name, 'Generate remediate script')) {
+        return
+    }
+
+    $processCheck = if (-not $Force) {
+        @"
 # Check if app is running
 `$process = Get-Process -Name "`$AppProcess" -ErrorAction SilentlyContinue
 if (`$process -ne `$null) {
@@ -230,14 +241,15 @@ if (`$process -ne `$null) {
     exit 1
 }
 "@
-    } else {
-@"
+    }
+    else {
+        @"
 # Force update enabled - will update even if running
 Write-Verbose -Verbose "Force update enabled"
 "@
     }
 
-@"
+    @"
 <#
 .SYNOPSIS
     Remediates $Name by installing available updates via winget.
@@ -317,6 +329,7 @@ catch {
 }
 
 function New-WingetScripts {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [string]$Name,
         [string]$ID,
@@ -327,19 +340,23 @@ function New-WingetScripts {
 
     # Create output directory
     $appFolder = Join-Path $Path $Name
-    if(-not (Test-Path $appFolder)) {
+    if (-not (Test-Path $appFolder)) {
         New-Item -ItemType Directory -Path $appFolder -Force | Out-Null
     }
 
     # Generate detect script
     $detectScript = New-DetectScript -Name $Name -ID $ID -Process $Process -Force $Force
     $detectPath = Join-Path $appFolder "detect.ps1"
-    $detectScript | Out-File -FilePath $detectPath -Encoding UTF8 -Force
+    if ($PSCmdlet.ShouldProcess($detectPath, 'Write detect script')) {
+        $detectScript | Out-File -FilePath $detectPath -Encoding UTF8 -Force
+    }
 
     # Generate remediate script
     $remediateScript = New-RemediateScript -Name $Name -ID $ID -Process $Process -Force $Force
     $remediatePath = Join-Path $appFolder "remediate.ps1"
-    $remediateScript | Out-File -FilePath $remediatePath -Encoding UTF8 -Force
+    if ($PSCmdlet.ShouldProcess($remediatePath, 'Write remediate script')) {
+        $remediateScript | Out-File -FilePath $remediatePath -Encoding UTF8 -Force
+    }
 
     Write-ColorOutput "  Created: $appFolder" -Level Success
     Write-ColorOutput "    - detect.ps1" -Level Info
@@ -351,8 +368,8 @@ Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "  Winget Remediation Script Generator" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
 
-if($GenerateBatch) {
-    if(-not (Test-Path $CSVPath)) {
+if ($GenerateBatch) {
+    if (-not (Test-Path $CSVPath)) {
         Write-ColorOutput "ERROR: CSV file not found: $CSVPath" -Level Error
         exit 1
     }
@@ -360,7 +377,7 @@ if($GenerateBatch) {
     $apps = Import-Csv -Path $CSVPath
     Write-ColorOutput "Generating scripts for $($apps.Count) applications...`n" -Level Info
 
-    foreach($app in $apps) {
+    foreach ($app in $apps) {
         Write-Host "Processing: $($app.AppName)" -ForegroundColor Cyan
         New-WingetScripts -Name $app.AppName -ID $app.WingetID -Process $app.ProcessName -Path $OutputPath -Force:$ForceUpdate
     }
