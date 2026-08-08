@@ -399,12 +399,12 @@ Register-ScheduledTask -TaskName "Daily Compliance Report" -Action $Action -Trig
 
 ## 📚 Additional Resources
 
-- [Script Catalog](../wiki/Script-Catalog.md) - Complete list of all scripts
-- [Workflows Documentation](../wiki/Workflows.md) - End-to-end process guides
-- [Common Use Cases](../wiki/Common-Use-Cases.md) - Task-oriented navigation
+- [Script Catalog](Script-Catalog.md) - Complete list of all scripts
+- [Workflows Documentation](Workflows.md) - End-to-end process guides
+- [Common Use Cases](Common-Use-Cases.md) - Task-oriented navigation
 - [Examples Directory](../examples/README.md) - Real-world workflow examples
-- [Troubleshooting Guide](../wiki/Troubleshooting.md) - Common issues and solutions
-- [FAQ](../wiki/FAQ.md) - Frequently asked questions
+- [Troubleshooting Guide](Troubleshooting.md) - Common issues and solutions
+- [FAQ](FAQ.md) - Frequently asked questions
 
 ---
 
@@ -412,8 +412,8 @@ Register-ScheduledTask -TaskName "Daily Compliance Report" -Action $Action -Trig
 
 **Can't find what you need?** Try these approaches:
 
-1. **Search by technology**: Check [Script Catalog](../wiki/Script-Catalog.md)
-2. **Search by task**: Check [Common Use Cases](../wiki/Common-Use-Cases.md)
+1. **Search by technology**: Check [Script Catalog](Script-Catalog.md)
+2. **Search by task**: Check [Common Use Cases](Common-Use-Cases.md)
 3. **Browse by category**: Explore the `/scripts/` directory structure
 4. **Search file contents**: Use `Get-ChildItem -Recurse -Filter "*.ps1" | Select-String "keyword"`
 

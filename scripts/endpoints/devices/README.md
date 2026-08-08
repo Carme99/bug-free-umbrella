@@ -61,7 +61,7 @@ Device management scripts provide tools for configuring, inventorying, and maint
 
 ## Additional Resources
 
-- [Wiki: Device Management](../../wiki/Device-Management)
+- [Docs: Proactive Remediations](../../../docs/Proactive-Remediations.md)
 - [Examples: Device Management](../../examples/device-management/)
 
 ## Contributing

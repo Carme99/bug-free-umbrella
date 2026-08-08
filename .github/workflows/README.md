@@ -83,26 +83,7 @@ This directory contains automated workflows for repository management and qualit
 
 ---
 
-### 4. **Wiki Sync** (`sync-wiki.yml`)
-
-**Purpose:** Automatically syncs wiki content from repository to GitHub Wiki
-
-**Triggers:**
-- Push to main branch with changes in `wiki/` directory
-- Manual trigger via workflow_dispatch
-
-**What it does:**
-- Copies all markdown files from `wiki/` directory to wiki repository
-- Commits changes with descriptive message
-- Links commit to triggering commit SHA
-
-**Requirements:**
-- `WIKI_TOKEN` secret must be configured
-- Wiki must be enabled for the repository
-
----
-
-### 5. **Claude Code** (`claude.yml`)
+### 4. **Claude Code** (`claude.yml`)
 
 **Purpose:** AI-powered code review and assistance via Claude Code
 
@@ -123,7 +104,7 @@ This directory contains automated workflows for repository management and qualit
 
 ---
 
-### 6. **Claude Code Review** (`claude-code-review.yml`)
+### 5. **Claude Code Review** (`claude-code-review.yml`)
 
 **Purpose:** Automated AI code review for pull requests
 
@@ -141,7 +122,7 @@ This directory contains automated workflows for repository management and qualit
 **Configuration:**
 - Requires `CLAUDE_CODE_OAUTH_TOKEN` secret
 - Restricted tool access for security: only specific `gh` commands allowed
-- Uses repository's `CLAUDE.md` for style guidance
+- Uses repository's `AGENTS.md` for style guidance
 
 **Note:** Currently configured to run on all PRs. Can be filtered by author or file paths if needed.
 
@@ -153,7 +134,6 @@ This directory contains automated workflows for repository management and qualit
 
 All workflows require these secrets to be configured in repository settings:
 - `CLAUDE_CODE_OAUTH_TOKEN` - For Claude Code workflows (claude.yml, claude-code-review.yml)
-- `WIKI_TOKEN` - For wiki sync workflow (sync-wiki.yml)
 
 ### Creating Labels
 
@@ -193,11 +173,6 @@ Workflows with `workflow_dispatch` can be triggered manually:
 - Adjust `operations-per-run` to process fewer items
 - Add exempt labels to protect important issues
 - Increase `days-before-stale` threshold
-
-**Wiki sync failing:**
-- Verify `WIKI_TOKEN` is valid
-- Ensure wiki is enabled
-- Check token has wiki write permissions
 
 ---
 

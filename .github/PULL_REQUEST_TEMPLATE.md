@@ -100,7 +100,7 @@ Related to #
 - [ ] Category README.md updated (if needed)
 - [ ] Script comment-based help added/updated
 - [ ] CHANGELOG.md updated
-- [ ] Wiki updated (if applicable)
+- [ ] Docs updated (if applicable)
 - [ ] Examples added/updated (if applicable)
 
 ## Code Quality Checklist
@@ -149,7 +149,7 @@ Related to #
 - [ ] No security vulnerabilities introduced
 - [ ] Breaking changes are clearly documented
 - [ ] CHANGELOG.md has been updated
-- [ ] Wiki updates needed (create issue if not included)
+- [ ] Docs updates needed (create issue if not included)
 
 ---
 

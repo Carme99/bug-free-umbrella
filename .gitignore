@@ -137,3 +137,6 @@ cache/
 # Downloaded dependencies
 downloads/
 temp-downloads/
+
+# macOS Finder metadata
+._*

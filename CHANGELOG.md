@@ -61,6 +61,11 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ## [Unreleased]
 
+### 📚 Documentation Consolidation
+- GitHub wiki retired; all 31 wiki pages migrated into `docs/` as regular markdown files — documentation is now versioned with the code and PR-reviewable
+- New `docs/README.md` hub and `docs/ARCHITECTURE.md` with mermaid diagrams; root README badge wall updated
+- `wiki/` staging directory and `sync-wiki.yml` workflow removed; all wiki links across READMEs, SUPPORT, WARP, PR templates and category docs repointed to `docs/`
+
 ---
 
 <a id="430---2026-08-08-🌈-zephyr---quality--enforcement-release"></a>

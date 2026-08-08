@@ -212,5 +212,5 @@ Planned additions to this category:
 
 For issues or feature requests related to monitoring scripts, please check:
 1. Script help: `Get-Help .\ScriptName.ps1 -Detailed`
-2. Main documentation: [Wiki](https://github.com/Carme99/bug-free-umbrella/wiki)
-3. Troubleshooting guide: [Troubleshooting](https://github.com/Carme99/bug-free-umbrella/wiki/Troubleshooting)
+2. Main documentation: [Documentation Hub](../../../docs/README.md)
+3. Troubleshooting guide: [Troubleshooting](../../../docs/Troubleshooting.md)

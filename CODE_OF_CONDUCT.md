@@ -31,7 +31,7 @@ This Code of Conduct applies to all project spaces including:
 
 - GitHub issues and pull requests
 - Code comments and commit messages
-- Wiki and documentation
+- Documentation
 - Any other project-related communication
 
 It also applies when representing the project in public spaces.
