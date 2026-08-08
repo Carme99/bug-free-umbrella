@@ -32,8 +32,8 @@ try {
         $remediationActions += "Started Task Scheduler service"
     }
 
-    # Clear Task Scheduler cache
-    $cachePathschedule = "$env:SystemRoot\System32\Tasks"
+    # Verify the task database location is present
+    $cachePath = "$env:SystemRoot\System32\Tasks"
     if (Test-Path $cachePath) {
         # Task cache is critical - we don't delete it, just refresh the service
         $remediationActions += "Verified task database location"

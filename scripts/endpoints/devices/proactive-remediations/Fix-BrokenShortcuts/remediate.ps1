@@ -4,7 +4,9 @@
 
 .DESCRIPTION
     This remediation script removes shortcuts that point to non-existent targets.
-    Helps clean up user desktops and start menus.
+    Helps clean up user desktops and start menus. Scans the same per-user Desktop
+    paths as detect.ps1 (SYSTEM context never sees user desktops via
+    $env:USERPROFILE).
 
 .NOTES
     Exit 0: Successfully removed broken shortcuts
@@ -15,11 +17,29 @@ $ErrorActionPreference = "SilentlyContinue"
 
 # Paths to scan
 $pathsToScan = @(
-    "$env:USERPROFILE\Desktop",
     "$env:PUBLIC\Desktop",
     "$env:APPDATA\Microsoft\Windows\Start Menu",
     "$env:ProgramData\Microsoft\Windows\Start Menu"
 )
+
+# Per-user desktops (SYSTEM context never sees them via $env:USERPROFILE) -
+# every non-special profile is enumerated. OneDrive-known-folder redirection
+# moves the desktop under the user's OneDrive folder; the default folder name is
+# "OneDrive" (tenant-renamed folders cannot be derived without loading each user
+# hive, so only the default is covered).
+$userProfiles = Get-CimInstance Win32_UserProfile | Where-Object {
+    $_.Special -eq $false -and $_.LocalPath -notmatch 'systemprofile|defaultuser'
+}
+
+foreach ($profile in $userProfiles) {
+    $desktopPath = Join-Path $profile.LocalPath "Desktop"
+    $pathsToScan += $desktopPath
+
+    $oneDriveDesktop = Join-Path $profile.LocalPath "OneDrive\Desktop"
+    if (Test-Path $oneDriveDesktop) {
+        $pathsToScan += $oneDriveDesktop
+    }
+}
 
 $removedCount = 0
 

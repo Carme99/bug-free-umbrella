@@ -1,5 +1,21 @@
 # Clean temp files older than 7 days
+# In SYSTEM context $env:TEMP points at the SYSTEM profile temp folder - real
+# user temp folders must be enumerated explicitly or they are never cleaned.
 $tempPaths = @("$env:TEMP", "$env:SystemRoot\Temp")
+
+# Per-user temp folders - every non-special profile is enumerated so temp files
+# of users who are not currently logged on are also covered.
+$userProfiles = Get-CimInstance Win32_UserProfile | Where-Object {
+    $_.Special -eq $false -and $_.LocalPath -notmatch 'systemprofile|defaultuser'
+}
+
+foreach ($profile in $userProfiles) {
+    $userTemp = Join-Path $profile.LocalPath "AppData\Local\Temp"
+    if (Test-Path $userTemp) {
+        $tempPaths += $userTemp
+    }
+}
+
 $cleaned = 0
 
 foreach($path in $tempPaths) {

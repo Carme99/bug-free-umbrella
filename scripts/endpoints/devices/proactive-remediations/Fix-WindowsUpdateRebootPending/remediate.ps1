@@ -1,56 +1,55 @@
 <#
 .SYNOPSIS
-    Clears stuck reboot pending registry keys.
+    Schedules a restart to clear a stuck Windows Update reboot-pending state.
 
 .DESCRIPTION
-    Removes false positive reboot pending keys that can block Windows Update.
-    CAUTION: Only run after verifying no legitimate reboot is actually needed.
+    The RebootPending/RebootRequired registry flags are authoritative signals of
+    genuine pending servicing operations (Windows Update restart, CBS servicing,
+    file rename operations). MS Learn documents a reboot as the ONLY resolution
+    for these flags - deleting the keys can strand servicing operations
+    mid-flight and the state reappears anyway. This remediation therefore
+    schedules a restart (15 minutes out, so the user can save work) instead of
+    deleting the keys. Windows clears the flags itself during the restart.
 
 .NOTES
     Author: Intune Admin
-    Version: 1.0
+    Version: 1.1
     Intune Context: SYSTEM
-    Exit 0: Remediation successful
+    Exit 0: Restart scheduled (or no pending state present)
+    Exit 1: Failed to schedule restart
 #>
 
 try {
-    $remediationActions = @()
+    $rebootPending = $false
 
-    # Note: This is conservative - we only clear if system has been up for >7 days
-    $os = Get-WmiObject -Class Win32_OperatingSystem
-    $lastBoot = $os.ConvertToDateTime($os.LastBootUpTime)
-    $daysSinceBoot = ((Get-Date) - $lastBoot).Days
+    # Component-Based Servicing reboot pending
+    if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending") {
+        $rebootPending = $true
+    }
 
-    if ($daysSinceBoot -lt 7) {
-        Write-Host "System was rebooted recently ($daysSinceBoot days ago)"
-        Write-Host "Not clearing reboot pending flags - a reboot may be legitimately required"
+    # Windows Update reboot required
+    if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired") {
+        $rebootPending = $true
+    }
+
+    if (-not $rebootPending) {
+        Write-Host "No reboot pending flags present - nothing to remediate"
         exit 0
     }
 
-    # Clear Component-Based Servicing reboot pending (if older than 7 days)
-    if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending") {
-        Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending" -Force -ErrorAction SilentlyContinue
-        $remediationActions += "Cleared Component-Based Servicing reboot pending flag"
-    }
+    # Schedule a restart 15 minutes out so the user can save work. The registry
+    # flags are intentionally left intact - they are cleared by Windows during
+    # the restart (deleting them is the bug this script previously had).
+    shutdown.exe /r /t 900 /c "Windows Update requires a restart to finish installing updates. This device will restart in 15 minutes. Please save your work."
 
-    # Clear Windows Update reboot required
-    if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired") {
-        Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired" -Force -Recurse -ErrorAction SilentlyContinue
-        $remediationActions += "Cleared Windows Update reboot required flag"
-    }
-
-    if ($remediationActions.Count -gt 0) {
-        Write-Host "Reboot pending remediation completed:"
-        foreach ($action in $remediationActions) {
-            Write-Host "  - $action"
-        }
-        Write-Host ""
-        Write-Host "Note: Verify that no legitimate updates are pending installation"
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "Reboot pending state detected. Scheduled a restart in 15 minutes (shutdown /r /t 900)."
+        Write-Host "Note: The RebootPending/RebootRequired registry keys were left intact - they are cleared by Windows during the restart. Deleting them would strand servicing operations."
+        exit 0
     } else {
-        Write-Host "No reboot pending flags to clear"
+        Write-Host "Failed to schedule restart: shutdown.exe exited with code $LASTEXITCODE"
+        exit 1
     }
-
-    exit 0
 
 } catch {
     Write-Host "Error during reboot pending remediation: $_"
