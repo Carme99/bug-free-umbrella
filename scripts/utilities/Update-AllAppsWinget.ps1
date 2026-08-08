@@ -146,7 +146,7 @@ function Install-WingetDependency {
     try {
         # Download package
         Write-Log "Downloading $PackageName..." -Level Info
-        Invoke-WebRequest -Uri $DownloadUrl -OutFile $tempPath -UseBasicParsing
+        Invoke-WebRequest -Uri $DownloadUrl -OutFile $tempPath
 
         # Install package
         Write-Log "Installing $PackageName..." -Level Info
@@ -159,7 +159,7 @@ function Install-WingetDependency {
 
         return $true
     } catch {
-        Write-Log "Failed to install $Description: $($_.Exception.Message)" -Level Error
+        Write-Log "Failed to install ${Description}: $($_.Exception.Message)" -Level Error
         Remove-Item -Path $tempPath -Force -ErrorAction SilentlyContinue
         return $false
     }
@@ -195,7 +195,7 @@ function Install-WingetForSystem {
     try {
         # Download winget
         Write-Log "Downloading winget..." -Level Info
-        Invoke-WebRequest -Uri $wingetUrl -OutFile $tempWinget -UseBasicParsing
+        Invoke-WebRequest -Uri $wingetUrl -OutFile $tempWinget
 
         # Install winget
         Write-Log "Installing winget..." -Level Info
@@ -239,6 +239,45 @@ function Test-WingetConfiguration {
     return $false
 }
 
+function Split-CommandLine {
+    param(
+        [string]$CommandLine
+    )
+
+    # Quote-aware tokenizer: splits on spaces, but keeps quoted segments intact
+    $tokens = [System.Collections.Generic.List[string]]::new()
+    $current = [System.Text.StringBuilder]::new()
+    $inQuotes = $false
+    $quoteChar = ''
+
+    for ($i = 0; $i -lt $CommandLine.Length; $i++) {
+        $c = $CommandLine[$i]
+        if ($inQuotes) {
+            if ($c -eq $quoteChar) {
+                $inQuotes = $false
+            } else {
+                [void]$current.Append($c)
+            }
+        } elseif ($c -eq '"' -or $c -eq "'") {
+            $inQuotes = $true
+            $quoteChar = $c
+        } elseif ($c -eq ' ') {
+            if ($current.Length -gt 0) {
+                $tokens.Add($current.ToString())
+                [void]$current.Clear()
+            }
+        } else {
+            [void]$current.Append($c)
+        }
+    }
+
+    if ($current.Length -gt 0) {
+        $tokens.Add($current.ToString())
+    }
+
+    return $tokens
+}
+
 function Invoke-WingetWithRetry {
     param(
         [string]$Arguments,
@@ -255,7 +294,7 @@ function Invoke-WingetWithRetry {
         try {
             Write-Log "Executing: winget $Arguments (Attempt $attempt/$Retries)" -Level Info
 
-            $result = & $wingetPath $Arguments.Split(' ') 2>&1
+            $result = & $wingetPath (Split-CommandLine $Arguments) 2>&1
 
             if ($LASTEXITCODE -eq 0) {
                 return $result

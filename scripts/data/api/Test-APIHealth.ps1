@@ -148,7 +148,6 @@ function Test-Endpoint {
         $requestParams = @{
             Uri = $Endpoint.Url
             Method = $Endpoint.Method
-            UseBasicParsing = $true
             TimeoutSec = 30
         }
 
@@ -437,10 +436,10 @@ do {
             <td colspan="6">
 "@
                     if ($result.Errors.Count -gt 0) {
-                        $html += "<div class='errors'>Errors: $([System.Net.WebUtility]::HtmlEncode('$($result.Errors -join '; ')'))</div>"
+                        $html += "<div class='errors'>Errors: $([System.Net.WebUtility]::HtmlEncode(($result.Errors -join '; ')))</div>"
                     }
                     if ($result.Warnings.Count -gt 0) {
-                        $html += "<div class='warnings'>Warnings: $([System.Net.WebUtility]::HtmlEncode('$($result.Warnings -join '; ')'))</div>"
+                        $html += "<div class='warnings'>Warnings: $([System.Net.WebUtility]::HtmlEncode(($result.Warnings -join '; ')))</div>"
                     }
                     $html += @"
             </td>

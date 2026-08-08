@@ -10,17 +10,26 @@
     Requires: Administrator privileges
     ODT Path: C:\AVD\M365Apps\setup.exe
     Install Config: C:\AVD\M365Apps\install.xml
+    Paths are derived from -InstallPath (default: C:\AVD\M365Apps)
+
+.PARAMETER InstallPath
+    Base directory for the M365 Apps update files (ODT setup.exe, configuration
+    XMLs, OfficeUpdates folder, and Logs folder). Default: C:\AVD\M365Apps
 #>
 
 #Requires -RunAsAdministrator
 
+param(
+    [string]$InstallPath = "C:\AVD\M365Apps"
+)
+
 # Configuration
 $script:Config = @{
-    ODTPath          = "C:\AVD\M365Apps\setup.exe"
-    InstallXMLPath   = "C:\AVD\M365Apps\install.xml"
-    DownloadXMLPath  = "C:\AVD\M365Apps\download.xml"
-    UpdatesPath      = "C:\AVD\M365Apps\OfficeUpdates"
-    LogPath          = "C:\AVD\M365Apps\Logs"
+    ODTPath          = Join-Path $InstallPath "setup.exe"
+    InstallXMLPath   = Join-Path $InstallPath "install.xml"
+    DownloadXMLPath  = Join-Path $InstallPath "download.xml"
+    UpdatesPath      = Join-Path $InstallPath "OfficeUpdates"
+    LogPath          = Join-Path $InstallPath "Logs"
     MaxLogAge        = 30  # Days to keep logs
     Channel          = "Current"
     OfficeVersionURL = "https://clients.config.office.net/releases/v1.0/OfficeReleases"
@@ -151,15 +160,14 @@ function Get-ChannelFriendlyName {
     param([string]$ChannelGuid)
 
     $channelNames = @{
-        '492350f6-3a01-4f97-b9c0-c7c6ddf67d60' = 'Monthly (Current Channel)'
-        '64256afe-f5d9-4f86-8936-8840a6a4f5be' = 'Monthly Enterprise'
-        'ea4a4090-de26-49d7-93c1-91bff9e53fc3' = 'Monthly Preview'
-        '7ffbc6bf-bc32-4f92-8982-f9dd17fd3114' = 'Semi-Annual (Preview)'
-        'b8f9b850-328d-4355-9145-c59439a0c4cf' = 'Semi-Annual'
+        '492350f6-3a01-4f97-b9c0-c7c6ddf67d60' = 'Current Channel'
+        '64256afe-f5d9-4f86-8936-8840a6a4f5be' = 'Current Channel (Preview)'
+        '55336b82-a18d-4dd6-b5f6-9e5095c314a6' = 'Monthly Enterprise Channel'
+        '7ffbc6bf-bc32-4f92-8982-f9dd17fd3114' = 'Semi-Annual Enterprise Channel'
+        'b8f9b850-328d-4355-9145-c59439a0c4cf' = 'Semi-Annual Enterprise Channel (Preview)'
         '5440fd1f-7ecb-4221-8110-145efaa6372f' = 'Beta (Insider)'
         'f2e724c1-748f-4b47-8fb8-8e0d210e9208' = 'LTSB 2021'
         '2e148de9-61c8-4051-b103-4af54baffbb4' = 'LTSB 2024'
-        '55336b82-a18d-4dd6-b5f6-9e5095c314a6' = 'Monthly (Current Channel)'
     }
 
     if ($channelNames.ContainsKey($ChannelGuid)) {
@@ -236,14 +244,14 @@ function Get-LatestOfficeVersion {
 
         # Map common channel GUIDs to channel IDs
         $channelMap = @{
-            '492350f6-3a01-4f97-b9c0-c7c6ddf67d60' = 'Current'          # Monthly/Current Channel
-            '64256afe-f5d9-4f86-8936-8840a6a4f5be' = 'MonthlyEnterprise' # Monthly Enterprise
-            'ea4a4090-de26-49d7-93c1-91bff9e53fc3' = 'CurrentPreview'    # Monthly Preview
-            '7ffbc6bf-bc32-4f92-8982-f9dd17fd3114' = 'SemiAnnualPreview' # Semi-Annual Preview
-            'b8f9b850-328d-4355-9145-c59439a0c4cf' = 'SemiAnnual'        # Semi-Annual
-            '5440fd1f-7ecb-4221-8110-145efaa6372f' = 'BetaChannel'       # Beta
-            'f2e724c1-748f-4b47-8fb8-8e0d210e9208' = 'PerpetualVL2021'   # LTSB 2021
-            '2e148de9-61c8-4051-b103-4af54baffbb4' = 'PerpetualVL2024'   # LTSB 2024
+            '492350f6-3a01-4f97-b9c0-c7c6ddf67d60' = 'Current'          # Current Channel
+            '64256afe-f5d9-4f86-8936-8840a6a4f5be' = 'CurrentPreview'    # Current Channel (Preview)
+            '55336b82-a18d-4dd6-b5f6-9e5095c314a6' = 'MonthlyEnterprise' # Monthly Enterprise Channel
+            '7ffbc6bf-bc32-4f92-8982-f9dd17fd3114' = 'SemiAnnual'        # Semi-Annual Enterprise Channel
+            'b8f9b850-328d-4355-9145-c59439a0c4cf' = 'SemiAnnualPreview' # Semi-Annual Enterprise Channel (Preview)
+            '5440fd1f-7ecb-4221-8110-145efaa6372f' = 'BetaChannel'       # Beta Channel
+            'f2e724c1-748f-4b47-8fb8-8e0d210e9208' = 'PerpetualVL2021'   # LTSC 2021
+            '2e148de9-61c8-4051-b103-4af54baffbb4' = 'PerpetualVL2024'   # LTSC 2024
         }
 
         # Try to match the channel
@@ -294,7 +302,13 @@ function Compare-OfficeVersions {
     $installedParts = $InstalledVersion -split '\.'
     $latestParts = $LatestVersion -split '\.'
 
-    for ($i = 0; $i -lt [Math]::Min($installedParts.Count, $latestParts.Count); $i++) {
+    # Pad both versions to the same segment count so that e.g. 16.0.10000 vs
+    # 16.0.10000.1 are not incorrectly reported as equal
+    $maxSegments = [Math]::Max($installedParts.Count, $latestParts.Count)
+    while ($installedParts.Count -lt $maxSegments) { $installedParts += '0' }
+    while ($latestParts.Count -lt $maxSegments) { $latestParts += '0' }
+
+    for ($i = 0; $i -lt $maxSegments; $i++) {
         $installedNum = [int]$installedParts[$i]
         $latestNum = [int]$latestParts[$i]
 
@@ -423,26 +437,26 @@ function Get-ChannelSelection {
     $channels = @(
         @{
             Number = 1
-            Name = "Monthly (Current Channel)"
+            Name = "Current Channel"
             Guid = "492350f6-3a01-4f97-b9c0-c7c6ddf67d60"
             Description = "Latest features monthly. Recommended for most users."
         },
         @{
             Number = 2
-            Name = "Monthly Enterprise"
-            Guid = "64256afe-f5d9-4f86-8936-8840a6a4f5be"
+            Name = "Monthly Enterprise Channel"
+            Guid = "55336b82-a18d-4dd6-b5f6-9e5095c314a6"
             Description = "Monthly updates, validated for enterprise. More predictable."
         },
         @{
             Number = 3
-            Name = "Semi-Annual (Preview)"
-            Guid = "7ffbc6bf-bc32-4f92-8982-f9dd17fd3114"
+            Name = "Semi-Annual Enterprise Channel (Preview)"
+            Guid = "b8f9b850-328d-4355-9145-c59439a0c4cf"
             Description = "Preview of Semi-Annual updates. For testing."
         },
         @{
             Number = 4
-            Name = "Semi-Annual"
-            Guid = "b8f9b850-328d-4355-9145-c59439a0c4cf"
+            Name = "Semi-Annual Enterprise Channel"
+            Guid = "7ffbc6bf-bc32-4f92-8982-f9dd17fd3114"
             Description = "Updates twice yearly. Most stable for enterprise."
         },
         @{

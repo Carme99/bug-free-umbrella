@@ -5,7 +5,8 @@
 .DESCRIPTION
     Multi-subscription Azure monitoring that provides:
     - Resource health status across all subscriptions
-    - Cost analysis and budget tracking
+    - Cost analysis and budget tracking (via the Cost Details API / cost exports;
+      the Consumption Usage Details API is deprecated)
     - Virtual machine performance and availability
     - Storage account usage and limits
     - Network connectivity and security groups
@@ -19,7 +20,9 @@
     Days of cost and metrics data to analyze. Default: 30
 
 .PARAMETER IncludeCostAnalysis
-    Include detailed cost breakdown by resource group and service
+    Include detailed cost breakdown by resource group and service.
+    Use the Cost Details API / cost exports (https://learn.microsoft.com/en-us/azure/cost-management-billing/automate/migrate-consumption-usage-details-api);
+    the Consumption Usage Details API is deprecated.
 
 .PARAMETER IncludeOrphanedResources
     Detect orphaned/unused resources

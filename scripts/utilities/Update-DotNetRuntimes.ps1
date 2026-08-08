@@ -100,6 +100,8 @@
 
 .PARAMETER EnableRollback
     Create system restore point before major changes.
+    System Restore is only available on client operating systems; on servers this
+    step is skipped with a warning.
 
 .EXAMPLE
     .\Update-DotNetRuntimes.ps1
@@ -530,7 +532,7 @@ function Get-AllInstalledWindowsDesktopRuntimes {
 
 function Get-ReleasesIndex {
     $url = "https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/releases-index.json"
-    Invoke-WithRetry -ScriptBlock { Invoke-RestMethod -Uri $url -ErrorAction Stop -Headers @{ 'User-Agent' = $script:UserAgent } -UseBasicParsing }
+    Invoke-WithRetry -ScriptBlock { Invoke-RestMethod -Uri $url -ErrorAction Stop -Headers @{ 'User-Agent' = $script:UserAgent } }
 }
 
 function Get-ChannelMetadata {
@@ -542,7 +544,7 @@ function Get-ChannelMetadata {
 
 function Get-ReleaseData {
     param([string]$ReleasesJsonUrl)
-    Invoke-WithRetry -ScriptBlock { Invoke-RestMethod -Uri $ReleasesJsonUrl -ErrorAction Stop -Headers @{ 'User-Agent' = $script:UserAgent } -UseBasicParsing }
+    Invoke-WithRetry -ScriptBlock { Invoke-RestMethod -Uri $ReleasesJsonUrl -ErrorAction Stop -Headers @{ 'User-Agent' = $script:UserAgent } }
 }
 
 function Get-OrAddReleaseData {
@@ -608,7 +610,7 @@ function Get-HostingBundleDownload {
 function Save-FileWithRetry {
     param([string]$Url, [string]$Destination, [int]$MinBytes = 10240)
     Invoke-WithRetry -ScriptBlock {
-        Invoke-WebRequest -Uri $Url -OutFile $Destination -UseBasicParsing -ErrorAction Stop -Headers @{ 'User-Agent' = $script:UserAgent }
+        Invoke-WebRequest -Uri $Url -OutFile $Destination -ErrorAction Stop -Headers @{ 'User-Agent' = $script:UserAgent }
     }
     $file = Get-Item -LiteralPath $Destination -ErrorAction SilentlyContinue
     if (-not $file -or $file.Length -lt $MinBytes) { throw "Downloaded file invalid (Size: $($file.Length) bytes)" }
@@ -1154,7 +1156,15 @@ function Get-SystemStatus {
 function New-SystemSnapshot {
     param([string]$SnapshotLabel = "DotNetMaintainer")
 
-    if ($IsWindows -and (Get-Command "Checkpoint-Computer" -ErrorAction SilentlyContinue)) {
+    # Checkpoint-Computer (System Restore) is only available on client operating systems
+    $isClientOS = $false
+    try {
+        $isClientOS = (Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop).ProductType -eq 1
+    } catch {
+        Write-Log -Level Debug -Message "Could not determine OS type" -Context @{ Error = $_.Exception.Message }
+    }
+
+    if ($IsWindows -and $isClientOS -and (Get-Command "Checkpoint-Computer" -ErrorAction SilentlyContinue)) {
         try {
             Write-Log -Level Info -Message "Creating system restore point"
             Checkpoint-Computer -Description $SnapshotLabel -RestorePointType MODIFY_SETTINGS -ErrorAction Stop
@@ -1165,7 +1175,12 @@ function New-SystemSnapshot {
             return $false
         }
     }
-    Write-Log -Level Debug -Message "Restore point not available on this system"
+
+    if ($IsWindows -and -not $isClientOS) {
+        Write-Log -Level Warn -Message "System restore points are only supported on client operating systems (Win32_OperatingSystem.ProductType -ne 1); skipping rollback snapshot on this server"
+    } else {
+        Write-Log -Level Debug -Message "Restore point not available on this system"
+    }
     return $false
 }
 

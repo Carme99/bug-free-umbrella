@@ -18,7 +18,7 @@
 
 .NOTES
     Requires Microsoft.Graph PowerShell modules.
-    Run with appropriate permissions: Group.Read.All, Device.Read.All, GroupMember.ReadWrite.All
+    Run with appropriate permissions: Group.Read.All, Device.Read.All, GroupMember.ReadWrite.All, DeviceManagementManagedDevices.Read.All
 #>
 
 [CmdletBinding()]
@@ -30,7 +30,7 @@ param(
     [string]$TargetGroupName
 )
 
-#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Groups, Microsoft.Graph.DeviceManagement
+#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.Groups, Microsoft.Graph.Devices.CorporateManagement
 
 # Function to write colored output
 function Write-ColorOutput {
@@ -222,7 +222,7 @@ try {
                         Remove-MgGroupMemberByRef -GroupId $targetGroup.Id -DirectoryObjectId $deviceId -ErrorAction Stop
                         Write-ColorOutput "  ✓ Removed device ID: $deviceId" "Green"
                     } catch {
-                        Write-ColorOutput "  ✗ Failed to remove device $deviceId: $($_.Exception.Message)" "Red"
+                        Write-ColorOutput "  ✗ Failed to remove device ${deviceId}: $($_.Exception.Message)" "Red"
                     }
                 }
             }

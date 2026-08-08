@@ -3,14 +3,12 @@
     Validates and tests Azure Bicep templates for best practices and security.
 
 .DESCRIPTION
-    Comprehensive Bicep template validation script that performs:
-    - Syntax validation and compilation checks
-    - Best practice analysis using PSRule for Azure
-    - Security vulnerability scanning
-    - Parameter validation and defaults checking
-    - Resource naming convention compliance
-    - Cost estimation for deployments
-    - What-if deployment analysis
+    Bicep template validation script that performs:
+    - Syntax validation and compilation checks (bicep build)
+    - Lint analysis (bicep lint)
+    - Heuristic security checks (hardcoded secrets, sensitive parameters without @secure)
+    - Basic best-practice checks (location parameter, resource tags)
+    - Optional what-if deployment analysis (az deployment group what-if)
 
 .PARAMETER TemplatePath
     Path to Bicep template file or directory containing templates
@@ -147,6 +145,19 @@ foreach ($template in $templates) {
         }
     } catch {
         $templateResult.Errors += "Build error: $($_.Exception.Message)"
+    }
+
+    # Lint analysis (bicep lint)
+    try {
+        $lintOutput = bicep lint $template.FullName 2>&1
+        if ($LASTEXITCODE -eq 0 -and -not $lintOutput) {
+            Write-Host "  ✓ Lint analysis passed" -ForegroundColor Green
+        } else {
+            $templateResult.BestPracticeIssues += [string]$lintOutput
+            Write-Host "  ⚠ Lint: $lintOutput" -ForegroundColor Yellow
+        }
+    } catch {
+        $templateResult.BestPracticeIssues += "Lint error: $($_.Exception.Message)"
     }
 
     # Basic security checks

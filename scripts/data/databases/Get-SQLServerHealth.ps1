@@ -86,12 +86,16 @@ $issueCount = 0
 # Try to import SQL Server module
 try {
     Import-Module SqlServer -ErrorAction Stop
+    # Load Microsoft.Data.SqlClient (ships with the SqlServer module) so the
+    # Microsoft.Data.SqlClient.* types used below resolve in this session
+    $sqlClientDll = Join-Path (Split-Path (Get-Module SqlServer).Path) 'Microsoft.Data.SqlClient.dll'
+    if (Test-Path $sqlClientDll) { Add-Type -Path $sqlClientDll -ErrorAction SilentlyContinue }
     Write-Host "[+] SQL Server module loaded" -ForegroundColor Green
 }
 catch {
     try {
-        Import-Module SQLPS -DisableNameChecking -ErrorAction Stop
-        Write-Host "[+] SQLPS module loaded" -ForegroundColor Green
+        Import-Module SqlServer -DisableNameChecking -ErrorAction Stop
+        Write-Host "[+] SQL Server module loaded" -ForegroundColor Green
     }
     catch {
         Write-Host "[-] SQL Server module not found. Using T-SQL queries..." -ForegroundColor Yellow
@@ -107,9 +111,9 @@ function Invoke-SqlQuery {
 
     try {
         $connectionString = "Server=$Server;Integrated Security=true;Database=master"
-        $connection = New-Object System.Data.SqlClient.SqlConnection($connectionString)
-        $command = New-Object System.Data.SqlClient.SqlCommand($Query, $connection)
-        $adapter = New-Object System.Data.SqlClient.SqlDataAdapter($command)
+        $connection = New-Object Microsoft.Data.SqlClient.SqlConnection($connectionString)
+        $command = New-Object Microsoft.Data.SqlClient.SqlCommand($Query, $connection)
+        $adapter = New-Object Microsoft.Data.SqlClient.SqlDataAdapter($command)
         $dataset = New-Object System.Data.DataSet
         $adapter.Fill($dataset) | Out-Null
         $connection.Close()
