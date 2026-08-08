@@ -99,7 +99,8 @@ try {
                     }
                     exit 0
                 }
-            } else {
+            }
+            else {
                 # No update available
                 $versionInstalled = $package.InstalledVersion
                 Write-Host "$name is already up to date (version $versionInstalled)"
@@ -127,7 +128,8 @@ try {
         $nameMatch = $packageInfo | Select-String -Pattern "^($ID)\s+(.+?)\s+\d"
         if ($nameMatch) {
             $name = $nameMatch.Matches[0].Groups[2].Value.Trim()
-        } else {
+        }
+        else {
             $name = $ID
         }
     }
@@ -140,7 +142,7 @@ try {
 
     # Check if update is available
     if ($packageInfo -match '\bVersion\s+Available\b') {
-        $verInstalled, $verAvailable = (-split $packageInfo[-1])[-3,-2]
+        $verInstalled, $verAvailable = (-split $packageInfo[-1])[-3, -2]
         Write-Verbose -Verbose "Application update available for $name. Current: $verInstalled, Available: $verAvailable"
 
         # Auto-detect process name if not provided
@@ -179,7 +181,8 @@ try {
             }
             exit 0
         }
-    } else {
+    }
+    else {
         # No update available
         if ($packageInfo -match '\d+(\.\d+)+') {
             $versionInstalled = (-split $packageInfo[-1])[-2]
@@ -192,7 +195,8 @@ try {
             exit 0
         }
     }
-} catch {
+}
+catch {
     $errMsg = $_.Exception.Message
     Write-Error "Failed to update $name : $errMsg"
     exit 1

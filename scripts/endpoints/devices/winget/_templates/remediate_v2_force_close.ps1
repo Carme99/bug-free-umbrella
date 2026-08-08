@@ -84,7 +84,8 @@ try {
                     Start-Sleep -Seconds 2
                 }
                 Write-Host "$name closed successfully."
-            } else {
+            }
+            else {
                 Write-Host "$name is not currently running."
             }
 
@@ -113,11 +114,13 @@ try {
                         Status = "Force Updated Successfully"
                     }
                     exit 0
-                } else {
+                }
+                else {
                     Write-Error "Failed to verify $name installation after update."
                     exit 1
                 }
-            } else {
+            }
+            else {
                 # No update available
                 $versionInstalled = $package.InstalledVersion
                 Write-Host "$name is already up to date (version $versionInstalled)"
@@ -145,7 +148,8 @@ try {
         $nameMatch = $packageInfo | Select-String -Pattern "^($ID)\s+(.+?)\s+\d"
         if ($nameMatch) {
             $name = $nameMatch.Matches[0].Groups[2].Value.Trim()
-        } else {
+        }
+        else {
             $name = $ID
         }
     }
@@ -177,13 +181,14 @@ try {
             Start-Sleep -Seconds 2
         }
         Write-Host "$name closed successfully."
-    } else {
+    }
+    else {
         Write-Host "$name is not currently running."
     }
 
     # Check if update is available
     if ($packageInfo -match '\bVersion\s+Available\b') {
-        $verInstalled, $verAvailable = (-split $packageInfo[-1])[-3,-2]
+        $verInstalled, $verAvailable = (-split $packageInfo[-1])[-3, -2]
         Write-Host "Update available for $name : $verInstalled -> $verAvailable"
 
         # Perform upgrade
@@ -205,11 +210,13 @@ try {
                 Status = "Force Updated Successfully"
             }
             exit 0
-        } else {
+        }
+        else {
             Write-Error "Failed to verify $name installation after update."
             exit 1
         }
-    } else {
+    }
+    else {
         # No update available
         if ($packageInfo -match '\d+(\.\d+)+') {
             $versionInstalled = (-split $packageInfo[-1])[-2]
@@ -222,7 +229,8 @@ try {
             exit 0
         }
     }
-} catch {
+}
+catch {
     $errMsg = $_.Exception.Message
     Write-Error "Failed to update $name : $errMsg"
     exit 1

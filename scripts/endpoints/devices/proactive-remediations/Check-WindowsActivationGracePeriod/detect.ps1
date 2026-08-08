@@ -64,7 +64,8 @@ try {
     Write-Host "Windows activation is valid"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking activation grace period: $_"
     exit 1
 }

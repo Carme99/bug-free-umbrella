@@ -48,7 +48,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during Task Scheduler remediation: $_"
     exit 1
 }

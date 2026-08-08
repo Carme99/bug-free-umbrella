@@ -14,12 +14,12 @@ function Backup-BitLockerKeyToAAD {
     param (
     )
 
-    Begin {
+    begin {
         Write-Host "Starting BitLocker Key Backup process to Azure AD." -ForegroundColor Cyan
         $script:BackupFailed = $false
     }
 
-    Process {
+    process {
         try {
             # Get BitLocker volumes
             $BitLockerVolumes = Get-BitLockerVolume -ErrorAction Stop
@@ -58,7 +58,7 @@ function Backup-BitLockerKeyToAAD {
         }
     }
 
-    End {
+    end {
         Write-Host "`n`n"
         Write-Host "BitLocker Key Backup process to Azure AD completed." -ForegroundColor Cyan
         Write-Host $driveInfoString

@@ -30,12 +30,12 @@ Stop-Service wuauserv, cryptSvc, bits, msiserver -Force -ErrorAction SilentlyCon
 
 # Clear Windows Update cache
 $wuCache = "$env:SystemRoot\SoftwareDistribution"
-if(Test-Path $wuCache) {
+if (Test-Path $wuCache) {
     Rename-Item $wuCache "$wuCache.old" -Force -ErrorAction SilentlyContinue
 }
 
 $catroot = "$env:SystemRoot\System32\catroot2"
-if(Test-Path $catroot) {
+if (Test-Path $catroot) {
     Rename-Item $catroot "$catroot.old" -Force -ErrorAction SilentlyContinue
 }
 

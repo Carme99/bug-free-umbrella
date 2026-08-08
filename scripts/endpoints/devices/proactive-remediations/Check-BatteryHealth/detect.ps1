@@ -43,7 +43,8 @@ try {
             # Handle multi-battery systems - get first battery or single battery
             $battery = if ($batteryReport.BatteryReport.Batteries.Battery -is [array]) {
                 $batteryReport.BatteryReport.Batteries.Battery[0]
-            } else {
+            }
+            else {
                 $batteryReport.BatteryReport.Batteries.Battery
             }
 
@@ -51,11 +52,13 @@ try {
             if ($battery.DesignCapacity -and $battery.FullChargeCapacity) {
                 $designCapacity = [int]$battery.DesignCapacity
                 $fullChargeCapacity = [int]$battery.FullChargeCapacity
-            } else {
+            }
+            else {
                 $designCapacity = 0
                 $fullChargeCapacity = 0
             }
-        } else {
+        }
+        else {
             $designCapacity = 0
             $fullChargeCapacity = 0
         }
@@ -99,7 +102,8 @@ try {
     Write-Host "Battery health is acceptable"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking battery health: $_"
     exit 1
 }

@@ -37,12 +37,14 @@ try {
                     # For critical logs, configure auto-archiving instead of clearing
                     wevtutil.exe sl "$logName" /ms:52428800  # Set max size to 50MB
                     $remediationActions += "Configured size limit for $logName ($sizeMB MB)"
-                } else {
+                }
+                else {
                     # Clear non-critical logs
                     wevtutil.exe cl "$logName"
                     $remediationActions += "Cleared $logName ($sizeMB MB)"
                 }
-            } catch {
+            }
+            catch {
                 Write-Host "Warning: Could not process $logName : $_"
             }
         }
@@ -53,13 +55,15 @@ try {
         foreach ($action in $remediationActions) {
             Write-Host "  - $action"
         }
-    } else {
+    }
+    else {
         Write-Host "No event logs required clearing"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during event log remediation: $_"
     exit 1
 }

@@ -22,7 +22,8 @@ try {
 
     if ($LASTEXITCODE -eq 0) {
         $remediationActions += "Successfully triggered Windows activation"
-    } else {
+    }
+    else {
         $remediationActions += "Activation attempt completed (may require additional steps)"
     }
 
@@ -36,7 +37,8 @@ try {
             $licensingService.RefreshLicenseStatus() | Out-Null
             $remediationActions += "Refreshed license status"
         }
-    } catch {
+    }
+    catch {
         Write-Host "Note: Could not refresh license status via WMI"
     }
 
@@ -52,7 +54,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during Windows activation remediation: $_"
     exit 1
 }

@@ -49,12 +49,14 @@ try {
 
                 if ($installResult.ResultCode -eq 2) {
                     $remediationActions += "Successfully installed $($updatesToInstall.Count) driver update(s)"
-                } else {
+                }
+                else {
                     $remediationActions += "Driver installation completed with result code: $($installResult.ResultCode)"
                 }
             }
         }
-    } catch {
+    }
+    catch {
         Write-Host "Error installing driver updates: $_"
         $remediationActions += "Could not install drivers automatically - may require manual intervention"
     }
@@ -76,13 +78,15 @@ try {
         }
         Write-Host ""
         Write-Host "Note: A restart may be required to complete driver installation"
-    } else {
+    }
+    else {
         Write-Host "No driver updates were necessary"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during driver remediation: $_"
     exit 1
 }

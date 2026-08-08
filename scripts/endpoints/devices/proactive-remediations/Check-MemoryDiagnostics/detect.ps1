@@ -72,7 +72,8 @@ try {
     Write-Host "No memory errors detected"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking memory diagnostics: $_"
     exit 1
 }

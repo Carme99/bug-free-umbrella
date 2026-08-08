@@ -27,7 +27,8 @@ try {
     # Try to query scheduled tasks
     try {
         $tasks = Get-ScheduledTask -ErrorAction Stop | Select-Object -First 1
-    } catch {
+    }
+    catch {
         $issues += "Unable to query scheduled tasks (database may be corrupted)"
     }
 
@@ -56,7 +57,8 @@ try {
     Write-Host "Task Scheduler is healthy"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking Task Scheduler: $_"
     exit 1
 }

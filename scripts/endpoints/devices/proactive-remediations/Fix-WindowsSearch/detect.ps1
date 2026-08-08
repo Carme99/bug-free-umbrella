@@ -52,7 +52,8 @@ try {
             Write-Host "Search index is paused or recovering. Status code: $catalogStatus"
             exit 1
         }
-    } catch {
+    }
+    catch {
         Write-Host "Could not check search index status: $($_.Exception.Message)"
         # Don't fail on this check as it might not be accessible in all contexts
     }
@@ -64,7 +65,8 @@ try {
             Write-Host "Windows Search service test failed"
             exit 1
         }
-    } catch {
+    }
+    catch {
         Write-Host "Windows Search service is not responding properly"
         exit 1
     }
@@ -72,7 +74,8 @@ try {
     Write-Host "Windows Search is functioning properly"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking Windows Search: $($_.Exception.Message)"
     exit 1
 }

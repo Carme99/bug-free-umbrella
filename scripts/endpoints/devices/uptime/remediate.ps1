@@ -1,3 +1,21 @@
+<#
+.SYNOPSIS
+    Deploy the restart notification script and scheduled task
+
+.DESCRIPTION
+    Deploys a toast notification script (RestartNotification.ps1) and registers a scheduled task that shows it after the uptime/detect.ps1 script flags a device that has not been restarted for 4+ days. Installs the BurntToast module when missing, downloads the branding logo image, and registers a one-shot scheduled task that triggers 15 seconds after deployment.
+
+.EXAMPLE
+    ./remediate.ps1
+
+.NOTES
+    File Name  : remediate.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Version    : 1.0.0
+    Date       : 2026-08-08
+#>
+
 # Wrapper script to deploy and trigger your notification script via scheduled task
 
 # Paths and variables
@@ -24,7 +42,7 @@ if (-not (Get-Module -ListAvailable -Name BurntToast)) {
     }
     catch {
         Write-Error "Failed to install BurntToast module: $_"
-        Exit 1
+        exit 1
     }
 }
 else {
@@ -116,7 +134,7 @@ try {
 }
 catch {
     Write-Error "Failed to save notification script: $_"
-    Exit 1
+    exit 1
 }
 
 # Scheduled task details
@@ -150,8 +168,8 @@ try {
 }
 catch {
     Write-Error "Failed to register scheduled task: $_"
-    Exit 1
+    exit 1
 }
 
 Write-Log "Deployment script completed. Waiting for scheduled task to trigger."
-Exit 0
+exit 0

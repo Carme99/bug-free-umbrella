@@ -104,7 +104,8 @@ function Test-WingetAvailable {
         $wingetPath = Get-Command winget -ErrorAction Stop
         Write-Log "Winget found at: $($wingetPath.Source)"
         return $true
-    } catch {
+    }
+    catch {
         # FIX: Include exception details in log
         Write-Log "Winget not found or not accessible: $($_.Exception.Message)" "ERROR"
         return $false
@@ -118,7 +119,8 @@ function Test-NetworkConnectivity {
             Write-Log "Network connectivity verified"
             return $true
         }
-    } catch {
+    }
+    catch {
         Write-Log "Network connectivity check failed: $_" "WARN"
     }
     return $false
@@ -193,7 +195,8 @@ function Get-OutdatedApps {
                     AvailableVersion = $availableVersion
                     IsPriority = ($appId -in $PriorityApps)
                 }
-            } elseif ($line -match '[a-zA-Z]' -and $line -notmatch '^\s*$' -and $dataLineCount -gt 0) {
+            }
+            elseif ($line -match '[a-zA-Z]' -and $line -notmatch '^\s*$' -and $dataLineCount -gt 0) {
                 # Log lines that look like data but failed to parse
                 Write-Log "Failed to parse potential data line: $line" "WARN"
                 $failedParseCount++
@@ -209,7 +212,8 @@ function Get-OutdatedApps {
             if ($failureRate -gt 75) {
                 Write-Log "CRITICAL: Parse failure rate exceeds 75% - winget output format may have changed. This may indicate security updates are not being detected properly." "ERROR"
                 return @()  # Return empty array to trigger remediation failure
-            } elseif ($failureRate -gt 50) {
+            }
+            elseif ($failureRate -gt 50) {
                 Write-Log "High parse failure rate suggests winget output format may have changed. Consider investigating." "ERROR"
             }
         }
@@ -217,7 +221,8 @@ function Get-OutdatedApps {
         Write-Log "Found $($outdatedApps.Count) total outdated applications"
         return $outdatedApps
 
-    } catch {
+    }
+    catch {
         Write-Log "Error detecting updates: $_" "ERROR"
         if ($RetryCount -lt ($MaxRetries - 1)) {
             Start-Sleep -Seconds ([Math]::Pow(2, $RetryCount))
@@ -256,7 +261,8 @@ try {
     # Filter for priority apps if configured
     if ($PriorityAppsOnly) {
         $criticalUpdates = $outdatedApps | Where-Object { $_.IsPriority -eq $true }
-    } else {
+    }
+    else {
         # Include priority and standard apps
         $appsToCheck = $PriorityApps + $StandardApps
         $criticalUpdates = $outdatedApps | Where-Object { $_.Id -in $appsToCheck }
@@ -288,7 +294,8 @@ try {
 
     exit 1
 
-} catch {
+}
+catch {
     Write-Log "Unexpected error during detection: $_" "ERROR"
     Write-Log "Stack trace: $($_.ScriptStackTrace)" "ERROR"
     exit 1

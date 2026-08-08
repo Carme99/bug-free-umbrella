@@ -1,3 +1,21 @@
+<#
+.SYNOPSIS
+    Remediate the keyboard layout to UK English
+
+.DESCRIPTION
+    Adds the en-GB language when missing, sets the UK (00000809) and UK Extended (00000452) input method tips, moves en-GB to the first position in the user language list and applies it so UK English becomes the primary keyboard layout.
+
+.EXAMPLE
+    ./remediate.ps1
+
+.NOTES
+    File Name  : remediate.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Version    : 1.0.0
+    Date       : 2026-08-08
+#>
+
 # Remediate keyboard layout to UK English
 # Exit 0 if successful, Exit 1 if failed
 #

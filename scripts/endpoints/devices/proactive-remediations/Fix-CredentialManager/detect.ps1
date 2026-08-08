@@ -85,7 +85,8 @@ try {
     Write-Host "Credential Manager appears healthy"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking Credential Manager: $_"
     exit 1
 }

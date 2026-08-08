@@ -28,7 +28,8 @@ try {
             Start-Sleep -Seconds 3
             Write-Host "Windows Search service stopped"
         }
-    } else {
+    }
+    else {
         Write-Host "Windows Search service not found!"
         exit 1
     }
@@ -44,7 +45,8 @@ try {
                 Remove-Item -Force -ErrorAction SilentlyContinue
 
             Write-Host "Search cache cleared successfully"
-        } catch {
+        }
+        catch {
             Write-Host "Warning: Could not fully clear search cache: $($_.Exception.Message)"
             # Continue even if cache clear fails
         }
@@ -72,19 +74,22 @@ try {
             $catalog = $searchCatalog.GetCatalog("SystemIndex")
             $catalog.Reindex()
             Write-Host "Search index rebuild initiated"
-        } catch {
+        }
+        catch {
             Write-Host "Note: Could not trigger index rebuild automatically: $($_.Exception.Message)"
             Write-Host "Index will rebuild automatically over time"
         }
 
         Write-Host "Windows Search remediation completed successfully"
         exit 0
-    } else {
+    }
+    else {
         Write-Host "Failed to start Windows Search service. Status: $($searchService.Status)"
         exit 1
     }
 
-} catch {
+}
+catch {
     Write-Host "Error during Windows Search remediation: $($_.Exception.Message)"
     exit 1
 }

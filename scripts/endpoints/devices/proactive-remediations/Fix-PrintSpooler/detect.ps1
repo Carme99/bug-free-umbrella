@@ -58,7 +58,8 @@ try {
             Write-Host "Detected $($oldJobs.Count) old print jobs (> 24 hours)"
             exit 1
         }
-    } catch {
+    }
+    catch {
         # If we can't check, assume there might be an issue
         Write-Host "Could not access spool directory: $($_.Exception.Message)"
         exit 1
@@ -67,7 +68,8 @@ try {
     Write-Host "Print Spooler is functioning properly"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking Print Spooler: $($_.Exception.Message)"
     exit 1
 }

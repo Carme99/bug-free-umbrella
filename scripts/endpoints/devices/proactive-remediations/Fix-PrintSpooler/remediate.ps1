@@ -27,7 +27,8 @@ try {
             Start-Sleep -Seconds 3
             Write-Host "Print Spooler service stopped"
         }
-    } else {
+    }
+    else {
         Write-Host "Print Spooler service not found!"
         exit 1
     }
@@ -43,17 +44,20 @@ try {
                 Remove-Item -Force -ErrorAction SilentlyContinue
 
             Write-Host "Print spool cleared successfully"
-        } catch {
+        }
+        catch {
             Write-Host "Warning: Could not fully clear spool directory: $($_.Exception.Message)"
             # Continue even if some files can't be deleted
         }
-    } else {
+    }
+    else {
         Write-Host "Spool directory not found: $spoolPath"
         # Create it if it doesn't exist
         try {
             New-Item -Path $spoolPath -ItemType Directory -Force | Out-Null
             Write-Host "Created spool directory"
-        } catch {
+        }
+        catch {
             Write-Host "Failed to create spool directory: $($_.Exception.Message)"
             exit 1
         }
@@ -75,12 +79,14 @@ try {
         Write-Host "Print Spooler service is now running"
         Write-Host "Print Spooler remediation completed successfully"
         exit 0
-    } else {
+    }
+    else {
         Write-Host "Failed to start Print Spooler service. Status: $($spoolerService.Status)"
         exit 1
     }
 
-} catch {
+}
+catch {
     Write-Host "Error during Print Spooler remediation: $($_.Exception.Message)"
     exit 1
 }

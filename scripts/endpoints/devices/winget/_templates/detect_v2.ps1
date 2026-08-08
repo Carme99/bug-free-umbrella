@@ -65,7 +65,8 @@ try {
                     AvailableVersion = $verAvailable
                 }
                 exit 1  # Trigger remediation
-            } else {
+            }
+            else {
                 # No update available
                 $versionInstalled = $package.InstalledVersion
                 Write-Host "$name is already up to date (version $versionInstalled)"
@@ -92,7 +93,8 @@ try {
         $nameMatch = $packageInfo | Select-String -Pattern "^($ID)\s+(.+?)\s+\d"
         if ($nameMatch) {
             $name = $nameMatch.Matches[0].Groups[2].Value.Trim()
-        } else {
+        }
+        else {
             $name = $ID
         }
     }
@@ -105,7 +107,7 @@ try {
 
     # Check if update is available
     if ($packageInfo -match '\bVersion\s+Available\b') {
-        $verInstalled, $verAvailable = (-split $packageInfo[-1])[-3,-2]
+        $verInstalled, $verAvailable = (-split $packageInfo[-1])[-3, -2]
         Write-Host "Application update available for $name. Current: $verInstalled, Available: $verAvailable"
         [pscustomobject] @{
             Name = $name
@@ -113,7 +115,8 @@ try {
             AvailableVersion = $verAvailable
         }
         exit 1  # Trigger remediation
-    } else {
+    }
+    else {
         # No update available
         if ($packageInfo -match '\d+(\.\d+)+') {
             $versionInstalled = (-split $packageInfo[-1])[-2]
@@ -125,7 +128,8 @@ try {
             exit 0  # No action needed
         }
     }
-} catch {
+}
+catch {
     $errMsg = $_.Exception.Message
     Write-Error "Failed to check $name for updates: $errMsg"
     exit 0  # Don't trigger remediation on error

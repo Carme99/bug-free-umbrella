@@ -62,7 +62,8 @@ try {
     Write-Host "No stuck reboot pending state detected"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking reboot pending state: $_"
     exit 1
 }

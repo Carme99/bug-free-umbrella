@@ -46,7 +46,8 @@ try {
     Write-Host "Network adapter power management is properly configured"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking network adapter power settings: $_"
     exit 1
 }

@@ -48,6 +48,7 @@ $TemplatePath = "$PSScriptRoot\_templates"
 $ScriptsBasePath = $PSScriptRoot
 
 function New-WingetScriptPair {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [string]$WingetId,
         [string]$Category,
@@ -59,7 +60,7 @@ function New-WingetScriptPair {
     $appPath = Join-Path $ScriptsBasePath "$Category\$FolderName"
 
     # Create directory if it doesn't exist
-    if (-not (Test-Path $appPath)) {
+    if (-not (Test-Path $appPath) -and $PSCmdlet.ShouldProcess($appPath, 'Create app directory')) {
         New-Item -Path $appPath -ItemType Directory -Force | Out-Null
         Write-Host "Created directory: $appPath"
     }
@@ -68,7 +69,8 @@ function New-WingetScriptPair {
     $detectTemplate = Get-Content (Join-Path $TemplatePath "detect_v3.ps1") -Raw
     $remediateTemplate = if ($ForceClose) {
         Get-Content (Join-Path $TemplatePath "remediate_v3_force_close.ps1") -Raw
-    } else {
+    }
+    else {
         Get-Content (Join-Path $TemplatePath "remediate_v3_standard.ps1") -Raw
     }
 
@@ -87,8 +89,10 @@ function New-WingetScriptPair {
     $detectPath = Join-Path $appPath "detect.ps1"
     $remediatePath = Join-Path $appPath "remediate.ps1"
 
-    Set-Content -Path $detectPath -Value $detectContent -Force
-    Set-Content -Path $remediatePath -Value $remediateContent -Force
+    if ($PSCmdlet.ShouldProcess($appPath, 'Write detect/remediate script pair')) {
+        Set-Content -Path $detectPath -Value $detectContent -Force
+        Set-Content -Path $remediatePath -Value $remediateContent -Force
+    }
 
     Write-Host "Created scripts for $WingetId in $Category/$FolderName"
 }
@@ -97,7 +101,8 @@ function New-WingetScriptPair {
 foreach ($app in $AppDefinitions) {
     try {
         New-WingetScriptPair -WingetId $app.WingetId -Category $app.Category -FolderName $app.FolderName -ForceClose $app.ForceClose -NotifySeconds $app.NotifySeconds
-    } catch {
+    }
+    catch {
         Write-Warning "Failed to create scripts for $($app.WingetId): $($_.Exception.Message)"
     }
 }

@@ -41,7 +41,7 @@ try {
         foreach ($cachePath in $edgeCachePaths) {
             if (Test-Path $cachePath) {
                 $cacheSize = (Get-ChildItem -Path $cachePath -Recurse -File -ErrorAction SilentlyContinue |
-                    Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
+                        Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
 
                 if ($cacheSize) {
                     $totalCacheSize += $cacheSize
@@ -60,7 +60,8 @@ try {
     Write-Host "Edge cache size is healthy: $totalCacheSizeMB MB"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking Edge cache size: $_"
     exit 1
 }

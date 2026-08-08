@@ -1,3 +1,21 @@
+<#
+.SYNOPSIS
+    Detect if the AMD Radeon driver block is applied
+
+.DESCRIPTION
+    Checks whether the DeviceInstallation DenyDeviceIDs policy contains the AMD Radeon hardware ID (PCIVEN_1002&DEV_1681). Skips non-target Lenovo 21L8S0VP00 devices and exits 0; exits 1 when the driver block is missing on a target device.
+
+.EXAMPLE
+    ./detect.ps1
+
+.NOTES
+    File Name  : detect.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Version    : 1.0.0
+    Date       : 2026-08-08
+#>
+
 # Detect if the AMD Radeon driver block (DeviceInstallation policy) is applied
 #
 # Documented layout (Policy CSP PreventInstallationOfMatchingDeviceIDs / ADMX
@@ -10,7 +28,7 @@ $DeviceModel = (Get-CimInstance -ClassName Win32_ComputerSystem).Model
 
 if ($DeviceModel -ne "21L8S0VP00") {
     Write-Output "Device is not a Lenovo 21L8S0VP00. No action needed."
-    Exit 0
+    exit 0
 }
 
 # Documented registry location
@@ -26,8 +44,9 @@ if (Test-Path $RegPath) {
 
 if ($denyList -contains $RegValue) {
     Write-Output "Driver block is already applied."
-    Exit 0
-} else {
+    exit 0
+}
+else {
     Write-Output "Driver block is missing."
-    Exit 1
+    exit 1
 }

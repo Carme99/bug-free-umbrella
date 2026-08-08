@@ -57,7 +57,8 @@ try {
             if ($picturesProtected -ne 2) {
                 $issues += "Pictures folder is not protected by OneDrive KFM"
             }
-        } else {
+        }
+        else {
             $issues += "OneDrive Business account not configured"
         }
     }
@@ -66,7 +67,8 @@ try {
     $oneDriveSettingsPath = "$env:LOCALAPPDATA\Microsoft\OneDrive\settings\Business1"
     if (Test-Path $oneDriveSettingsPath) {
         # OneDrive is configured
-    } else {
+    }
+    else {
         $issues += "OneDrive sync folder not found - may not be configured"
     }
 
@@ -81,7 +83,8 @@ try {
     Write-Host "OneDrive Known Folder Move is healthy and active"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking OneDrive KFM status: $_"
     exit 1
 }

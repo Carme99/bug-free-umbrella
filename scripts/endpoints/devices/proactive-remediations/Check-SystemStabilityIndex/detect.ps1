@@ -67,7 +67,8 @@ try {
     Write-Host "`nSystem stability is within acceptable range"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking system stability: $_"
     exit 1
 }

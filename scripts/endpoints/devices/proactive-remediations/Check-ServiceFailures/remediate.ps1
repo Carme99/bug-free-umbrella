@@ -38,7 +38,8 @@ try {
                 Start-Service -Name $svcName -ErrorAction Stop
                 $remediationActions += "Started service: $svcName"
                 Write-Host "    ✓ Successfully started $svcName"
-            } catch {
+            }
+            catch {
                 $remediationActions += "Failed to start service: $svcName - $_"
                 Write-Host "    ✗ Failed to start ${svcName}: $_"
             }
@@ -63,7 +64,8 @@ try {
         Write-Host "  5. Check system resource availability"
         Write-Host ""
         Write-Host "Device flagged for service stability review."
-    } else {
+    }
+    else {
         Write-Host ""
         Write-Host "Remediation actions taken:"
         foreach ($action in $remediationActions) {
@@ -76,7 +78,8 @@ try {
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during service failure remediation: $_"
     exit 1
 }

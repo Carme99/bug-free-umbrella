@@ -45,7 +45,8 @@ try {
             try {
                 Remove-SmbShare -Name $share.Name -Force -ErrorAction Stop
                 $remediationActions += "Removed unauthorized share: $($share.Name) ($($share.Path))"
-            } catch {
+            }
+            catch {
                 Write-Host "Warning: Could not remove share $($share.Name): $_"
             }
         }
@@ -56,13 +57,15 @@ try {
         foreach ($action in $remediationActions) {
             Write-Host "  - $action"
         }
-    } else {
+    }
+    else {
         Write-Host "No unauthorized shares found to remove"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during network share remediation: $_"
     exit 1
 }

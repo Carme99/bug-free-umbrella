@@ -54,7 +54,8 @@ try {
     Write-Host "SMBv1 is properly disabled (secure configuration)"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking SMBv1 status: $_"
     exit 1
 }

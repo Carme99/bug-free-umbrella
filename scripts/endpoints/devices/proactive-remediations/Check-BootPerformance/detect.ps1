@@ -53,7 +53,8 @@ try {
 
                 if ($bootTimeSec -gt $maxBootSeconds) {
                     $issues += "Boot time is $bootTimeSec seconds (threshold: $maxBootSeconds seconds)"
-                } elseif ($bootTimeSec -gt $warningBootSeconds) {
+                }
+                elseif ($bootTimeSec -gt $warningBootSeconds) {
                     Write-Host "  Warning: Boot time approaching threshold ($bootTimeSec / $maxBootSeconds seconds)"
                 }
             }
@@ -104,7 +105,8 @@ try {
             $issues += "Boot performance degradation events detected in last 7 days"
         }
 
-    } else {
+    }
+    else {
         $issues += "Unable to retrieve boot information"
     }
 
@@ -120,7 +122,8 @@ try {
     Write-Host "`nBoot performance is within acceptable limits"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking boot performance: $_"
     exit 1
 }

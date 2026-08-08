@@ -66,9 +66,9 @@ function Write-Log {
 
     # Always write to console
     switch ($Level) {
-        'Error'   { Write-Error $Message }
+        'Error' { Write-Error $Message }
         'Warning' { Write-Warning $Message }
-        'Info'    { Write-Host $Message }
+        'Info' { Write-Host $Message }
     }
 
     # Optionally write to file
@@ -79,7 +79,8 @@ function Write-Log {
                 New-Item -Path $logDir -ItemType Directory -Force | Out-Null
             }
             Add-Content -Path $LogPath -Value $logMessage -ErrorAction SilentlyContinue
-        } catch {
+        }
+        catch {
             # Fail silently if logging doesn't work
         }
     }
@@ -89,7 +90,8 @@ function Test-NetworkConnectivity {
     try {
         $testConnection = Test-Connection -ComputerName "www.microsoft.com" -Count 1 -Quiet -ErrorAction SilentlyContinue
         return $testConnection
-    } catch {
+    }
+    catch {
         return $false
     }
 }
@@ -138,7 +140,8 @@ function Invoke-WingetWithRetry {
 
             Write-Log "Winget command exited with code 0x$($p.ExitCode.ToString('X8')) on attempt $attempt" -Level Warning
             if ($stderr) { Write-Log "Winget stderr: $stderr" -Level Warning }
-        } catch {
+        }
+        catch {
             Write-Log "Winget command failed on attempt $attempt : $($_.Exception.Message)" -Level Warning
         }
 
@@ -208,7 +211,8 @@ try {
                 }
 
                 exit 1  # Trigger remediation
-            } else {
+            }
+            else {
                 # No update available
                 $versionInstalled = $package.InstalledVersion
                 Write-Log "$name is already up to date (version $versionInstalled)" -Level Info
@@ -235,7 +239,8 @@ try {
     if ($wingetexe.Count -gt 1) {
         $SystemContext = $wingetexe[-1].Path
         Write-Log "Found multiple winget installations, using latest: $SystemContext" -Level Info
-    } else {
+    }
+    else {
         $SystemContext = $wingetexe.Path
         Write-Log "Found winget: $SystemContext" -Level Info
     }
@@ -252,7 +257,8 @@ try {
         if ($nameMatch) {
             $name = $nameMatch.Matches[0].Groups[2].Value.Trim()
             Write-Log "Auto-detected application name: $name" -Level Info
-        } else {
+        }
+        else {
             $name = $ID
             Write-Log "Could not auto-detect name, using ID: $name" -Level Warning
         }
@@ -267,7 +273,7 @@ try {
 
     # Check if update is available
     if ($packageInfo -match '\bVersion\s+Available\b') {
-        $verInstalled, $verAvailable = (-split $packageInfo[-1])[-3,-2]
+        $verInstalled, $verAvailable = (-split $packageInfo[-1])[-3, -2]
         Write-Log "Update available for $name | Installed: $verInstalled | Available: $verAvailable" -Level Info
         Write-Host "Application update available for $name. Current: $verInstalled, Available: $verAvailable"
 
@@ -279,7 +285,8 @@ try {
         }
 
         exit 1  # Trigger remediation
-    } else {
+    }
+    else {
         # No update available
         if ($packageInfo -match '\d+(\.\d+)+') {
             $versionInstalled = (-split $packageInfo[-1])[-2]
@@ -293,19 +300,22 @@ try {
             }
 
             exit 0  # No action needed
-        } else {
+        }
+        else {
             Write-Log "$name appears to be installed but version info could not be parsed" -Level Warning
             Write-Host "$name is installed but version could not be determined"
             exit 0
         }
     }
 
-} catch {
+}
+catch {
     $errMsg = $_.Exception.Message
     Write-Log "ERROR: Failed to check $name for updates: $errMsg" -Level Error
     Write-Error "Failed to check $name for updates: $errMsg"
     exit 0  # Don't trigger remediation on error
-} finally {
+}
+finally {
     Write-Log "=== Detection script completed ===" -Level Info
 }
 #endregion

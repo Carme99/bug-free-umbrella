@@ -30,7 +30,8 @@ try {
             try {
                 $dbFiles = Get-ChildItem -Path $tileDataPath -File -ErrorAction Stop
                 # Database exists and is accessible
-            } catch {
+            }
+            catch {
                 $issues += "Start Menu database is corrupted or inaccessible for user: $($profile.Name)"
             }
         }
@@ -42,7 +43,8 @@ try {
             # Check if cache folder has issues
             try {
                 $cacheFiles = Get-ChildItem -Path $startMenuCache -ErrorAction Stop
-            } catch {
+            }
+            catch {
                 $issues += "Start Menu cache is corrupted for user: $($profile.Name)"
             }
         }
@@ -62,7 +64,8 @@ try {
     Write-Host "Start Menu appears to be healthy"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking Start Menu health: $_"
     exit 1
 }

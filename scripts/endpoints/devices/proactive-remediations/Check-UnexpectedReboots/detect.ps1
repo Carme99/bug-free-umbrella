@@ -136,7 +136,8 @@ try {
     Write-Host "`nNo unexpected reboots detected - system stability is good"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking unexpected reboots: $_"
     exit 1
 }

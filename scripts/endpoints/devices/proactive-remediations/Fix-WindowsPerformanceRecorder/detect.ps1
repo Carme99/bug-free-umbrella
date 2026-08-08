@@ -61,7 +61,8 @@ try {
     Write-Host "No stuck WPR/ETW sessions detected"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking performance recorder status: $_"
     exit 1
 }

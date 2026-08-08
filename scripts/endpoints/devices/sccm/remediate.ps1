@@ -32,13 +32,13 @@ $ccmSetupPath = "$env:windir\ccmsetup\ccmsetup.exe"
 # Already installed - nothing to remediate.
 if (Test-Path $ccmSetupPath) {
     Write-Output " SCCM client is installed."
-    Exit 0
+    exit 0
 }
 
 # Client not installed. A source path is required to install it.
 if (-not $SourcePath -or -not (Test-Path $SourcePath)) {
     Write-Error " SCCM client is NOT installed and no valid -SourcePath was provided. Supply a local/UNC path containing ccmsetup.exe (e.g. \\SCCM-SERVER\SCCMContentLib\Client or C:\SCCM)."
-    Exit 1
+    exit 1
 }
 
 # Locate ccmsetup.exe in the source tree (source root or ccmsetup subfolder).
@@ -52,7 +52,7 @@ if (-not (Test-Path $sourceCcmSetup)) {
 
 if (-not (Test-Path $sourceCcmSetup)) {
     Write-Error " ccmsetup.exe was not found under -SourcePath '$SourcePath'. Verify the source tree."
-    Exit 1
+    exit 1
 }
 
 # Build argument list for ccmsetup.exe.
@@ -100,8 +100,8 @@ if ($installSucceeded -and (Test-Path $ccmSetupPath)) {
     else {
         Write-Output " SCCM client installed successfully."
     }
-    Exit 0
+    exit 0
 }
 
 Write-Error " SCCM client installation did not succeed (ccmsetup exit code: $exitCode)."
-Exit 1
+exit 1

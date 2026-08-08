@@ -1,3 +1,21 @@
+<#
+.SYNOPSIS
+    Detect excessive temp files
+
+.DESCRIPTION
+    Measures the total size of temp files older than 7 days across the SYSTEM temp folder, the Windows temp folder and every per-user temp folder (enumerated from Win32_UserProfile so users who are not logged on are covered). Exits 1 when the total exceeds 1 GB.
+
+.EXAMPLE
+    ./detect.ps1
+
+.NOTES
+    File Name  : detect.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Version    : 1.0.0
+    Date       : 2026-08-08
+#>
+
 # Detect excessive temp files (> 1GB)
 # In SYSTEM context $env:TEMP points at the SYSTEM profile temp folder - real
 # user temp folders must be enumerated explicitly or they are never cleaned.
@@ -19,16 +37,16 @@ foreach ($profile in $userProfiles) {
 
 $totalSize = 0
 
-foreach($path in $tempPaths) {
-    if(Test-Path $path) {
-        $size = (Get-ChildItem $path -Recurse -File -ErrorAction SilentlyContinue | Where-Object {$_.LastWriteTime -lt (Get-Date).AddDays(-7)} | Measure-Object -Property Length -Sum).Sum
+foreach ($path in $tempPaths) {
+    if (Test-Path $path) {
+        $size = (Get-ChildItem $path -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) } | Measure-Object -Property Length -Sum).Sum
         $totalSize += $size
     }
 }
 
 $totalGB = [math]::Round($totalSize / 1GB, 2)
 
-if($totalSize -gt $threshold) {
+if ($totalSize -gt $threshold) {
     Write-Host "Excessive temp files: $totalGB GB"
     exit 1
 }

@@ -24,7 +24,8 @@ try {
         if ($storeService.Status -ne "Running") {
             $issues += "Client License Service (ClipSVC) is not running"
         }
-    } else {
+    }
+    else {
         $issues += "Client License Service (ClipSVC) is not found"
     }
 
@@ -65,7 +66,8 @@ try {
     Write-Host "Windows Store licensing appears healthy"
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error checking Windows Store licensing: $_"
     exit 1
 }

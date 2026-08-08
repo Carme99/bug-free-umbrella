@@ -23,7 +23,8 @@ try {
         try {
             logman stop $sessionName -ets | Out-Null
             $remediationActions += "Stopped WPR session: $sessionName"
-        } catch {
+        }
+        catch {
             Write-Host "Warning: Could not stop session $sessionName : $_"
         }
     }
@@ -40,13 +41,15 @@ try {
         foreach ($action in $remediationActions) {
             Write-Host "  - $action"
         }
-    } else {
+    }
+    else {
         Write-Host "No stuck performance recorder sessions to stop"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during performance recorder remediation: $_"
     exit 1
 }

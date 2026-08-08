@@ -40,7 +40,8 @@ try {
         }
         Write-Host ""
         Write-Host "IMPORTANT: A system restart is required for changes to take effect"
-    } elseif ($pageFiles -and $pageFiles.Count -gt 0) {
+    }
+    elseif ($pageFiles -and $pageFiles.Count -gt 0) {
         # Custom page file exists - don't touch it even if undersized
         Write-Host "Custom page file configuration detected:"
         foreach ($pf in $pageFiles) {
@@ -53,13 +54,15 @@ try {
         Write-Host "  - SQL Server performance"
         Write-Host "  - Complete memory dump collection"
         Write-Host "  - Application-specific requirements"
-    } else {
+    }
+    else {
         Write-Host "Page file is already properly configured (system-managed)"
     }
 
     exit 0
 
-} catch {
+}
+catch {
     Write-Host "Error during page file remediation: $_"
     exit 1
 }

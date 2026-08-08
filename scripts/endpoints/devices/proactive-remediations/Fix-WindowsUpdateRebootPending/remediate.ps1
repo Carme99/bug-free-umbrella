@@ -46,12 +46,14 @@ try {
         Write-Host "Reboot pending state detected. Scheduled a restart in 15 minutes (shutdown /r /t 900)."
         Write-Host "Note: The RebootPending/RebootRequired registry keys were left intact - they are cleared by Windows during the restart. Deleting them would strand servicing operations."
         exit 0
-    } else {
+    }
+    else {
         Write-Host "Failed to schedule restart: shutdown.exe exited with code $LASTEXITCODE"
         exit 1
     }
 
-} catch {
+}
+catch {
     Write-Host "Error during reboot pending remediation: $_"
     exit 1
 }
