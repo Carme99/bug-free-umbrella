@@ -170,7 +170,8 @@ function Test-Endpoint {
         try {
             $response = Invoke-WebRequest @requestParams
             $statusCode = $response.StatusCode
-        } catch {
+        }
+        catch {
             $statusCode = $_.Exception.Response.StatusCode.value__
             if (-not $statusCode) { $statusCode = 0 }
             $response = $null
@@ -185,7 +186,8 @@ function Test-Endpoint {
         # Validate status code
         if ($statusCode -eq $Endpoint.ExpectedStatusCode) {
             $result.Success = $true
-        } else {
+        }
+        else {
             $result.Errors += "Status code mismatch: Expected $($Endpoint.ExpectedStatusCode), Got $statusCode"
         }
 
@@ -214,14 +216,16 @@ function Test-Endpoint {
                         if ($daysUntilExpiration -lt 30) {
                             $result.Warnings += "SSL certificate expires in $daysUntilExpiration days"
                         }
-                    } else {
+                    }
+                    else {
                         $result.Errors += "SSL certificate expired on $($expirationDate.ToString('yyyy-MM-dd'))"
                     }
                 }
 
                 $sslStream.Close()
                 $tcpClient.Close()
-            } catch {
+            }
+            catch {
                 $result.Errors += "SSL validation failed: $($_.Exception.Message)"
             }
         }
@@ -240,7 +244,8 @@ function Test-Endpoint {
             }
         }
 
-    } catch {
+    }
+    catch {
         $result.Errors += "Request failed: $($_.Exception.Message)"
     }
 
@@ -270,11 +275,13 @@ if ($EndpointsFile) {
                 ContentType = $ep.ContentType
             }
         }
-    } catch {
+    }
+    catch {
         Write-Error "Failed to parse endpoints file: $($_.Exception.Message)"
         exit 1
     }
-} elseif ($SingleEndpoint) {
+}
+elseif ($SingleEndpoint) {
     $endpoints += @{
         Name = "Single Endpoint Test"
         Url = $SingleEndpoint
@@ -282,7 +289,8 @@ if ($EndpointsFile) {
         ExpectedStatusCode = $ExpectedStatusCode
         MaxResponseTime = $MaxResponseTime
     }
-} else {
+}
+else {
     Write-Error "Either -EndpointsFile or -SingleEndpoint must be specified"
     exit 1
 }
@@ -305,7 +313,8 @@ function Run-Tests {
 
         if ($result.Success) {
             Write-Host "    ✓ Passed ($($result.ResponseTime) ms)" -ForegroundColor Green
-        } else {
+        }
+        else {
             Write-Host "    ✗ Failed: $($result.Errors -join ', ')" -ForegroundColor Red
         }
 

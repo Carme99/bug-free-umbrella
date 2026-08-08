@@ -119,14 +119,16 @@ try {
         $diskCounters = Get-Counter '\PhysicalDisk(_Total)\% Disk Time' -ErrorAction SilentlyContinue
         $diskUsage = if ($diskCounters) {
             [math]::Round($diskCounters.CounterSamples.CookedValue, 2)
-        } else { 0 }
+        }
+        else { 0 }
 
         # Collect network usage
         $networkCounters = Get-Counter '\Network Interface(*)\Bytes Total/sec' -ErrorAction SilentlyContinue
         $networkUsage = if ($networkCounters) {
             ($networkCounters.CounterSamples | Measure-Object -Property CookedValue -Sum).Sum
             [math]::Round($networkUsage / 1MB, 2)  # Convert to MB/s
-        } else { 0 }
+        }
+        else { 0 }
 
         # Create performance record
         $record = [PSCustomObject]@{

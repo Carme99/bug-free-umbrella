@@ -85,7 +85,8 @@ function Get-UserPrimaryDevice {
 
         return $selectedDevice
 
-    } catch {
+    }
+    catch {
         Write-ColorOutput "  └─ Error getting devices: $($_.Exception.Message)" "Red"
         return $null
     }
@@ -177,7 +178,8 @@ try {
                 if ($azureAdDevice) {
                     $deviceIdMap[$azureAdDevice.Id] = $device
                 }
-            } catch {
+            }
+            catch {
                 Write-ColorOutput "Warning: Could not find Azure AD device for $($device.DeviceName)" "Yellow"
             }
         }
@@ -196,7 +198,8 @@ try {
 
     if ($devicesToAddToGroup.Count -eq 0 -and $devicesToRemoveFromGroup.Count -eq 0) {
         Write-ColorOutput "`nNo changes needed. Target group is already in sync!" "Green"
-    } else {
+    }
+    else {
         $confirm = Read-Host "`nProceed with sync? (Y/N)"
 
         if ($confirm -eq 'Y' -or $confirm -eq 'y') {
@@ -208,7 +211,8 @@ try {
                     try {
                         New-MgGroupMember -GroupId $targetGroup.Id -DirectoryObjectId $deviceId -ErrorAction Stop
                         Write-ColorOutput "  ✓ Added: $($deviceInfo.DeviceName) (User: $($deviceInfo.UserName))" "Green"
-                    } catch {
+                    }
+                    catch {
                         Write-ColorOutput "  ✗ Failed to add $($deviceInfo.DeviceName): $($_.Exception.Message)" "Red"
                     }
                 }
@@ -221,22 +225,26 @@ try {
                     try {
                         Remove-MgGroupMemberByRef -GroupId $targetGroup.Id -DirectoryObjectId $deviceId -ErrorAction Stop
                         Write-ColorOutput "  ✓ Removed device ID: $deviceId" "Green"
-                    } catch {
+                    }
+                    catch {
                         Write-ColorOutput "  ✗ Failed to remove device ${deviceId}: $($_.Exception.Message)" "Red"
                     }
                 }
             }
 
             Write-ColorOutput "`nSync completed successfully!" "Green"
-        } else {
+        }
+        else {
             Write-ColorOutput "`nSync cancelled by user." "Yellow"
         }
     }
 
-} catch {
+}
+catch {
     Write-ColorOutput "`nError: $($_.Exception.Message)" "Red"
     Write-ColorOutput $_.ScriptStackTrace "Red"
-} finally {
+}
+finally {
     Write-ColorOutput "`nDisconnecting from Microsoft Graph..." "Yellow"
     Disconnect-MgGraph | Out-Null
     Write-ColorOutput "Done!`n" "Green"

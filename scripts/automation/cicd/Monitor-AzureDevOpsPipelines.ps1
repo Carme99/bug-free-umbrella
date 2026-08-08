@@ -138,7 +138,8 @@ $OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
 if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
     try {
         New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
-    } catch {
+    }
+    catch {
         Write-Error "Failed to create output directory '$OutputPath': $($_.Exception.Message)"
         exit 1
     }
@@ -152,10 +153,12 @@ try {
         $projectsUrl = "$baseUrl/_apis/projects?api-version=7.0"
         $projectsResponse = Invoke-RestMethod -Uri $projectsUrl -Headers $headers -Method Get
         $projects = $projectsResponse.value
-    } else {
+    }
+    else {
         $projects = @(@{ name = $Project })
     }
-} catch {
+}
+catch {
     Write-Error "Failed to retrieve projects: $($_.Exception.Message)"
     exit 1
 }
@@ -198,7 +201,8 @@ foreach ($proj in $projects) {
                     ([datetime]$_.finishedDate - [datetime]$_.createdDate).TotalMinutes
                 }
                 [math]::Round(($durations | Measure-Object -Average).Average, 2)
-            } else {
+            }
+            else {
                 0
             }
 
@@ -229,7 +233,8 @@ foreach ($proj in $projects) {
                 Status = if ($successRate -ge 90) { 'Healthy' } elseif ($successRate -ge 70) { 'Warning' } else { 'Critical' }
             }
         }
-    } catch {
+    }
+    catch {
         Write-Warning "Failed to analyze pipelines for $projectName : $($_.Exception.Message)"
     }
 
@@ -256,7 +261,8 @@ foreach ($proj in $projects) {
                     HealthStatus = if ($onlineAgents -eq 0) { 'Critical' } elseif ($offlineAgents -gt 0) { 'Warning' } else { 'Healthy' }
                 }
             }
-        } catch {
+        }
+        catch {
             Write-Warning "Failed to analyze agent pools: $($_.Exception.Message)"
         }
     }
@@ -285,7 +291,8 @@ foreach ($proj in $projects) {
                     Environments = $deploymentStatus
                 }
             }
-        } catch {
+        }
+        catch {
             Write-Warning "Failed to analyze releases for $projectName : $($_.Exception.Message)"
         }
     }

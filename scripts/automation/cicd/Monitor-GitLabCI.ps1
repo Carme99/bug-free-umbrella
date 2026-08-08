@@ -125,13 +125,15 @@ try {
         $projectsUrl = "$apiUrl/projects?membership=true&per_page=100"
         $projectsResponse = Invoke-RestMethod -Uri $projectsUrl -Headers $headers -Method Get
         $projects = $projectsResponse | Select-Object id, name, path_with_namespace
-    } else {
+    }
+    else {
         $encodedProject = [uri]::EscapeDataString($ProjectId)
         $projectUrl = "$apiUrl/projects/$encodedProject"
         $project = Invoke-RestMethod -Uri $projectUrl -Headers $headers -Method Get
         $projects = @($project | Select-Object id, name, path_with_namespace)
     }
-} catch {
+}
+catch {
     Write-Error "Failed to retrieve projects: $($_.Exception.Message)"
     exit 1
 }
@@ -167,13 +169,15 @@ foreach ($project in $projects) {
 
             $successRate = if ($totalRuns -gt 0) {
                 [math]::Round((($successfulRuns + $skippedRuns) / $totalRuns) * 100, 2)
-            } else { 0 }
+            }
+            else { 0 }
 
             # Calculate average duration for completed pipelines
             $completedPipelines = $refPipelines | Where-Object { $_.duration }
             $avgDuration = if ($completedPipelines.Count -gt 0) {
                 [math]::Round(($completedPipelines.duration | Measure-Object -Average).Average / 60, 2)
-            } else { 0 }
+            }
+            else { 0 }
 
             # Get failed pipeline details
             $failedDetails = $refPipelines | Where-Object { $_.status -eq 'failed' } |
@@ -202,7 +206,8 @@ foreach ($project in $projects) {
                 Status = if ($successRate -ge 90) { 'Healthy' } elseif ($successRate -ge 70) { 'Warning' } else { 'Critical' }
             }
         }
-    } catch {
+    }
+    catch {
         Write-Warning "Failed to analyze pipelines for $($project.path_with_namespace): $($_.Exception.Message)"
     }
 
@@ -223,7 +228,8 @@ foreach ($project in $projects) {
                     UpdatedAt = $deployment.updated_at
                 }
             }
-        } catch {
+        }
+        catch {
             Write-Warning "Failed to retrieve deployments for $($project.path_with_namespace): $($_.Exception.Message)"
         }
     }
@@ -248,7 +254,8 @@ if ($IncludeRunners) {
                 Architecture = $runner.architecture
             }
         }
-    } catch {
+    }
+    catch {
         Write-Warning "Failed to retrieve runners (requires admin access): $($_.Exception.Message)"
     }
 }
@@ -260,7 +267,8 @@ $warningPipelines = ($results.Pipelines | Where-Object { $_.Status -eq 'Warning'
 $criticalPipelines = ($results.Pipelines | Where-Object { $_.Status -eq 'Critical' }).Count
 $avgSuccessRate = if ($totalPipelines -gt 0) {
     [math]::Round(($results.Pipelines.SuccessRate | Measure-Object -Average).Average, 2)
-} else { 0 }
+}
+else { 0 }
 
 $results.Summary = @{
     TotalPipelines = $totalPipelines

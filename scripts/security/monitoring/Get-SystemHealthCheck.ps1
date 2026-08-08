@@ -88,8 +88,8 @@ Write-Host "`nChecking CPU usage..." -ForegroundColor Yellow
 try {
     $cpu = Get-CimInstance -ClassName Win32_Processor
     $cpuLoad = (Get-Counter '\Processor(_Total)\% Processor Time' -SampleInterval 2 -MaxSamples 3 |
-        Select-Object -ExpandProperty CounterSamples |
-        Measure-Object -Property CookedValue -Average).Average
+            Select-Object -ExpandProperty CounterSamples |
+            Measure-Object -Property CookedValue -Average).Average
 
     $healthCheck.CPU = @{
         Name = $cpu.Name
@@ -102,13 +102,15 @@ try {
     if ($cpuLoad -gt 90) {
         $healthCheck.Issues += "CPU usage is very high: $([math]::Round($cpuLoad, 2))%"
         $healthCheck.HealthScore -= 15
-    } elseif ($cpuLoad -gt 75) {
+    }
+    elseif ($cpuLoad -gt 75) {
         $healthCheck.Warnings += "CPU usage is elevated: $([math]::Round($cpuLoad, 2))%"
         $healthCheck.HealthScore -= 5
     }
 
-    Write-Host "CPU: $($cpu.Name) - Load: $([math]::Round($cpuLoad, 2))%" -ForegroundColor $(if ($cpuLoad -gt 75) {'Yellow'} else {'Green'})
-} catch {
+    Write-Host "CPU: $($cpu.Name) - Load: $([math]::Round($cpuLoad, 2))%" -ForegroundColor $(if ($cpuLoad -gt 75) { 'Yellow' } else { 'Green' })
+}
+catch {
     $healthCheck.Issues += "Could not check CPU status"
     $healthCheck.HealthScore -= 10
 }
@@ -133,13 +135,15 @@ try {
     if ($memoryUsagePercent -gt $MemoryThresholdPercent) {
         $healthCheck.Issues += "Memory usage is very high: $memoryUsagePercent%"
         $healthCheck.HealthScore -= 15
-    } elseif ($memoryUsagePercent -gt ($MemoryThresholdPercent - 10)) {
+    }
+    elseif ($memoryUsagePercent -gt ($MemoryThresholdPercent - 10)) {
         $healthCheck.Warnings += "Memory usage is elevated: $memoryUsagePercent%"
         $healthCheck.HealthScore -= 5
     }
 
-    Write-Host "Memory: $usedMemoryGB GB / $totalMemoryGB GB ($memoryUsagePercent%)" -ForegroundColor $(if ($memoryUsagePercent -gt $MemoryThresholdPercent) {'Red'} elseif ($memoryUsagePercent -gt 80) {'Yellow'} else {'Green'})
-} catch {
+    Write-Host "Memory: $usedMemoryGB GB / $totalMemoryGB GB ($memoryUsagePercent%)" -ForegroundColor $(if ($memoryUsagePercent -gt $MemoryThresholdPercent) { 'Red' } elseif ($memoryUsagePercent -gt 80) { 'Yellow' } else { 'Green' })
+}
+catch {
     $healthCheck.Issues += "Could not check memory status"
     $healthCheck.HealthScore -= 10
 }
@@ -170,15 +174,17 @@ try {
         if ($diskUsagePercent -gt $DiskThresholdPercent + 10) {
             $healthCheck.Issues += "Disk $($disk.DeviceID) usage is critical: $diskUsagePercent%"
             $healthCheck.HealthScore -= 15
-        } elseif ($diskUsagePercent -gt $DiskThresholdPercent) {
+        }
+        elseif ($diskUsagePercent -gt $DiskThresholdPercent) {
             $healthCheck.Warnings += "Disk $($disk.DeviceID) usage is high: $diskUsagePercent%"
             $healthCheck.HealthScore -= 5
         }
 
-        $diskColor = if ($diskUsagePercent -gt 90) {'Red'} elseif ($diskUsagePercent -gt $DiskThresholdPercent) {'Yellow'} else {'Green'}
+        $diskColor = if ($diskUsagePercent -gt 90) { 'Red' } elseif ($diskUsagePercent -gt $DiskThresholdPercent) { 'Yellow' } else { 'Green' }
         Write-Host "Disk $($disk.DeviceID): $diskUsedGB GB / $diskSizeGB GB ($diskUsagePercent%)" -ForegroundColor $diskColor
     }
-} catch {
+}
+catch {
     $healthCheck.Issues += "Could not check disk status"
     $healthCheck.HealthScore -= 10
 }
@@ -205,13 +211,15 @@ try {
                 $healthCheck.HealthScore -= 10
             }
 
-            $serviceColor = if ($service.Status -eq 'Running') {'Green'} else {'Red'}
+            $serviceColor = if ($service.Status -eq 'Running') { 'Green' } else { 'Red' }
             Write-Host "  $($service.DisplayName): $($service.Status)" -ForegroundColor $serviceColor
-        } else {
+        }
+        else {
             Write-Host "  ${serviceName}: Not Found" -ForegroundColor Yellow
         }
     }
-} catch {
+}
+catch {
     $healthCheck.Warnings += "Could not check all services"
 }
 #endregion
@@ -234,8 +242,9 @@ try {
         $healthCheck.HealthScore -= 5
     }
 
-    Write-Host "Uptime: $([math]::Round($uptime.TotalDays, 2)) days (Last boot: $($lastBootTime.ToString('yyyy-MM-dd HH:mm')))" -ForegroundColor $(if ($uptime.TotalDays -gt 30) {'Yellow'} else {'Green'})
-} catch {
+    Write-Host "Uptime: $([math]::Round($uptime.TotalDays, 2)) days (Last boot: $($lastBootTime.ToString('yyyy-MM-dd HH:mm')))" -ForegroundColor $(if ($uptime.TotalDays -gt 30) { 'Yellow' } else { 'Green' })
+}
+catch {
     $healthCheck.Warnings += "Could not check uptime"
 }
 #endregion
@@ -256,8 +265,9 @@ try {
         $healthCheck.HealthScore -= 5
     }
 
-    Write-Host "Pending Windows Updates: $pendingUpdates" -ForegroundColor $(if ($pendingUpdates -gt 10) {'Yellow'} else {'Green'})
-} catch {
+    Write-Host "Pending Windows Updates: $pendingUpdates" -ForegroundColor $(if ($pendingUpdates -gt 10) { 'Yellow' } else { 'Green' })
+}
+catch {
     Write-Host "Could not check Windows Update status" -ForegroundColor Yellow
 }
 #endregion
@@ -266,7 +276,7 @@ try {
 Write-Host "`nChecking recent event log errors..." -ForegroundColor Yellow
 try {
     $startTime = (Get-Date).AddDays(-1)
-    $criticalErrors = Get-WinEvent -FilterHashtable @{LogName='System'; Level=2; StartTime=$startTime} -MaxEvents 100 -ErrorAction SilentlyContinue
+    $criticalErrors = Get-WinEvent -FilterHashtable @{LogName = 'System'; Level = 2; StartTime = $startTime } -MaxEvents 100 -ErrorAction SilentlyContinue
     $errorCount = ($criticalErrors | Measure-Object).Count
 
     $healthCheck.EventLogErrors = @{
@@ -283,13 +293,15 @@ try {
     if ($errorCount -gt 50) {
         $healthCheck.Issues += "High number of system errors in last 24 hours: $errorCount"
         $healthCheck.HealthScore -= 10
-    } elseif ($errorCount -gt 20) {
+    }
+    elseif ($errorCount -gt 20) {
         $healthCheck.Warnings += "Elevated system errors in last 24 hours: $errorCount"
         $healthCheck.HealthScore -= 5
     }
 
-    Write-Host "System errors (24h): $errorCount" -ForegroundColor $(if ($errorCount -gt 50) {'Red'} elseif ($errorCount -gt 20) {'Yellow'} else {'Green'})
-} catch {
+    Write-Host "System errors (24h): $errorCount" -ForegroundColor $(if ($errorCount -gt 50) { 'Red' } elseif ($errorCount -gt 20) { 'Yellow' } else { 'Green' })
+}
+catch {
     Write-Host "Could not check event logs" -ForegroundColor Yellow
 }
 #endregion
@@ -298,10 +310,12 @@ try {
 if ($healthCheck.HealthScore -ge 90) {
     $healthCheck.OverallHealth = "Healthy"
     $healthColor = "Green"
-} elseif ($healthCheck.HealthScore -ge 70) {
+}
+elseif ($healthCheck.HealthScore -ge 70) {
     $healthCheck.OverallHealth = "Warning"
     $healthColor = "Yellow"
-} else {
+}
+else {
     $healthCheck.OverallHealth = "Critical"
     $healthColor = "Red"
 }

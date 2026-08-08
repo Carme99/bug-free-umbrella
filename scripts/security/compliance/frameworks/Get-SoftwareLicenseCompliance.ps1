@@ -90,10 +90,12 @@ foreach ($path in $registryPaths) {
                         if ($officeLicense) {
                             $licenseKey = $officeLicense.ProductKeyID
                             $licenseStatus = "Licensed"
-                        } else {
+                        }
+                        else {
                             $licenseStatus = "Unlicensed"
                         }
-                    } catch {
+                    }
+                    catch {
                         $licenseStatus = "Unknown"
                     }
                 }
@@ -105,10 +107,12 @@ foreach ($path in $registryPaths) {
                         if ($windowsLicense) {
                             $licenseKey = $windowsLicense.ProductKeyID
                             $licenseStatus = "Licensed"
-                        } else {
+                        }
+                        else {
                             $licenseStatus = "Unlicensed"
                         }
-                    } catch {
+                    }
+                    catch {
                         $licenseStatus = "Unknown"
                     }
                 }
@@ -138,7 +142,8 @@ foreach ($path in $registryPaths) {
                                     break
                                 }
                             }
-                        } catch {
+                        }
+                        catch {
                             # Continue to next path
                         }
                     }
@@ -149,10 +154,12 @@ foreach ($path in $registryPaths) {
             $installDate = if ($app.InstallDate) {
                 try {
                     [datetime]::ParseExact($app.InstallDate, "yyyyMMdd", $null).ToString("yyyy-MM-dd")
-                } catch {
+                }
+                catch {
                     $app.InstallDate
                 }
-            } else {
+            }
+            else {
                 "Unknown"
             }
 
@@ -166,7 +173,8 @@ foreach ($path in $registryPaths) {
                 LicenseStatus = $licenseStatus
             }
         }
-    } catch {
+    }
+    catch {
         Write-Verbose "Could not access registry path: $path"
     }
 }
@@ -178,9 +186,9 @@ Write-Host "`n=== Software Inventory Results ===" -ForegroundColor Cyan
 Write-Host "Total applications found: $($softwareInventory.Count)" -ForegroundColor Green
 
 if ($CheckLicenseKeys) {
-    $licensed = ($softwareInventory | Where-Object {$_.LicenseStatus -eq 'Licensed'}).Count
-    $unlicensed = ($softwareInventory | Where-Object {$_.LicenseStatus -eq 'Unlicensed'}).Count
-    $unknown = ($softwareInventory | Where-Object {$_.LicenseStatus -eq 'Unknown'}).Count
+    $licensed = ($softwareInventory | Where-Object { $_.LicenseStatus -eq 'Licensed' }).Count
+    $unlicensed = ($softwareInventory | Where-Object { $_.LicenseStatus -eq 'Unlicensed' }).Count
+    $unknown = ($softwareInventory | Where-Object { $_.LicenseStatus -eq 'Unknown' }).Count
 
     Write-Host "Licensed software: $licensed" -ForegroundColor Green
     Write-Host "Unlicensed software: $unlicensed" -ForegroundColor $(if ($unlicensed -gt 0) { 'Red' } else { 'Green' })
@@ -204,7 +212,7 @@ if ($HighlightUnlicensed) {
 }
 
 # Detect duplicate installations
-$duplicates = $softwareInventory | Group-Object Name | Where-Object {$_.Count -gt 1}
+$duplicates = $softwareInventory | Group-Object Name | Where-Object { $_.Count -gt 1 }
 if ($duplicates) {
     Write-Host "`n=== Duplicate Software Installations Detected ===" -ForegroundColor Yellow
     foreach ($dup in $duplicates) {

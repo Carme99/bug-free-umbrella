@@ -75,22 +75,26 @@ foreach ($device in $connectedDevices) {
     # Parse USB device information
     $deviceID = $device.DeviceID
     $vidPid = if ($deviceID -match "VID_([0-9A-F]{4}).*PID_([0-9A-F]{4})") {
-        @{VID = $matches[1]; PID = $matches[2]}
-    } else {
-        @{VID = "Unknown"; PID = "Unknown"}
+        @{VID = $matches[1]; PID = $matches[2] }
+    }
+    else {
+        @{VID = "Unknown"; PID = "Unknown" }
     }
 
     $serialNumber = if ($deviceID -match "\\([^\\]+)$") {
         $matches[1]
-    } else {
+    }
+    else {
         "N/A"
     }
 
     $isAuthorized = if ($AuthorizedVendors.Count -eq 0) {
         "N/A"
-    } elseif ($AuthorizedVendors -contains $vidPid.VID) {
+    }
+    elseif ($AuthorizedVendors -contains $vidPid.VID) {
         "Yes"
-    } else {
+    }
+    else {
         "No"
     }
 
@@ -132,7 +136,8 @@ if ($IncludeHistory) {
                     $deviceName = $deviceKey.PSChildName
                     $manufacturer = if ($deviceName -match "^([^&]+)&") {
                         $matches[1]
-                    } else {
+                    }
+                    else {
                         "Unknown"
                     }
 
@@ -154,13 +159,15 @@ if ($IncludeHistory) {
                             CurrentlyConnected = "No"
                             FirstSeen = if ($props.PSObject.Properties['InstallDate']) {
                                 $props.InstallDate
-                            } else {
+                            }
+                            else {
                                 "Unknown"
                             }
                             Source = "Registry"
                         }
                     }
-                } catch {
+                }
+                catch {
                     Write-Verbose "Could not process device instance: $($instance.PSChildName)"
                 }
             }
@@ -176,7 +183,7 @@ if ($IncludeHistory) {
     Write-Host "Historical devices: $(($results | Where-Object {$_.CurrentlyConnected -eq 'No'}).Count)" -ForegroundColor Yellow
 }
 if ($HighlightUnauthorized -and $AuthorizedVendors.Count -gt 0) {
-    $unauthorized = ($results | Where-Object {$_.IsAuthorized -eq 'No'}).Count
+    $unauthorized = ($results | Where-Object { $_.IsAuthorized -eq 'No' }).Count
     Write-Host "Unauthorized devices: $unauthorized" -ForegroundColor $(if ($unauthorized -gt 0) { 'Red' } else { 'Green' })
 }
 

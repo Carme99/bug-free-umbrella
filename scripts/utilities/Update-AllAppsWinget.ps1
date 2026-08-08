@@ -54,16 +54,16 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$LogPath = "C:\ProgramData\WingetUpdates\update-all-apps.log",
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$MaxRetries = 3,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$SkipDependencyCheck,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet('winget', 'msstore')]
     [string]$UpdateSource = 'winget'
 )
@@ -94,9 +94,9 @@ function Write-Log {
 
     # Write to console with color
     $color = switch ($Level) {
-        'Info'    { 'Cyan' }
+        'Info' { 'Cyan' }
         'Warning' { 'Yellow' }
-        'Error'   { 'Red' }
+        'Error' { 'Red' }
         'Success' { 'Green' }
     }
     Write-Host $logMessage -ForegroundColor $color
@@ -121,13 +121,15 @@ function Get-WingetPath {
             if ($wingetPaths.Count -gt 1) {
                 # Return the latest version
                 return ($wingetPaths | Sort-Object -Descending)[0].Path
-            } else {
+            }
+            else {
                 return $wingetPaths.Path
             }
         }
 
         return $null
-    } catch {
+    }
+    catch {
         return $null
     }
 }
@@ -158,7 +160,8 @@ function Install-WingetDependency {
         Remove-Item -Path $tempPath -Force -ErrorAction SilentlyContinue
 
         return $true
-    } catch {
+    }
+    catch {
         Write-Log "Failed to install ${Description}: $($_.Exception.Message)" -Level Error
         Remove-Item -Path $tempPath -Force -ErrorAction SilentlyContinue
         return $false
@@ -210,7 +213,8 @@ function Install-WingetForSystem {
         Start-Sleep -Seconds 5
 
         return $true
-    } catch {
+    }
+    catch {
         Write-Log "Failed to install winget: $($_.Exception.Message)" -Level Error
         Remove-Item -Path $tempWinget -Force -ErrorAction SilentlyContinue
         return $false
@@ -232,7 +236,8 @@ function Test-WingetConfiguration {
             Write-Log "Winget version: $testResult" -Level Info
             return $true
         }
-    } catch {
+    }
+    catch {
         return $false
     }
 
@@ -255,18 +260,22 @@ function Split-CommandLine {
         if ($inQuotes) {
             if ($c -eq $quoteChar) {
                 $inQuotes = $false
-            } else {
+            }
+            else {
                 [void]$current.Append($c)
             }
-        } elseif ($c -eq '"' -or $c -eq "'") {
+        }
+        elseif ($c -eq '"' -or $c -eq "'") {
             $inQuotes = $true
             $quoteChar = $c
-        } elseif ($c -eq ' ') {
+        }
+        elseif ($c -eq ' ') {
             if ($current.Length -gt 0) {
                 $tokens.Add($current.ToString())
                 [void]$current.Clear()
             }
-        } else {
+        }
+        else {
             [void]$current.Append($c)
         }
     }
@@ -298,10 +307,12 @@ function Invoke-WingetWithRetry {
 
             if ($LASTEXITCODE -eq 0) {
                 return $result
-            } else {
+            }
+            else {
                 Write-Log "Winget command failed with exit code $LASTEXITCODE" -Level Warning
             }
-        } catch {
+        }
+        catch {
             Write-Log "Exception during winget execution: $($_.Exception.Message)" -Level Warning
         }
 
@@ -318,6 +329,8 @@ function Invoke-WingetWithRetry {
 }
 
 function Update-AllApplications {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
     Write-Log "Starting application update process..." -Level Info
 
     try {
@@ -354,14 +367,16 @@ function Update-AllApplications {
         # Update all applications
         Write-Log "Starting update of all applications..." -Level Info
 
-        $updateOutput = Invoke-WingetWithRetry -Arguments "upgrade --all --silent --accept-package-agreements --accept-source-agreements --source $UpdateSource"
+        if ($PSCmdlet.ShouldProcess("all applications (source: $UpdateSource)", "Run winget upgrade --all")) {
+            $updateOutput = Invoke-WingetWithRetry -Arguments "upgrade --all --silent --accept-package-agreements --accept-source-agreements --source $UpdateSource"
 
-        # Log the output
-        foreach ($line in $updateOutput) {
-            Write-Log $line -Level Info
+            # Log the output
+            foreach ($line in $updateOutput) {
+                Write-Log $line -Level Info
+            }
+
+            Write-Log "Application update process completed" -Level Success
         }
-
-        Write-Log "Application update process completed" -Level Success
 
         # Verify updates
         Write-Log "Verifying updates..." -Level Info
@@ -378,13 +393,15 @@ function Update-AllApplications {
 
         if ($remainingUpdates -eq 0) {
             Write-Log "All applications updated successfully!" -Level Success
-        } else {
+        }
+        else {
             Write-Log "$remainingUpdates application(s) still have pending updates (may require manual intervention)" -Level Warning
         }
 
         return $true
 
-    } catch {
+    }
+    catch {
         Write-Log "Error during application update: $($_.Exception.Message)" -Level Error
         return $false
     }
@@ -408,7 +425,8 @@ try {
     $isSystem = Test-RunningAsSystem
     if ($isSystem) {
         Write-Log "Running as SYSTEM" -Level Info
-    } else {
+    }
+    else {
         Write-Log "Running as Administrator" -Level Info
     }
 
@@ -438,7 +456,8 @@ try {
         }
 
         Write-Log "Winget configured successfully" -Level Success
-    } else {
+    }
+    else {
         Write-Log "Winget is already configured and ready" -Level Success
     }
 
@@ -450,12 +469,14 @@ try {
         Write-Log "Update process completed successfully" -Level Success
         Write-Log "========================================" -Level Success
         exit 0
-    } else {
+    }
+    else {
         Write-Log "Update process completed with errors" -Level Warning
         exit 1
     }
 
-} catch {
+}
+catch {
     Write-Log "Critical error: $($_.Exception.Message)" -Level Error
     Write-Log "Stack trace: $($_.ScriptStackTrace)" -Level Error
     exit 1

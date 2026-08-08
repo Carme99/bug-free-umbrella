@@ -53,22 +53,22 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$ServerInstance = "localhost",
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$Database,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludePerformance,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$CheckBackups,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -209,8 +209,8 @@ ORDER BY DaysSinceFullBackup DESC
             $daysSince = if ($backup.DaysSinceFullBackup -is [DBNull]) { 999 } else { $backup.DaysSinceFullBackup }
 
             $status = if ($daysSince -le 1) { "Pass" }
-                     elseif ($daysSince -le 7) { "Warning" }
-                     else { "Fail" }
+            elseif ($daysSince -le 7) { "Warning" }
+            else { "Fail" }
 
             if ($status -eq "Fail") { $issueCount++ }
 
@@ -249,8 +249,8 @@ if ($logSpace) {
         $logUsed = [math]::Round($log.'Log Space Used (%)', 2)
 
         $status = if ($logUsed -lt 70) { "Pass" }
-                 elseif ($logUsed -lt 90) { "Warning" }
-                 else { "Fail" }
+        elseif ($logUsed -lt 90) { "Warning" }
+        else { "Fail" }
 
         if ($status -eq "Fail") { $issueCount++ }
 

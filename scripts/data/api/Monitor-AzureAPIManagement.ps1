@@ -137,7 +137,8 @@ try {
         exit 1
     }
     Set-AzContext -SubscriptionId $SubscriptionId | Out-Null
-} catch {
+}
+catch {
     Write-Error "Failed to set Azure context: $($_.Exception.Message)"
     exit 1
 }
@@ -160,7 +161,8 @@ try {
     }
 
     Write-Host "Service Status: $($apim.ProvisioningState)" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Error "Failed to retrieve API Management service: $($_.Exception.Message)"
     exit 1
 }
@@ -219,11 +221,13 @@ try {
 
     $successRate = if ($totalRequests -gt 0) {
         [math]::Round(($successfulRequests / $totalRequests) * 100, 2)
-    } else { 0 }
+    }
+    else { 0 }
 
     $avgCapacity = if ($capacityMetric.Data.Count -gt 0) {
         [math]::Round(($capacityMetric.Data.Average | Measure-Object -Average).Average, 2)
-    } else { 0 }
+    }
+    else { 0 }
 
     $results.Metrics = @{
         TotalRequests = $totalRequests
@@ -236,7 +240,8 @@ try {
 
     Write-Host "Total Requests: $totalRequests | Success Rate: $successRate%" -ForegroundColor White
     Write-Host "Average Capacity: $avgCapacity%" -ForegroundColor White
-} catch {
+}
+catch {
     Write-Warning "Failed to retrieve metrics: $($_.Exception.Message)"
 }
 
@@ -264,7 +269,8 @@ if ($IncludeAPIDetails) {
         }
 
         Write-Host "Found $($apis.Count) APIs with $($results.APIs.OperationCount | Measure-Object -Sum).Sum operations" -ForegroundColor White
-    } catch {
+    }
+    catch {
         Write-Warning "Failed to retrieve API details: $($_.Exception.Message)"
     }
 }
@@ -287,20 +293,21 @@ if ($IncludeBackendHealth) {
         }
 
         Write-Host "Found $($backends.Count) backend services" -ForegroundColor White
-    } catch {
+    }
+    catch {
         Write-Warning "Failed to retrieve backend details: $($_.Exception.Message)"
     }
 }
 
 # Calculate summary
 $healthStatus = if ($successRate -ge 99) { 'Excellent' }
-    elseif ($successRate -ge 95) { 'Good' }
-    elseif ($successRate -ge 90) { 'Fair' }
-    else { 'Poor' }
+elseif ($successRate -ge 95) { 'Good' }
+elseif ($successRate -ge 90) { 'Fair' }
+else { 'Poor' }
 
 $capacityStatus = if ($avgCapacity -lt 70) { 'Healthy' }
-    elseif ($avgCapacity -lt 85) { 'Warning' }
-    else { 'Critical' }
+elseif ($avgCapacity -lt 85) { 'Warning' }
+else { 'Critical' }
 
 $results.Summary = @{
     ServiceName = $ServiceName

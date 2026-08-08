@@ -60,19 +60,19 @@ Write-Host "========================================`n" -ForegroundColor Cyan
 
 # Define high-risk ports
 $HighRiskPorts = @{
-    21   = @{ Service = "FTP"; Risk = "High"; Reason = "Unencrypted file transfer" }
-    22   = @{ Service = "SSH"; Risk = "Medium"; Reason = "Remote access (ensure strong auth)" }
-    23   = @{ Service = "Telnet"; Risk = "Critical"; Reason = "Unencrypted remote access" }
-    25   = @{ Service = "SMTP"; Risk = "Medium"; Reason = "Email relay (ensure secured)" }
-    53   = @{ Service = "DNS"; Risk = "Low"; Reason = "Domain resolution" }
-    80   = @{ Service = "HTTP"; Risk = "Medium"; Reason = "Unencrypted web traffic" }
-    110  = @{ Service = "POP3"; Risk = "Medium"; Reason = "Unencrypted email" }
-    135  = @{ Service = "RPC"; Risk = "High"; Reason = "Windows RPC - attack vector" }
-    139  = @{ Service = "NetBIOS"; Risk = "High"; Reason = "SMB over NetBIOS" }
-    143  = @{ Service = "IMAP"; Risk = "Medium"; Reason = "Unencrypted email" }
-    389  = @{ Service = "LDAP"; Risk = "Medium"; Reason = "Directory services (use LDAPS)" }
-    443  = @{ Service = "HTTPS"; Risk = "Low"; Reason = "Encrypted web traffic" }
-    445  = @{ Service = "SMB"; Risk = "High"; Reason = "File sharing - common attack target" }
+    21 = @{ Service = "FTP"; Risk = "High"; Reason = "Unencrypted file transfer" }
+    22 = @{ Service = "SSH"; Risk = "Medium"; Reason = "Remote access (ensure strong auth)" }
+    23 = @{ Service = "Telnet"; Risk = "Critical"; Reason = "Unencrypted remote access" }
+    25 = @{ Service = "SMTP"; Risk = "Medium"; Reason = "Email relay (ensure secured)" }
+    53 = @{ Service = "DNS"; Risk = "Low"; Reason = "Domain resolution" }
+    80 = @{ Service = "HTTP"; Risk = "Medium"; Reason = "Unencrypted web traffic" }
+    110 = @{ Service = "POP3"; Risk = "Medium"; Reason = "Unencrypted email" }
+    135 = @{ Service = "RPC"; Risk = "High"; Reason = "Windows RPC - attack vector" }
+    139 = @{ Service = "NetBIOS"; Risk = "High"; Reason = "SMB over NetBIOS" }
+    143 = @{ Service = "IMAP"; Risk = "Medium"; Reason = "Unencrypted email" }
+    389 = @{ Service = "LDAP"; Risk = "Medium"; Reason = "Directory services (use LDAPS)" }
+    443 = @{ Service = "HTTPS"; Risk = "Low"; Reason = "Encrypted web traffic" }
+    445 = @{ Service = "SMB"; Risk = "High"; Reason = "File sharing - common attack target" }
     1433 = @{ Service = "SQL Server"; Risk = "High"; Reason = "Database exposure" }
     3306 = @{ Service = "MySQL"; Risk = "High"; Reason = "Database exposure" }
     3389 = @{ Service = "RDP"; Risk = "High"; Reason = "Remote Desktop - secure properly" }
@@ -97,7 +97,8 @@ if ($IncludeUDP) {
     $UDPEndpoints = Get-NetUDPEndpoint -ErrorAction SilentlyContinue |
         Select-Object LocalAddress, LocalPort, OwningProcess
     Write-Host "  Found $($UDPEndpoints.Count) UDP endpoints`n" -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "[2/3] Skipping UDP scan (use -IncludeUDP to include)" -ForegroundColor Gray
 }
 
@@ -124,7 +125,8 @@ foreach ($Connection in $TCPConnections) {
         if ($Connection.LocalAddress -eq "0.0.0.0" -or $Connection.LocalAddress -eq "::") {
             $AllInterfaces = $true
             if ($RiskLevel -eq "Low") { $RiskLevel = "Medium" }
-        } else {
+        }
+        else {
             $AllInterfaces = $false
         }
 
@@ -151,7 +153,8 @@ foreach ($Connection in $TCPConnections) {
             $Results += $PortInfo
         }
 
-    } catch {
+    }
+    catch {
         Write-Verbose "Error processing port $($Connection.LocalPort): $($_.Exception.Message)"
     }
 }
@@ -172,7 +175,8 @@ if ($IncludeUDP) {
             if ($Endpoint.LocalAddress -eq "0.0.0.0" -or $Endpoint.LocalAddress -eq "::") {
                 $AllInterfaces = $true
                 if ($RiskLevel -eq "Low") { $RiskLevel = "Medium" }
-            } else {
+            }
+            else {
                 $AllInterfaces = $false
             }
 
@@ -197,22 +201,24 @@ if ($IncludeUDP) {
                 $Results += $PortInfo
             }
 
-        } catch {
+        }
+        catch {
             Write-Verbose "Error processing UDP port $($Endpoint.LocalPort): $($_.Exception.Message)"
         }
     }
 }
 
 # Sort by risk level, then port number
-$Results = $Results | Sort-Object @{Expression={
-    switch ($_.RiskLevel) {
-        "Critical" { 0 }
-        "High" { 1 }
-        "Medium" { 2 }
-        "Low" { 3 }
-        default { 4 }
+$Results = $Results | Sort-Object @{Expression = {
+        switch ($_.RiskLevel) {
+            "Critical" { 0 }
+            "High" { 1 }
+            "Medium" { 2 }
+            "Low" { 3 }
+            default { 4 }
+        }
     }
-}}, Port
+}, Port
 
 # Display results
 Write-Host "`n========================================" -ForegroundColor Cyan
@@ -242,7 +248,8 @@ foreach ($Result in $Results) {
     if ($Result.AllInterfaces) {
         Write-Host "$($Result.Address) " -ForegroundColor Yellow -NoNewline
         Write-Host "(All Interfaces - Higher Risk)" -ForegroundColor Yellow
-    } else {
+    }
+    else {
         Write-Host $Result.Address -ForegroundColor White
     }
 
@@ -281,17 +288,23 @@ if ($CriticalCount -gt 0 -or $HighCount -gt 0) {
 
         # Specific recommendations
         switch ($Port.Port) {
-            3389 { Write-Host "  → Enable Network Level Authentication (NLA)" -ForegroundColor Cyan
-                   Write-Host "  → Use VPN or restrict by IP address" -ForegroundColor Cyan
-                   Write-Host "  → Consider changing default port" -ForegroundColor Cyan }
-            445  { Write-Host "  → Ensure SMB signing is enabled" -ForegroundColor Cyan
-                   Write-Host "  → Disable SMBv1 protocol" -ForegroundColor Cyan
-                   Write-Host "  → Use firewall to restrict access" -ForegroundColor Cyan }
-            135  { Write-Host "  → Restrict RPC access via firewall" -ForegroundColor Cyan
-                   Write-Host "  → Disable if not required" -ForegroundColor Cyan }
-            139  { Write-Host "  → Disable NetBIOS over TCP/IP if not needed" -ForegroundColor Cyan }
-            23   { Write-Host "  → CRITICAL: Replace Telnet with SSH immediately" -ForegroundColor Red }
-            21   { Write-Host "  → Replace FTP with SFTP or FTPS" -ForegroundColor Cyan }
+            3389 {
+                Write-Host "  → Enable Network Level Authentication (NLA)" -ForegroundColor Cyan
+                Write-Host "  → Use VPN or restrict by IP address" -ForegroundColor Cyan
+                Write-Host "  → Consider changing default port" -ForegroundColor Cyan 
+            }
+            445 {
+                Write-Host "  → Ensure SMB signing is enabled" -ForegroundColor Cyan
+                Write-Host "  → Disable SMBv1 protocol" -ForegroundColor Cyan
+                Write-Host "  → Use firewall to restrict access" -ForegroundColor Cyan 
+            }
+            135 {
+                Write-Host "  → Restrict RPC access via firewall" -ForegroundColor Cyan
+                Write-Host "  → Disable if not required" -ForegroundColor Cyan 
+            }
+            139 { Write-Host "  → Disable NetBIOS over TCP/IP if not needed" -ForegroundColor Cyan }
+            23 { Write-Host "  → CRITICAL: Replace Telnet with SSH immediately" -ForegroundColor Red }
+            21 { Write-Host "  → Replace FTP with SFTP or FTPS" -ForegroundColor Cyan }
         }
     }
 
@@ -382,7 +395,8 @@ if ($ExportReport) {
         $RiskClass = $Result.RiskLevel.ToLower()
         $AddressDisplay = if ($Result.AllInterfaces) {
             "$($Result.Address) <span class='all-interfaces'>(All Interfaces)</span>"
-        } else {
+        }
+        else {
             $Result.Address
         }
 
@@ -415,7 +429,8 @@ Write-Host ""
 if ($HighRiskFound) {
     Write-Host "⚠ Scan completed. High-risk ports detected - review recommendations.`n" -ForegroundColor Yellow
     exit 1
-} else {
+}
+else {
     Write-Host "✓ Scan completed. No critical issues found.`n" -ForegroundColor Green
     exit 0
 }

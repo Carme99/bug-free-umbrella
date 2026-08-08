@@ -142,57 +142,57 @@
 
 [CmdletBinding(SupportsShouldProcess)]
 param(
-    [Parameter(Mandatory=$false)][switch]$OneShotCleanup,
-    [Parameter(Mandatory=$false)][switch]$NonInteractive,
-    [Parameter(Mandatory=$false)][switch]$Approve,
-    [Parameter(Mandatory=$false)][switch]$RemoveEol,
-    [Parameter(Mandatory=$false)][switch]$CleanupLowerPatches,
-    [Parameter(Mandatory=$false)][switch]$AutoInstallUninstallTool,
-    [Parameter(Mandatory=$false)][switch]$ForceFileCleanup = $true,
-    [Parameter(Mandatory=$false)][switch]$IncludeHostingBundle,
-    [Parameter(Mandatory=$false)][ValidateSet('Warn','Block','Off')][string]$DependencyCheck = 'Warn',
-    [Parameter(Mandatory=$false)][switch]$ForceEolRemoval,
-    [Parameter(Mandatory=$false)][string[]]$ProtectChannels,
-    [Parameter(Mandatory=$false)][switch]$PreferOldestLts,
-    [Parameter(Mandatory=$false)][switch]$PlanOnly,
-    [Parameter(Mandatory=$false)][switch]$Quiet,
-    [Parameter(Mandatory=$false)][switch]$DryRun,
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)][switch]$OneShotCleanup,
+    [Parameter(Mandatory = $false)][switch]$NonInteractive,
+    [Parameter(Mandatory = $false)][switch]$Approve,
+    [Parameter(Mandatory = $false)][switch]$RemoveEol,
+    [Parameter(Mandatory = $false)][switch]$CleanupLowerPatches,
+    [Parameter(Mandatory = $false)][switch]$AutoInstallUninstallTool,
+    [Parameter(Mandatory = $false)][switch]$ForceFileCleanup = $true,
+    [Parameter(Mandatory = $false)][switch]$IncludeHostingBundle,
+    [Parameter(Mandatory = $false)][ValidateSet('Warn', 'Block', 'Off')][string]$DependencyCheck = 'Warn',
+    [Parameter(Mandatory = $false)][switch]$ForceEolRemoval,
+    [Parameter(Mandatory = $false)][string[]]$ProtectChannels,
+    [Parameter(Mandatory = $false)][switch]$PreferOldestLts,
+    [Parameter(Mandatory = $false)][switch]$PlanOnly,
+    [Parameter(Mandatory = $false)][switch]$Quiet,
+    [Parameter(Mandatory = $false)][switch]$DryRun,
+    [Parameter(Mandatory = $false)]
     [ValidateScript({
-        if ([string]::IsNullOrWhiteSpace($_)) { return $true }
-        $uri = [uri]$_
-        if ($uri.Scheme -ne 'https') { throw "URL must use HTTPS protocol" }
-        # FIX: Use regex for subdomain protection (e.g., prevents evil-github.com)
-        $allowedDomainPatterns = @(
-            '^github\.com$',
-            '^.*\.github\.com$',
-            '^githubusercontent\.com$',
-            '^.*\.githubusercontent\.com$',
-            '^microsoft\.com$',
-            '^.*\.microsoft\.com$',
-            '^download\.microsoft\.com$'
-        )
-        $isAllowed = $false
-        foreach ($pattern in $allowedDomainPatterns) {
-            if ($uri.Host -match $pattern) {
-                $isAllowed = $true
-                break
+            if ([string]::IsNullOrWhiteSpace($_)) { return $true }
+            $uri = [uri]$_
+            if ($uri.Scheme -ne 'https') { throw "URL must use HTTPS protocol" }
+            # FIX: Use regex for subdomain protection (e.g., prevents evil-github.com)
+            $allowedDomainPatterns = @(
+                '^github\.com$',
+                '^.*\.github\.com$',
+                '^githubusercontent\.com$',
+                '^.*\.githubusercontent\.com$',
+                '^microsoft\.com$',
+                '^.*\.microsoft\.com$',
+                '^download\.microsoft\.com$'
+            )
+            $isAllowed = $false
+            foreach ($pattern in $allowedDomainPatterns) {
+                if ($uri.Host -match $pattern) {
+                    $isAllowed = $true
+                    break
+                }
             }
-        }
-        if (-not $isAllowed) {
-            throw "URL must be from trusted domain: *.github.com, *.githubusercontent.com, *.microsoft.com, or download.microsoft.com"
-        }
-        return $true
-    })]
+            if (-not $isAllowed) {
+                throw "URL must be from trusted domain: *.github.com, *.githubusercontent.com, *.microsoft.com, or download.microsoft.com"
+            }
+            return $true
+        })]
     [string]$UninstallToolMsiUrl,
-    [Parameter(Mandatory=$false)][ValidateSet('x64','x86')][string]$Arch,
-    [Parameter(Mandatory=$false)][switch]$LtsOnly,
-    [Parameter(Mandatory=$false)][string[]]$IncludeChannels,
-    [Parameter(Mandatory=$false)][version]$MinVersion,
-    [Parameter(Mandatory=$false)][string]$LogPath,
-    [Parameter(Mandatory=$false)][string]$ReportPath,
-    [Parameter(Mandatory=$false)][string]$JsonSummaryPath,
-    [Parameter(Mandatory=$false)][switch]$EnableRollback
+    [Parameter(Mandatory = $false)][ValidateSet('x64', 'x86')][string]$Arch,
+    [Parameter(Mandatory = $false)][switch]$LtsOnly,
+    [Parameter(Mandatory = $false)][string[]]$IncludeChannels,
+    [Parameter(Mandatory = $false)][version]$MinVersion,
+    [Parameter(Mandatory = $false)][string]$LogPath,
+    [Parameter(Mandatory = $false)][string]$ReportPath,
+    [Parameter(Mandatory = $false)][string]$JsonSummaryPath,
+    [Parameter(Mandatory = $false)][switch]$EnableRollback
 )
 
 # ========================= SCRIPT GLOBALS ========================= #
@@ -214,7 +214,7 @@ $script:UseEmoji = $false
 
 function Write-Log {
     param(
-        [Parameter(Mandatory)][ValidateSet('Info','Ok','Warn','Error','Debug')][string]$Level,
+        [Parameter(Mandatory)][ValidateSet('Info', 'Ok', 'Warn', 'Error', 'Debug')][string]$Level,
         [Parameter(Mandatory)][string]$Message,
         [hashtable]$Context,
         [switch]$NoConsole
@@ -223,9 +223,9 @@ function Write-Log {
     $ts = (Get-Date).ToString('s')
     $entry = [PSCustomObject]@{
         Timestamp = $ts
-        Level     = $Level
-        Message   = $Message
-        Context   = $Context
+        Level = $Level
+        Message = $Message
+        Context = $Context
     }
     $script:LogEntries += $entry
 
@@ -233,31 +233,32 @@ function Write-Log {
     $fullMessage = if ($Context -and $Context.Count -gt 0) {
         $ctx = ($Context.Keys | Sort-Object | ForEach-Object { "$_=$($Context[$_])" }) -join ' '
         "$Message ($ctx)"
-    } else { $Message }
+    }
+    else { $Message }
 
     switch ($Level) {
-        'Warn'  { Write-Warning $fullMessage }
+        'Warn' { Write-Warning $fullMessage }
         'Error' { Write-Error $fullMessage -ErrorAction Continue }
         'Debug' { Write-Verbose $fullMessage }
-        'Info'  { Write-Information $fullMessage -InformationAction Continue }
-        'Ok'    { Write-Information $fullMessage -InformationAction Continue }
+        'Info' { Write-Information $fullMessage -InformationAction Continue }
+        'Ok' { Write-Information $fullMessage -InformationAction Continue }
     }
 
     # Console output for interactive
     if ($NoConsole) { return }
-    if ($Quiet -and $Level -notin @('Warn','Error')) { return }
+    if ($Quiet -and $Level -notin @('Warn', 'Error')) { return }
 
     $prefix = switch ($Level) {
-        'Ok'    { '[OK]  ' }
-        'Warn'  { '[WARN]' }
+        'Ok' { '[OK]  ' }
+        'Warn' { '[WARN]' }
         'Error' { '[FAIL]' }
         'Debug' { '[DBG] ' }
         default { '[INFO]' }
     }
 
     $color = switch ($Level) {
-        'Ok'    { 'Green' }
-        'Warn'  { 'Yellow' }
+        'Ok' { 'Green' }
+        'Warn' { 'Yellow' }
         'Error' { 'Red' }
         'Debug' { 'DarkGray' }
         default { 'Cyan' }
@@ -268,10 +269,10 @@ function Write-Log {
 
 function Add-Action {
     param([string]$Type, [string]$Product, [string]$Channel, [string]$Arch,
-          [string]$Detail, [int]$ExitCode = -1, [string]$Method)
+        [string]$Detail, [int]$ExitCode = -1, [string]$Method)
     $script:ActionLog += [PSCustomObject]@{
-        Type=$Type; Product=$Product; Channel=$Channel; Arch=$Arch;
-        Detail=$Detail; ExitCode=$ExitCode; Method=$Method
+        Type = $Type; Product = $Product; Channel = $Channel; Arch = $Arch;
+        Detail = $Detail; ExitCode = $ExitCode; Method = $Method
     }
 }
 
@@ -307,7 +308,7 @@ function Read-YesNoDefault {
         if ([string]::IsNullOrWhiteSpace($resp)) { return $Default }
         switch -regex ($resp.Trim()) {
             '^(y|yes)$' { return $true }
-            '^(n|no)$'  { return $false }
+            '^(n|no)$' { return $false }
             default { Write-Host "Please answer Y or N" -ForegroundColor Yellow }
         }
     }
@@ -321,7 +322,8 @@ function Read-MenuChoice {
         if ($ValidChoices) {
             if ($choice -in $ValidChoices) { return $choice }
             Write-Host "Invalid. Choose from: $($ValidChoices -join ', ')" -ForegroundColor Yellow
-        } else {
+        }
+        else {
             if ($choice -match '^\d+$' -and [int]$choice -ge $Min -and [int]$choice -le $Max) {
                 return [int]$choice
             }
@@ -341,7 +343,8 @@ function Initialize-NetworkDefaults {
         $tls13 = $null
         try {
             $tls13 = [System.Net.SecurityProtocolType]::Tls13
-        } catch {
+        }
+        catch {
             # TLS 1.3 not available, will use TLS 1.2 only
         }
 
@@ -349,28 +352,41 @@ function Initialize-NetworkDefaults {
         if ($tls13) {
             [System.Net.ServicePointManager]::SecurityProtocol = $tls12 -bor $tls13
             Write-Log -Level Info -Message "Enforced TLS 1.2 and TLS 1.3 (weak protocols disabled)"
-        } else {
+        }
+        else {
             [System.Net.ServicePointManager]::SecurityProtocol = $tls12
             Write-Log -Level Info -Message "Enforced TLS 1.2 only (weak protocols disabled)"
         }
-    } catch {
-        Write-Log -Level Warn -Message "TLS configuration failed" -Context @{ Error=$_.Exception.Message }
+    }
+    catch {
+        Write-Log -Level Warn -Message "TLS configuration failed" -Context @{ Error = $_.Exception.Message }
     }
 }
 
 function Start-TypedTranscript {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$Path)
     if ([string]::IsNullOrWhiteSpace($Path)) { return }
     try {
         $dir = Split-Path -Path $Path -Parent
         if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
-        Start-Transcript -Path $Path -Append -ErrorAction Stop | Out-Null
-        Write-Log -Level Debug -Message "Transcript started" -Context @{ Path=$Path }
-    } catch { Write-Log -Level Warn -Message "Transcript start failed" -Context @{ Path=$Path; Error=$_.Exception.Message } }
+        if ($PSCmdlet.ShouldProcess($Path, 'Start transcript')) {
+            Start-Transcript -Path $Path -Append -ErrorAction Stop | Out-Null
+        }
+        Write-Log -Level Debug -Message "Transcript started" -Context @{ Path = $Path }
+    }
+    catch { Write-Log -Level Warn -Message "Transcript start failed" -Context @{ Path = $Path; Error = $_.Exception.Message } }
 }
 
 function Stop-TypedTranscript {
-    try { Stop-Transcript | Out-Null } catch { Write-Log -Level Debug -Message "Transcript stop failed" -Context @{ Error=$_.Exception.Message } }
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+    try {
+        if ($PSCmdlet.ShouldProcess('Transcript', 'Stop transcript')) {
+            Stop-Transcript | Out-Null
+        }
+    }
+    catch { Write-Log -Level Debug -Message "Transcript stop failed" -Context @{ Error = $_.Exception.Message } }
 }
 
 function Test-Admin {
@@ -387,9 +403,9 @@ function Convert-ToSafeVersion {
 }
 
 function Invoke-WithRetry {
-    param([Parameter(Mandatory)][scriptblock]$ScriptBlock, [int]$Attempts=3, [int]$DelaySeconds=2)
+    param([Parameter(Mandatory)][scriptblock]$ScriptBlock, [int]$Attempts = 3, [int]$DelaySeconds = 2)
     $last = $null
-    for ($i=1; $i -le $Attempts; $i++) {
+    for ($i = 1; $i -le $Attempts; $i++) {
         try { return & $ScriptBlock }
         catch {
             $last = $_
@@ -402,9 +418,9 @@ function Invoke-WithRetry {
 function Format-Bytes {
     param([long]$Bytes)
     if ($Bytes -lt 1KB) { return "$Bytes B" }
-    elseif ($Bytes -lt 1MB) { return ("{0:N2} KB" -f ($Bytes/1KB)) }
-    elseif ($Bytes -lt 1GB) { return ("{0:N2} MB" -f ($Bytes/1MB)) }
-    else { return ("{0:N2} GB" -f ($Bytes/1GB)) }
+    elseif ($Bytes -lt 1MB) { return ("{0:N2} KB" -f ($Bytes / 1KB)) }
+    elseif ($Bytes -lt 1GB) { return ("{0:N2} MB" -f ($Bytes / 1MB)) }
+    else { return ("{0:N2} GB" -f ($Bytes / 1GB)) }
 }
 
 # ========================= DEPENDENCY DETECTION ========================= #
@@ -431,7 +447,8 @@ function Get-IisSiteCount {
         $out = & $appcmd list site 2>$null
         if (-not $out) { return 0 }
         return ($out | Measure-Object).Count
-    } catch { return 0 }
+    }
+    catch { return 0 }
 }
 
 function Test-DotnetServiceDependencies {
@@ -441,7 +458,7 @@ function Test-DotnetServiceDependencies {
         # Windows Services
         $services = Get-WmiObject Win32_Service -ErrorAction SilentlyContinue | Where-Object { $_.PathName -match 'dotnet' }
         foreach ($svc in $services) {
-            $dependencies += [PSCustomObject]@{ Type='Service'; Name=$svc.Name; Path=$svc.PathName; State=$svc.State }
+            $dependencies += [PSCustomObject]@{ Type = 'Service'; Name = $svc.Name; Path = $svc.PathName; State = $svc.State }
         }
 
         # Scheduled Tasks
@@ -450,17 +467,18 @@ function Test-DotnetServiceDependencies {
                 $_.Actions.Execute -match 'dotnet' -or $_.Actions.WorkingDirectory -match 'dotnet'
             }
             foreach ($task in $tasks) {
-                $dependencies += [PSCustomObject]@{ Type='ScheduledTask'; Name=$task.TaskName; Path=$task.TaskPath; State=$task.State }
+                $dependencies += [PSCustomObject]@{ Type = 'ScheduledTask'; Name = $task.TaskName; Path = $task.TaskPath; State = $task.State }
             }
         }
 
         # Running processes
         $procs = Get-WmiObject Win32_Process -Filter "Name = 'dotnet.exe'" -ErrorAction SilentlyContinue
         foreach ($proc in $procs) {
-            $dependencies += [PSCustomObject]@{ Type='Process'; Name="dotnet.exe (PID $($proc.ProcessId))"; Path=$proc.ExecutablePath; CommandLine=$proc.CommandLine }
+            $dependencies += [PSCustomObject]@{ Type = 'Process'; Name = "dotnet.exe (PID $($proc.ProcessId))"; Path = $proc.ExecutablePath; CommandLine = $proc.CommandLine }
         }
-    } catch {
-        Write-Log -Level Debug -Message "Dependency scan failed" -Context @{ Error=$_.Exception.Message; Function=$MyInvocation.MyCommand.Name }
+    }
+    catch {
+        Write-Log -Level Debug -Message "Dependency scan failed" -Context @{ Error = $_.Exception.Message; Function = $MyInvocation.MyCommand.Name }
     }
     return $dependencies
 }
@@ -481,7 +499,7 @@ function Test-EolRemovalRisk {
 
     [PSCustomObject]@{
         Channel = $Channel; Arch = $ArchLabel; RiskLevel = $risk
-        Reasons = $reasons.ToArray(); Dependencies = $deps; BlockRecommended = ($risk -in @('Medium','High'))
+        Reasons = $reasons.ToArray(); Dependencies = $deps; BlockRecommended = ($risk -in @('Medium', 'High'))
     }
 }
 
@@ -491,7 +509,7 @@ function Get-InstalledProductByArch {
     param([string]$DotnetPath, [string]$ProductRegex, [string]$ArchLabel)
     if (-not (Test-Path $DotnetPath)) { return @() }
     try { $list = & $DotnetPath --list-runtimes 2>$null }
-    catch { Write-Log -Level Warn -Message "List runtimes failed" -Context @{ Dotnet=$DotnetPath; Error=$_.Exception.Message }; return @() }
+    catch { Write-Log -Level Warn -Message "List runtimes failed" -Context @{ Dotnet = $DotnetPath; Error = $_.Exception.Message }; return @() }
     if (-not $list) { return @() }
 
     $lines = $list | Where-Object { $_ -match $ProductRegex }
@@ -500,12 +518,12 @@ function Get-InstalledProductByArch {
         if ($parts.Count -lt 2) { continue }
         $v = Convert-ToSafeVersion -VersionString $parts[1]
         if (-not $v) { continue }
-        [PSCustomObject]@{ MajorMinor="$($v.Major).$($v.Minor)"; Patch=[int]$v.Build; FullVersion=$v; RawVersion=$parts[1]; Architecture=$ArchLabel }
+        [PSCustomObject]@{ MajorMinor = "$($v.Major).$($v.Minor)"; Patch = [int]$v.Build; FullVersion = $v; RawVersion = $parts[1]; Architecture = $ArchLabel }
     }
 
     $groups = @()
     foreach ($g in ($objs | Group-Object MajorMinor)) {
-        $groups += [PSCustomObject]@{ Name=$g.Name; Group=$g.Group; Architecture=$ArchLabel }
+        $groups += [PSCustomObject]@{ Name = $g.Name; Group = $g.Group; Architecture = $ArchLabel }
     }
     return $groups
 }
@@ -562,7 +580,7 @@ function Get-LatestAspNetCoreVersion {
     if (-not $latest) { return $null }
     $release = $ReleaseData.releases | Where-Object { $_.'release-version' -eq $latest } | Select-Object -First 1
     $verObj = Convert-ToSafeVersion -VersionString $latest
-    if ($release -and $verObj) { [PSCustomObject]@{ Version=$verObj; Release=$release } } else { $null }
+    if ($release -and $verObj) { [PSCustomObject]@{ Version = $verObj; Release = $release } } else { $null }
 }
 
 function Get-LatestWindowsDesktopVersion {
@@ -572,7 +590,7 @@ function Get-LatestWindowsDesktopVersion {
     if (-not $latest) { return $null }
     $release = $ReleaseData.releases | Where-Object { $_.'release-version' -eq $latest } | Select-Object -First 1
     $verObj = Convert-ToSafeVersion -VersionString $latest
-    if ($release -and $verObj) { [PSCustomObject]@{ Version=$verObj; Release=$release } } else { $null }
+    if ($release -and $verObj) { [PSCustomObject]@{ Version = $verObj; Release = $release } } else { $null }
 }
 
 # ========================= DOWNLOAD & INSTALL (Security Hardened) ========================= #
@@ -600,7 +618,8 @@ function Get-HostingBundleDownload {
         if ($Release.'aspnetcore-runtime' -and $Release.'aspnetcore-runtime'.files) { $candidates += $Release.'aspnetcore-runtime'.files }
         if ($Release.runtime -and $Release.runtime.files) { $candidates += $Release.runtime.files }
         if ($Release.files) { $candidates += $Release.files }
-    } catch { Write-Log -Level Debug -Message "Hosting bundle candidates collection failed" -Context @{ Error=$_.Exception.Message } }
+    }
+    catch { Write-Log -Level Debug -Message "Hosting bundle candidates collection failed" -Context @{ Error = $_.Exception.Message } }
     $candidates = $candidates | Where-Object { $_ -and $_.url }
     $candidates | Where-Object {
         $_.url -match '\.exe$' -and ($_.rid -eq 'win-x64' -or -not $_.rid) -and ($_.url -match 'dotnet-hosting' -or $_.url -match 'hosting')
@@ -622,11 +641,12 @@ function Test-FileHashIfAvailable {
     try {
         $hash = Get-FileHash -Path $FilePath -Algorithm SHA512
         return ($hash.Hash -ieq $Sha512)
-    } catch { return $false }
+    }
+    catch { return $false }
 }
 
 function Install-Exe {
-    param([string]$Path, [string]$Arguments="/quiet /norestart", [int]$TimeoutMinutes=10)
+    param([string]$Path, [string]$Arguments = "/quiet /norestart", [int]$TimeoutMinutes = 10)
     if (-not (Test-Path $Path)) { throw "Installer not found: $Path" }
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = $Path
@@ -640,14 +660,14 @@ function Install-Exe {
     # FIX: Add timeout to prevent indefinite hangs
     $timeoutMs = $TimeoutMinutes * 60 * 1000
     if (-not $proc.WaitForExit($timeoutMs)) {
-        try { $proc.Kill() } catch { Write-Log -Level Debug -Message "Process kill failed" -Context @{ Error=$_.Exception.Message } }
+        try { $proc.Kill() } catch { Write-Log -Level Debug -Message "Process kill failed" -Context @{ Error = $_.Exception.Message } }
         throw "Installer timed out after $TimeoutMinutes minutes"
     }
 
     $exitCode = $proc.ExitCode
     $reboot = ($exitCode -eq 3010)
     if ($exitCode -ne 0 -and $exitCode -ne 3010) { throw "Installer failed: exit code $exitCode" }
-    [PSCustomObject]@{ ExitCode=$exitCode; RebootRequired=$reboot }
+    [PSCustomObject]@{ ExitCode = $exitCode; RebootRequired = $reboot }
 }
 
 # ========================= UNINSTALL TOOL (Dynamic URL) ========================= #
@@ -659,7 +679,7 @@ function Get-DotnetUninstallToolPath {
         "dotnet-core-uninstall.exe"
     )
     foreach ($p in $candidates) {
-        try { $cmd = Get-Command $p -ErrorAction Stop; if ($cmd -and $cmd.Source) { return $cmd.Source } } catch { Write-Log -Level Debug -Message "Command lookup failed" -Context @{ Path=$p; Error=$_.Exception.Message } }
+        try { $cmd = Get-Command $p -ErrorAction Stop; if ($cmd -and $cmd.Source) { return $cmd.Source } } catch { Write-Log -Level Debug -Message "Command lookup failed" -Context @{ Path = $p; Error = $_.Exception.Message } }
     }
     return $null
 }
@@ -670,19 +690,21 @@ function Get-LatestUninstallToolUrl {
         $release = Invoke-RestMethod -Uri $api -Headers @{ 'User-Agent' = $script:UserAgent } -ErrorAction Stop
         $asset = $release.assets | Where-Object { $_.name -match 'dotnet-core-uninstall.*\.msi$' } | Select-Object -First 1
         if ($asset) {
-            Write-Log -Level Info -Message "Found latest uninstall tool" -Context @{ Version=$release.tag_name }
+            Write-Log -Level Info -Message "Found latest uninstall tool" -Context @{ Version = $release.tag_name }
             return $asset.browser_download_url
         }
-    } catch {
-        Write-Log -Level Debug -Message "GitHub API check failed" -Context @{ Error=$_.Exception.Message; Function=$MyInvocation.MyCommand.Name }
+    }
+    catch {
+        Write-Log -Level Debug -Message "GitHub API check failed" -Context @{ Error = $_.Exception.Message; Function = $MyInvocation.MyCommand.Name }
     }
     return $script:DefaultUninstallMsiUrl
 }
 
 function Install-DotnetUninstallTool {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$UrlOverride)
     $existing = Get-DotnetUninstallToolPath
-    if ($existing) { Write-Log -Level Ok -Message "Uninstall tool present" -Context @{ Path=$existing }; return $true }
+    if ($existing) { Write-Log -Level Ok -Message "Uninstall tool present" -Context @{ Path = $existing }; return $true }
 
     $msiUrl = if ($UrlOverride) { $UrlOverride } else { Get-LatestUninstallToolUrl }
     $temp = Join-Path $env:TEMP ("dotnet-uninstall-" + [Guid]::NewGuid().ToString("N") + ".msi")
@@ -697,7 +719,7 @@ function Install-DotnetUninstallTool {
         Write-Log -Level Info -Message "Verifying digital signature and publisher"
         $sig = Get-AuthenticodeSignature -FilePath $temp
         if ($sig.Status -ne 'Valid') {
-            Write-Log -Level Error -Message "MSI signature invalid - installation blocked" -Context @{ Status=$sig.Status; Signer=$sig.SignerCertificate.Subject }
+            Write-Log -Level Error -Message "MSI signature invalid - installation blocked" -Context @{ Status = $sig.Status; Signer = $sig.SignerCertificate.Subject }
             throw "MSI signature validation failed. The downloaded file may be corrupted or tampered with."
         }
 
@@ -706,17 +728,17 @@ function Install-DotnetUninstallTool {
         # Microsoft uses product-specific CNs (like "CN=.NET") with "O=Microsoft Corporation"
         $publisher = $sig.SignerCertificate.Subject
         if ($publisher -notmatch 'CN=Microsoft Corporation' -and $publisher -notmatch 'O=Microsoft Corporation') {
-            Write-Log -Level Error -Message "MSI publisher validation failed - not signed by Microsoft" -Context @{ Publisher=$publisher }
+            Write-Log -Level Error -Message "MSI publisher validation failed - not signed by Microsoft" -Context @{ Publisher = $publisher }
             throw "Publisher validation failed. MSI must be signed by Microsoft Corporation."
         }
 
         # Check certificate expiration
         if ($sig.SignerCertificate.NotAfter -lt (Get-Date)) {
-            Write-Log -Level Error -Message "Signer certificate has expired" -Context @{ Expired=$sig.SignerCertificate.NotAfter }
+            Write-Log -Level Error -Message "Signer certificate has expired" -Context @{ Expired = $sig.SignerCertificate.NotAfter }
             throw "Signer certificate has expired."
         }
 
-        Write-Log -Level Ok -Message "Signature and publisher validated" -Context @{ Publisher=$publisher }
+        Write-Log -Level Ok -Message "Signature and publisher validated" -Context @{ Publisher = $publisher }
 
         Write-Log -Level Info -Message "Installing uninstall tool"
         if ($PSCmdlet.ShouldProcess($temp, "Install MSI")) {
@@ -726,51 +748,54 @@ function Install-DotnetUninstallTool {
             $timeoutMs = 10 * 60 * 1000  # 10 minutes
             if (-not $proc.WaitForExit($timeoutMs)) {
                 Write-Log -Level Warn -Message "MSI installer timed out after 10 minutes"
-                try { $proc.Kill() } catch { Write-Log -Level Debug -Message "MSI process kill failed" -Context @{ Error=$_.Exception.Message } }
+                try { $proc.Kill() } catch { Write-Log -Level Debug -Message "MSI process kill failed" -Context @{ Error = $_.Exception.Message } }
                 return $false
             }
             if ($proc.ExitCode -eq 3010) { $script:RebootRequired = $true }
             if ($proc.ExitCode -ne 0 -and $proc.ExitCode -ne 3010) {
-                Write-Log -Level Warn -Message "MSI install non-zero exit" -Context @{ ExitCode=$proc.ExitCode }
+                Write-Log -Level Warn -Message "MSI install non-zero exit" -Context @{ ExitCode = $proc.ExitCode }
                 return $false
             }
         }
 
         Start-Sleep -Seconds 2
         $found = Get-DotnetUninstallToolPath
-        if ($found) { Write-Log -Level Ok -Message "Uninstall tool installed" -Context @{ Path=$found }; return $true }
+        if ($found) { Write-Log -Level Ok -Message "Uninstall tool installed" -Context @{ Path = $found }; return $true }
         Write-Log -Level Warn -Message "Tool not found after install"; return $false
-    } catch {
-        Write-Log -Level Warn -Message "Tool install failed" -Context @{ Error=$_.Exception.Message }
+    }
+    catch {
+        Write-Log -Level Warn -Message "Tool install failed" -Context @{ Error = $_.Exception.Message }
         return $false
-    } finally {
-        try { Remove-Item -Path $temp -Force -ErrorAction SilentlyContinue } catch { Write-Log -Level Debug -Message "Temp file cleanup failed" -Context @{ Path=$temp; Error=$_.Exception.Message } }
+    }
+    finally {
+        try { Remove-Item -Path $temp -Force -ErrorAction SilentlyContinue } catch { Write-Log -Level Debug -Message "Temp file cleanup failed" -Context @{ Path = $temp; Error = $_.Exception.Message } }
     }
 }
 
 # ========================= REMOVAL ========================= #
 
 function Remove-AspNetCoreChannel {
-    param([string]$MajorMinor, [ValidateSet('x64','x86')][string]$ArchLimit)
+    [CmdletBinding(SupportsShouldProcess)]
+    param([string]$MajorMinor, [ValidateSet('x64', 'x86')][string]$ArchLimit)
     $tool = Get-DotnetUninstallToolPath
     if (-not $tool) { Write-Log -Level Warn -Message "Uninstall tool not found"; return $false }
 
-    $archs = if ($ArchLimit) { @($ArchLimit) } else { @('x64','x86') }
+    $archs = if ($ArchLimit) { @($ArchLimit) } else { @('x64', 'x86') }
     foreach ($a in $archs) {
-        $args = @("remove","--aspnet-runtime","--major-minor",$MajorMinor,"--yes","--$a")
+        $args = @("remove", "--aspnet-runtime", "--major-minor", $MajorMinor, "--yes", "--$a")
         $label = "ASP.NET Core $MajorMinor $a"
-        Write-Log -Level Info -Message "Removing EOL channel" -Context @{ Target=$label }
+        Write-Log -Level Info -Message "Removing EOL channel" -Context @{ Target = $label }
         if ($PSCmdlet.ShouldProcess($label, "Remove ASP.NET Core runtime")) {
             # FIX: Added timeout handling using WaitForExit() method
             $p = Start-Process -FilePath $tool -ArgumentList $args -PassThru -NoNewWindow
             $timeoutMs = 10 * 60 * 1000  # 10 minutes
             if (-not $p.WaitForExit($timeoutMs)) {
-                Write-Log -Level Warn -Message "Uninstall tool timed out after 10 minutes" -Context @{ Target=$label }
-                try { $p.Kill() } catch { Write-Log -Level Debug -Message "Uninstall process kill failed" -Context @{ Error=$_.Exception.Message } }
+                Write-Log -Level Warn -Message "Uninstall tool timed out after 10 minutes" -Context @{ Target = $label }
+                try { $p.Kill() } catch { Write-Log -Level Debug -Message "Uninstall process kill failed" -Context @{ Error = $_.Exception.Message } }
                 return $false
             }
             Add-Action -Type 'EOL-Removed' -Product 'AspNetCore' -Channel $MajorMinor -Arch $a -Detail "Removed" -ExitCode $p.ExitCode -Method 'UninstallTool'
-            if ($p.ExitCode -gt 1) { Write-Log -Level Warn -Message "Tool error" -Context @{ ExitCode=$p.ExitCode }; return $false }
+            if ($p.ExitCode -gt 1) { Write-Log -Level Warn -Message "Tool error" -Context @{ ExitCode = $p.ExitCode }; return $false }
         }
     }
     return $true
@@ -789,15 +814,17 @@ function Get-FolderSizeBytes {
         $sum = ($files | Measure-Object -Property Length -Sum).Sum
         if ($null -eq $sum) { return 0 }
         return $sum
-    } catch {
-        Write-Log -Level Debug -Message "DirectoryInfo failed, using fallback" -Context @{ Path=$Path; Error=$_.Exception.Message }
+    }
+    catch {
+        Write-Log -Level Debug -Message "DirectoryInfo failed, using fallback" -Context @{ Path = $Path; Error = $_.Exception.Message }
         # Fallback to PowerShell cmdlets
         try {
             $sum = (Get-ChildItem -LiteralPath $Path -Recurse -Force -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
             if ($null -eq $sum) { return 0 }
             return $sum
-        } catch {
-            Write-Log -Level Debug -Message "Folder size calculation failed" -Context @{ Path=$Path; Error=$_.Exception.Message }
+        }
+        catch {
+            Write-Log -Level Debug -Message "Folder size calculation failed" -Context @{ Path = $Path; Error = $_.Exception.Message }
             return 0
         }
     }
@@ -812,14 +839,15 @@ function Get-PatchObjectsFromShared {
         try {
             $v = [version]$pf.Name
             $bytes = Get-FolderSizeBytes -Path $pf.FullName
-            [PSCustomObject]@{ Root=$SharedRoot; Product=$ProductFolderName; Version=$pf.Name; MajorMinor="$($v.Major).$($v.Minor)"; Patch=[int]$v.Build; Bytes=[long]$bytes; Path=$pf.FullName }
-        } catch { Write-Log -Level Debug -Message "Patch object creation failed" -Context @{ Path=$pf.FullName; Error=$_.Exception.Message } }
+            [PSCustomObject]@{ Root = $SharedRoot; Product = $ProductFolderName; Version = $pf.Name; MajorMinor = "$($v.Major).$($v.Minor)"; Patch = [int]$v.Build; Bytes = [long]$bytes; Path = $pf.FullName }
+        }
+        catch { Write-Log -Level Debug -Message "Patch object creation failed" -Context @{ Path = $pf.FullName; Error = $_.Exception.Message } }
     }
 }
 
 function Get-DiskUsageSnapshot {
-    $roots = @("C:\Program Files\dotnet\shared","C:\Program Files (x86)\dotnet\shared") | Where-Object { Test-Path $_ }
-    $products = @("Microsoft.NETCore.App","Microsoft.AspNetCore.App","Microsoft.WindowsDesktop.App")
+    $roots = @("C:\Program Files\dotnet\shared", "C:\Program Files (x86)\dotnet\shared") | Where-Object { Test-Path $_ }
+    $products = @("Microsoft.NETCore.App", "Microsoft.AspNetCore.App", "Microsoft.WindowsDesktop.App")
     $entries = @()
     foreach ($root in $roots) {
         foreach ($prod in $products) {
@@ -867,14 +895,15 @@ function Summarize-DiskUsage {
 }
 
 function Invoke-PostPatchCleanup {
-    param([ValidateSet('x64','x86')][string]$ArchToClean)
+    [CmdletBinding(SupportsShouldProcess)]
+    param([ValidateSet('x64', 'x86')][string]$ArchToClean)
     $tool = Get-DotnetUninstallToolPath
     if (-not $tool) { Write-Log -Level Warn -Message "Uninstall tool not found"; return @() }
 
     $targets = @(
-        @{ Name="Base .NET Runtime"; Arg="--runtime"; Product="BaseRuntime" },
-        @{ Name="ASP.NET Core Runtime"; Arg="--aspnet-runtime"; Product="AspNetCore" },
-        @{ Name="Windows Desktop Runtime"; Arg="--windowsdesktop-runtime"; Product="WindowsDesktop" }
+        @{ Name = "Base .NET Runtime"; Arg = "--runtime"; Product = "BaseRuntime" },
+        @{ Name = "ASP.NET Core Runtime"; Arg = "--aspnet-runtime"; Product = "AspNetCore" },
+        @{ Name = "Windows Desktop Runtime"; Arg = "--windowsdesktop-runtime"; Product = "WindowsDesktop" }
     )
     $archArgs = @("--$ArchToClean")
     $results = @()
@@ -882,18 +911,18 @@ function Invoke-PostPatchCleanup {
     foreach ($t in $targets) {
         $args = @('remove', $t.Arg, '--all-lower-patches', '--yes') + $archArgs
         $label = "$($t.Name) $ArchToClean"
-        Write-Log -Level Info -Message "Cleaning lower patches" -Context @{ Target=$label }
+        Write-Log -Level Info -Message "Cleaning lower patches" -Context @{ Target = $label }
         if ($PSCmdlet.ShouldProcess($label, "Remove lower patches")) {
             # FIX: Added timeout handling using WaitForExit() method
             $p = Start-Process -FilePath $tool -ArgumentList $args -PassThru -NoNewWindow
             $timeoutMs = 10 * 60 * 1000  # 10 minutes
             if (-not $p.WaitForExit($timeoutMs)) {
-                Write-Log -Level Warn -Message "Cleanup operation timed out after 10 minutes" -Context @{ Target=$label }
-                try { $p.Kill() } catch { Write-Log -Level Debug -Message "Cleanup process kill failed" -Context @{ Error=$_.Exception.Message } }
-                $results += [PSCustomObject]@{ Label=$label; ExitCode=-1; Product=$t.Product; Arch=$ArchToClean }
+                Write-Log -Level Warn -Message "Cleanup operation timed out after 10 minutes" -Context @{ Target = $label }
+                try { $p.Kill() } catch { Write-Log -Level Debug -Message "Cleanup process kill failed" -Context @{ Error = $_.Exception.Message } }
+                $results += [PSCustomObject]@{ Label = $label; ExitCode = -1; Product = $t.Product; Arch = $ArchToClean }
                 continue
             }
-            $results += [PSCustomObject]@{ Label=$label; ExitCode=$p.ExitCode; Product=$t.Product; Arch=$ArchToClean }
+            $results += [PSCustomObject]@{ Label = $label; ExitCode = $p.ExitCode; Product = $t.Product; Arch = $ArchToClean }
             $status = if ($p.ExitCode -eq 0) { "completed" } elseif ($p.ExitCode -eq 1) { "no items" } else { "failed" }
             Add-Action -Type 'Cleanup' -Product $t.Product -Channel 'lower-patches' -Arch $ArchToClean -Detail "$label $status" -ExitCode $p.ExitCode -Method 'UninstallTool'
         }
@@ -911,7 +940,7 @@ function Invoke-RuntimeUpdatePlan {
         [Parameter(Mandatory)][object]$ReleaseIndex,
         [switch]$UpdateAspNet,
         [switch]$UpdateDesktop,
-        [ValidateSet('x64','x86','Both')][string]$Architecture = 'Both'
+        [ValidateSet('x64', 'x86', 'Both')][string]$Architecture = 'Both'
     )
 
     $plan = @()
@@ -935,7 +964,8 @@ function Invoke-RuntimeUpdatePlan {
                 $download = if ($IncludeHostingBundle -and (Test-IisPresent) -and $grp.Architecture -eq 'x64') {
                     $hb = Get-HostingBundleDownload -Release $latest.Release
                     if ($hb) { $hb } else { Get-AspNetCoreDownload -Release $latest.Release -ArchLabel $grp.Architecture }
-                } else {
+                }
+                else {
                     Get-AspNetCoreDownload -Release $latest.Release -ArchLabel $grp.Architecture
                 }
 
@@ -996,7 +1026,8 @@ function Invoke-RuntimeUpdatePlan {
 }
 
 function Invoke-ExecutionPlan {
-    param([Parameter(Mandatory)][object[]]$Plan, [switch]$WhatIf)
+    [CmdletBinding(SupportsShouldProcess)]
+    param([Parameter(Mandatory)][object[]]$Plan)
     $results = @()
 
     foreach ($item in $Plan) {
@@ -1009,7 +1040,7 @@ function Invoke-ExecutionPlan {
 
                     # Download
                     Write-Log -Level Info -Message "Downloading $($item.FileName)..."
-                    if (-not $WhatIf) {
+                    if ($PSCmdlet.ShouldProcess($item.DownloadUrl, "Download $($item.FileName)")) {
                         Save-FileWithRetry -Url $item.DownloadUrl -Destination $tempFile
 
                         # Hash verification (mandatory with fallback)
@@ -1018,7 +1049,8 @@ function Invoke-ExecutionPlan {
                                 throw "Hash verification failed for $($item.FileName)"
                             }
                             Write-Log -Level Ok -Message "Hash verified for $($item.FileName)"
-                        } else {
+                        }
+                        else {
                             Write-Log -Level Warn -Message "No hash available for $($item.FileName), checking signature"
                             $sig = Get-AuthenticodeSignature -FilePath $tempFile
                             if ($sig.Status -ne 'Valid') {
@@ -1030,13 +1062,11 @@ function Invoke-ExecutionPlan {
 
                     # Install
                     Write-Log -Level Info -Message "Installing $($item.TargetVersion)..."
-                    if (-not $WhatIf) {
+                    if ($PSCmdlet.ShouldProcess($item.TargetVersion, "Install $($item.Product) $($item.Channel)")) {
                         $installResult = Install-Exe -Path $tempFile -Arguments "/quiet /norestart"
                         # FIX: Check if $installResult exists before accessing properties
                         if ($installResult -and $installResult.RebootRequired) { $script:RebootRequired = $true }
                         Remove-Item -Path $tempFile -Force -ErrorAction SilentlyContinue
-                    } else {
-                        Write-Log -Level Info -Message "[WhatIf] Would install $($item.TargetVersion)"
                     }
 
                     $results += [PSCustomObject]@{
@@ -1050,11 +1080,11 @@ function Invoke-ExecutionPlan {
                     }
 
                     Add-Action -Type 'Update' -Product $item.Product -Channel $item.Channel -Arch $item.Architecture `
-                               -Detail "Updated to $($item.TargetVersion)" -ExitCode 0 -Method 'DirectInstall'
+                        -Detail "Updated to $($item.TargetVersion)" -ExitCode 0 -Method 'DirectInstall'
                 }
 
                 'Remove' {
-                    if (-not $WhatIf) {
+                    if ($PSCmdlet.ShouldProcess($item.Channel, "Remove $($item.Product) channel")) {
                         Remove-AspNetCoreChannel -MajorMinor $item.Channel -ArchLimit $item.Architecture
                     }
                     $results += [PSCustomObject]@{
@@ -1070,8 +1100,9 @@ function Invoke-ExecutionPlan {
 
             Write-Log -Level Ok -Message "$($item.Product) $($item.Channel) $($item.Architecture) completed"
 
-        } catch {
-            Write-Log -Level Error -Message "Failed: $($_.Exception.Message)" -Context @{ Product=$item.Product; Channel=$item.Channel }
+        }
+        catch {
+            Write-Log -Level Error -Message "Failed: $($_.Exception.Message)" -Context @{ Product = $item.Product; Channel = $item.Channel }
             $results += [PSCustomObject]@{
                 Product = $item.Product
                 Channel = $item.Channel
@@ -1123,7 +1154,8 @@ function Get-SystemStatus {
         $reclaimSum = ($diskSummary | Measure-Object -Property LowerBytes -Sum).Sum
         $status.TotalDiskUsage = if ($null -eq $totalSum) { 0 } else { $totalSum }
         $status.ReclaimableDisk = if ($null -eq $reclaimSum) { 0 } else { $reclaimSum }
-    } else {
+    }
+    else {
         $status.TotalDiskUsage = 0
         $status.ReclaimableDisk = 0
     }
@@ -1139,8 +1171,9 @@ function Get-SystemStatus {
             }
         }
         $status.EolChannels = $eolChannels
-    } catch {
-        Write-Log -Level Debug -Message "EOL detection failed" -Context @{ Error=$_.Exception.Message; Function=$MyInvocation.MyCommand.Name }
+    }
+    catch {
+        Write-Log -Level Debug -Message "EOL detection failed" -Context @{ Error = $_.Exception.Message; Function = $MyInvocation.MyCommand.Name }
         $status.EolChannels = @()
     }
 
@@ -1154,31 +1187,37 @@ function Get-SystemStatus {
 # ========================= ROLLBACK SUPPORT ========================= #
 
 function New-SystemSnapshot {
+    [CmdletBinding(SupportsShouldProcess)]
     param([string]$SnapshotLabel = "DotNetMaintainer")
 
     # Checkpoint-Computer (System Restore) is only available on client operating systems
     $isClientOS = $false
     try {
         $isClientOS = (Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop).ProductType -eq 1
-    } catch {
+    }
+    catch {
         Write-Log -Level Debug -Message "Could not determine OS type" -Context @{ Error = $_.Exception.Message }
     }
 
     if ($IsWindows -and $isClientOS -and (Get-Command "Checkpoint-Computer" -ErrorAction SilentlyContinue)) {
         try {
             Write-Log -Level Info -Message "Creating system restore point"
-            Checkpoint-Computer -Description $SnapshotLabel -RestorePointType MODIFY_SETTINGS -ErrorAction Stop
-            Write-Log -Level Ok -Message "System restore point created"
-            return $true
-        } catch {
-            Write-Log -Level Warn -Message "Restore point creation failed" -Context @{ Error=$_.Exception.Message }
+            if ($PSCmdlet.ShouldProcess($SnapshotLabel, 'Create system restore point')) {
+                Checkpoint-Computer -Description $SnapshotLabel -RestorePointType MODIFY_SETTINGS -ErrorAction Stop
+                Write-Log -Level Ok -Message "System restore point created"
+                return $true
+            }
+        }
+        catch {
+            Write-Log -Level Warn -Message "Restore point creation failed" -Context @{ Error = $_.Exception.Message }
             return $false
         }
     }
 
     if ($IsWindows -and -not $isClientOS) {
         Write-Log -Level Warn -Message "System restore points are only supported on client operating systems (Win32_OperatingSystem.ProductType -ne 1); skipping rollback snapshot on this server"
-    } else {
+    }
+    else {
         Write-Log -Level Debug -Message "Restore point not available on this system"
     }
     return $false
@@ -1245,7 +1284,8 @@ function Show-MainMenu {
         if ($status.EolChannels.Count -gt 0) {
             Write-Host "  [5]  EOL Removal Wizard" -NoNewline -ForegroundColor White
             Write-Host "                       [$($status.EolChannels.Count) EOL!]" -ForegroundColor Red
-        } else {
+        }
+        else {
             Write-Host "  [5]  EOL Removal Wizard" -ForegroundColor White
         }
         Write-Host "  [6]  Cleanup Lower Patches" -ForegroundColor White
@@ -1287,7 +1327,7 @@ function Invoke-QuickMaintenance {
     $index = Get-ReleasesIndex
 
     $updatePlan = Invoke-RuntimeUpdatePlan -AspNetGroups $status.AspNetGroups -DesktopGroups $status.DesktopGroups `
-                                            -ReleaseIndex $index -UpdateAspNet -UpdateDesktop
+        -ReleaseIndex $index -UpdateAspNet -UpdateDesktop
 
     if ($updatePlan.Count -gt 0) {
         Write-Host "`nUpdates available:" -ForegroundColor Yellow
@@ -1299,7 +1339,8 @@ function Invoke-QuickMaintenance {
         $results = Invoke-ExecutionPlan -Plan $updatePlan
         $successCount = ($results | Where-Object { $_.Success }).Count
         Write-Host "[OK] Updates: $successCount/$($results.Count) successful" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "[OK] All runtimes up to date" -ForegroundColor Green
     }
 
@@ -1342,7 +1383,8 @@ function Show-SystemStatusDetailed {
     Write-Host "`nEOL Status:" -ForegroundColor Yellow
     if ($status.EolChannels.Count -eq 0) {
         Write-Host "  [OK] No EOL channels" -ForegroundColor Green
-    } else {
+    }
+    else {
         Write-Host "  [!]  EOL found:" -ForegroundColor Red
         foreach ($eol in $status.EolChannels) { Write-Host "     - $eol" -ForegroundColor DarkYellow }
     }
@@ -1356,7 +1398,7 @@ function Invoke-AutomatedUpdate {
     $status = Get-SystemStatus
     $index = Get-ReleasesIndex
     $plan = Invoke-RuntimeUpdatePlan -AspNetGroups $status.AspNetGroups -DesktopGroups $status.DesktopGroups `
-                                      -ReleaseIndex $index -UpdateAspNet -UpdateDesktop
+        -ReleaseIndex $index -UpdateAspNet -UpdateDesktop
 
     if ($plan.Count -eq 0) { Write-Host "[OK] All up to date" -ForegroundColor Green; return }
 
@@ -1373,7 +1415,7 @@ function Invoke-InteractiveUpdate {
     $status = Get-SystemStatus
     $index = Get-ReleasesIndex
     $allUpdates = Invoke-RuntimeUpdatePlan -AspNetGroups $status.AspNetGroups -DesktopGroups $status.DesktopGroups `
-                                            -ReleaseIndex $index -UpdateAspNet -UpdateDesktop
+        -ReleaseIndex $index -UpdateAspNet -UpdateDesktop
 
     if ($allUpdates.Count -eq 0) { Write-Host "[OK] All up to date" -ForegroundColor Green; return }
 
@@ -1392,7 +1434,8 @@ function Invoke-InteractiveUpdate {
         try {
             $indices = $choice -split ',' | ForEach-Object { [int]$_.Trim() - 1 }
             $selected = $indices | ForEach-Object { if ($_ -ge 0 -and $_ -lt $allUpdates.Count) { $allUpdates[$_] } }
-        } catch { Write-Host "Invalid selection" -ForegroundColor Red; return }
+        }
+        catch { Write-Host "Invalid selection" -ForegroundColor Red; return }
     }
 
     if ($selected.Count -eq 0) { Write-Host "None selected" -ForegroundColor Yellow; return }
@@ -1420,7 +1463,7 @@ function Invoke-EolRemovalWizard {
         $parts = $eol -split ' '
         # FIX: Validate split results before accessing array elements
         if ($parts.Count -lt 2) {
-            Write-Log -Level Warn -Message "Invalid EOL format, skipping risk assessment" -Context @{ EOL=$eol }
+            Write-Log -Level Warn -Message "Invalid EOL format, skipping risk assessment" -Context @{ EOL = $eol }
             continue
         }
         $channel = $parts[0]
@@ -1451,7 +1494,7 @@ function Invoke-EolRemovalWizard {
         $parts = $eol -split ' '
         # FIX: Validate split results before accessing array elements
         if ($parts.Count -lt 2) {
-            Write-Log -Level Warn -Message "Invalid EOL format, skipping removal" -Context @{ EOL=$eol }
+            Write-Log -Level Warn -Message "Invalid EOL format, skipping removal" -Context @{ EOL = $eol }
             Write-Host "  [X] Skipped $eol (invalid format)" -ForegroundColor Red
             continue
         }
@@ -1502,14 +1545,15 @@ function Show-DiskUsageAnalyzer {
             return
         }
 
-        foreach ($s in ($summary | Sort-Object Product,Channel)) {
+        foreach ($s in ($summary | Sort-Object Product, Channel)) {
             Write-Host "`n$($s.Product) $($s.Channel):" -ForegroundColor Yellow
             Write-Host "  Total: $(Format-Bytes $s.TotalBytes)" -ForegroundColor White
             Write-Host "  Lower patches: $(Format-Bytes $s.LowerBytes)" -ForegroundColor Gray
         }
 
         Write-Host "`n[OK] Analysis complete" -ForegroundColor Green
-    } catch {
+    }
+    catch {
         Write-Log -Level Error -Message "Disk analysis failed: $($_.Exception.Message)"
         Write-Host "`n[ERROR] Disk analysis failed. See logs for details." -ForegroundColor Red
     }
@@ -1553,7 +1597,8 @@ try {
             Write-Host ""
             Read-Host "Press Enter to exit"
             exit 1
-        } else {
+        }
+        else {
             Write-Log -Level Error -Message "Administrator privileges required"
             throw "Run PowerShell as Administrator"
         }
@@ -1564,7 +1609,8 @@ try {
         Show-StartupScreen
         Show-MainMenu
         Write-Host "`n[OK] Session complete`n" -ForegroundColor Green
-    } else {
+    }
+    else {
         # AUTOMATED CLI MODE
         Write-Banner
 
@@ -1594,7 +1640,7 @@ try {
                 Write-Section "Execution Plan (Preview)"
 
                 $updatePlan = Invoke-RuntimeUpdatePlan -AspNetGroups $status.AspNetGroups -DesktopGroups $status.DesktopGroups `
-                                                        -ReleaseIndex $index -UpdateAspNet -UpdateDesktop -Architecture $archToProcess
+                    -ReleaseIndex $index -UpdateAspNet -UpdateDesktop -Architecture $archToProcess
 
                 if ($updatePlan.Count -gt 0) {
                     Write-Host "`n[PLAN] Planned Updates:" -ForegroundColor Yellow
@@ -1622,7 +1668,7 @@ try {
 
             # Execute updates
             $updatePlan = Invoke-RuntimeUpdatePlan -AspNetGroups $status.AspNetGroups -DesktopGroups $status.DesktopGroups `
-                                                    -ReleaseIndex $index -UpdateAspNet -UpdateDesktop -Architecture $archToProcess
+                -ReleaseIndex $index -UpdateAspNet -UpdateDesktop -Architecture $archToProcess
 
             if ($updatePlan.Count -gt 0) {
                 Write-Log -Level Info -Message "Executing $($updatePlan.Count) update(s)"
@@ -1654,9 +1700,10 @@ try {
                         }
                     }
                     $reportData | Export-Csv -Path $ReportPath -NoTypeInformation -Encoding UTF8
-                    Write-Log -Level Ok -Message "Report exported" -Context @{ Path=$ReportPath }
-                } catch {
-                    Write-Log -Level Warn -Message "Report export failed" -Context @{ Error=$_.Exception.Message }
+                    Write-Log -Level Ok -Message "Report exported" -Context @{ Path = $ReportPath }
+                }
+                catch {
+                    Write-Log -Level Warn -Message "Report export failed" -Context @{ Error = $_.Exception.Message }
                 }
             }
 
@@ -1672,9 +1719,10 @@ try {
                         RebootRequired = $script:RebootRequired
                     }
                     $summary | ConvertTo-Json -Depth 10 | Out-File -FilePath $JsonSummaryPath -Encoding UTF8
-                    Write-Log -Level Ok -Message "JSON exported" -Context @{ Path=$JsonSummaryPath }
-                } catch {
-                    Write-Log -Level Warn -Message "JSON export failed" -Context @{ Error=$_.Exception.Message }
+                    Write-Log -Level Ok -Message "JSON exported" -Context @{ Path = $JsonSummaryPath }
+                }
+                catch {
+                    Write-Log -Level Warn -Message "JSON export failed" -Context @{ Error = $_.Exception.Message }
                 }
             }
 
@@ -1684,12 +1732,14 @@ try {
                 Write-Host "[!]  System reboot recommended" -ForegroundColor Yellow
             }
 
-        } finally {
+        }
+        finally {
             if ($LogPath) { Stop-TypedTranscript }
         }
     }
 
-} catch {
+}
+catch {
     Write-Log -Level Error -Message "Fatal error: $($_.Exception.Message)"
     Write-Host "`nFatal error. Check logs." -ForegroundColor Red
     exit 1

@@ -92,7 +92,8 @@ Write-Host "Validating Terraform configuration: $ConfigPath" -ForegroundColor Cy
 try {
     $tfVersion = terraform version
     Write-Host "Terraform version: $($tfVersion[0])" -ForegroundColor Green
-} catch {
+}
+catch {
     Write-Error "Terraform CLI not found. Install from: https://www.terraform.io/downloads"
     exit 1
 }
@@ -112,7 +113,8 @@ try {
     if ($LASTEXITCODE -eq 0) {
         $results.ValidationResults.Init = @{ Success = $true; Output = $initOutput }
         Write-Host "  ✓ Initialization successful" -ForegroundColor Green
-    } else {
+    }
+    else {
         $results.ValidationResults.Init = @{ Success = $false; Output = $initOutput }
         Write-Host "  ✗ Initialization failed" -ForegroundColor Red
     }
@@ -123,7 +125,8 @@ try {
     if ($LASTEXITCODE -eq 0) {
         $results.ValidationResults.Format = @{ Success = $true; Message = "All files properly formatted" }
         Write-Host "  ✓ Formatting check passed" -ForegroundColor Green
-    } else {
+    }
+    else {
         $results.ValidationResults.Format = @{ Success = $false; FilesNeedingFormat = $fmtOutput }
         Write-Host "  ⚠ Some files need formatting" -ForegroundColor Yellow
     }
@@ -134,7 +137,8 @@ try {
     if ($validateOutput.valid) {
         $results.ValidationResults.Validate = @{ Success = $true; Message = "Configuration valid" }
         Write-Host "  ✓ Validation passed" -ForegroundColor Green
-    } else {
+    }
+    else {
         $results.ValidationResults.Validate = @{
             Success = $false
             Errors = $validateOutput.diagnostics
@@ -164,7 +168,8 @@ try {
             }
             Write-Host "  ✓ Plan generated: $($planShow.resource_changes.Count) resource changes" -ForegroundColor Green
             Remove-Item tfplan -Force -ErrorAction SilentlyContinue
-        } else {
+        }
+        else {
             $results.ValidationResults.Plan = @{ Success = $false; Output = $planOutput }
             Write-Host "  ✗ Plan generation failed" -ForegroundColor Red
         }
@@ -185,12 +190,14 @@ try {
                 }
             }
             Write-Host "  ✓ Security scan complete: $($results.SecurityIssues.Count) issues found" -ForegroundColor $(if ($results.SecurityIssues.Count -eq 0) { 'Green' } else { 'Yellow' })
-        } catch {
+        }
+        catch {
             Write-Host "  ⚠ tfsec not found. Install from: https://github.com/aquasecurity/tfsec" -ForegroundColor Yellow
         }
     }
 
-} finally {
+}
+finally {
     Pop-Location
 }
 
