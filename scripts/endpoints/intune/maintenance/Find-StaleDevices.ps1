@@ -50,18 +50,18 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$DaysInactive,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet('Report', 'Delete', 'Retire')]
     [string]$Action = 'Report',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet('HTML', 'CSV', 'Both')]
     [string]$ExportFormat = 'Both',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$AutoConfirm
 )
 
@@ -106,7 +106,7 @@ if (-not $DaysInactive) {
 }
 
 Write-Host "`nSearching for devices inactive for $DaysInactive+ days..." -ForegroundColor Cyan
-Write-Host "Action mode: $Action" -ForegroundColor $(if($Action -eq 'Report'){'Green'}else{'Yellow'})
+Write-Host "Action mode: $Action" -ForegroundColor $(if ($Action -eq 'Report') { 'Green' }else { 'Yellow' })
 
 # Connect to Microsoft Graph
 $scopes = @("DeviceManagementManagedDevices.Read.All")
@@ -181,7 +181,7 @@ try {
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "Total Devices:           $($devices.Count)" -ForegroundColor White
     Write-Host "Inactive Threshold:      $DaysInactive days" -ForegroundColor Yellow
-    Write-Host "Stale Devices Found:     $($staleDevices.Count)" -ForegroundColor $(if($staleDevices.Count -gt 0){'Red'}else{'Green'})
+    Write-Host "Stale Devices Found:     $($staleDevices.Count)" -ForegroundColor $(if ($staleDevices.Count -gt 0) { 'Red' }else { 'Green' })
 
     if ($staleDevices.Count -eq 0) {
         Write-Host "`n✓ No stale devices found! Your tenant is clean." -ForegroundColor Green
@@ -290,7 +290,7 @@ try {
         Write-Host "========================================" -ForegroundColor Cyan
         Write-Host "Total Processed:  $($staleDevices.Count)" -ForegroundColor White
         Write-Host "Successful:       $successCount" -ForegroundColor Green
-        Write-Host "Failed:           $failCount" -ForegroundColor $(if($failCount -gt 0){'Red'}else{'Green'})
+        Write-Host "Failed:           $failCount" -ForegroundColor $(if ($failCount -gt 0) { 'Red' }else { 'Green' })
     }
 
     Write-Host "`n✓ Stale device processing completed!" -ForegroundColor Green

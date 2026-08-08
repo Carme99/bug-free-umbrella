@@ -1,3 +1,30 @@
+<#
+.SYNOPSIS
+    Pester tests for Test-IntuneConnectivity.ps1.
+
+.DESCRIPTION
+    Validates the behavior of the Intune connectivity script:
+    - Parameter validation (Detailed, ExportResults, no parameters)
+    - Endpoint connectivity tests (Intune enrollment, Azure AD, Windows Update, Microsoft Graph)
+    - Failure detection (connection failures, HTTP errors, DNS resolution, timeouts)
+    - Success reporting and summary statistics
+    - Detailed output mode
+    - CSV export functionality
+    - Performance within reasonable time
+    - Error handling (missing endpoints, continued testing after failures)
+
+.EXAMPLE
+    PS C:\> Invoke-Pester -Path .\Test-IntuneConnectivity.Tests.ps1
+    Runs all tests against the Test-IntuneConnectivity.ps1 script.
+
+.NOTES
+    File Name  : Test-IntuneConnectivity.Tests.ps1
+    Author     : IT Administration
+    Prerequisite: PowerShell 7.0, Pester 5
+    Version    : 1.0.0
+    Date       : 2025-01-01
+#>
+
 BeforeAll {
     # Import the script to test
     $scriptPath = "$PSScriptRoot/Test-IntuneConnectivity.ps1"

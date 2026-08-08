@@ -40,16 +40,16 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$OutputPath,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string[]]$ConfigTypes = @('All'),
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeAssignments,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$CompressOutput
 )
 
@@ -57,7 +57,7 @@ param(
 
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
-    $color = switch($Level) { 'Success' { 'Green' } 'Warning' { 'Yellow' } 'Error' { 'Red' } default { 'Cyan' } }
+    $color = switch ($Level) { 'Success' { 'Green' } 'Warning' { 'Yellow' } 'Error' { 'Red' } default { 'Cyan' } }
     Write-Host $Message -ForegroundColor $color
 }
 
@@ -68,8 +68,8 @@ Write-Host "========================================`n" -ForegroundColor Cyan
 Write-ColorOutput "Connecting to Microsoft Graph..." -Level Info
 try {
     $context = Get-MgContext
-    if(-not $context) {
-        Connect-MgGraph -Scopes "DeviceManagementConfiguration.Read.All","DeviceManagementApps.Read.All","DeviceManagementServiceConfig.Read.All"
+    if (-not $context) {
+        Connect-MgGraph -Scopes "DeviceManagementConfiguration.Read.All", "DeviceManagementApps.Read.All", "DeviceManagementServiceConfig.Read.All"
     }
     Write-ColorOutput "  Connected" -Level Success
 }
@@ -95,7 +95,7 @@ if (-not $OutputPath) {
     $OutputPath = Join-Path $ReportDir "IntuneBackup_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
 }
 
-if(-not (Test-Path $OutputPath)) {
+if (-not (Test-Path $OutputPath)) {
     New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
 }
 
@@ -105,14 +105,14 @@ $exportSummary = @{
     ItemsExported = 0
 }
 
-if('All' -in $ConfigTypes -or 'DeviceConfig' -in $ConfigTypes) {
+if ('All' -in $ConfigTypes -or 'DeviceConfig' -in $ConfigTypes) {
     Write-Host "`nExporting device configuration policies..." -ForegroundColor Cyan
     try {
         $policies = Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/beta/deviceManagement/deviceConfigurations" -Method GET
         $policyPath = Join-Path $OutputPath "DeviceConfigurations"
         New-Item -ItemType Directory -Path $policyPath -Force | Out-Null
 
-        foreach($policy in $policies.value) {
+        foreach ($policy in $policies.value) {
             $safeName = ($policy.displayName -replace '[\\/:*?"<>|]', '_').Trim()
             if ([string]::IsNullOrWhiteSpace($safeName)) {
                 $safeName = "DeviceConfiguration"
@@ -128,14 +128,14 @@ if('All' -in $ConfigTypes -or 'DeviceConfig' -in $ConfigTypes) {
     }
 }
 
-if('All' -in $ConfigTypes -or 'Compliance' -in $ConfigTypes) {
+if ('All' -in $ConfigTypes -or 'Compliance' -in $ConfigTypes) {
     Write-Host "`nExporting compliance policies..." -ForegroundColor Cyan
     try {
         $policies = Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/beta/deviceManagement/deviceCompliancePolicies" -Method GET
         $policyPath = Join-Path $OutputPath "CompliancePolicies"
         New-Item -ItemType Directory -Path $policyPath -Force | Out-Null
 
-        foreach($policy in $policies.value) {
+        foreach ($policy in $policies.value) {
             $safeName = ($policy.displayName -replace '[\\/:*?"<>|]', '_').Trim()
             if ([string]::IsNullOrWhiteSpace($safeName)) {
                 $safeName = "CompliancePolicy"
@@ -160,7 +160,7 @@ Write-Host "`n========================================`n" -ForegroundColor Cyan
 
 $exportSummary | ConvertTo-Json | Out-File (Join-Path $OutputPath "export-summary.json") -Encoding UTF8
 
-if($CompressOutput) {
+if ($CompressOutput) {
     $zipPath = "$OutputPath.zip"
     Compress-Archive -Path $OutputPath -DestinationPath $zipPath -Force
     Write-ColorOutput "Created archive: $zipPath" -Level Success

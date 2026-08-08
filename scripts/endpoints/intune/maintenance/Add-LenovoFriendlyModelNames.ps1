@@ -136,9 +136,9 @@ param(
 
     [Parameter(Mandatory = $false)]
     [ValidateSet(
-        "extensionAttribute1","extensionAttribute2","extensionAttribute3","extensionAttribute4","extensionAttribute5",
-        "extensionAttribute6","extensionAttribute7","extensionAttribute8","extensionAttribute9","extensionAttribute10",
-        "extensionAttribute11","extensionAttribute12","extensionAttribute13","extensionAttribute14","extensionAttribute15"
+        "extensionAttribute1", "extensionAttribute2", "extensionAttribute3", "extensionAttribute4", "extensionAttribute5",
+        "extensionAttribute6", "extensionAttribute7", "extensionAttribute8", "extensionAttribute9", "extensionAttribute10",
+        "extensionAttribute11", "extensionAttribute12", "extensionAttribute13", "extensionAttribute14", "extensionAttribute15"
     )]
     [string]$ExtensionAttributeName = "extensionAttribute1",
 
@@ -166,14 +166,14 @@ function Write-Log {
         [Parameter(Mandatory)]
         [string]$Message,
 
-        [ValidateSet("Info","Warn","Error","Verbose")]
+        [ValidateSet("Info", "Warn", "Error", "Verbose")]
         [string]$Level = "Info"
     )
 
     switch ($Level) {
-        "Info"    { Write-Host $Message -ForegroundColor Cyan }
-        "Warn"    { Write-Host $Message -ForegroundColor Yellow }
-        "Error"   { Write-Host $Message -ForegroundColor Red }
+        "Info" { Write-Host $Message -ForegroundColor Cyan }
+        "Warn" { Write-Host $Message -ForegroundColor Yellow }
+        "Error" { Write-Host $Message -ForegroundColor Red }
         "Verbose" { if ($VerboseOutput) { Write-Host $Message -ForegroundColor DarkGray } }
     }
 }
@@ -359,8 +359,8 @@ function Get-LenovoModelLookup {
     }
 
     [PSCustomObject]@{
-        Lookup    = $mtmToFamily
-        Missing   = $missingMtms.ToArray()
+        Lookup = $mtmToFamily
+        Missing = $missingMtms.ToArray()
         SourceUrl = $allModelsUrl
         TotalProcessed = $allModels.Count
     }
@@ -429,6 +429,7 @@ function Set-EntraDeviceExtensionAttribute {
         with method 2. This handles cases where the identifier is actually a deviceId
         rather than an object ID.
     #>
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)]
         [string]$AzureDeviceIdentifier,
@@ -450,8 +451,11 @@ function Set-EntraDeviceExtensionAttribute {
 
     # Attempt 1: Treat identifier as Entra device object ID
     try {
-        Invoke-MgGraphRequest -Method PATCH -Uri "/v1.0/devices/$AzureDeviceIdentifier" -Body $payloadJson -ErrorAction Stop | Out-Null
-        return "PatchedByObjectId"
+        if ($PSCmdlet.ShouldProcess($AzureDeviceIdentifier, "Set extension attribute $AttributeName")) {
+            Invoke-MgGraphRequest -Method PATCH -Uri "/v1.0/devices/$AzureDeviceIdentifier" -Body $payloadJson -ErrorAction Stop | Out-Null
+            return "PatchedByObjectId"
+        }
+        return
     }
     catch {
         # Only retry on NotFound - other errors are real failures (permissions, payload issues, etc.)
@@ -464,8 +468,11 @@ function Set-EntraDeviceExtensionAttribute {
 
     # Attempt 2: Treat identifier as Entra deviceId
     try {
-        Invoke-MgGraphRequest -Method PATCH -Uri "/v1.0/devices(deviceId='$AzureDeviceIdentifier')" -Body $payloadJson -ErrorAction Stop | Out-Null
-        return "PatchedByDeviceId"
+        if ($PSCmdlet.ShouldProcess($AzureDeviceIdentifier, "Set extension attribute $AttributeName")) {
+            Invoke-MgGraphRequest -Method PATCH -Uri "/v1.0/devices(deviceId='$AzureDeviceIdentifier')" -Body $payloadJson -ErrorAction Stop | Out-Null
+            return "PatchedByDeviceId"
+        }
+        return
     }
     catch {
         Write-Log "Failed to update device with identifier $AzureDeviceIdentifier using both addressing methods" "Error"
@@ -595,12 +602,12 @@ try {
 
     # Initialize counters and error tracking
     $stats = @{
-        NotesUpdated    = 0
-        NotesSkipped    = 0
-        ExtUpdated      = 0
-        ExtSkipped      = 0
-        Unknown         = 0
-        Errors          = 0
+        NotesUpdated = 0
+        NotesSkipped = 0
+        ExtUpdated = 0
+        ExtSkipped = 0
+        Unknown = 0
+        Errors = 0
     }
 
     $errorLog = New-Object System.Collections.Generic.List[object]
@@ -705,13 +712,13 @@ try {
             $stats.Errors++
 
             $errorDetails = [PSCustomObject]@{
-                DeviceName      = $device.deviceName
-                Model           = $device.model
-                MTM             = $mtm
-                IntuneId        = $device.id
+                DeviceName = $device.deviceName
+                Model = $device.model
+                MTM = $mtm
+                IntuneId = $device.id
                 AzureADDeviceId = $azureDeviceIdentifier
-                Error           = $_.Exception.Message
-                Timestamp       = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+                Error = $_.Exception.Message
+                Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
             }
 
             $errorLog.Add($errorDetails)
