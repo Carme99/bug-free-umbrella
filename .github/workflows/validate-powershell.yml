@@ -19,8 +19,8 @@ jobs:
       - name: Install PSScriptAnalyzer
         shell: pwsh
         run: |
-          Set-PSRepository PSGallery -InstallationPolicy Trusted
-          Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck
+          # Keep PSGallery Untrusted; install only the required module for the current user
+          Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck -Scope CurrentUser
 
       - name: Run PSScriptAnalyzer
         shell: pwsh
@@ -126,12 +126,12 @@ jobs:
           Get-ChildItem -Path ./scripts -Filter *.ps1 -Recurse | ForEach-Object {
             Write-Host "Checking: $($_.FullName)" -ForegroundColor Gray
 
-            try {
-              $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $_.FullName -Raw), [ref]$null)
-            }
-            catch {
-              $errors += "$($_.FullName): $($_.Exception.Message)"
-              Write-Host "  ERROR: $($_.Exception.Message)" -ForegroundColor Red
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            if ($parseErrors -and $parseErrors.Count -gt 0) {
+              $errors += "$($_.FullName): $($parseErrors[0].Message)"
+              Write-Host "  ERROR: $($parseErrors[0].Message)" -ForegroundColor Red
             }
           }
 

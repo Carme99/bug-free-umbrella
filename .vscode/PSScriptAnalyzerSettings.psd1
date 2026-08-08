@@ -40,6 +40,6 @@
         'PSUseDeclaredVarsMoreThanAssignments',
 
         # Intentional Test-Connection -ComputerName "www.microsoft.com" connectivity probes, not sensitive
-        'PSAvoidUsingComputerNameHardCoded'
+        'PSAvoidUsingComputerNameHardcoded'
     )
 }

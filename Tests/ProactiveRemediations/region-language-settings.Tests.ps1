@@ -159,7 +159,7 @@ Describe "Region Language Settings - Remediate" {
                 Mock Get-WinHomeLocation { return @{ GeoId = 244 } }
             }
             if ($script:hasTimeZone) {
-                Mock Get-WinTimeZone { return @{ Id = "Pacific Standard Time" } }
+                Mock Get-TimeZone { return @{ Id = "Pacific Standard Time" } }
             }
             if ($script:hasWinSystemLocale) {
                 Mock Get-WinSystemLocale { return @{ Name = "en-US" } }
@@ -236,11 +236,17 @@ Describe "Region Language Settings - Script Structure" {
         }
 
         It "Detect script should have valid PowerShell syntax" -Skip:(-not $script:detectExists) {
-            { $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $script:detectScript -Raw), [ref]$null) } | Should -Not -Throw
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($script:detectScript, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            $parseErrors.Count | Should -Be 0
         }
 
         It "Remediate script should have valid PowerShell syntax" -Skip:(-not $script:remediateExists) {
-            { $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content $script:remediateScript -Raw), [ref]$null) } | Should -Not -Throw
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($script:remediateScript, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            $parseErrors.Count | Should -Be 0
         }
     }
 }

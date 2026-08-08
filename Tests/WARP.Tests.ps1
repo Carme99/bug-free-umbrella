@@ -106,9 +106,12 @@ Describe "WARP.md Documentation Validation" {
         }
 
         It "PowerShell parser tokenization command should be valid" {
-            # Verify the PSParser tokenization syntax is correct
+            # Verify the PowerShell parser accepts the syntax (ParseInput reports errors via out-param)
             $testScript = "Write-Host 'test'"
-            { [System.Management.Automation.PSParser]::Tokenize($testScript, [ref]$null) } | Should -Not -Throw
+            $tokens = $null
+            $parseErrors = $null
+            [System.Management.Automation.Language.Parser]::ParseInput($testScript, [ref]$tokens, [ref]$parseErrors) | Out-Null
+            $parseErrors.Count | Should -Be 0
         }
     }
 
