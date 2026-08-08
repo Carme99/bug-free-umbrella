@@ -117,10 +117,18 @@ Write-Host ""
 # Get mailboxes
 Write-Host "[*] Retrieving mailboxes..." -ForegroundColor Cyan
 
-$filterType = if ($MailboxType -eq 'All') { '*' } else { $MailboxType }
+# -RecipientTypeDetails does not support wildcards; when 'All' is requested, omit the parameter
+# entirely so every mailbox type is returned.
+$mailboxParams = @{
+    ResultSize = 'Unlimited'
+    Properties = 'DisplayName,UserPrincipalName,PrimarySmtpAddress,RecipientTypeDetails,WhenCreated'
+}
+if ($MailboxType -ne 'All') {
+    $mailboxParams['RecipientTypeDetails'] = $MailboxType
+}
 
 try {
-    $mailboxes = Get-EXOMailbox -ResultSize Unlimited -RecipientTypeDetails $filterType -Properties DisplayName,UserPrincipalName,PrimarySmtpAddress,RecipientTypeDetails,WhenCreated
+    $mailboxes = Get-EXOMailbox @mailboxParams
 
     Write-Host "[+] Found $($mailboxes.Count) mailbox(es)" -ForegroundColor Green
 }

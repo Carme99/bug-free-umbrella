@@ -1,18 +1,19 @@
 <#
 .SYNOPSIS
-    Configures organization-wide default settings for new users in Microsoft 365.
+    Audits and configures the organization-wide PreferredLanguage setting in Microsoft 365.
 
 .DESCRIPTION
-    This script sets tenant-wide default settings that will apply to newly created users:
-    - Default usage location (affects license assignment)
-    - Preferred data location (for multi-geo tenants)
-    - Default language preferences
+    This script audits and configures the organization-level PreferredLanguage setting for the
+    Microsoft 365 organization (the only organization-level default this script manages).
 
-    Note: These settings affect NEW users only. Existing users must be configured separately
-    using Set-UserLanguageSettings.ps1 and Set-MailboxRegionalSettings.ps1
+    Note: There is no organization-level "default usage location" or "preferred data location"
+    default. UsageLocation and PreferredDataLocation are per-user attributes and must be set on
+    individual user objects (for example, Update-MgUser -UsageLocation). Existing users must be
+    configured separately using Set-UserLanguageSettings.ps1 and Set-MailboxRegionalSettings.ps1
 
 .PARAMETER UsageLocation
-    Default usage location country code (default: GB for United Kingdom).
+    Usage location country code (default: GB for United Kingdom). Used for reference only -
+    UsageLocation is a per-user attribute and cannot be set at the organization level.
 
 .PARAMETER PreferredLanguage
     Default preferred language (default: en-GB).
@@ -37,7 +38,7 @@
 .NOTES
     Requires Microsoft Graph PowerShell module
     Requires Global Administrator role
-    These settings affect NEW users created after configuration
+    Only the organization PreferredLanguage setting is managed; usage location is a per-user attribute
 #>
 
 [CmdletBinding()]
@@ -108,10 +109,10 @@ try {
     Write-Host "Preferred Language: $($orgSettings.PreferredLanguage)" -ForegroundColor White
     Write-Host ""
 
-    # Required settings
-    Write-Host "=== Required Default Settings ===" -ForegroundColor Cyan
-    Write-Host "Usage Location: $UsageLocation" -ForegroundColor White
+    # Expected settings
+    Write-Host "=== Expected Organization Settings ===" -ForegroundColor Cyan
     Write-Host "Preferred Language: $PreferredLanguage" -ForegroundColor White
+    Write-Host "(Usage location is a per-user attribute and is not managed at the organization level)" -ForegroundColor Gray
     Write-Host ""
 
     # Check compliance

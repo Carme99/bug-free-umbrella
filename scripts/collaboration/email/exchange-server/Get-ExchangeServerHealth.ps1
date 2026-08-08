@@ -7,6 +7,8 @@
     .\Get-ExchangeServerHealth.ps1 -ExportHTML
 .NOTES
     Requires: Exchange Management Shell
+    Note: Exchange Server 2019 reached end of extended support on 2025-10-15. This script operates
+    against an out-of-support platform. Lifecycle: https://learn.microsoft.com/en-us/lifecycle/products/exchange-server-2019
 #>
 [CmdletBinding()]
 param([switch]$ExportHTML, [switch]$CheckDatabaseHealth, [switch]$CheckMailQueues)

@@ -36,7 +36,7 @@
     Comprehensive guest audit with privilege and domain analysis.
 
 .NOTES
-    Requires Microsoft Graph PowerShell module
+    Requires Microsoft Graph PowerShell module (Microsoft.Graph.Identity.Governance for the privileged-guest role check)
     Requires User.Read.All, AuditLog.Read.All permissions
     Compatible with Azure AD / Entra ID (Microsoft 365)
 #>
@@ -164,15 +164,17 @@ foreach ($guest in $guestUsers) {
     $roles = @()
     if ($CheckPrivilegedGuests) {
         try {
-            $roleAssignments = Get-MgUserMemberOf -UserId $guest.Id -ErrorAction SilentlyContinue
-            $directoryRoles = $roleAssignments | Where-Object { $_.'@odata.type' -eq '#microsoft.graph.directoryRole' }
+            # Get-MgDirectoryRole (legacy directory roles) is discouraged; use unified RBAC:
+            # role assignments, with role display names resolved from the role definition.
+            $roleAssignments = Get-MgRoleManagementDirectoryRoleAssignment -Filter "principalId eq '$($guest.Id)'" -All -ErrorAction SilentlyContinue
 
-            if ($directoryRoles) {
+            if ($roleAssignments) {
                 $isPrivileged = $true
                 $privilegedGuests++
-                $roles = $directoryRoles | ForEach-Object {
-                    (Get-MgDirectoryRole -DirectoryRoleId $_.Id).DisplayName
-                }
+                $roles = $roleAssignments | ForEach-Object {
+                    $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition -UnifiedRoleDefinitionId $_.RoleDefinitionId -ErrorAction SilentlyContinue
+                    if ($roleDefinition) { $roleDefinition.DisplayName }
+                } | Where-Object { $_ }
             }
         }
         catch {

@@ -177,7 +177,7 @@ foreach ($team in $teams) {
         ChannelCount = $channelCount
         PrivateChannelCount = $privateChannelCount
         GroupId = $team.GroupId
-        Created = $teamDetails.MailNickName  # Approximation
+        MailNickName = $teamDetails.MailNickName
     }
 
     $results += $result

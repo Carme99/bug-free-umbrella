@@ -150,16 +150,17 @@ function Test-Prerequisites {
 function Get-ChannelFriendlyName {
     param([string]$ChannelGuid)
 
+    # Channel GUIDs and names per the official Microsoft channel table
+    # (see "Manage Microsoft 365 Apps updates in Configuration Manager" - update channel rename table).
     $channelNames = @{
-        '492350f6-3a01-4f97-b9c0-c7c6ddf67d60' = 'Monthly (Current Channel)'
-        '64256afe-f5d9-4f86-8936-8840a6a4f5be' = 'Monthly Enterprise'
-        'ea4a4090-de26-49d7-93c1-91bff9e53fc3' = 'Monthly Preview'
-        '7ffbc6bf-bc32-4f92-8982-f9dd17fd3114' = 'Semi-Annual (Preview)'
-        'b8f9b850-328d-4355-9145-c59439a0c4cf' = 'Semi-Annual'
-        '5440fd1f-7ecb-4221-8110-145efaa6372f' = 'Beta (Insider)'
-        'f2e724c1-748f-4b47-8fb8-8e0d210e9208' = 'LTSB 2021'
-        '2e148de9-61c8-4051-b103-4af54baffbb4' = 'LTSB 2024'
-        '55336b82-a18d-4dd6-b5f6-9e5095c314a6' = 'Monthly (Current Channel)'
+        '492350f6-3a01-4f97-b9c0-c7c6ddf67d60' = 'Current Channel'
+        '64256afe-f5d9-4f86-8936-8840a6a4f5be' = 'Current Channel (Preview)'
+        '55336b82-a18d-4dd6-b5f6-9e5095c314a6' = 'Monthly Enterprise'
+        '7ffbc6bf-bc32-4f92-8982-f9dd17fd3114' = 'Semi-Annual Enterprise'
+        'b8f9b850-328d-4355-9145-c59439a0c4cf' = 'Semi-Annual Enterprise (Preview)'
+        '5440fd1f-7ecb-4221-8110-145efaa6372f' = 'Beta Channel'
+        'f2e724c1-748f-4b47-8fb8-8e0d210e9208' = 'LTSC 2021'
+        '2e148de9-61c8-4051-b103-4af54baffbb4' = 'LTSC 2024'
     }
 
     if ($channelNames.ContainsKey($ChannelGuid)) {
@@ -236,14 +237,14 @@ function Get-LatestOfficeVersion {
 
         # Map common channel GUIDs to channel IDs
         $channelMap = @{
-            '492350f6-3a01-4f97-b9c0-c7c6ddf67d60' = 'Current'          # Monthly/Current Channel
-            '64256afe-f5d9-4f86-8936-8840a6a4f5be' = 'MonthlyEnterprise' # Monthly Enterprise
-            'ea4a4090-de26-49d7-93c1-91bff9e53fc3' = 'CurrentPreview'    # Monthly Preview
-            '7ffbc6bf-bc32-4f92-8982-f9dd17fd3114' = 'SemiAnnualPreview' # Semi-Annual Preview
-            'b8f9b850-328d-4355-9145-c59439a0c4cf' = 'SemiAnnual'        # Semi-Annual
-            '5440fd1f-7ecb-4221-8110-145efaa6372f' = 'BetaChannel'       # Beta
-            'f2e724c1-748f-4b47-8fb8-8e0d210e9208' = 'PerpetualVL2021'   # LTSB 2021
-            '2e148de9-61c8-4051-b103-4af54baffbb4' = 'PerpetualVL2024'   # LTSB 2024
+            '492350f6-3a01-4f97-b9c0-c7c6ddf67d60' = 'Current'            # Current Channel
+            '64256afe-f5d9-4f86-8936-8840a6a4f5be' = 'CurrentPreview'     # Current Channel (Preview)
+            '55336b82-a18d-4dd6-b5f6-9e5095c314a6' = 'MonthlyEnterprise'  # Monthly Enterprise
+            '7ffbc6bf-bc32-4f92-8982-f9dd17fd3114' = 'SemiAnnual'         # Semi-Annual Enterprise
+            'b8f9b850-328d-4355-9145-c59439a0c4cf' = 'SemiAnnualPreview'  # Semi-Annual Enterprise (Preview)
+            '5440fd1f-7ecb-4221-8110-145efaa6372f' = 'BetaChannel'        # Beta Channel
+            'f2e724c1-748f-4b47-8fb8-8e0d210e9208' = 'PerpetualVL2021'    # LTSC 2021
+            '2e148de9-61c8-4051-b103-4af54baffbb4' = 'PerpetualVL2024'    # LTSC 2024
         }
 
         # Try to match the channel
@@ -419,35 +420,32 @@ function Get-ChannelSelection {
     Write-Log "Available Update Channels:" -Color Cyan
     Write-Log ""
 
-    # Define channels with descriptions
+    # Define channels with descriptions. GUIDs and names per the official Microsoft channel table
+    # (see "Manage Microsoft 365 Apps updates in Configuration Manager" - update channel rename table).
+    # Semi-Annual Enterprise (Preview) (GUID b8f9b850-328d-4355-9145-c59439a0c4cf) is a legacy
+    # preview variant and is intentionally not offered for new selections.
     $channels = @(
         @{
             Number = 1
-            Name = "Monthly (Current Channel)"
+            Name = "Current Channel"
             Guid = "492350f6-3a01-4f97-b9c0-c7c6ddf67d60"
             Description = "Latest features monthly. Recommended for most users."
         },
         @{
             Number = 2
             Name = "Monthly Enterprise"
-            Guid = "64256afe-f5d9-4f86-8936-8840a6a4f5be"
+            Guid = "55336b82-a18d-4dd6-b5f6-9e5095c314a6"
             Description = "Monthly updates, validated for enterprise. More predictable."
         },
         @{
             Number = 3
-            Name = "Semi-Annual (Preview)"
+            Name = "Semi-Annual Enterprise"
             Guid = "7ffbc6bf-bc32-4f92-8982-f9dd17fd3114"
-            Description = "Preview of Semi-Annual updates. For testing."
+            Description = "Monthly feature and security updates since July 2026 (channel unification). For devices requiring extensive testing before new features."
         },
         @{
             Number = 4
-            Name = "Semi-Annual"
-            Guid = "b8f9b850-328d-4355-9145-c59439a0c4cf"
-            Description = "Updates twice yearly. Most stable for enterprise."
-        },
-        @{
-            Number = 5
-            Name = "Beta (Insider)"
+            Name = "Beta Channel"
             Guid = "5440fd1f-7ecb-4221-8110-145efaa6372f"
             Description = "Cutting edge features. May be unstable."
         }
@@ -460,7 +458,7 @@ function Get-ChannelSelection {
     }
 
     Write-Log ""
-    Write-Host "Select channel [1-5] or press Enter to keep current: " -ForegroundColor Yellow -NoNewline
+    Write-Host "Select channel [1-4] or press Enter to keep current: " -ForegroundColor Yellow -NoNewline
     $selection = Read-Host
 
     if ([string]::IsNullOrWhiteSpace($selection)) {
@@ -468,13 +466,35 @@ function Get-ChannelSelection {
     }
 
     $selectedNumber = 0
-    if ([int]::TryParse($selection, [ref]$selectedNumber) -and $selectedNumber -ge 1 -and $selectedNumber -le 5) {
+    if ([int]::TryParse($selection, [ref]$selectedNumber) -and $selectedNumber -ge 1 -and $selectedNumber -le 4) {
         $selectedChannel = $channels | Where-Object { $_.Number -eq $selectedNumber }
         return $selectedChannel
     } else {
         Write-WarningMsg "Invalid selection. Keeping current channel."
         return $null
     }
+}
+
+function Get-ODTChannelName {
+    param([string]$ChannelGuid)
+
+    # Maps channel GUIDs to the documented Office Deployment Tool Channel attribute values.
+    # See "Configuration options for the Office Deployment Tool" (Channel attribute).
+    $odtChannels = @{
+        '492350f6-3a01-4f97-b9c0-c7c6ddf67d60' = 'Current'            # Current Channel
+        '64256afe-f5d9-4f86-8936-8840a6a4f5be' = 'CurrentPreview'     # Current Channel (Preview)
+        '55336b82-a18d-4dd6-b5f6-9e5095c314a6' = 'MonthlyEnterprise'  # Monthly Enterprise
+        '7ffbc6bf-bc32-4f92-8982-f9dd17fd3114' = 'SemiAnnual'         # Semi-Annual Enterprise
+        'b8f9b850-328d-4355-9145-c59439a0c4cf' = 'SemiAnnualPreview'  # Semi-Annual Enterprise (Preview)
+        '5440fd1f-7ecb-4221-8110-145efaa6372f' = 'BetaChannel'        # Beta Channel
+        'f2e724c1-748f-4b47-8fb8-8e0d210e9208' = 'PerpetualVL2021'    # LTSC 2021
+        '2e148de9-61c8-4051-b103-4af54baffbb4' = 'PerpetualVL2024'    # LTSC 2024
+    }
+
+    if ($odtChannels.ContainsKey($ChannelGuid)) {
+        return $odtChannels[$ChannelGuid]
+    }
+    return $null
 }
 
 function Set-OfficeUpdateChannel {
@@ -487,16 +507,37 @@ function Set-OfficeUpdateChannel {
     Write-Log "Changing update channel to: $ChannelName" -Color Yellow
 
     try {
-        # Update registry settings
-        $regPath = "HKLM:\SOFTWARE\Microsoft\Office\ClickToRun\Configuration"
+        # Channel changes are applied through the documented Office Deployment Tool flow: generate a
+        # configuration.xml with an <Updates Channel="..." /> element and run setup.exe /configure.
+        # Writing CDNBaseUrl/UpdateChannel directly under
+        # HKLM\SOFTWARE\Microsoft\Office\ClickToRun\Configuration is not a documented channel-change
+        # method. See "Change the Microsoft 365 Apps update channel" on Microsoft Learn.
+        $odtChannel = Get-ODTChannelName -ChannelGuid $ChannelGuid
+        if (-not $odtChannel) {
+            Write-ErrorMsg "No Office Deployment Tool channel name is known for GUID $ChannelGuid. Channel change aborted."
+            return $false
+        }
 
-        $newCDNUrl = "http://officecdn.microsoft.com/pr/$ChannelGuid"
+        $channelConfigPath = Join-Path (Split-Path -Parent $script:Config.InstallXMLPath) "channel-change.xml"
+        $channelConfig = @"
+<Configuration>
+  <Updates Channel="$odtChannel" />
+</Configuration>
+"@
+        $channelConfig | Out-File -FilePath $channelConfigPath -Encoding UTF8
 
-        Set-ItemProperty -Path $regPath -Name "CDNBaseUrl" -Value $newCDNUrl -ErrorAction Stop
-        Set-ItemProperty -Path $regPath -Name "UpdateChannel" -Value $newCDNUrl -ErrorAction Stop
+        $arguments = "/configure `"$channelConfigPath`""
+        Write-ProgressMsg "Executing: $($script:Config.ODTPath) $arguments"
+
+        $process = Start-Process -FilePath $script:Config.ODTPath -ArgumentList $arguments -Wait -PassThru -NoNewWindow
+
+        if ($process.ExitCode -ne 0) {
+            Write-ErrorMsg "Channel change failed with exit code: $($process.ExitCode)"
+            return $false
+        }
 
         Write-Success "Update channel changed successfully!"
-        Write-InfoMsg "Channel will take effect on next update check."
+        Write-InfoMsg "The 'Office Automatic Updates 2.0' scheduled task must be enabled for the channel change to take effect."
         Write-InfoMsg "You may need to download and install updates to switch channels."
 
         return $true

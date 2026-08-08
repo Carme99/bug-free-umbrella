@@ -45,7 +45,7 @@
 .NOTES
     Author: IT Operations
     Version: 1.0.0
-    Requires: PowerShell 5.1+, ExchangeOnlineManagement module
+    Requires: PowerShell 7, ExchangeOnlineManagement module
 
     WARNING: This script has not been thoroughly tested in production environments.
     Please test in a non-production environment first and validate results before relying on this data.
@@ -106,8 +106,8 @@ $results = @{
 
 Write-Host "Analyzing Exchange Online mail flow (Last $DaysToAnalyze days)..." -ForegroundColor Cyan
 
-$startDate = (Get-Date).AddDays(-$DaysToAnalyze)
 $endDate = Get-Date
+$startDate = $endDate.AddDays(-$DaysToAnalyze)
 
 try {
     # Check connection
@@ -123,13 +123,32 @@ try {
     Write-Host "Note: Large date ranges may take time. Consider analyzing fewer days for faster results." -ForegroundColor Gray
 
     try {
-        # Get message trace (limited to 10 days for Get-MessageTrace)
+        # Get-MessageTrace/Get-MessageTraceDetail are deprecated and replaced by
+        # Get-MessageTraceV2/Get-MessageTraceDetailV2. The V2 cmdlets cover the last 90 days,
+        # but each query returns at most 10 days of data, so longer ranges are walked in 10-day
+        # windows (the documented pattern for ranges that exceed the per-query limit).
+        # Start-HistoricalSearch was considered, but it returns CSV blobs rather than message
+        # objects, so it cannot feed the aggregation below.
         if ($DaysToAnalyze -le 10) {
-            $messages = Get-MessageTrace -StartDate $startDate -EndDate $endDate -PageSize 5000 | Select-Object -First 5000
+            $messages = Get-MessageTraceV2 -StartDate $startDate -EndDate $endDate -ResultSize 5000
         } else {
-            # For longer periods, use historical search (slower)
-            Write-Warning "Analysis period > 10 days requires historical search. This may take several minutes..."
-            $messages = Get-MessageTraceDetail -StartDate $startDate -EndDate $endDate -PageSize 5000 | Select-Object -First 5000
+            # For longer periods, query in 10-day windows (slower)
+            Write-Warning "Analysis period > 10 days: querying Get-MessageTraceV2 in 10-day windows. This may take several minutes..."
+            $maxTraceDays = 90
+            if ($DaysToAnalyze -gt $maxTraceDays) {
+                Write-Warning "Get-MessageTraceV2 only covers the last 90 days; limiting the analysis window to 90 days."
+                $startDate = $endDate.AddDays(-$maxTraceDays)
+            }
+            $messages = @()
+            $windowStart = $startDate
+            while ($windowStart -lt $endDate) {
+                $windowEnd = $windowStart.AddDays(10)
+                if ($windowEnd -gt $endDate) { $windowEnd = $endDate }
+                if ($windowEnd -gt $windowStart) {
+                    $messages += Get-MessageTraceV2 -StartDate $windowStart -EndDate $windowEnd -ResultSize 5000
+                }
+                $windowStart = $windowEnd
+            }
         }
 
         if ($messages) {

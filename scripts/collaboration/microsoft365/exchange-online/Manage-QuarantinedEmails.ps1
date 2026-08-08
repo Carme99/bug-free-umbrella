@@ -39,7 +39,7 @@
 .NOTES
     Author: IT Operations
     Version: 1.0.0
-    Requires: PowerShell 5.1+, ExchangeOnlineManagement module
+    Requires: PowerShell 7, ExchangeOnlineManagement module
     Requires: Security & Compliance Center permissions (Quarantine role)
 
     Permissions Required:
