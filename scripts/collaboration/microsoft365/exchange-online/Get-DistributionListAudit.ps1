@@ -44,7 +44,7 @@
 .NOTES
     Author: IT Operations
     Version: 1.0.0
-    Requires: PowerShell 5.1+, ExchangeOnlineManagement module
+    Requires: PowerShell 7, ExchangeOnlineManagement module
 
     WARNING: This script has not been thoroughly tested in production environments.
     Please test in a non-production environment first and validate results before relying on this data.

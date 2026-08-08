@@ -53,7 +53,7 @@
 .NOTES
     Author: IT Operations
     Version: 1.0.0
-    Requires: PowerShell 5.1+
+    Requires: PowerShell 7
 
     Required Modules:
     - ExchangeOnlineManagement (Exchange operations)

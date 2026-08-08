@@ -41,7 +41,7 @@
 .NOTES
     Author: IT Operations
     Version: 1.0.0
-    Requires: PowerShell 5.1+, Exchange Online PowerShell V2 module
+    Requires: PowerShell 7, ExchangeOnlineManagement module
 
     WARNING: This script has not been thoroughly tested in production environments.
     Please test in a non-production environment first and validate results before relying on this data.
@@ -111,10 +111,13 @@ try {
         exit 1
     }
 
-    # Get Anti-Phishing detections
-    Write-Host "`nRetrieving anti-phishing detections..." -ForegroundColor Yellow
+    # Get ATP detections (phishing)
+    # Get-MailDetailPhishReport is not part of the current Exchange PowerShell module;
+    # Get-MailDetailATPReport (filtered by VerdictSource) is the documented equivalent.
+    Write-Host "`nRetrieving ATP phishing detections..." -ForegroundColor Yellow
     try {
-        $phishingDetections = Get-MailDetailPhishReport -StartDate $startDate -EndDate $endDate -ErrorAction SilentlyContinue
+        $phishingDetections = Get-MailDetailATPReport -StartDate $startDate -EndDate $endDate |
+            Where-Object { $_.VerdictSource -like '*Phish*' }
 
         foreach ($detection in $phishingDetections) {
             $results.ThreatDetections += @{
@@ -124,7 +127,7 @@ try {
                 Subject = $detection.Subject
                 DetectionTime = $detection.Date
                 Direction = $detection.Direction
-                Action = $detection.DeliveryAction
+                Action = $detection.Action
             }
         }
         Write-Host "Found $($phishingDetections.Count) phishing detections" -ForegroundColor White
@@ -132,10 +135,13 @@ try {
         Write-Warning "Could not retrieve phishing data: $($_.Exception.Message)"
     }
 
-    # Get Malware detections
-    Write-Host "`nRetrieving malware detections..." -ForegroundColor Yellow
+    # Get ATP detections (malware)
+    # Get-MailDetailMalwareReport is not part of the current Exchange PowerShell module;
+    # Get-MailDetailATPReport (filtered by VerdictSource) is the documented equivalent.
+    Write-Host "`nRetrieving ATP malware detections..." -ForegroundColor Yellow
     try {
-        $malwareDetections = Get-MailDetailMalwareReport -StartDate $startDate -EndDate $endDate -ErrorAction SilentlyContinue
+        $malwareDetections = Get-MailDetailATPReport -StartDate $startDate -EndDate $endDate |
+            Where-Object { $_.VerdictSource -eq 'Malware' }
 
         foreach ($detection in $malwareDetections) {
             $results.ThreatDetections += @{
@@ -145,8 +151,8 @@ try {
                 Subject = $detection.Subject
                 DetectionTime = $detection.Date
                 Direction = $detection.Direction
-                MalwareName = $detection.MalwareName
-                Action = $detection.DeliveryAction
+                MalwareName = $detection.FileName
+                Action = $detection.Action
             }
         }
         Write-Host "Found $($malwareDetections.Count) malware detections" -ForegroundColor White
@@ -154,14 +160,16 @@ try {
         Write-Warning "Could not retrieve malware data: $($_.Exception.Message)"
     }
 
-    # Get Spam detections
-    Write-Host "`nRetrieving spam detections..." -ForegroundColor Yellow
+    # Get ATP detections (spam)
+    # Get-MailDetailSpamReport is not part of the current Exchange PowerShell module;
+    # Get-MailDetailATPReport (filtered by VerdictSource) is the documented equivalent.
+    # The ATP report has no SpamConfidenceLevel property, so the high-confidence split is not reported.
+    Write-Host "`nRetrieving ATP spam detections..." -ForegroundColor Yellow
     try {
-        $spamDetections = Get-MailDetailSpamReport -StartDate $startDate -EndDate $endDate -ErrorAction SilentlyContinue
+        $spamDetections = Get-MailDetailATPReport -StartDate $startDate -EndDate $endDate |
+            Where-Object { $_.VerdictSource -eq 'Spam' }
 
-        $highConfidenceSpam = $spamDetections | Where-Object { $_.SpamConfidenceLevel -eq 'High' }
-
-        Write-Host "Found $($spamDetections.Count) spam detections ($($highConfidenceSpam.Count) high confidence)" -ForegroundColor White
+        Write-Host "Found $($spamDetections.Count) spam detections" -ForegroundColor White
     } catch {
         Write-Warning "Could not retrieve spam data: $($_.Exception.Message)"
     }
@@ -186,9 +194,12 @@ try {
     }
 
     # Get ATP Safe Attachments data
+    # Get-SafeAttachmentReport is not part of the current Exchange PowerShell module;
+    # Get-MailDetailATPReport returns Safe Attachments detonation results (File Name, Verdict, Action).
     Write-Host "`nRetrieving Safe Attachments data..." -ForegroundColor Yellow
     try {
-        $safeAttachmentsData = Get-SafeAttachmentReport -StartDate $startDate -EndDate $endDate -ErrorAction SilentlyContinue
+        $safeAttachmentsData = Get-MailDetailATPReport -StartDate $startDate -EndDate $endDate |
+            Where-Object { $_.FileName }
 
         foreach ($attachment in $safeAttachmentsData) {
             $results.SafeAttachments += @{
@@ -196,7 +207,7 @@ try {
                 Sender = $attachment.SenderAddress
                 FileName = $attachment.FileName
                 DetectionTime = $attachment.Date
-                Verdict = $attachment.FileVerdict
+                Verdict = $attachment.VerdictSource
                 Action = $attachment.Action
             }
         }
@@ -249,7 +260,9 @@ $totalThreats = $results.ThreatDetections.Count
 $phishingCount = ($results.ThreatDetections | Where-Object { $_.Type -eq 'Phishing' }).Count
 $malwareCount = ($results.ThreatDetections | Where-Object { $_.Type -eq 'Malware' }).Count
 $safeLinksBlocked = ($results.SafeLinksClicks | Where-Object { $_.Action -eq 'Blocked' }).Count
-$safeAttachmentsBlocked = ($results.SafeAttachments | Where-Object { $_.Verdict -eq 'Malicious' }).Count
+# Verdict holds the ATP report VerdictSource value; a verdict other than 'None' means the
+# detonation was flagged as a threat.
+$safeAttachmentsBlocked = ($results.SafeAttachments | Where-Object { $_.Verdict -ne 'None' }).Count
 
 $results.Summary = @{
     TotalThreats = $totalThreats
