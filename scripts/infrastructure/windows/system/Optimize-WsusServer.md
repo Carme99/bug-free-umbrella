@@ -371,7 +371,7 @@ For questions about the original implementation, refer to the [original reposito
 ## Related Resources
 
 - [Microsoft WSUS Documentation](https://docs.microsoft.com/en-us/windows-server/administration/windows-server-update-services/get-started/windows-server-update-services-wsus)
-- [WSUS Best Practices](https://docs.microsoft.com/en-us/troubleshoot/mem/configmgr/update-management/wsus-best-practices)
+- [WSUS Best Practices](https://learn.microsoft.com/en-us/troubleshoot/mem/configmgr/update-management/optimize-wsus-client-performance)
 - [Original Optimize-WsusServer by Austin Warren](https://github.com/awarre/Optimize-WsusServer)
 
 ## Acknowledgments

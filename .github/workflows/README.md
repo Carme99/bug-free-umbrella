@@ -59,37 +59,7 @@ This directory contains automated workflows for repository management and qualit
 
 ---
 
-### 3. **Documentation Link Checker** (`link-checker.yml`)
-
-**Purpose:** Validates all markdown links to prevent dead links
-
-**Triggers:**
-- When markdown files are changed (push to main or claude/*)
-- Pull requests targeting main
-- Weekly on Sundays at midnight UTC (scheduled)
-- Manual trigger via workflow_dispatch
-
-**What it does:**
-- Scans all `*.md` files for broken links
-- Checks both internal and external links
-- Retries failed links (3 attempts, 10s wait)
-- Caches results for 1 day (based on markdown file content hash)
-- Creates a GitHub issue when broken links are detected
-- Uploads results as artifacts (30-day retention)
-
-**Exclusions:**
-- Social media sites: linkedin.com, twitter.com, facebook.com
-- Legacy docs: `./docs` directory
-- Changelog: `./CHANGELOG.md`
-
-**Configuration:**
-- `--accept 200,204,429` - Acceptable HTTP status codes
-- `--timeout 20` - 20-second timeout per link
-- `--max-retries 3` - Retry failed links 3 times
-
----
-
-### 4. **PowerShell Script Validator** (`validate-powershell.yml`)
+### 3. **PowerShell Script Validator** (`validate-powershell.yml`)
 
 **Purpose:** Validates PowerShell scripts for syntax and best practices
 
@@ -99,21 +69,21 @@ This directory contains automated workflows for repository management and qualit
 - Manual trigger via workflow_dispatch
 
 **What it does:**
-- Runs PSScriptAnalyzer on all `.ps1` files
+- Runs PSScriptAnalyzer on all `.ps1` files under `scripts/` using the curated `.vscode/PSScriptAnalyzerSettings.psd1` settings
 - Validates PowerShell syntax with PSParser
-- Reports errors and warnings (informational only - does not block)
+- **Hard-fails** the pipeline on any Error-severity PSScriptAnalyzer finding
 - Uploads analysis results as artifacts
 
 **Configuration:**
-- Uses default PSScriptAnalyzer rules
-- Checks for errors and warnings
-- Always exits successfully (informational only)
+- Uses curated PSScriptAnalyzer settings (`.vscode/PSScriptAnalyzerSettings.psd1`) shared with local development
+- Gates the pipeline on Error-severity findings; warnings are reported but do not block
+- Runs a PowerShell syntax check that also gates the pipeline
 
-**Note:** This workflow is informational and does not block PRs. It provides guidance on code quality.
+**Note:** This workflow is gating, not informational — it blocks PRs on Error-severity PSScriptAnalyzer findings and on PowerShell syntax errors. It does not run Pester tests.
 
 ---
 
-### 5. **Wiki Sync** (`sync-wiki.yml`)
+### 4. **Wiki Sync** (`sync-wiki.yml`)
 
 **Purpose:** Automatically syncs wiki content from repository to GitHub Wiki
 
@@ -132,7 +102,7 @@ This directory contains automated workflows for repository management and qualit
 
 ---
 
-### 6. **Claude Code** (`claude.yml`)
+### 5. **Claude Code** (`claude.yml`)
 
 **Purpose:** AI-powered code review and assistance via Claude Code
 
@@ -153,7 +123,7 @@ This directory contains automated workflows for repository management and qualit
 
 ---
 
-### 7. **Claude Code Review** (`claude-code-review.yml`)
+### 6. **Claude Code Review** (`claude-code-review.yml`)
 
 **Purpose:** Automated AI code review for pull requests
 
@@ -210,7 +180,7 @@ Workflows with `workflow_dispatch` can be triggered manually:
 ### View Workflow Runs
 - **Actions Tab** → Select workflow → View recent runs
 - Check logs for detailed execution information
-- Download artifacts (analysis results, link check reports)
+- Download artifacts (analysis results)
 
 ### Common Issues
 
@@ -223,11 +193,6 @@ Workflows with `workflow_dispatch` can be triggered manually:
 - Adjust `operations-per-run` to process fewer items
 - Add exempt labels to protect important issues
 - Increase `days-before-stale` threshold
-
-**Link checker failing:**
-- Check if links are temporarily unavailable
-- Review exclusions in workflow file
-- Adjust timeout settings if needed
 
 **Wiki sync failing:**
 - Verify `WIKI_TOKEN` is valid
@@ -252,13 +217,6 @@ Edit `stale.yml`:
 - `days-before-pr-stale: 30` - Days before marking PR stale
 - `days-before-close: 7` - Days after stale before closing
 
-### Link Checker Exclusions
-
-Edit `link-checker.yml`:
-- Add domains to `--exclude` list
-- Add paths to `--exclude-path`
-- Adjust retry settings: `--max-retries`, `--retry-wait-time`
-
 ---
 
 ## 📝 Best Practices
@@ -276,7 +234,6 @@ Edit `link-checker.yml`:
 ### Regular Tasks
 
 **Weekly:**
-- Review link checker results
 - Check stale issue queue
 - Monitor workflow success rates
 
@@ -297,7 +254,6 @@ Edit `link-checker.yml`:
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [github-script Action](https://github.com/actions/github-script)
 - [stale Action](https://github.com/actions/stale)
-- [lychee Link Checker](https://github.com/lycheeverse/lychee-action)
 - [PSScriptAnalyzer](https://github.com/PowerShell/PSScriptAnalyzer)
 
 ---

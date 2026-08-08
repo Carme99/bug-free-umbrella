@@ -1,6 +1,6 @@
 # Winget Updates
 
-Automate application updates using Windows Package Manager (winget) with Intune Proactive Remediations.
+Automate application updates using Windows Package Manager (winget) with Intune Remediations.
 
 ## Overview
 
@@ -92,7 +92,7 @@ Each application may have multiple remediation versions:
 
 ## Deployment to Intune
 
-### Step 1: Create Proactive Remediation
+### Step 1: Create Remediation
 1. Navigate to **Endpoint Manager** → **Devices** → **Remediations**
 2. Click **Create script package**
 3. Configure:
@@ -186,7 +186,7 @@ Common issues:
 
 ### Intune Requirements
 - **Microsoft Intune license**
-- **Proactive Remediations** add-on (included in some licenses)
+- **Remediations** add-on (included in some licenses)
 - Devices must be **Azure AD joined** or **Hybrid joined**
 
 ### Permissions
@@ -199,7 +199,7 @@ Common issues:
 
 - **[Update-AllAppsWinget.ps1](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/utilities/Update-AllAppsWinget.ps1)** - System-wide winget updater
 - **[Update-DotNetRuntimes.ps1](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/utilities/Update-DotNetRuntimes.ps1)** (v2.5) - .NET runtime maintenance with interactive menu, EOL detection, and security-hardened updates
-- **[Proactive Remediations](Proactive-Remediations)** - Other auto-fix scripts
+- **[Remediations](Proactive-Remediations)** - Other auto-fix scripts
 
 ---
 
@@ -207,7 +207,7 @@ Common issues:
 
 - **[Winget Documentation](https://learn.microsoft.com/windows/package-manager/)** - Official Microsoft docs
 - **[Winget Package Search](https://winget.run)** - Find package IDs
-- **[Intune Proactive Remediations](https://learn.microsoft.com/mem/intune/fundamentals/remediations)** - Microsoft Endpoint Manager docs
+- **[Intune Remediations](https://learn.microsoft.com/mem/intune/fundamentals/remediations)** - Microsoft Endpoint Manager docs
 - **[Script Catalog](Script-Catalog)** - Browse all scripts
 
 ---

@@ -360,9 +360,9 @@ Import-Module WebAdministration -Verbose
 
 ## 📚 Additional Resources
 
-- [IIS Administration Guide](https://docs.microsoft.com/en-us/iis/manage/managing-your-configuration-settings)
-- [Security Best Practices for IIS](https://docs.microsoft.com/en-us/iis/manage/configuring-security/security-best-practices-for-iis-8)
-- [Performance Tuning IIS](https://docs.microsoft.com/en-us/iis/configuration/performance-tuning-iis)
+- [IIS Administration Guide](https://learn.microsoft.com/en-us/iis/manage/provisioning-and-managing-iis/iis-management-and-administration)
+- [Security Best Practices for IIS](https://learn.microsoft.com/en-us/iis/manage/configuring-security/ensure-security-isolation-for-web-sites)
+- [Performance Tuning IIS](https://learn.microsoft.com/en-us/windows-server/administration/performance-tuning/role/web-server/tuning-iis-10)
 
 ---
 

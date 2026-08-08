@@ -199,7 +199,7 @@ Planned additions:
 ## 📚 Additional Resources
 
 - [SQL Server PowerShell Documentation](https://docs.microsoft.com/sql/powershell/)
-- [SQL Server Best Practices](https://docs.microsoft.com/sql/database-engine/sql-server-best-practices/)
+- [SQL Server Best Practices](https://learn.microsoft.com/en-us/sql/relational-databases/sql-server-guides?view=sql-server-ver17)
 - [Monitoring SQL Server](https://docs.microsoft.com/sql/relational-databases/performance/monitor-and-tune-for-performance)
 
 ---

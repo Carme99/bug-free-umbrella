@@ -243,8 +243,8 @@ Create monitoring system for backup health:
 
 ## Additional Resources
 
-- [Windows Server Backup Overview](https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/manage/component-updates/ad-ds-operations)
-- [System Restore Best Practices](https://docs.microsoft.com/en-us/windows/deployment/deploy-windows-mdt/windows-10-deployment-troubleshooting)
+- [Windows Server Backup Overview](https://learn.microsoft.com/en-us/powershell/module/windowsserverbackup/)
+- [System Restore (Restore Points)](https://learn.microsoft.com/en-us/windows/win32/sr/restore-points)
 - [Disaster Recovery Planning](https://docs.microsoft.com/en-us/azure/site-recovery/site-recovery-overview)
 
 ---

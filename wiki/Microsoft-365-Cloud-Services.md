@@ -100,10 +100,9 @@ Install-Module Microsoft.Online.SharePoint.PowerShell -Scope CurrentUser -Force
 
 # Microsoft Teams
 Install-Module MicrosoftTeams -Scope CurrentUser -Force
-
-# Azure AD (legacy, Graph preferred)
-Install-Module AzureAD -Scope CurrentUser -Force
 ```
+
+> **Note**: The legacy `AzureAD` module was deprecated on March 30, 2024 and is not compatible with PowerShell 7. Use the Microsoft Graph PowerShell SDK (`Microsoft.Graph`) instead, as shown above.
 
 ### Connect to Services
 ```powershell
@@ -118,9 +117,6 @@ Connect-SPOService -Url https://company-admin.sharepoint.com
 
 # Connect to Microsoft Teams
 Connect-MicrosoftTeams
-
-# Connect to Azure AD
-Connect-AzureAD
 ```
 
 ### License Requirements

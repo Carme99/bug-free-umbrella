@@ -585,7 +585,7 @@ function Send-EmailReport {
 - 📖 [CONTRIBUTING.md](https://github.com/Carme99/bug-free-umbrella/blob/main/CONTRIBUTING.md)
 - 📖 [Script Catalog](Script-Catalog)
 - 📖 [Code of Conduct](https://github.com/Carme99/bug-free-umbrella/blob/main/CODE_OF_CONDUCT.md)
-- 🔗 [PowerShell Best Practices](https://learn.microsoft.com/en-us/powershell/scripting/developer/cmdlet/best-practices-for-cmdlet-development)
+- 🔗 [PowerShell Best Practices](https://learn.microsoft.com/en-us/powershell/scripting/developer/cmdlet/strongly-encouraged-development-guidelines)
 - 🔗 [PSScriptAnalyzer Rules](https://learn.microsoft.com/en-us/powershell/utility-modules/psscriptanalyzer/rules/readme)
 
 ---

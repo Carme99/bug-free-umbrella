@@ -125,7 +125,7 @@ New here? **Try these first** - they're the most commonly used scripts in the wi
 ### 🖥️ For Server Admins
 - **[Monitor-ServerHealth.ps1](scripts/infrastructure/windows/monitoring/)** - 30-second health check
 - **[Invoke-SecurityComplianceScan.ps1](scripts/security/compliance/frameworks/)** - Multi-framework compliance
-- **[Get-EventLogErrors.ps1](scripts/infrastructure/windows/monitoring/)** - Find issues before users report them
+- **[Get-EventLogReport.ps1](scripts/infrastructure/windows/monitoring/)** - Find issues before users report them
 
 </td>
 </tr>
