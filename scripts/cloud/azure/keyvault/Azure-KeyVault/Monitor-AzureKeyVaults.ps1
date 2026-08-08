@@ -3,14 +3,10 @@
     Monitors Azure Key Vault security, compliance, and secret expiration.
 
 .DESCRIPTION
-    Comprehensive Key Vault monitoring including:
+    Key Vault monitoring that provides:
     - Secret/certificate/key expiration tracking
-    - Access policy auditing
     - Soft delete and purge protection status
-    - Network access restrictions
-    - Diagnostic logging configuration
-    - Vault usage and performance metrics
-    - Unused/orphaned vaults detection
+    - Vault inventory across subscriptions (location, SKU, resource group)
 
 .PARAMETER SubscriptionId
     Azure subscription ID. Use '*' for all subscriptions.

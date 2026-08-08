@@ -11,6 +11,8 @@
     - Configures registry keys for AVD optimizations (IsWVDEnvironment)
     - Installs WebView2 runtime (required dependency)
     - Installs Teams bootstrapper for machine-wide deployment
+    - Optionally installs the Remote Desktop WebRTC Redirector Service (recommended
+      for new Teams media optimization fallback, see -InstallWebRtcRedirector)
     - Cleans up old per-user Teams installations
     - Prevents users from manually updating Teams
     - Comprehensive logging and error handling
@@ -38,6 +40,12 @@
 .PARAMETER SkipSignatureCheck
     Skip Authenticode signature verification of downloaded files. Use only in trusted environments.
 
+.PARAMETER InstallWebRtcRedirector
+    Also download and install the Remote Desktop WebRTC Redirector Service MSI
+    (https://aka.ms/msrdcwebrtcsvc/msi). Recommended for new Teams on AVD so calls
+    can fall back to WebRTC when SlimCore is unavailable. Default: not installed.
+    See https://learn.microsoft.com/en-us/azure/virtual-desktop/teams-on-avd
+
 .EXAMPLE
     .\Install-TeamsAVD.ps1 -AcceptEULA
     Install Teams and WebView2 with default settings.
@@ -49,6 +57,10 @@
 .EXAMPLE
     .\Install-TeamsAVD.ps1 -AcceptEULA -Force
     Force reinstallation even if already installed.
+
+.EXAMPLE
+    .\Install-TeamsAVD.ps1 -AcceptEULA -InstallWebRtcRedirector
+    Install Teams, WebView2, and the WebRTC Redirector Service.
 
 .NOTES
     Author: AVD Gold Image Automation
@@ -83,7 +95,10 @@ param(
     [switch]$Force,
 
     [Parameter(HelpMessage="Skip Authenticode signature verification (use only in trusted environments)")]
-    [switch]$SkipSignatureCheck
+    [switch]$SkipSignatureCheck,
+
+    [Parameter(HelpMessage="Also install the Remote Desktop WebRTC Redirector Service (recommended for new Teams media optimization)")]
+    [switch]$InstallWebRtcRedirector
 )
 
 # ==================== EARLY VALIDATION ====================
@@ -100,6 +115,8 @@ $ErrorActionPreference = "Stop"
 $script:InstallErrors = @()
 $script:WebView2Url = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
 $script:TeamsBootstrapperUrl = "https://go.microsoft.com/fwlink/?linkid=2243204"
+$script:WebRtcRedirectorUrl = "https://aka.ms/msrdcwebrtcsvc/msi"
+$script:WebRtcRedirectorInstallPath = "C:\Program Files\Remote Desktop Services\TeamsWebRTC\TeamsWebRTCService.exe"
 $script:TempPath = $env:TEMP
 
 # Known successful exit codes for installers (0 = success, 3010 = success but reboot required)
@@ -596,6 +613,86 @@ function Install-TeamsBootstrapper {
     }
 }
 
+function Install-WebRtcRedirectorService {
+    Write-Log ""
+    Write-Log "═══ WebRTC Redirector Service Installation ═══" -Level Header
+
+    # Check if already installed
+    if (Test-Path $script:WebRtcRedirectorInstallPath) {
+        Write-Log "WebRTC Redirector Service already installed" -Level Success
+        return $true
+    }
+
+    $installer = Join-Path $script:TempPath "WebRtcRedirector_$(Get-Date -Format 'yyyyMMddHHmmss').msi"
+    $progressPreference = $ProgressPreference
+
+    try {
+        # Download
+        Write-Log "Downloading WebRTC Redirector Service MSI..." -Level Info
+        $ProgressPreference = 'SilentlyContinue'
+        Invoke-WebRequest -Uri $script:WebRtcRedirectorUrl -OutFile $installer -UseBasicParsing -TimeoutSec 300
+
+        if (-not (Test-Path $installer)) {
+            throw "Download failed: File not found at $installer"
+        }
+
+        $fileSize = (Get-Item $installer).Length
+        if ($fileSize -lt 100KB) {
+            throw "Download failed: File size too small ($fileSize bytes)"
+        }
+
+        Write-Log "Downloaded successfully ($([math]::Round($fileSize/1KB, 2)) KB)" -Level Success
+
+        # Verify signature
+        Write-Log "Verifying Authenticode signature..." -Level Info
+        if (-not (Test-FileSignature -FilePath $installer)) {
+            throw "Signature verification failed - file may be compromised"
+        }
+
+        # Install silently via msiexec
+        Write-Log "Installing WebRTC Redirector Service (silent mode)..." -Level Info
+        $installArgs = @("/i", "`"$installer`"", "/qn", "/norestart")
+        $process = Start-Process -FilePath "msiexec.exe" -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
+
+        if ($process.ExitCode -in $script:AcceptableExitCodes) {
+            Write-Log "Installer completed with exit code: $($process.ExitCode)" -Level Success
+
+            # Verify installation
+            if (Test-Path $script:WebRtcRedirectorInstallPath) {
+                Write-Log "WebRTC Redirector Service installation verified" -Level Success
+                return $true
+            }
+            else {
+                Write-Log "Installer reported success but service file not detected" -Level Warning
+                return $true  # Trust installer exit code
+            }
+        }
+        else {
+            throw "WebRTC Redirector installer exited with code $($process.ExitCode)"
+        }
+    }
+    catch {
+        Write-Log "WebRTC Redirector installation failed: $_" -Level Error
+        $script:InstallErrors += "WebRTC Redirector: $_"
+        return $false
+    }
+    finally {
+        # Always restore ProgressPreference
+        $ProgressPreference = $progressPreference
+
+        # Cleanup
+        if (Test-Path $installer) {
+            try {
+                Remove-Item $installer -Force -ErrorAction SilentlyContinue
+                Write-Log "Cleaned up installer file" -Level Info
+            }
+            catch {
+                Write-Log "Could not remove installer: $installer" -Level Warning
+            }
+        }
+    }
+}
+
 function Set-AVDRegistryConfiguration {
     Write-Log ""
     Write-Log "═══ Configuring AVD Registry Settings ═══" -Level Header
@@ -664,6 +761,14 @@ function Write-InstallationSummary {
         Write-Log "Microsoft Teams: NOT DETECTED" -Level Error
     }
 
+    # WebRTC Redirector Status
+    if (Test-Path $script:WebRtcRedirectorInstallPath) {
+        Write-Log "WebRTC Redirector Service: Installed" -Level Success
+    }
+    else {
+        Write-Log "WebRTC Redirector Service: NOT INSTALLED" -Level Warning
+    }
+
     # Registry Status
     $isWVD = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Teams" -Name "IsWVDEnvironment" -ErrorAction SilentlyContinue).IsWVDEnvironment
     if ($isWVD -eq 1) {
@@ -725,11 +830,17 @@ try {
     # Install Teams
     $teamsSuccess = Install-TeamsBootstrapper
 
+    # Install WebRTC Redirector Service (optional, new Teams media optimization fallback)
+    $webrtcSuccess = $true
+    if ($InstallWebRtcRedirector) {
+        $webrtcSuccess = Install-WebRtcRedirectorService
+    }
+
     # Generate summary
     Write-InstallationSummary
 
     # Determine exit code
-    if ($webView2Success -and $teamsSuccess -and $registrySuccess) {
+    if ($webView2Success -and $teamsSuccess -and $registrySuccess -and $webrtcSuccess) {
         Write-Log "╔════════════════════════════════════════════════════════╗" -Level Success
         Write-Log "║  ✓ Installation completed successfully!               ║" -Level Success
         Write-Log "║    AVD gold image is ready for user logins            ║" -Level Success
@@ -737,21 +848,21 @@ try {
         Write-Log ""
         $exitCode = 0
     }
-    elseif (-not $webView2Success -or -not $teamsSuccess) {
+    elseif (-not $registrySuccess) {
+        Write-Log "╔════════════════════════════════════════════════════════╗" -Level Warning
+        Write-Log "║  ⚠ Installation completed but registry config failed  ║" -Level Warning
+        Write-Log "║    Teams may not be optimized for AVD                 ║" -Level Warning
+        Write-Log "╚════════════════════════════════════════════════════════╝" -Level Warning
+        Write-Log ""
+        $exitCode = 4
+    }
+    elseif (-not $webView2Success -or -not $teamsSuccess -or -not $webrtcSuccess) {
         Write-Log "╔════════════════════════════════════════════════════════╗" -Level Error
         Write-Log "║  ✗ Installation completed with errors                 ║" -Level Error
         Write-Log "║    Review the log file for details                    ║" -Level Error
         Write-Log "╚════════════════════════════════════════════════════════╝" -Level Error
         Write-Log ""
         $exitCode = 3
-    }
-    elseif (-not $registrySuccess) {
-        Write-Log "╔════════════════════════════════════════════════════════╗" -Level Warning
-        Write-Log "║  ⚠ Installation succeeded but registry config failed  ║" -Level Warning
-        Write-Log "║    Teams may not be optimized for AVD                 ║" -Level Warning
-        Write-Log "╚════════════════════════════════════════════════════════╝" -Level Warning
-        Write-Log ""
-        $exitCode = 4
     }
 
     Stop-Transcript

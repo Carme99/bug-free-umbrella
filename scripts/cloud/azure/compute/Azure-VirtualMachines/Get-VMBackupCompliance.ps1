@@ -174,19 +174,19 @@ foreach ($sub in $subscriptions) {
         $isProtected = $false
 
         foreach ($vault in $vaults) {
-            Set-AzRecoveryServicesVaultContext -Vault $vault | Out-Null
-
             try {
                 # Get backup container for the VM
                 $container = Get-AzRecoveryServicesBackupContainer `
                     -ContainerType AzureVM `
                     -FriendlyName $vm.Name `
+                    -VaultId $vault.Id `
                     -ErrorAction SilentlyContinue
 
                 if ($container) {
                     $backupItem = Get-AzRecoveryServicesBackupItem `
                         -Container $container `
                         -WorkloadType AzureVM `
+                        -VaultId $vault.Id `
                         -ErrorAction SilentlyContinue
 
                     if ($backupItem) {
@@ -238,12 +238,11 @@ foreach ($sub in $subscriptions) {
         Write-Host "`nRetrieving recent backup jobs..." -ForegroundColor Yellow
 
         foreach ($vault in $vaults) {
-            Set-AzRecoveryServicesVaultContext -Vault $vault | Out-Null
-
             try {
                 $jobs = Get-AzRecoveryServicesBackupJob `
-                    -From (Get-Date).AddDays(-7) `
-                    -To (Get-Date) `
+                    -VaultId $vault.Id `
+                    -From (Get-Date).AddDays(-7).ToUniversalTime() `
+                    -To (Get-Date).ToUniversalTime() `
                     -Operation Backup `
                     -ErrorAction SilentlyContinue
 

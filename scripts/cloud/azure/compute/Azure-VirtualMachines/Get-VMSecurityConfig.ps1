@@ -3,15 +3,13 @@
     Audits Azure VM security configuration and compliance.
 
 .DESCRIPTION
-    Comprehensive security configuration audit including:
+    Security configuration audit including:
     - Disk encryption status (Azure Disk Encryption)
     - Network security group (NSG) assignments
     - Public IP exposure
     - Boot diagnostics configuration
     - Managed identity usage
     - VM extensions security status
-    - OS patch level and update status
-    - Just-In-Time (JIT) VM access configuration
 
 .PARAMETER SubscriptionId
     Azure subscription ID. Use '*' for all subscriptions.

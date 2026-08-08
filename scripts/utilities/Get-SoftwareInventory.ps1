@@ -227,7 +227,7 @@ if ($IncludeFeatures) {
 
     try {
         # Check if this is Windows Server
-        $isServer = (Get-WmiObject -Class Win32_OperatingSystem).ProductType -ne 1
+        $isServer = (Get-CimInstance -ClassName Win32_OperatingSystem).ProductType -ne 1
 
         if ($isServer) {
             $features = Get-WindowsFeature | Where-Object { $_.Installed }
