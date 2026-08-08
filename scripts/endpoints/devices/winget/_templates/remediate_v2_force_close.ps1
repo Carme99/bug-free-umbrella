@@ -5,6 +5,9 @@
 .DESCRIPTION
     This template checks if an app update is available and installs it.
     If the app is running, it will forcefully close the app before updating.
+    It prefers the Microsoft.WinGet.Client PowerShell module (the winget CLI is NOT
+    supported in the SYSTEM context that Intune Proactive Remediations run in) and
+    falls back to the winget.exe CLI only when the module is unavailable.
 
 .NOTES
     REQUIRED: Only the winget ID is required. The script will auto-detect app name and process.
@@ -40,13 +43,102 @@ $VerifyWaitSeconds = 10         # Time to wait after update to verify installati
 
 #region Script - DO NOT MODIFY BELOW THIS LINE
 try {
+    # Prefer the Microsoft.WinGet.Client PowerShell module - the winget CLI is NOT supported in
+    # the SYSTEM context (Intune Proactive Remediations run as SYSTEM). Only fall back to the
+    # winget.exe CLI when the module is unavailable.
+    # Reference: https://learn.microsoft.com/en-us/windows/package-manager/winget/troubleshooting
+    if (Get-Module -ListAvailable -Name Microsoft.WinGet.Client) {
+        try { Import-Module Microsoft.WinGet.Client -ErrorAction Stop } catch { }
+        if (Get-Command Get-WinGetPackage -ErrorAction SilentlyContinue) {
+            $package = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -ErrorAction SilentlyContinue
+
+            # Auto-detect name if not provided
+            if (-not $name) {
+                $name = if ($package.Name) { $package.Name } else { $ID }
+            }
+
+            # Check if package is installed
+            if (-not $package) {
+                Write-Host "$name is not installed on this device."
+                exit 0
+            }
+
+            # Auto-detect process name if not provided
+            if (-not $AppProcess) {
+                # Extract process name from package ID (e.g., 'TeamViewer.TeamViewer' -> 'TeamViewer')
+                $AppProcess = ($ID -split '\.')[-1]
+            }
+
+            # Check if app is running and force close if needed
+            $process = Get-Process -Name "$AppProcess" -ErrorAction SilentlyContinue
+            if ($process) {
+                Write-Host "$name is running. Force closing application..."
+                Stop-Process -Name "$AppProcess" -Force -ErrorAction SilentlyContinue
+                Start-Sleep -Seconds $GracePeriodSeconds
+
+                # Verify process was closed
+                $process = Get-Process -Name "$AppProcess" -ErrorAction SilentlyContinue
+                if ($process) {
+                    Write-Warning "$name process still running after force close attempt. Retrying..."
+                    Stop-Process -Name "$AppProcess" -Force -ErrorAction SilentlyContinue
+                    Start-Sleep -Seconds 2
+                }
+                Write-Host "$name closed successfully."
+            } else {
+                Write-Host "$name is not currently running."
+            }
+
+            # Check if update is available
+            if ($package.IsUpdateAvailable) {
+                $verInstalled = $package.InstalledVersion
+                $verAvailable = $package.AvailableVersions | Select-Object -Last 1
+                Write-Host "Update available for $name : $verInstalled -> $verAvailable"
+
+                # Perform upgrade via the module
+                Write-Host "Installing $name update..."
+                Update-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -Mode Silent -Force -ErrorAction Stop
+
+                # Wait for installation to complete
+                Start-Sleep -Seconds $VerifyWaitSeconds
+
+                # Verify installation
+                $verifyPackage = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -ErrorAction SilentlyContinue
+                if ($verifyPackage) {
+                    $versionInstalled = $verifyPackage.InstalledVersion
+                    Write-Host "$name updated successfully to version $versionInstalled"
+                    [pscustomobject] @{
+                        Name = $name
+                        PreviousVersion = $verInstalled
+                        InstalledVersion = $versionInstalled
+                        Status = "Force Updated Successfully"
+                    }
+                    exit 0
+                } else {
+                    Write-Error "Failed to verify $name installation after update."
+                    exit 1
+                }
+            } else {
+                # No update available
+                $versionInstalled = $package.InstalledVersion
+                Write-Host "$name is already up to date (version $versionInstalled)"
+                [pscustomobject] @{
+                    Name = $name
+                    InstalledVersion = $versionInstalled
+                    Status = "Up to Date"
+                }
+                exit 0
+            }
+        }
+    }
+
+    # Fallback: winget.exe CLI (only reached when the Microsoft.WinGet.Client module is unavailable)
     # Locate winget executable
     $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
     $SystemContext = $wingetexe[-1].Path
     New-Alias -Name sysget -Value "$SystemContext" -Force
 
-    # Get package information
-    $packageInfo = sysget list --accept-source-agreements --Id $ID 2>$null
+    # Get package information (exact ID match)
+    $packageInfo = sysget list --exact --id $ID --accept-source-agreements 2>$null
 
     # Auto-detect name if not provided
     if (-not $name) {
@@ -102,7 +194,7 @@ try {
         Start-Sleep -Seconds $VerifyWaitSeconds
 
         # Verify installation
-        $verifyInfo = sysget list --accept-source-agreements --Id $ID
+        $verifyInfo = sysget list --exact --id $ID --accept-source-agreements
         if ($verifyInfo -match '\d+(\.\d+)+') {
             $versionInstalled = (-split $verifyInfo[-1])[-2]
             Write-Host "$name updated successfully to version $versionInstalled"

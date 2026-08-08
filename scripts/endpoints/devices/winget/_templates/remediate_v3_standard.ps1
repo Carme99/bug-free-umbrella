@@ -5,6 +5,9 @@
 .DESCRIPTION
     This template checks if an app update is available and installs it.
     If the app is running, it will skip the update and retry later.
+    It prefers the Microsoft.WinGet.Client PowerShell module (the winget CLI is NOT
+    supported in the SYSTEM context that Intune Proactive Remediations run in) and
+    falls back to the winget.exe CLI only when the module is unavailable.
 
     V3 ENHANCEMENTS:
     - Retry logic with exponential backoff
@@ -12,6 +15,7 @@
     - Better error handling and status reporting
     - Configurable wait times
     - Pre/post update hooks
+    - Microsoft.WinGet.Client module preferred over the winget.exe CLI (SYSTEM context safe)
 
 .NOTES
     REQUIRED: Only the winget ID is required. The script will auto-detect app name and process.
@@ -22,8 +26,8 @@
     3. (Optional) Define pre/post update hooks for custom actions
 
 .EXAMPLE
-    # For Google Chrome with logging enabled:
-    $ID = 'Google.Chrome'
+    # For your application with logging enabled:
+    $ID = 'WINGETID'
     $EnableLogging = $true
 #>
 
@@ -85,14 +89,14 @@ function Invoke-WingetWithRetry {
 
     $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
     $wingetPath = if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }
-    
+
     $attempt = 1
     $delay = $RetryDelaySeconds
 
     while ($attempt -le $MaxAttempts) {
         try {
             Write-Log "Executing winget command (Attempt $attempt/$MaxAttempts): $wingetPath $Arguments" -Level Info
-            
+
             $psi = New-Object System.Diagnostics.ProcessStartInfo
             $psi.FileName = $wingetPath
             $psi.Arguments = $Arguments
@@ -103,15 +107,24 @@ function Invoke-WingetWithRetry {
             $p = New-Object System.Diagnostics.Process
             $p.StartInfo = $psi
             $p.Start() | Out-Null
+
+            # Drain BOTH output streams before waiting so a full stderr pipe cannot deadlock the child.
             $stdout = $p.StandardOutput.ReadToEnd()
+            $stderr = $p.StandardError.ReadToEnd()
             $p.WaitForExit()
-            
-            if ($stdout -and -not ($stdout -match "error|failed|exception")) {
-                Write-Log "Winget command succeeded on attempt $attempt" -Level Info
+
+            # Base success on the process exit code, not on a grep of stdout.
+            # Success: 0 (S_OK), 0x8A150014 (no packages found - "not installed" for list),
+            # 0x8A150109 (install succeeded, reboot required).
+            # Reference: https://github.com/microsoft/winget-cli/blob/master/doc/windows/package-manager/winget/returnCodes.md
+            if ($p.ExitCode -eq 0 -or $p.ExitCode -eq 0x8A150014 -or $p.ExitCode -eq 0x8A150109) {
+                Write-Log "Winget command succeeded on attempt $attempt (exit code 0x$($p.ExitCode.ToString('X8')))" -Level Info
+                if ($stderr) { Write-Log "Winget stderr: $stderr" -Level Warning }
                 return $stdout
             }
 
-            Write-Log "Winget command returned invalid result on attempt $attempt" -Level Warning
+            Write-Log "Winget command exited with code 0x$($p.ExitCode.ToString('X8')) on attempt $attempt" -Level Warning
+            if ($stderr) { Write-Log "Winget stderr: $stderr" -Level Warning }
         } catch {
             Write-Log "Winget command failed on attempt $attempt : $($_.Exception.Message)" -Level Warning
         }
@@ -119,7 +132,7 @@ function Invoke-WingetWithRetry {
         if ($attempt -lt $MaxAttempts) {
             Write-Log "Waiting $delay seconds before retry..." -Level Info
             Start-Sleep -Seconds $delay
-            $delay = $delay * 2
+            $delay = $delay * 2  # Exponential backoff
         }
 
         $attempt++
@@ -132,6 +145,129 @@ function Invoke-WingetWithRetry {
 #region Script
 try {
     Write-Log "=== Starting winget remediation for package: $ID ===" -Level Info
+
+    # Prefer the Microsoft.WinGet.Client PowerShell module - the winget CLI is NOT supported in
+    # the SYSTEM context (Intune Proactive Remediations run as SYSTEM). Only fall back to the
+    # winget.exe CLI when the module is unavailable.
+    # Reference: https://learn.microsoft.com/en-us/windows/package-manager/winget/troubleshooting
+    if (Get-Module -ListAvailable -Name Microsoft.WinGet.Client) {
+        try { Import-Module Microsoft.WinGet.Client -ErrorAction Stop } catch { }
+        if (Get-Command Get-WinGetPackage -ErrorAction SilentlyContinue) {
+            Write-Log "Using Microsoft.WinGet.Client module" -Level Info
+
+            $package = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -ErrorAction SilentlyContinue
+
+            # Auto-detect name if not provided
+            if (-not $name) {
+                $name = if ($package.Name) { $package.Name } else { $ID }
+            }
+
+            # Check if package is installed
+            if (-not $package) {
+                Write-Log "$name is not installed on this device." -Level Info
+                Write-Host "$name is not installed on this device."
+                exit 0
+            }
+
+            # Auto-detect process name if not provided
+            if (-not $AppProcess) {
+                $AppProcess = ($ID -split '\.')[-1]
+            }
+
+            # Check if update is available
+            if ($package.IsUpdateAvailable) {
+                $verInstalled = $package.InstalledVersion
+                $verAvailable = $package.AvailableVersions | Select-Object -Last 1
+                Write-Log "Update available for $name | Installed: $verInstalled | Available: $verAvailable" -Level Info
+
+                # Check if app is running
+                $process = Get-Process -Name "$AppProcess" -ErrorAction SilentlyContinue
+                if ($process) {
+                    Write-Log "$name is currently running. Skipping update - will retry later." -Level Warning
+                    Write-Host "$name is currently running. Will try again later."
+                    [pscustomobject] @{
+                        Name = $name
+                        InstalledVersion = $verInstalled
+                        AvailableVersion = $verAvailable
+                        Status = "Skipped - App Running"
+                    }
+                    exit 1
+                }
+
+                Write-Log "$name is not running. Proceeding with update..." -Level Info
+
+                # Execute pre-update hook if defined
+                if ($PreUpdateScriptBlock) {
+                    Write-Log "Executing pre-update hook..." -Level Info
+                    try {
+                        & $PreUpdateScriptBlock
+                        Write-Log "Pre-update hook completed successfully" -Level Info
+                    } catch {
+                        Write-Log "Pre-update hook failed: $($_.Exception.Message)" -Level Warning
+                    }
+                }
+
+                # Perform upgrade via the module
+                Write-Log "Installing $name update ($verInstalled -> $verAvailable)..." -Level Info
+                Write-Host "Installing $name update ($verInstalled -> $verAvailable)..."
+                Update-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -Mode Silent -Force -ErrorAction Stop
+
+                # Wait for installation to complete
+                Write-Log "Waiting $VerifyWaitSeconds seconds for installation to complete..." -Level Info
+                Start-Sleep -Seconds $VerifyWaitSeconds
+
+                # Execute post-update hook if defined
+                if ($PostUpdateScriptBlock) {
+                    Write-Log "Executing post-update hook..." -Level Info
+                    try {
+                        & $PostUpdateScriptBlock
+                        Write-Log "Post-update hook completed successfully" -Level Info
+                    } catch {
+                        Write-Log "Post-update hook failed: $($_.Exception.Message)" -Level Warning
+                    }
+                }
+
+                # Verify installation
+                Write-Log "Verifying installation..." -Level Info
+                $verifyPackage = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -ErrorAction SilentlyContinue
+
+                if ($verifyPackage) {
+                    $versionInstalled = $verifyPackage.InstalledVersion
+                    Write-Log "$name updated successfully to version $versionInstalled" -Level Info
+                    Write-Host "$name updated successfully to version $versionInstalled"
+
+                    [pscustomobject] @{
+                        Name = $name
+                        PreviousVersion = $verInstalled
+                        InstalledVersion = $versionInstalled
+                        Status = "Updated Successfully"
+                    }
+
+                    exit 0
+                } else {
+                    Write-Log "Failed to verify $name installation after update" -Level Error
+                    Write-Error "Failed to verify $name installation after update."
+                    exit 1
+                }
+            } else {
+                # No update available
+                $versionInstalled = $package.InstalledVersion
+                Write-Log "$name is already up to date (version $versionInstalled)" -Level Info
+                Write-Host "$name is already up to date (version $versionInstalled)"
+
+                [pscustomobject] @{
+                    Name = $name
+                    InstalledVersion = $versionInstalled
+                    Status = "Up to Date"
+                }
+
+                exit 0
+            }
+        }
+    }
+
+    # Fallback: winget.exe CLI (only reached when the Microsoft.WinGet.Client module is unavailable)
+    Write-Log "Microsoft.WinGet.Client module unavailable, falling back to winget.exe CLI" -Level Warning
 
     # Locate winget executable
     Write-Log "Locating winget executable..." -Level Info
@@ -146,9 +282,9 @@ try {
     New-Alias -Name sysget -Value "$SystemContext" -Force
     Write-Log "Found winget: $SystemContext" -Level Info
 
-    # Get package information
+    # Get package information (exact ID match)
     Write-Log "Querying package information for: $ID" -Level Info
-    $packageInfo = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"
+    $packageInfo = Invoke-WingetWithRetry -Arguments "list --exact --id $ID --accept-source-agreements"
 
     # Auto-detect name if not provided
     if (-not $name) {
@@ -227,7 +363,7 @@ try {
 
         # Verify installation
         Write-Log "Verifying installation..." -Level Info
-        $verifyInfo = Invoke-WingetWithRetry -Arguments "list --accept-source-agreements --Id $ID"
+        $verifyInfo = Invoke-WingetWithRetry -Arguments "list --exact --id $ID --accept-source-agreements"
 
         if ($verifyInfo -match '\d+(\.\d+)+') {
             $versionInstalled = (-split $verifyInfo[-1])[-2]
