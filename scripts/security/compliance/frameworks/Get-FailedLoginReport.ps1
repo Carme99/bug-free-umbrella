@@ -130,7 +130,10 @@ foreach ($Event in $FailedLoginEvents) {
         $WorkstationName = ($EventData | Where-Object { $_.Name -eq 'WorkstationName' }).'#text'
         $IpAddress = ($EventData | Where-Object { $_.Name -eq 'IpAddress' }).'#text'
         $LogonType = ($EventData | Where-Object { $_.Name -eq 'LogonType' }).'#text'
-        $FailureReason = ($EventData | Where-Object { $_.Name -eq 'SubStatus' }).'#text'
+        # 4625: the failure status code is documented in 'Status'; 'SubStatus' is
+        # retained as supplementary detail (usually the same value).
+        $FailureReason = ($EventData | Where-Object { $_.Name -eq 'Status' }).'#text'
+        $FailureSubStatus = ($EventData | Where-Object { $_.Name -eq 'SubStatus' }).'#text'
 
         # Map logon type to friendly name
         $LogonTypeDescription = switch ($LogonType) {
@@ -169,6 +172,7 @@ foreach ($Event in $FailedLoginEvents) {
             SourceIP = $IpAddress
             LogonType = $LogonTypeDescription
             FailureReason = $FailureDescription
+            SubStatus = $FailureSubStatus
             EventID = $Event.Id
         }
 

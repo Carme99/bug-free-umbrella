@@ -93,9 +93,10 @@ Write-Host "========================================`n" -ForegroundColor Cyan
 
 # 1. PASSWORD POLICY
 Write-Host "[1/9] Checking Password Policy..." -ForegroundColor Yellow
+$secpolFile = Join-Path $env:TEMP ("secpol_{0}.cfg" -f [Guid]::NewGuid().ToString('N'))
 try {
-    $SecPol = secedit /export /cfg "$env:TEMP\secpol.cfg" /quiet
-    $SecPolContent = Get-Content "$env:TEMP\secpol.cfg"
+    $null = secedit /export /cfg $secpolFile /quiet
+    $SecPolContent = Get-Content -LiteralPath $secpolFile
 
     # Parse password policy
     $MinPasswordLength = ($SecPolContent | Select-String "MinimumPasswordLength").ToString().Split('=')[1].Trim()
@@ -139,11 +140,14 @@ try {
         Write-CheckResult "Password history: $PasswordHistorySize passwords (should be 24+)" "FAIL"
         Add-Result "Password Policy" "History Size" "24+" "$PasswordHistorySize" "FAIL"
     }
-
-    Remove-Item "$env:TEMP\secpol.cfg" -Force -ErrorAction SilentlyContinue
 } catch {
     Write-CheckResult "Failed to check password policy: $($_.Exception.Message)" "FAIL"
     Add-Result "Password Policy" "Check" "Success" "Failed" "FAIL"
+} finally {
+    # Always clean up the exported policy file, even on parse failure
+    if (Test-Path -LiteralPath $secpolFile) {
+        Remove-Item -LiteralPath $secpolFile -Force -ErrorAction SilentlyContinue
+    }
 }
 
 # 2. ACCOUNT LOCKOUT POLICY
@@ -294,11 +298,25 @@ try {
 Write-Host "`n[7/9] Checking SMB Security..." -ForegroundColor Yellow
 try {
     $SMB1 = Get-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -ErrorAction SilentlyContinue
+    $SMBServerConfig = Get-SmbServerConfiguration -ErrorAction SilentlyContinue
 
-    if ($SMB1.State -eq 'Disabled') {
+    # Prefer the live SMB server configuration; fall back to the optional-feature
+    # state when Get-SmbServerConfiguration is unavailable.
+    if ($null -ne $SMBServerConfig) {
+        $SMB1Enabled = $SMBServerConfig.EnableSMB1Protocol
+    } elseif ($SMB1.State -eq 'Enabled') {
+        $SMB1Enabled = $true
+    } elseif ($SMB1.State -eq 'Disabled') {
+        $SMB1Enabled = $false
+    } else {
+        # Feature absent and no server configuration: SMBv1 is not active
+        $SMB1Enabled = $false
+    }
+
+    if ($SMB1Enabled -eq $false) {
         Write-CheckResult "SMBv1: Disabled (Secure)" "PASS"
         Add-Result "SMB Security" "SMBv1" "Disabled" "Disabled" "PASS"
-    } elseif ($SMB1.State -eq 'Enabled') {
+    } elseif ($SMB1Enabled -eq $true) {
         Write-CheckResult "SMBv1: Enabled (Security Risk)" "FAIL"
         Add-Result "SMB Security" "SMBv1" "Disabled" "Enabled" "FAIL"
     } else {
@@ -307,8 +325,7 @@ try {
     }
 
     # Check SMB encryption
-    $SMBServerConfig = Get-SmbServerConfiguration -ErrorAction SilentlyContinue
-    if ($SMBServerConfig.EncryptData) {
+    if ($SMBServerConfig -and $SMBServerConfig.EncryptData) {
         Write-CheckResult "SMB encryption: Enabled" "PASS"
         Add-Result "SMB Security" "Encryption" "Enabled" "Enabled" "PASS"
     } else {
@@ -395,7 +412,12 @@ Write-Host "Passed: $PassedChecks" -ForegroundColor Green
 Write-Host "Failed: $FailedChecks" -ForegroundColor Red
 Write-Host "Warnings: $WarningChecks" -ForegroundColor Yellow
 
-$CompliancePercent = [math]::Round(($PassedChecks / $TotalChecks) * 100, 2)
+if ($TotalChecks -eq 0) {
+    Write-Warning "No checks were performed; compliance score cannot be computed."
+    $CompliancePercent = 0
+} else {
+    $CompliancePercent = [math]::Round(($PassedChecks / $TotalChecks) * 100, 2)
+}
 Write-Host "`nCompliance Score: $CompliancePercent%" -ForegroundColor $(if ($CompliancePercent -ge 80) { 'Green' } elseif ($CompliancePercent -ge 60) { 'Yellow' } else { 'Red' })
 
 # Export reports if requested

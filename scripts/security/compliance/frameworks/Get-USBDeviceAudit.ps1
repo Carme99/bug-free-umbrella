@@ -66,8 +66,8 @@ $results = @()
 Write-Host "=== USB Device Audit ===" -ForegroundColor Cyan
 Write-Host "Scanning for USB devices..." -ForegroundColor Yellow
 
-# Get currently connected USB devices via WMI
-$connectedDevices = Get-WmiObject -Class Win32_PnPEntity | Where-Object {
+# Get currently connected USB devices via CIM
+$connectedDevices = Get-CimInstance -ClassName Win32_PnPEntity | Where-Object {
     $_.DeviceID -match "^USB"
 }
 

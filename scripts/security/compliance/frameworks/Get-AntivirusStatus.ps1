@@ -103,11 +103,17 @@ try {
 
         # Get threat history
         try {
-            $threats = Get-MpThreatDetection -ErrorAction SilentlyContinue | Select-Object -First 10
+            $threats = @(Get-MpThreatDetection -ErrorAction SilentlyContinue | Select-Object -First 10)
+            # Get-MpThreatDetection does not expose ThreatName; resolve names via
+            # Get-MpThreat keyed by ThreatID (cache the lookup).
+            $threatLookup = @{}
+            if ($threats.Count -gt 0) {
+                Get-MpThreat -ErrorAction SilentlyContinue | ForEach-Object { $threatLookup[$_.ThreatID] = $_.ThreatName }
+            }
             $avStatus.WindowsDefender.RecentThreats = $threats.Count
             $avStatus.WindowsDefender.ThreatHistory = $threats | ForEach-Object {
                 [PSCustomObject]@{
-                    ThreatName = $_.ThreatName
+                    ThreatName = if ($threatLookup.ContainsKey($_.ThreatID)) { $threatLookup[$_.ThreatID] } else { "Unknown (ThreatID $($_.ThreatID))" }
                     DetectionTime = $_.InitialDetectionTime
                     ActionSuccess = $_.ActionSuccess
                 }
@@ -132,7 +138,7 @@ if ($CheckThirdParty) {
     try {
         # Check using Windows Security Center (Windows 10/11)
         $namespace = "root\SecurityCenter2"
-        $avProducts = Get-WmiObject -Namespace $namespace -Class AntiVirusProduct -ErrorAction SilentlyContinue
+        $avProducts = Get-CimInstance -Namespace $namespace -ClassName AntiVirusProduct -ErrorAction SilentlyContinue
 
         if ($avProducts) {
             foreach ($av in $avProducts) {

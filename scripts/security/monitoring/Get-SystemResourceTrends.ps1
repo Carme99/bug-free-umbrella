@@ -1,19 +1,19 @@
 <#
 .SYNOPSIS
-    System resource trend analysis and capacity planning.
+    Samples current system resource utilization (CPU, memory, disk).
 .DESCRIPTION
-    Analyzes historical performance data to identify trends and predict capacity needs.
+    Samples live performance counters to report current CPU, memory, and disk utilization.
 .EXAMPLE
-    .\Get-SystemResourceTrends.ps1 -DaysToAnalyze 30 -ExportHTML
+    .\Get-SystemResourceTrends.ps1 -ExportHTML
 .NOTES
-    Analyzes performance counters over time for trend identification
+    Samples live performance counters for utilization reporting
 #>
 [CmdletBinding()]
-param([int]$DaysToAnalyze = 30, [switch]$ExportHTML)
+param([switch]$ExportHTML)
 
 Write-Host "`n=== System Resource Trends ===" -ForegroundColor Cyan
 
-Write-Host "[*] Collecting performance data for last $DaysToAnalyze days..." -ForegroundColor Cyan
+Write-Host "[*] Sampling performance data..." -ForegroundColor Cyan
 
 # CPU trend
 $cpuCounters = Get-Counter "\Processor(_Total)\% Processor Time" -SampleInterval 5 -MaxSamples 12
@@ -30,4 +30,4 @@ $diskCounters = Get-Counter "\PhysicalDisk(_Total)\% Idle Time" -SampleInterval 
 $avgDisk = ($diskCounters.CounterSamples.CookedValue | Measure-Object -Average).Average
 Write-Host "[+] Average Disk Idle: $([math]::Round($avgDisk, 2))%" -ForegroundColor Green
 
-Write-Host "`nTrend analysis complete!`n" -ForegroundColor Green
+Write-Host "`nSampling complete!`n" -ForegroundColor Green
