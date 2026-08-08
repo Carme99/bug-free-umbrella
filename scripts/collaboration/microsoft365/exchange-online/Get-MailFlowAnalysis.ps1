@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Analyzes Exchange Online mail flow health, routing, and delivery issues.
 
@@ -113,7 +113,8 @@ try {
     # Check connection
     try {
         Get-OrganizationConfig -ErrorAction Stop | Out-Null
-    } catch {
+    }
+    catch {
         Write-Error "Not connected to Exchange Online. Run: Connect-ExchangeOnline"
         exit 1
     }
@@ -131,7 +132,8 @@ try {
         # objects, so it cannot feed the aggregation below.
         if ($DaysToAnalyze -le 10) {
             $messages = Get-MessageTraceV2 -StartDate $startDate -EndDate $endDate -ResultSize 5000
-        } else {
+        }
+        else {
             # For longer periods, query in 10-day windows (slower)
             Write-Warning "Analysis period > 10 days: querying Get-MessageTraceV2 in 10-day windows. This may take several minutes..."
             $maxTraceDays = 90
@@ -219,11 +221,13 @@ try {
                 Write-Host "Found $($failedMessages.Count) delivery failures" -ForegroundColor $(if ($failedMessages.Count -gt 0) { 'Red' } else { 'Green' })
             }
 
-        } else {
+        }
+        else {
             Write-Warning "No message trace data found for the specified period"
         }
 
-    } catch {
+    }
+    catch {
         Write-Warning "Error retrieving message trace: $($_.Exception.Message)"
     }
 
@@ -246,7 +250,8 @@ try {
             }
 
             Write-Host "Found $($transportRules.Count) enabled transport rules" -ForegroundColor White
-        } catch {
+        }
+        catch {
             Write-Warning "Error retrieving transport rules: $($_.Exception.Message)"
         }
     }
@@ -283,12 +288,14 @@ try {
             }
 
             Write-Host "Found $($inboundConnectors.Count) inbound and $($outboundConnectors.Count) outbound connectors" -ForegroundColor White
-        } catch {
+        }
+        catch {
             Write-Warning "Error retrieving connectors: $($_.Exception.Message)"
         }
     }
 
-} catch {
+}
+catch {
     Write-Error "Error analyzing mail flow: $($_.Exception.Message)"
 }
 
@@ -301,9 +308,9 @@ $results.Summary = @{
     TransportRulesCount = $results.TransportRules.Count
     ConnectorsCount = $results.Connectors.Count
     HealthStatus = if ($results.MessageStats.DeliveryRate -ge 98) { 'Excellent' }
-                   elseif ($results.MessageStats.DeliveryRate -ge 95) { 'Good' }
-                   elseif ($results.MessageStats.DeliveryRate -ge 90) { 'Fair' }
-                   else { 'Poor' }
+    elseif ($results.MessageStats.DeliveryRate -ge 95) { 'Good' }
+    elseif ($results.MessageStats.DeliveryRate -ge 90) { 'Fair' }
+    else { 'Poor' }
 }
 
 # Output results

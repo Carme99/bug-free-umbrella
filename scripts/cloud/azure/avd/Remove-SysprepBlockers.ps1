@@ -42,15 +42,15 @@
     Requires: Administrator privileges
 #>
 
-[CmdletBinding(SupportsShouldProcess=$true)]
+[CmdletBinding(SupportsShouldProcess = $true)]
 param(
-    [Parameter(HelpMessage="Skip confirmation and remove all blockers automatically")]
+    [Parameter(HelpMessage = "Skip confirmation and remove all blockers automatically")]
     [switch]$Force,
 
-    [Parameter(HelpMessage="Path for log file")]
+    [Parameter(HelpMessage = "Path for log file")]
     [string]$LogPath = (Join-Path (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports') "SysprepBlockerRemoval_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"),
 
-    [Parameter(HelpMessage="Export list of blockers to CSV before removal")]
+    [Parameter(HelpMessage = "Export list of blockers to CSV before removal")]
     [switch]$ExportBlockersList
 )
 
@@ -111,7 +111,7 @@ function Write-Log {
         [Parameter(Mandatory)]
         [string]$Message,
 
-        [ValidateSet('INFO','WARNING','ERROR','SUCCESS')]
+        [ValidateSet('INFO', 'WARNING', 'ERROR', 'SUCCESS')]
         [string]$Level = 'INFO'
     )
 
@@ -123,9 +123,9 @@ function Write-Log {
 
     # Write to console with color
     $color = switch ($Level) {
-        'INFO'    { 'White' }
+        'INFO' { 'White' }
         'WARNING' { 'Yellow' }
-        'ERROR'   { 'Red' }
+        'ERROR' { 'Red' }
         'SUCCESS' { 'Green' }
     }
 
@@ -146,15 +146,20 @@ function Stop-AppXServices {
     Stop services that may lock AppX packages.
     #>
 
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
     Write-Log -Message "Stopping AppX-related services to prevent file locks..." -Level INFO
 
     foreach ($serviceName in $servicesToStop) {
         try {
             $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
             if ($service -and $service.Status -eq 'Running') {
-                Stop-Service -Name $serviceName -Force -ErrorAction Stop
-                $script:stoppedServices += $serviceName
-                Write-Log -Message "Stopped service: $serviceName" -Level INFO
+                if ($PSCmdlet.ShouldProcess($serviceName, 'Stop service')) {
+                    Stop-Service -Name $serviceName -Force -ErrorAction Stop
+                    $script:stoppedServices += $serviceName
+                    Write-Log -Message "Stopped service: $serviceName" -Level INFO
+                }
             }
         }
         catch {
@@ -169,8 +174,10 @@ function Stop-AppXServices {
         try {
             $processes = Get-Process -Name $procName -ErrorAction SilentlyContinue
             if ($processes) {
-                $processes | Stop-Process -Force -ErrorAction SilentlyContinue
-                Write-Log -Message "Terminated process: $procName" -Level INFO
+                if ($PSCmdlet.ShouldProcess($procName, 'Stop process')) {
+                    $processes | Stop-Process -Force -ErrorAction SilentlyContinue
+                    Write-Log -Message "Terminated process: $procName" -Level INFO
+                }
             }
         }
         catch {
@@ -185,13 +192,18 @@ function Start-AppXServices {
     Restart services that were stopped.
     #>
 
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
     if ($script:stoppedServices.Count -gt 0) {
         Write-Log -Message "Restarting stopped services..." -Level INFO
 
         foreach ($serviceName in ($script:stoppedServices | Select-Object -Unique)) {
             try {
-                Start-Service -Name $serviceName -ErrorAction SilentlyContinue
-                Write-Log -Message "Restarted service: $serviceName" -Level INFO
+                if ($PSCmdlet.ShouldProcess($serviceName, 'Start service')) {
+                    Start-Service -Name $serviceName -ErrorAction SilentlyContinue
+                    Write-Log -Message "Restarted service: $serviceName" -Level INFO
+                }
             }
             catch {
                 Write-Log -Message "Could not restart service $serviceName : $($_.Exception.Message)" -Level WARNING
@@ -270,16 +282,18 @@ function Show-BlockerDetails {
     Write-Host ("=" * 80) -ForegroundColor Yellow
 
     $displayData = $Blockers | Select-Object `
-        @{Name='Package Name'; Expression={$_.Name}},
-        @{Name='Version'; Expression={$_.Version}},
-        @{Name='Publisher'; Expression={$_.Publisher}},
-        @{Name='Install Location'; Expression={
+    @{Name = 'Package Name'; Expression = { $_.Name } },
+    @{Name = 'Version'; Expression = { $_.Version } },
+    @{Name = 'Publisher'; Expression = { $_.Publisher } },
+    @{Name = 'Install Location'; Expression = {
             if ($_.InstallLocation.Length -gt 50) {
                 "..." + $_.InstallLocation.Substring($_.InstallLocation.Length - 47)
-            } else {
+            }
+            else {
                 $_.InstallLocation
             }
-        }}
+        }
+    }
 
     $displayData | Format-Table -AutoSize -Wrap
 
@@ -309,6 +323,7 @@ function Export-BlockersList {
 }
 
 function Remove-AppxPackageEverywhere {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)]
         [string]$PackageName,
@@ -326,16 +341,20 @@ function Remove-AppxPackageEverywhere {
     foreach ($pkg in $allPackages) {
         try {
             # Try with -AllUsers first (Windows 10 1809+)
-            Remove-AppxPackage -Package $pkg.PackageFullName -AllUsers -ErrorAction Stop
-            Write-Log -Message "Removed package for all users: $($pkg.PackageFullName)" -Level SUCCESS
-            $success = $true
+            if ($PSCmdlet.ShouldProcess($pkg.PackageFullName, 'Remove Appx package for all users')) {
+                Remove-AppxPackage -Package $pkg.PackageFullName -AllUsers -ErrorAction Stop
+                Write-Log -Message "Removed package for all users: $($pkg.PackageFullName)" -Level SUCCESS
+                $success = $true
+            }
         }
         catch {
             # Fallback without -AllUsers
             try {
-                Remove-AppxPackage -Package $pkg.PackageFullName -ErrorAction Stop
-                Write-Log -Message "Removed package: $($pkg.PackageFullName)" -Level SUCCESS
-                $success = $true
+                if ($PSCmdlet.ShouldProcess($pkg.PackageFullName, 'Remove Appx package')) {
+                    Remove-AppxPackage -Package $pkg.PackageFullName -ErrorAction Stop
+                    Write-Log -Message "Removed package: $($pkg.PackageFullName)" -Level SUCCESS
+                    $success = $true
+                }
             }
             catch {
                 Write-Log -Message "Failed to remove package $($pkg.PackageFullName): $($_.Exception.Message)" -Level ERROR
@@ -349,9 +368,11 @@ function Remove-AppxPackageEverywhere {
 
     foreach ($provPkg in $provisionedMatches) {
         try {
-            Remove-AppxProvisionedPackage -Online -PackageName $provPkg.PackageName -ErrorAction Stop | Out-Null
-            Write-Log -Message "Deprovisioned package: $($provPkg.PackageName)" -Level SUCCESS
-            $success = $true
+            if ($PSCmdlet.ShouldProcess($provPkg.PackageName, 'Deprovision Appx package')) {
+                Remove-AppxProvisionedPackage -Online -PackageName $provPkg.PackageName -ErrorAction Stop | Out-Null
+                Write-Log -Message "Deprovisioned package: $($provPkg.PackageName)" -Level SUCCESS
+                $success = $true
+            }
         }
         catch {
             Write-Log -Message "Failed to deprovision $($provPkg.PackageName): $($_.Exception.Message)" -Level WARNING
@@ -382,6 +403,7 @@ function Get-UserConfirmation {
 }
 
 function Remove-DetectedBlockers {
+    [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory)]
         [array]$Blockers
@@ -395,18 +417,20 @@ function Remove-DetectedBlockers {
     foreach ($blocker in $Blockers) {
         $progressCounter++
         Write-Progress -Activity "Removing Sysprep Blockers" `
-                       -Status "Processing $($blocker.Name) ($progressCounter of $totalBlockers)" `
-                       -PercentComplete (($progressCounter / $totalBlockers) * 100)
+            -Status "Processing $($blocker.Name) ($progressCounter of $totalBlockers)" `
+            -PercentComplete (($progressCounter / $totalBlockers) * 100)
 
         Write-Host "`n[$progressCounter/$totalBlockers] Removing: $($blocker.Name)" -ForegroundColor Cyan
 
-        $success = Remove-AppxPackageEverywhere -PackageName $blocker.Name -PackageFullName $blocker.PackageFullName
+        if ($PSCmdlet.ShouldProcess($blocker.Name, 'Remove Appx package')) {
+            $success = Remove-AppxPackageEverywhere -PackageName $blocker.Name -PackageFullName $blocker.PackageFullName
 
-        if ($success) {
-            $script:BlockersRemoved += $blocker
-        }
-        else {
-            $script:BlockersFailed += $blocker
+            if ($success) {
+                $script:BlockersRemoved += $blocker
+            }
+            else {
+                $script:BlockersFailed += $blocker
+            }
         }
     }
 

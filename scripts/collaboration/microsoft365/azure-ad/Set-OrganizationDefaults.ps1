@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Audits and configures the organization-wide PreferredLanguage setting in Microsoft 365.
 
@@ -43,19 +43,19 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$UsageLocation = 'GB',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$PreferredLanguage = 'en-GB',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$AuditOnly,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$Apply,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML
 )
 

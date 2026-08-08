@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Checks and configures Microsoft 365 user language and region settings.
 
@@ -74,37 +74,37 @@
     - Time Zone: GMT Standard Time (UTC+00:00)
 #>
 
-[CmdletBinding(DefaultParameterSetName='AuditSingle')]
+[CmdletBinding(DefaultParameterSetName = 'AuditSingle')]
 param(
-    [Parameter(Mandatory=$false, ParameterSetName='AuditSingle')]
-    [Parameter(Mandatory=$false, ParameterSetName='ApplySingle')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'AuditSingle')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'ApplySingle')]
     [string]$UserPrincipalName,
 
-    [Parameter(Mandatory=$false, ParameterSetName='AuditAll')]
-    [Parameter(Mandatory=$false, ParameterSetName='ApplyAll')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'AuditAll')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'ApplyAll')]
     [switch]$AllUsers,
 
-    [Parameter(Mandatory=$false, ParameterSetName='AuditSingle')]
-    [Parameter(Mandatory=$false, ParameterSetName='AuditAll')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'AuditSingle')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'AuditAll')]
     [switch]$AuditOnly,
 
-    [Parameter(Mandatory=$false, ParameterSetName='ApplySingle')]
-    [Parameter(Mandatory=$false, ParameterSetName='ApplyAll')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'ApplySingle')]
+    [Parameter(Mandatory = $false, ParameterSetName = 'ApplyAll')]
     [switch]$Apply,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$DisplayLanguage = 'en-GB',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$RegionalFormat = 'en-GB',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$TimeZone = 'GMT Standard Time',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -175,7 +175,7 @@ $usersToProcess = @()
 if ($AllUsers) {
     Write-Host "[*] Retrieving all users..." -ForegroundColor Cyan
     try {
-        $allUsers = Get-MgUser -All -Property Id,DisplayName,UserPrincipalName,Mail
+        $allUsers = Get-MgUser -All -Property Id, DisplayName, UserPrincipalName, Mail
         Write-Host "[+] Found $($allUsers.Count) user(s)" -ForegroundColor Green
         $usersToProcess = $allUsers
     }
@@ -187,7 +187,7 @@ if ($AllUsers) {
 elseif ($UserPrincipalName) {
     Write-Host "[*] Retrieving user: $UserPrincipalName..." -ForegroundColor Cyan
     try {
-        $user = Get-MgUser -UserId $UserPrincipalName -Property Id,DisplayName,UserPrincipalName,Mail
+        $user = Get-MgUser -UserId $UserPrincipalName -Property Id, DisplayName, UserPrincipalName, Mail
         Write-Host "[+] Found user: $($user.DisplayName)" -ForegroundColor Green
         $usersToProcess = @($user)
     }
@@ -200,7 +200,7 @@ else {
     # Use current logged-in user
     Write-Host "[*] Using current logged-in user..." -ForegroundColor Cyan
     try {
-        $currentUser = Get-MgUser -UserId $context.Account -Property Id,DisplayName,UserPrincipalName,Mail
+        $currentUser = Get-MgUser -UserId $context.Account -Property Id, DisplayName, UserPrincipalName, Mail
         Write-Host "[+] Current user: $($currentUser.DisplayName)" -ForegroundColor Green
         $usersToProcess = @($currentUser)
     }
@@ -320,179 +320,181 @@ if ($totalUsers -gt 50 -and $PSVersionTable.PSVersion.Major -ge 7) {
     $nonCompliantCount = ($results | Where-Object { $_.Status -eq 'Non-Compliant' }).Count
     $errorCount = ($results | Where-Object { $_.Status -eq 'Error' }).Count
 
-} else {
+}
+else {
     # Sequential processing for smaller sets or PowerShell 5.1
     if ($totalUsers -le 50) {
         Write-Host "[*] Processing $totalUsers users sequentially..." -ForegroundColor Cyan
-    } else {
+    }
+    else {
         Write-Host "[*] Processing $totalUsers users sequentially (PowerShell 7+ recommended for parallel processing)..." -ForegroundColor Yellow
     }
 
     foreach ($user in $usersToProcess) {
-    $i++
-    Write-Progress -Activity "Processing Users" -Status "$i of $($usersToProcess.Count): $($user.DisplayName)" -PercentComplete (($i / $usersToProcess.Count) * 100)
+        $i++
+        Write-Progress -Activity "Processing Users" -Status "$i of $($usersToProcess.Count): $($user.DisplayName)" -PercentComplete (($i / $usersToProcess.Count) * 100)
 
-    try {
-        # Get current mailbox settings (includes language and time zone)
-        $mailboxSettings = Get-MgUserMailboxSetting -UserId $user.Id -ErrorAction Stop
+        try {
+            # Get current mailbox settings (includes language and time zone)
+            $mailboxSettings = Get-MgUserMailboxSetting -UserId $user.Id -ErrorAction Stop
 
-        # Get user settings (includes preferred language)
-        $userSettings = Get-MgUser -UserId $user.Id -Property PreferredLanguage -ErrorAction Stop
+            # Get user settings (includes preferred language)
+            $userSettings = Get-MgUser -UserId $user.Id -Property PreferredLanguage -ErrorAction Stop
 
-        # Extract current settings
-        $currentDisplayLanguage = $mailboxSettings.Language.Locale
-        $currentTimeZone = $mailboxSettings.TimeZone
-        $currentPreferredLanguage = $userSettings.PreferredLanguage
+            # Extract current settings
+            $currentDisplayLanguage = $mailboxSettings.Language.Locale
+            $currentTimeZone = $mailboxSettings.TimeZone
+            $currentPreferredLanguage = $userSettings.PreferredLanguage
 
-        # Regional format is typically the same as display language in M365
-        $currentRegionalFormat = $mailboxSettings.Language.Locale
+            # Regional format is typically the same as display language in M365
+            $currentRegionalFormat = $mailboxSettings.Language.Locale
 
-        # Check compliance
-        $isCompliant = (
-            $currentDisplayLanguage -eq $requiredSettings.DisplayLanguage -and
-            $currentTimeZone -eq $requiredSettings.TimeZone -and
-            $currentRegionalFormat -eq $requiredSettings.RegionalFormat
-        )
+            # Check compliance
+            $isCompliant = (
+                $currentDisplayLanguage -eq $requiredSettings.DisplayLanguage -and
+                $currentTimeZone -eq $requiredSettings.TimeZone -and
+                $currentRegionalFormat -eq $requiredSettings.RegionalFormat
+            )
 
-        $issues = @()
-        if ($currentDisplayLanguage -ne $requiredSettings.DisplayLanguage) {
-            $issues += "Display language mismatch"
-        }
-        if ($currentTimeZone -ne $requiredSettings.TimeZone) {
-            $issues += "Time zone mismatch"
-        }
-        if ($currentRegionalFormat -ne $requiredSettings.RegionalFormat) {
-            $issues += "Regional format mismatch"
-        }
+            $issues = @()
+            if ($currentDisplayLanguage -ne $requiredSettings.DisplayLanguage) {
+                $issues += "Display language mismatch"
+            }
+            if ($currentTimeZone -ne $requiredSettings.TimeZone) {
+                $issues += "Time zone mismatch"
+            }
+            if ($currentRegionalFormat -ne $requiredSettings.RegionalFormat) {
+                $issues += "Regional format mismatch"
+            }
 
-        if ($isCompliant) {
-            $compliantCount++
-            $status = "Compliant"
-            $statusColor = "Green"
-        }
-        else {
-            $nonCompliantCount++
-            $status = "Non-Compliant"
-            $statusColor = "Yellow"
-
-            Write-Host "[!] $($user.DisplayName) - Non-Compliant:" -ForegroundColor Yellow
-            Write-Host "    Current: $currentDisplayLanguage, $currentTimeZone" -ForegroundColor Gray
-            Write-Host "    Issues: $($issues -join ', ')" -ForegroundColor Gray
-        }
-
-        # Apply settings if requested
-        $actionTaken = "None"
-        if ($Apply -and -not $isCompliant) {
-            try {
-                Write-Host "    [*] Applying settings..." -ForegroundColor Cyan
-
-                # Update mailbox language and timezone settings
-                $languageSettings = @{
-                    Language = @{
-                        Locale = $requiredSettings.DisplayLanguage
-                        DisplayName = "English (United Kingdom)"
-                    }
-                    TimeZone = $requiredSettings.TimeZone
-                }
-
-                Update-MgUserMailboxSetting -UserId $user.Id -BodyParameter $languageSettings -ErrorAction Stop
-
-                # Update preferred language
-                Update-MgUser -UserId $user.Id -PreferredLanguage $requiredSettings.DisplayLanguage -ErrorAction Stop
-
-                $actionTaken = "Settings Applied"
-                $status = "Remediated"
+            if ($isCompliant) {
+                $compliantCount++
+                $status = "Compliant"
                 $statusColor = "Green"
-                Write-Host "    [+] Settings applied successfully!" -ForegroundColor Green
             }
-            catch {
-                $actionTaken = "Error: $($_.Exception.Message)"
-                $status = "Error"
-                $statusColor = "Red"
-                $errorCount++
-                Write-Host "    [-] Error applying settings: $($_.Exception.Message)" -ForegroundColor Red
+            else {
+                $nonCompliantCount++
+                $status = "Non-Compliant"
+                $statusColor = "Yellow"
+
+                Write-Host "[!] $($user.DisplayName) - Non-Compliant:" -ForegroundColor Yellow
+                Write-Host "    Current: $currentDisplayLanguage, $currentTimeZone" -ForegroundColor Gray
+                Write-Host "    Issues: $($issues -join ', ')" -ForegroundColor Gray
             }
+
+            # Apply settings if requested
+            $actionTaken = "None"
+            if ($Apply -and -not $isCompliant) {
+                try {
+                    Write-Host "    [*] Applying settings..." -ForegroundColor Cyan
+
+                    # Update mailbox language and timezone settings
+                    $languageSettings = @{
+                        Language = @{
+                            Locale = $requiredSettings.DisplayLanguage
+                            DisplayName = "English (United Kingdom)"
+                        }
+                        TimeZone = $requiredSettings.TimeZone
+                    }
+
+                    Update-MgUserMailboxSetting -UserId $user.Id -BodyParameter $languageSettings -ErrorAction Stop
+
+                    # Update preferred language
+                    Update-MgUser -UserId $user.Id -PreferredLanguage $requiredSettings.DisplayLanguage -ErrorAction Stop
+
+                    $actionTaken = "Settings Applied"
+                    $status = "Remediated"
+                    $statusColor = "Green"
+                    Write-Host "    [+] Settings applied successfully!" -ForegroundColor Green
+                }
+                catch {
+                    $actionTaken = "Error: $($_.Exception.Message)"
+                    $status = "Error"
+                    $statusColor = "Red"
+                    $errorCount++
+                    Write-Host "    [-] Error applying settings: $($_.Exception.Message)" -ForegroundColor Red
+                }
+            }
+
+            $result = [PSCustomObject]@{
+                DisplayName = $user.DisplayName
+                UserPrincipalName = $user.UserPrincipalName
+                CurrentDisplayLanguage = $currentDisplayLanguage
+                RequiredDisplayLanguage = $requiredSettings.DisplayLanguage
+                CurrentTimeZone = $currentTimeZone
+                RequiredTimeZone = $requiredSettings.TimeZone
+                CurrentRegionalFormat = $currentRegionalFormat
+                RequiredRegionalFormat = $requiredSettings.RegionalFormat
+                PreferredLanguage = $currentPreferredLanguage
+                Status = $status
+                Issues = if ($issues.Count -gt 0) { $issues -join '; ' } else { 'None' }
+                ActionTaken = $actionTaken
+            }
+
+            $results += $result
+
+        }
+        catch {
+            $errorCount++
+            Write-Host "[-] Error processing $($user.DisplayName): $($_.Exception.Message)" -ForegroundColor Red
+
+            $result = [PSCustomObject]@{
+                DisplayName = $user.DisplayName
+                UserPrincipalName = $user.UserPrincipalName
+                CurrentDisplayLanguage = "Error"
+                RequiredDisplayLanguage = $requiredSettings.DisplayLanguage
+                CurrentTimeZone = "Error"
+                RequiredTimeZone = $requiredSettings.TimeZone
+                CurrentRegionalFormat = "Error"
+                RequiredRegionalFormat = $requiredSettings.RegionalFormat
+                PreferredLanguage = "Error"
+                Status = "Error"
+                Issues = $_.Exception.Message
+                ActionTaken = "N/A"
+            }
+
+            $results += $result
         }
 
-        $result = [PSCustomObject]@{
-            DisplayName = $user.DisplayName
-            UserPrincipalName = $user.UserPrincipalName
-            CurrentDisplayLanguage = $currentDisplayLanguage
-            RequiredDisplayLanguage = $requiredSettings.DisplayLanguage
-            CurrentTimeZone = $currentTimeZone
-            RequiredTimeZone = $requiredSettings.TimeZone
-            CurrentRegionalFormat = $currentRegionalFormat
-            RequiredRegionalFormat = $requiredSettings.RegionalFormat
-            PreferredLanguage = $currentPreferredLanguage
-            Status = $status
-            Issues = if ($issues.Count -gt 0) { $issues -join '; ' } else { 'None' }
-            ActionTaken = $actionTaken
+        # Count results from sequential processing
+        $compliantCount = ($results | Where-Object { $_.Status -eq 'Compliant' }).Count
+        $nonCompliantCount = ($results | Where-Object { $_.Status -eq 'Non-Compliant' }).Count
+        $errorCount = ($results | Where-Object { $_.Status -eq 'Error' }).Count
+    }
+
+    Write-Progress -Activity "Processing Users" -Completed
+
+    Write-Host ""
+
+    # Display summary
+    Write-Host "=== Summary ===" -ForegroundColor Cyan
+    Write-Host "Total Users Processed: $($results.Count)" -ForegroundColor White
+    Write-Host "Compliant: $compliantCount" -ForegroundColor Green
+    Write-Host "Non-Compliant: $nonCompliantCount" -ForegroundColor Yellow
+    if ($Apply) {
+        $remediatedCount = ($results | Where-Object { $_.Status -eq 'Remediated' }).Count
+        Write-Host "Remediated: $remediatedCount" -ForegroundColor Green
+    }
+    Write-Host "Errors: $errorCount" -ForegroundColor Red
+    Write-Host ""
+
+    # Show non-compliant users
+    if ($nonCompliantCount -gt 0 -and -not $Apply) {
+        Write-Host "=== Non-Compliant Users ===" -ForegroundColor Yellow
+        $results | Where-Object { $_.Status -eq "Non-Compliant" } |
+            Select-Object -First 10 DisplayName, CurrentDisplayLanguage, CurrentTimeZone, Issues |
+            Format-Table -AutoSize
+
+        if ($nonCompliantCount -gt 10) {
+            Write-Host "[!] Showing first 10 of $nonCompliantCount non-compliant users" -ForegroundColor Gray
         }
-
-        $results += $result
-
-    }
-    catch {
-        $errorCount++
-        Write-Host "[-] Error processing $($user.DisplayName): $($_.Exception.Message)" -ForegroundColor Red
-
-        $result = [PSCustomObject]@{
-            DisplayName = $user.DisplayName
-            UserPrincipalName = $user.UserPrincipalName
-            CurrentDisplayLanguage = "Error"
-            RequiredDisplayLanguage = $requiredSettings.DisplayLanguage
-            CurrentTimeZone = "Error"
-            RequiredTimeZone = $requiredSettings.TimeZone
-            CurrentRegionalFormat = "Error"
-            RequiredRegionalFormat = $requiredSettings.RegionalFormat
-            PreferredLanguage = "Error"
-            Status = "Error"
-            Issues = $_.Exception.Message
-            ActionTaken = "N/A"
-        }
-
-        $results += $result
     }
 
-    # Count results from sequential processing
-    $compliantCount = ($results | Where-Object { $_.Status -eq 'Compliant' }).Count
-    $nonCompliantCount = ($results | Where-Object { $_.Status -eq 'Non-Compliant' }).Count
-    $errorCount = ($results | Where-Object { $_.Status -eq 'Error' }).Count
-}
+    # Export results
+    if ($ExportHTML) {
+        $htmlPath = (Join-Path $ReportDir "LanguageSettings_$timestamp.html")
 
-Write-Progress -Activity "Processing Users" -Completed
-
-Write-Host ""
-
-# Display summary
-Write-Host "=== Summary ===" -ForegroundColor Cyan
-Write-Host "Total Users Processed: $($results.Count)" -ForegroundColor White
-Write-Host "Compliant: $compliantCount" -ForegroundColor Green
-Write-Host "Non-Compliant: $nonCompliantCount" -ForegroundColor Yellow
-if ($Apply) {
-    $remediatedCount = ($results | Where-Object { $_.Status -eq 'Remediated' }).Count
-    Write-Host "Remediated: $remediatedCount" -ForegroundColor Green
-}
-Write-Host "Errors: $errorCount" -ForegroundColor Red
-Write-Host ""
-
-# Show non-compliant users
-if ($nonCompliantCount -gt 0 -and -not $Apply) {
-    Write-Host "=== Non-Compliant Users ===" -ForegroundColor Yellow
-    $results | Where-Object { $_.Status -eq "Non-Compliant" } |
-        Select-Object -First 10 DisplayName, CurrentDisplayLanguage, CurrentTimeZone, Issues |
-        Format-Table -AutoSize
-
-    if ($nonCompliantCount -gt 10) {
-        Write-Host "[!] Showing first 10 of $nonCompliantCount non-compliant users" -ForegroundColor Gray
-    }
-}
-
-# Export results
-if ($ExportHTML) {
-    $htmlPath = (Join-Path $ReportDir "LanguageSettings_$timestamp.html")
-
-    $html = @"
+        $html = @"
 <!DOCTYPE html>
 <html>
 <head>
@@ -544,15 +546,15 @@ if ($ExportHTML) {
         </tr>
 "@
 
-    foreach ($result in ($results | Sort-Object Status, DisplayName)) {
-        $statusClass = switch ($result.Status) {
-            'Compliant' { 'compliant' }
-            'Non-Compliant' { 'non-compliant' }
-            'Remediated' { 'remediated' }
-            'Error' { 'error' }
-        }
+        foreach ($result in ($results | Sort-Object Status, DisplayName)) {
+            $statusClass = switch ($result.Status) {
+                'Compliant' { 'compliant' }
+                'Non-Compliant' { 'non-compliant' }
+                'Remediated' { 'remediated' }
+                'Error' { 'error' }
+            }
 
-        $html += @"
+            $html += @"
         <tr>
             <td>$([System.Net.WebUtility]::HtmlEncode("$($result.DisplayName)"))</td>
             <td>$([System.Net.WebUtility]::HtmlEncode("$($result.UserPrincipalName)"))</td>
@@ -563,34 +565,34 @@ if ($ExportHTML) {
             $(if ($Apply) { "<td>$([System.Net.WebUtility]::HtmlEncode("$($result.ActionTaken)"))</td>" })
         </tr>
 "@
-    }
+        }
 
-    $html += @"
+        $html += @"
     </table>
 </body>
 </html>
 "@
 
-    $html | Out-File -FilePath $htmlPath -Encoding UTF8
-    Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
-}
+        $html | Out-File -FilePath $htmlPath -Encoding UTF8
+        Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+    }
 
-if ($ExportCSV) {
-    $csvPath = (Join-Path $ReportDir "LanguageSettings_$timestamp.csv")
-    $results | Export-Csv -Path $csvPath -NoTypeInformation
-    Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
-}
+    if ($ExportCSV) {
+        $csvPath = (Join-Path $ReportDir "LanguageSettings_$timestamp.csv")
+        $results | Export-Csv -Path $csvPath -NoTypeInformation
+        Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
+    }
 
-Write-Host "`n[+] Language settings check completed!" -ForegroundColor Green
+    Write-Host "`n[+] Language settings check completed!" -ForegroundColor Green
 
-# Exit with appropriate code
-if ($errorCount -gt 0) {
-    exit 1
-}
-elseif ($nonCompliantCount -gt 0 -and -not $Apply) {
-    exit 1
-}
-else {
-    exit 0
-}
+    # Exit with appropriate code
+    if ($errorCount -gt 0) {
+        exit 1
+    }
+    elseif ($nonCompliantCount -gt 0 -and -not $Apply) {
+        exit 1
+    }
+    else {
+        exit 0
+    }
 }

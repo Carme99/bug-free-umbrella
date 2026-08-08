@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Comprehensive Azure resource health and cost monitoring across subscriptions.
 
@@ -105,7 +105,8 @@ try {
         Write-Error "Not logged in. Run Connect-AzAccount first."
         exit 1
     }
-} catch {
+}
+catch {
     Write-Error "Azure authentication required: Connect-AzAccount"
     exit 1
 }
@@ -113,7 +114,8 @@ try {
 # Get subscriptions
 $subscriptions = if ($SubscriptionId -eq '*') {
     Get-AzSubscription
-} else {
+}
+else {
     @(Get-AzSubscription -SubscriptionId $SubscriptionId)
 }
 

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Monitors Azure VM backup status and compliance with backup policies.
 
@@ -109,14 +109,16 @@ try {
         Write-Error "Not logged in. Run Connect-AzAccount"
         exit 1
     }
-} catch {
+}
+catch {
     Write-Error "Azure authentication required"
     exit 1
 }
 
 $subscriptions = if ($SubscriptionId -eq '*') {
     Get-AzSubscription
-} else {
+}
+else {
     @(Get-AzSubscription -SubscriptionId $SubscriptionId)
 }
 
@@ -127,7 +129,8 @@ foreach ($sub in $subscriptions) {
     # Get all VMs
     $vms = if ($ResourceGroupName -eq '*') {
         Get-AzVM -Status
-    } else {
+    }
+    else {
         Get-AzVM -ResourceGroupName $ResourceGroupName -Status
     }
 
@@ -202,11 +205,13 @@ foreach ($sub in $subscriptions) {
 
                             if ($backupAge -le $BackupAgeThreshold) {
                                 $vmBackupStatus.ComplianceStatus = "Compliant"
-                            } else {
+                            }
+                            else {
                                 $vmBackupStatus.ComplianceStatus = "Non-Compliant"
                                 $results.NonCompliantBackups += $vmBackupStatus
                             }
-                        } else {
+                        }
+                        else {
                             $vmBackupStatus.ComplianceStatus = "No Backup Yet"
                             $results.NonCompliantBackups += $vmBackupStatus
                         }
@@ -214,7 +219,8 @@ foreach ($sub in $subscriptions) {
                         break
                     }
                 }
-            } catch {
+            }
+            catch {
                 # Continue checking other vaults
             }
         }
@@ -258,7 +264,8 @@ foreach ($sub in $subscriptions) {
                         Duration = if ($job.EndTime) { ($job.EndTime - $job.StartTime).TotalMinutes } else { $null }
                     }
                 }
-            } catch {
+            }
+            catch {
                 Write-Warning "Could not retrieve backup jobs from $($vault.Name)"
             }
         }
@@ -276,7 +283,8 @@ $nonCompliantVMs = $results.NonCompliantBackups.Count
 
 $complianceRate = if ($totalVMs -gt 0) {
     [math]::Round(($compliantVMs / $totalVMs) * 100, 2)
-} else { 0 }
+}
+else { 0 }
 
 $results.Summary = @{
     TotalVMs = $totalVMs

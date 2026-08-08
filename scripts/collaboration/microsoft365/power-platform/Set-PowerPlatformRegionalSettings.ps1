@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Checks and configures Power Platform environment regional settings.
 
@@ -49,28 +49,28 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$EnvironmentName,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$AllEnvironments,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$AuditOnly,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$Apply,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [int]$BaseLanguage = 2057,  # English UK
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [string]$CurrencyCode = 'GBP',
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -148,11 +148,13 @@ foreach ($env in $environments) {
 
     $currentLanguage = if ($props.linkedEnvironmentMetadata.baseLanguage) {
         $props.linkedEnvironmentMetadata.baseLanguage
-    } else { "Not Set" }
+    }
+    else { "Not Set" }
 
     $currentCurrency = if ($props.linkedEnvironmentMetadata.currency) {
         $props.linkedEnvironmentMetadata.currency.code
-    } else { "Not Set" }
+    }
+    else { "Not Set" }
 
     $issues = @()
     if ($currentLanguage -ne $BaseLanguage -and $currentLanguage -ne "Not Set") {

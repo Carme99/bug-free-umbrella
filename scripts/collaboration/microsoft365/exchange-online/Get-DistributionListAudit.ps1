@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Comprehensive distribution list and group audit for Exchange Online.
 
@@ -107,7 +107,8 @@ try {
     # Check connection
     try {
         Get-OrganizationConfig -ErrorAction Stop | Out-Null
-    } catch {
+    }
+    catch {
         Write-Error "Not connected to Exchange Online. Run: Connect-ExchangeOnline"
         exit 1
     }
@@ -236,7 +237,8 @@ try {
         Write-Host "Found $($securityGroups.Count) mail-enabled security groups" -ForegroundColor White
     }
 
-} catch {
+}
+catch {
     Write-Error "Error auditing groups: $($_.Exception.Message)"
 }
 

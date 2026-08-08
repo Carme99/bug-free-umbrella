@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Clean up Docker resources and optimize storage.
 
@@ -58,7 +58,8 @@ try {
     $dfBefore = docker system df 2>$null
     Write-Host "`nBefore cleanup:" -ForegroundColor White
     Write-Host $dfBefore -ForegroundColor Gray
-} catch {
+}
+catch {
     Write-Host "[!] Unable to get disk usage stats" -ForegroundColor Yellow
 }
 
@@ -98,7 +99,8 @@ try {
     $dfAfter = docker system df 2>$null
     Write-Host "`nAfter cleanup:" -ForegroundColor White
     Write-Host $dfAfter -ForegroundColor Gray
-} catch {}
+}
+catch {}
 
 Write-Host "`n=== Cleanup Summary ===" -ForegroundColor Cyan
 Write-Host "Cleaned: $($cleanedItems -join ', ')" -ForegroundColor Green

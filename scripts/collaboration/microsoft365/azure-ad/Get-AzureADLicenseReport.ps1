@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Generates Azure AD (Entra ID) license assignment and usage report.
 
@@ -40,16 +40,16 @@
 
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IncludeServicePlans,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$IdentifyUnassigned,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportHTML,
 
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [switch]$ExportCSV
 )
 
@@ -75,7 +75,7 @@ Write-Host ""
 # Connect to Microsoft Graph
 try {
     Write-Host "[*] Connecting to Microsoft Graph..." -ForegroundColor Cyan
-    Connect-MgGraph -Scopes "Organization.Read.All","User.Read.All" -NoWelcome
+    Connect-MgGraph -Scopes "Organization.Read.All", "User.Read.All" -NoWelcome
     Write-Host "[+] Connected to Microsoft Graph" -ForegroundColor Green
 }
 catch {
@@ -171,7 +171,7 @@ if ($IdentifyUnassigned) {
     Write-Host "`n[*] Checking for unlicensed users..." -ForegroundColor Cyan
 
     try {
-        $allUsers = Get-MgUser -Filter "userType eq 'Member' and accountEnabled eq true" -All -Property DisplayName,UserPrincipalName,AssignedLicenses
+        $allUsers = Get-MgUser -Filter "userType eq 'Member' and accountEnabled eq true" -All -Property DisplayName, UserPrincipalName, AssignedLicenses
         $unlicensedUsers = $allUsers | Where-Object { $_.AssignedLicenses.Count -eq 0 }
 
         Write-Host "[+] Found $($unlicensedUsers.Count) unlicensed enabled user(s)" -ForegroundColor $(if ($unlicensedUsers.Count -gt 0) { "Yellow" } else { "Green" })
