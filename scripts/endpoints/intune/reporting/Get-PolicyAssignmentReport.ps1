@@ -25,7 +25,7 @@
 .NOTES
     Author: Intune Admin
     Version: 1.0
-    Requires: Microsoft.Graph.Intune module
+    Requires: Microsoft.Graph (PowerShell SDK) module
     Permissions: DeviceManagementConfiguration.Read.All
 #>
 

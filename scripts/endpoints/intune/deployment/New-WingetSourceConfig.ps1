@@ -30,7 +30,11 @@
     Export current source configuration.
 
 .PARAMETER ImportConfig
-    Import source configuration from JSON file.
+    Import source configuration from a JSON file. The file must contain a
+    "Sources" array of objects with Name, Arg (URL) and optional Type
+    (Microsoft.Rest or Microsoft.PreIndexed.Package), e.g.:
+    {"Sources": [{"Name": "CompanyRepo", "Arg": "https://packages.company.com", "Type": "Microsoft.Rest"}]}
+    An optional "RemoveSources" array of {Name} objects removes sources first.
 
 .PARAMETER GenerateIntuneScript
     Generate PowerShell script for Intune deployment.
@@ -46,6 +50,10 @@
 .EXAMPLE
     .\New-WingetSourceConfig.ps1 -ExportConfig -OutputPath ".\winget-sources.json"
     Exports current source configuration.
+
+.EXAMPLE
+    .\New-WingetSourceConfig.ps1 -ImportConfig ".\winget-sources.json"
+    Imports source configuration from JSON file.
 
 .NOTES
     Requires Administrator privileges
@@ -194,6 +202,73 @@ function Export-SourceConfig {
     Write-ColorOutput "`nConfiguration exported to: $jsonPath" -Level Success
 }
 
+function Import-SourceConfig {
+    param([string]$ConfigPath)
+
+    $wingetPath = Get-WingetPath
+    if(-not $wingetPath) {
+        Write-ColorOutput "Winget not found - cannot import configuration" -Level Error
+        return
+    }
+
+    if(-not (Test-Path $ConfigPath)) {
+        Write-ColorOutput "Configuration file not found: $ConfigPath" -Level Error
+        return
+    }
+
+    Write-Host "`nImporting winget source configuration from: $ConfigPath" -ForegroundColor Cyan
+
+    try {
+        $config = Get-Content -Path $ConfigPath -Raw | ConvertFrom-Json
+
+        $sources = @()
+        if($config.Sources) {
+            $sources = @($config.Sources)
+        }
+        elseif($config -is [System.Array]) {
+            $sources = @($config)
+        }
+
+        $removeSources = @()
+        if($config.RemoveSources) {
+            $removeSources = @($config.RemoveSources)
+        }
+
+        # Remove sources first
+        foreach($source in $removeSources) {
+            try {
+                & $wingetPath source remove --name $source.Name 2>&1 | Out-Null
+                Write-ColorOutput "  Removed: $($source.Name)" -Level Success
+            }
+            catch {
+                Write-ColorOutput "  Could not remove $($source.Name) (may not exist)" -Level Warning
+            }
+        }
+
+        # Add/update sources
+        foreach($source in $sources) {
+            $sourceName = $source.Name
+            $sourceArg = $source.Arg
+            $sourceType = if($source.Type) { $source.Type } else { 'Microsoft.Rest' }
+
+            if(-not $sourceName -or -not $sourceArg) {
+                Write-ColorOutput "  Skipping invalid source entry (Name and Arg are required)" -Level Warning
+                continue
+            }
+
+            # Remove existing entry first so configuration changes are applied
+            & $wingetPath source remove --name $sourceName 2>&1 | Out-Null
+            & $wingetPath source add --name $sourceName --arg $sourceArg --type $sourceType
+            Write-ColorOutput "  Configured: $sourceName ($sourceArg)" -Level Success
+        }
+
+        Write-ColorOutput "`nSuccessfully imported winget source configuration" -Level Success
+    }
+    catch {
+        Write-ColorOutput "Failed to import configuration: $($_.Exception.Message)" -Level Error
+    }
+}
+
 function New-IntuneDeploymentScript {
     $scriptContent = @"
 <#
@@ -277,7 +352,7 @@ elseif($ExportConfig) {
     Export-SourceConfig
 }
 elseif($ImportConfig) {
-    Write-ColorOutput "Import functionality to be implemented" -Level Warning
+    Import-SourceConfig -ConfigPath $ImportConfig
 }
 else {
     if($RemoveDefaultSources) {

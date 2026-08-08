@@ -108,12 +108,14 @@ try {
         # Get device compliance policy states
         $deviceId = $device.Id
         $complianceDetails = $null
+        $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/$deviceId/deviceCompliancePolicyStates"
 
         try {
-            $complianceDetails = Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/$deviceId/deviceCompliancePolicyStates"
+            $complianceDetails = Invoke-MgGraphRequest -Uri $uri
         }
         catch {
-            # Continue if we can't get compliance details
+            # Warn and continue - a per-device failure shouldn't abort the report
+            Write-Warning "Graph API request failed for ${uri}: $_"
         }
 
         # Determine compliance reasons
@@ -196,6 +198,16 @@ try {
     # Export reports
     if (-not $OutputPath) {
         $OutputPath = $ReportDir
+    }
+    elseif ([string]::IsNullOrWhiteSpace($OutputPath) -or
+        $OutputPath -match '(^|[\\/])\.\.([\\/]|$)' -or
+        $OutputPath -match '^(\\\\|//)') {
+        Write-Error "Unsafe report path: $OutputPath. Report path must be a local absolute path without '..' traversal."
+        exit 1
+    }
+    $OutputPath = [System.IO.Path]::GetFullPath($OutputPath)
+    if (-not (Test-Path -LiteralPath $OutputPath -PathType Container)) {
+        New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
     }
 
     $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
