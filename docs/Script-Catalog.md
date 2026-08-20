@@ -2,7 +2,10 @@
 
 ![Tier](https://img.shields.io/badge/Tier-1-green) ![Category](https://img.shields.io/badge/Category-Foundation-blue) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen)
 
+> **Catalog is auto-generated from `scripts/.catalog/metadata.json` via `tools/Build-Catalog.ps1` — see [Catalog Automation](Catalog-Automation.md).**
+
 > **Your roadmap to finding exactly what you need, fast!**
+
 
 ---
 

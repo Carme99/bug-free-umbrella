@@ -8,7 +8,7 @@ This directory contains metadata and compatibility information for all scripts i
 |------|-------------|
 | **COMPATIBILITY.md** | Human-readable compatibility matrix showing platform, PowerShell version, and dependency compatibility for key scripts |
 | **compatibility-matrix.json** | Machine-readable JSON compatibility data for automated tooling and validation |
-| **metadata.json** | Script index with tags, categories, and quick reference information (coming soon) |
+| **metadata.json** | Script index with tags, categories, parameters and quick reference (auto-generated via `tools/Build-Catalog.ps1`) |
 
 ## Purpose
 
@@ -97,17 +97,33 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for detailed guidelines.
 
 ## Statistics
 
-- **Total Scripts:** 260+
-- **Cross-Platform:** ~150 (58%)
-- **Windows-Only:** ~110 (42%)
-- **Production Tested:** 15 (6%)
-- **Categories:** 20
+- **Total Scripts:** 358
+- **Cross-Platform:** ~200 (56%)
+- **Windows-Only:** ~158 (44%)
+- **Categories:** 30+
+
+## Metadata Catalog (metadata.json)
+
+`metadata.json` is auto-generated — do not edit by hand.
+
+```powershell
+# Regenerate
+pwsh -File tools/Build-Catalog.ps1
+
+# CI gate — exits 1 if stale
+pwsh -File tools/Build-Catalog.ps1 -Validate
+
+# With progress
+pwsh -File tools/Build-Catalog.ps1 -Verbose
+```
+
+Schema and tooling are documented in [docs/Catalog-Automation.md](../../docs/Catalog-Automation.md).
+Use `Invoke-Umbrella.ps1` at the repo root for interactive discovery:
+`pwsh -File ./Invoke-Umbrella.ps1 -Search intune`.
 
 ## Roadmap
 
-Future enhancements planned for the catalog:
-
-- [ ] Complete metadata.json with all 260+ scripts
+- [x] Complete metadata.json with all 358 scripts
 - [ ] Automated compatibility testing in CI/CD
 - [ ] Platform-specific script bundles
 - [ ] Interactive web-based script browser
