@@ -201,7 +201,7 @@ function Connect-GraphRobust {
         Disconnect-MgGraph -ErrorAction SilentlyContinue | Out-Null
     }
     catch {
-        # Ignore disconnect errors
+        Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
     }
 
     try {
@@ -767,7 +767,7 @@ finally {
         Disconnect-MgGraph -ErrorAction SilentlyContinue | Out-Null
     }
     catch {
-        # Ignore disconnect errors
+        Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
     }
 }
 

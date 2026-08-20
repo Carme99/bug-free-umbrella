@@ -316,7 +316,7 @@ For end-to-end processes, see:
 
 Try these resources:
 
-1. **[Script Catalog](Script-Catalog.md)** - Browse all 260+ scripts by category
+1. **[Script Catalog](Script-Catalog.md)** - Browse all 358 scripts by category
 2. **[Script Examples](Script-Examples.md)** - See detailed usage examples
 3. **[Repository Search](https://github.com/Carme99/bug-free-umbrella)** - Search GitHub repository
 4. **[GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues)** - Request new scripts

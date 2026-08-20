@@ -112,7 +112,7 @@ try {
                 }
             }
             catch {
-                # Signal strength not available
+                Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
             }
         }
 

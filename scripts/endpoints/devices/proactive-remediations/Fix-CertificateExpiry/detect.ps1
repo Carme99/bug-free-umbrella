@@ -108,7 +108,7 @@ try {
                 }
             }
             catch {
-                # Unparseable certificate entry - skip it
+                Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
             }
         }
     }

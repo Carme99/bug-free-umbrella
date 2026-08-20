@@ -100,7 +100,9 @@ try {
     Write-Host "`nAfter cleanup:" -ForegroundColor White
     Write-Host $dfAfter -ForegroundColor Gray
 }
-catch {}
+catch {
+    Write-Host "[!] Unable to get disk usage stats after cleanup: $($_.Exception.Message)" -ForegroundColor Yellow
+}
 
 Write-Host "`n=== Cleanup Summary ===" -ForegroundColor Cyan
 Write-Host "Cleaned: $($cleanedItems -join ', ')" -ForegroundColor Green

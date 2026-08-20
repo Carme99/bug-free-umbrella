@@ -216,7 +216,7 @@ if ($IncludeFolderPermissions) {
             }
         }
         catch {
-            # Folder might not exist or no custom permissions
+            Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
         }
     }
 }

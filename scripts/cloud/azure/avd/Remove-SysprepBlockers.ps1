@@ -181,7 +181,7 @@ function Stop-AppXServices {
             }
         }
         catch {
-            # Silently continue
+            Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
         }
     }
 }

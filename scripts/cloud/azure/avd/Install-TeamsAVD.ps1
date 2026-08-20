@@ -825,7 +825,7 @@ if (-not (Test-Path $logDir)) {
 }
 
 # Stop any orphaned transcripts
-try { Stop-Transcript | Out-Null } catch { }
+try { Stop-Transcript | Out-Null } catch { Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false }
 
 # Start transcript logging
 Start-Transcript -Path $LogPath -Append

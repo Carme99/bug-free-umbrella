@@ -46,7 +46,7 @@ try {
                     }
                 }
                 catch {
-                    # Unable to parse date, might be an issue
+                    Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
                 }
             }
         }

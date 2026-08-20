@@ -1,0 +1,28 @@
+{
+    "name": "Bug-Free Umbrella",
+    "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+    "features": {
+        "ghcr.io/devcontainers/features/powershell:1": {
+            "version": "latest"
+        },
+        "ghcr.io/devcontainers/features/git:1": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.powershell",
+                "streetsidesoftware.code-spell-checker",
+                "yzhang.markdown-all-in-one"
+            ],
+            "settings": {
+                "powershell.codeFormatting.preset": "OTBS",
+                "editor.formatOnSave": true,
+                "files.eol": "\r\n",
+                "files.encoding": "utf8bom"
+            }
+        }
+    },
+    "postCreateCommand": "pwsh -NoProfile -Command \"Install-Module PSScriptAnalyzer,Pester -Force -SkipPublisherCheck -Scope CurrentUser; Write-Host 'Devcontainer ready: PSScriptAnalyzer + Pester installed'\"",
+    "remoteUser": "vscode"
+}

@@ -35,7 +35,7 @@ See the `examples/` directory for runnable usage examples of common patterns.
 
 ## Repository Architecture
 
-The repository is organised around **8 technology domains** (plus a `utilities/` folder for general tools). Every script lives under one of these top-level folders:
+The repository is organised around **8 technology domains** (including `utilities/` for general tools). Every script lives under one of these top-level folders:
 
 ```
 scripts/
@@ -63,7 +63,7 @@ The layout was restructured in **v3.0.0** to group scripts by technology domain 
 ## Testing Strategy
 
 - The existing test files use **Pester 5.5.0+**. Test files live under `./Tests`, with a few additional suites colocated next to the scripts they test.
-- Test coverage is **limited by design**: only a small number of Pester test files exist (5 as of v4.3.0) for the 358 scripts in the repository, and the tests do **not** mirror the full `scripts/` directory structure. Most domains currently have no automated tests.
+- Test coverage is **limited by design**: only a small number of Pester test files exist (10 as of v4.3.0) for the 358 scripts in the repository, and the tests do **not** mirror the full `scripts/` directory structure. Most domains currently have no automated tests.
 - Configuration for running the suite locally is centralised in `./Tests/Pester.Config.psd1`, which enables **code coverage** against `./scripts` and excludes `Integration`-tagged tests by default.
 - Each test file follows the `Describe` / `Context` / `It` structure with `#Requires -Modules Pester` at the top.
 - See the `Tests/Common/HelperFunctions.Tests.ps1` file for the shared helper test conventions.

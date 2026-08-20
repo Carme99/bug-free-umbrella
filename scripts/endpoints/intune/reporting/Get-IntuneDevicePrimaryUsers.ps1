@@ -279,7 +279,9 @@ function Get-ManagedDeviceMatch {
                 $mdById = Get-MgDeviceManagementManagedDevice -ManagedDeviceId $Token -Property $selectProps -ErrorAction Stop
                 if ($mdById) { return $mdById }
             }
-            catch { }
+            catch {
+                Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
+            }
 
             # Try as Azure AD Device ID
             $md = Get-MgDeviceManagementManagedDevice -Filter "azureAdDeviceId eq '$safeToken'" -Property $selectProps -Top 1 -ErrorAction SilentlyContinue
@@ -356,7 +358,9 @@ function Get-RegisteredOwnerUser {
                     $u = Get-MgUser -UserId $o.Id -ErrorAction Stop
                     if ($u) { return $u }
                 }
-                catch { }
+                catch {
+                    Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
+                }
             }
         }
     }
@@ -377,7 +381,9 @@ function Resolve-UserDisplayNameFromUpn {
         $u = Get-MgUser -Filter "userPrincipalName eq '$safeUpn'" -ConsistencyLevel eventual -ErrorAction SilentlyContinue
         if ($u) { return (($u | Select-Object -First 1).DisplayName) }
     }
-    catch { }
+    catch {
+        Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
+    }
 
     return $null
 }
@@ -621,7 +627,7 @@ try {
     }
 }
 finally {
-    try { Disconnect-MgGraph -ErrorAction SilentlyContinue | Out-Null } catch { }
+    try { Disconnect-MgGraph -ErrorAction SilentlyContinue | Out-Null } catch { Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false }
 }
 
 #endregion

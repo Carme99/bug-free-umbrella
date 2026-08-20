@@ -24,8 +24,9 @@ New-Item $TranscriptPath -ItemType Directory -Force
 try {
     Stop-Transcript | Out-Null
 }
-catch [System.InvalidOperationException]
-{}
+catch [System.InvalidOperationException] {
+    Write-Verbose "No active transcript to stop: $($_.Exception.Message)" -Verbose:$false
+}
 
 Start-Transcript -Path $TranscriptPath\$TranscriptName -Append
 

@@ -178,7 +178,7 @@ foreach ($guest in $guestUsers) {
             }
         }
         catch {
-            # Skip if error checking roles
+            Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
         }
     }
 

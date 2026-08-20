@@ -181,7 +181,7 @@ try {
             }
         }
         catch {
-            # Unable to get protection state
+            Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
         }
 
         # Get AutoPatch ring if available

@@ -51,7 +51,9 @@ function Invoke-WingetWithRetry {
             Write-Verbose "Winget exited with code 0x$($process.ExitCode.ToString('X8')) on attempt $attempt" -Verbose:$false
             if ($stderr) { Write-Verbose "Winget stderr: $stderr" -Verbose:$false }
         }
-        catch { }
+        catch {
+            Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
+        }
         Start-Sleep -Seconds 2
         $attempt++
     }
@@ -67,7 +69,7 @@ try {
     # winget.exe CLI when the module is unavailable.
     # Reference: https://learn.microsoft.com/en-us/windows/package-manager/winget/troubleshooting
     if (Get-Module -ListAvailable -Name Microsoft.WinGet.Client) {
-        try { Import-Module Microsoft.WinGet.Client -ErrorAction Stop } catch { }
+        try { Import-Module Microsoft.WinGet.Client -ErrorAction Stop } catch { Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false }
         if (Get-Command Get-WinGetPackage -ErrorAction SilentlyContinue) {
             $package = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -ErrorAction SilentlyContinue
             if (-not $package) { Write-Host "$ID is not installed on this device."; exit 0 }
