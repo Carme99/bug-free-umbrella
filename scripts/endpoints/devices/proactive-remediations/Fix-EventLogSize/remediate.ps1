@@ -1,69 +1,15 @@
-<#
+﻿<#
 .SYNOPSIS
-    Clears bloated Windows Event Logs.
+    Deprecated shim — forwards to scripts/endpoints/remediation/system/Invoke-RemediationFixEventLogSize.ps1.
 
 .DESCRIPTION
-    Clears event logs that exceed size thresholds, excluding critical system logs
-    (System, Security, Application) which are archived instead.
+    Deprecated wrapper retained for compatibility. Forwards execution to the canonical script at scripts/endpoints/remediation/system/Invoke-RemediationFixEventLogSize.ps1. Update Intune assignments to the canonical path. Shim will be removed in 6.0.0.
 
 .NOTES
-    Author: Intune Admin
-    Version: 1.0
-    Intune Context: SYSTEM
-    Exit 0: Remediation successful
-
-.CONFIGURATION
-    $maxLogSizeMB: Maximum size in MB before clearing (default: 100MB)
+    Deprecated: moved to scripts/endpoints/remediation/system/Invoke-RemediationFixEventLogSize.ps1 — shim will be removed in 6.0.0.
+    Intune: exit 0 = healthy, exit 1 = needs remediation (preserved via $LASTEXITCODE).
+    Context: runs as SYSTEM in Proactive Remediations — uses Win32_UserProfile / Win32_Battery / Microsoft.WinGet.Client as applicable.
 #>
-
-try {
-    # Configuration
-    $maxLogSizeMB = 100
-    $maxLogSizeBytes = $maxLogSizeMB * 1MB
-
-    $remediationActions = @()
-    $criticalLogs = @("System", "Security", "Application")
-
-    # Get all event logs
-    $eventLogs = Get-WinEvent -ListLog * -ErrorAction SilentlyContinue
-
-    foreach ($log in $eventLogs) {
-        if ($log.FileSize -gt $maxLogSizeBytes) {
-            $logName = $log.LogName
-            $sizeMB = [math]::Round($log.FileSize / 1MB, 2)
-
-            try {
-                if ($criticalLogs -contains $logName) {
-                    # For critical logs, configure auto-archiving instead of clearing
-                    wevtutil.exe sl "$logName" /ms:52428800  # Set max size to 50MB
-                    $remediationActions += "Configured size limit for $logName ($sizeMB MB)"
-                }
-                else {
-                    # Clear non-critical logs
-                    wevtutil.exe cl "$logName"
-                    $remediationActions += "Cleared $logName ($sizeMB MB)"
-                }
-            }
-            catch {
-                Write-Host "Warning: Could not process $logName : $_"
-            }
-        }
-    }
-
-    if ($remediationActions.Count -gt 0) {
-        Write-Host "Event log remediation completed:"
-        foreach ($action in $remediationActions) {
-            Write-Host "  - $action"
-        }
-    }
-    else {
-        Write-Host "No event logs required clearing"
-    }
-
-    exit 0
-
-}
-catch {
-    Write-Host "Error during event log remediation: $_"
-    exit 1
-}
+Write-Warning 'Deprecated: moved to scripts/endpoints/remediation/system/Invoke-RemediationFixEventLogSize.ps1 — shim will be removed in 6.0.0.'
+$null = & "$PSScriptRoot/../../../remediation/system/Invoke-RemediationFixEventLogSize.ps1" @args
+exit $LASTEXITCODE

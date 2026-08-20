@@ -49,6 +49,7 @@ flowchart LR
         U[utilities]
     end
     CAT[.catalog<br/>metadata + compatibility] -. indexes .-> SCRIPTS
+    MOD[Module<br/>BugFreeUmbrella.psd1 + .psm1] -. exports .-> SCRIPTS
     DOC[docs/ · Architecture · Catalog · Guides] -. documents .-> SCRIPTS
     TST[Tests/ + colocated Pester suites] -. validates .-> SCRIPTS
 ```
@@ -135,6 +136,11 @@ flowchart LR
 
 Docs live **in the repository** — no external wiki (retired 2026-08-08). Benefits: versioned with code, PR-reviewable, link-checked by review, impossible to silently drift.
 
+`docs/Module.md` is auto-generated from the manifest + catalog (see `tools/Build-Docs.ps1`);
+it is the PSGallery-facing reference and is validated in CI via `Build-Docs.ps1 -Validate`.
+
+Module loads 358 wrappers via Build-Module, version from CHANGELOG, PSSA 0
+
 ```mermaid
 flowchart LR
     HUB[docs/README.md<br/>entry point + map]
@@ -145,7 +151,6 @@ flowchart LR
     CAT --> DOMAIN[Category guides<br/>Intune · Server · Security · M365 · Cloud · Data]
     DOMAIN --> SCRIPTS2[scripts/ tree]
 ```
-
 - **`docs/README.md`** — entry point, documentation map, by-domain index
 - **`docs/Script-Catalog.md`** — full index of all scripts with paths
 - **Category guides** — one page per domain (Intune, Server Management, Security, M365, Cloud…)

@@ -62,7 +62,36 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ## [Unreleased]
 
-*No unreleased changes — v4.4.0 is the latest.*
+## [5.0.0] - Unreleased 🌪️ **"Hurricane"** - Platform & Distribution Release
+
+> The collection becomes a platform: an installable PSGallery module, a CLI v2, a breaking remediation reorg with deprecation shims, and a 32-test verification suite — all gated at 100/100.
+
+### 📦 BugFreeUmbrella Module (BREAKING-friendly, additive)
+- **`src/BugFreeUmbrella/BugFreeUmbrella.psd1` + `.psm1`** — installable module exporting **360 commands** (357 script wrappers + 3 helpers: `Get-BUScript`, `Invoke-BUScript`, `Register-BUCompleter`)
+- **`tools/Build-Module.ps1`** — 5-step generator: validate prereqs → derive Verb-Noun names (eliminates `detect.ps1`×51 via leaf-dir + Winget suffix) → generate psm1/psd1 (UTF8 BOM/CRLF, idempotent byte-identical) → `Test-ModuleManifest` + PSSA → `Publish-Module -WhatIf` via `PSGALLERY_API_KEY`; `-Validate` exits 1 on stale artifacts
+- Wrappers mirror params via `Language.Parser`, forward `-WhatIf/-Confirm` through `SupportsShouldProcess`, `[Alias]`-preserve renamed params (`-Profile`→`-ProfilePath`), per-function `SuppressMessageAttribute('PSUseSingularNouns')` for filename mirrors
+- **`.github/workflows/release-module.yml`** — tag-triggered PSGallery publish (secret-gated, dry-run safe on dispatch); module import smoke step added to `validate-powershell.yml` test job (gating ≥350 commands)
+
+### 🖥️ CLI v2
+- **`Invoke-Umbrella.ps1`** enhanced: `-Name` (exact), `-Invoke` (`-WhatIf` passthrough via AST `SupportsShouldProcess` probe), `-Export` (bulk copy with dedup)
+- Cross-platform interactive tier: `Out-GridView` → `fzf --multi --preview` → numbered list; CI/non-interactive guard
+- **`Register-BUCompleter`** — tab completion for 8 domains + 357 names from mtime-guarded catalog cache
+
+### 🔀 Remediation Reorg (BREAKING, shims provided)
+- New canonical **`scripts/endpoints/remediation/{winget,system,network,security}/`** — 174 Verb-Noun files (`Test-WingetFirefox.ps1`, `Invoke-RemediationFixTeamsCache.ps1`, …)
+- Old `endpoints/devices/winget/` + `proactive-remediations/` become **173 forwarding shims**: `Write-Warning 'Deprecated…'` → invoke canonical → `exit $LASTEXITCODE` (Intune exit codes preserved; removal planned 6.0.0)
+- `scripts/endpoints/remediation/README.md` — 15-row migration table, Intune update guide, taxonomy notes
+- Catalog regenerated: 357 entries, 0 without synopsis, shim paths excluded
+
+### 🧪 Tests & Quality Gates
+- **32 new Pester tests** (Module 14, Catalog 8, CLI 10): manifest parity with CHANGELOG, import idempotence, WhatIf forwarding, traversal rejection, completer domains, stale-catalog detection
+- **PSSA Errors = 0** across all new/changed files; policy rules clean; reproducible doc builds (catalog-mtime footer, not wall clock)
+- `.github/dependabot.yml` — weekly github-actions updates
+
+### 📚 Docs & Distribution
+- **`docs/Module.md`** — auto-generated 358-row function table + install/publish guide (`tools/Build-Docs.ps1`, `-Validate` gate)
+- **`install.ps1`** — one-command bootstrap (clone → import → next steps)
+- README PSGallery badge + install snippet; ARCHITECTURE mermaid gains `MOD[Module]`; `examples/module-usage/` — 5 grounded recipes
 
 ---
 

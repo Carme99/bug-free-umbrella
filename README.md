@@ -62,6 +62,15 @@ Ever find yourself thinking *"there's got to be a script for this"*? Well, now t
 | **🖥️ Server Management** | 30+ scripts for Windows/Linux servers |
 | **👥 M365 Everything** | Exchange, Teams, SharePoint, and more |
 
+
+[![PowerShell Gallery](https://img.shields.io/powershellgallery/v/BugFreeUmbrella?style=for-the-badge)](https://www.powershellgallery.com/packages/BugFreeUmbrella)
+
+```powershell
+# Install from the PowerShell Gallery…
+Install-Module BugFreeUmbrella -Scope CurrentUser
+# …or bootstrap a clone: git clone https://github.com/Carme99/bug-free-umbrella.git && cd bug-free-umbrella && ./install.ps1
+```
+
 ---
 
 ## 🚀 Get Started in 60 Seconds

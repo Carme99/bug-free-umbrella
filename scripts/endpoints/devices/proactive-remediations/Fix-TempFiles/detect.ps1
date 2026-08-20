@@ -1,55 +1,15 @@
-<#
+﻿<#
 .SYNOPSIS
-    Detect excessive temp files
+    Deprecated shim — forwards to scripts/endpoints/remediation/system/Test-RemediationFixTempFiles.ps1.
 
 .DESCRIPTION
-    Measures the total size of temp files older than 7 days across the SYSTEM temp folder, the Windows temp folder and every per-user temp folder (enumerated from Win32_UserProfile so users who are not logged on are covered). Exits 1 when the total exceeds 1 GB.
-
-.EXAMPLE
-    ./detect.ps1
+    Deprecated wrapper retained for compatibility. Forwards execution to the canonical script at scripts/endpoints/remediation/system/Test-RemediationFixTempFiles.ps1. Update Intune assignments to the canonical path. Shim will be removed in 6.0.0.
 
 .NOTES
-    File Name  : detect.ps1
-    Author     : Intune / Proactive Remediations
-    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
-    Version    : 1.0.0
-    Date       : 2026-08-08
+    Deprecated: moved to scripts/endpoints/remediation/system/Test-RemediationFixTempFiles.ps1 — shim will be removed in 6.0.0.
+    Intune: exit 0 = healthy, exit 1 = needs remediation (preserved via $LASTEXITCODE).
+    Context: runs as SYSTEM in Proactive Remediations — uses Win32_UserProfile / Win32_Battery / Microsoft.WinGet.Client as applicable.
 #>
-
-# Detect excessive temp files (> 1GB)
-# In SYSTEM context $env:TEMP points at the SYSTEM profile temp folder - real
-# user temp folders must be enumerated explicitly or they are never cleaned.
-$threshold = 1GB
-$tempPaths = @("$env:TEMP", "$env:SystemRoot\Temp")
-
-# Per-user temp folders - every non-special profile is enumerated so temp files
-# of users who are not currently logged on are also covered.
-$userProfiles = Get-CimInstance Win32_UserProfile | Where-Object {
-    $_.Special -eq $false -and $_.LocalPath -notmatch 'systemprofile|defaultuser'
-}
-
-foreach ($profile in $userProfiles) {
-    $userTemp = Join-Path $profile.LocalPath "AppData\Local\Temp"
-    if (Test-Path $userTemp) {
-        $tempPaths += $userTemp
-    }
-}
-
-$totalSize = 0
-
-foreach ($path in $tempPaths) {
-    if (Test-Path $path) {
-        $size = (Get-ChildItem $path -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) } | Measure-Object -Property Length -Sum).Sum
-        $totalSize += $size
-    }
-}
-
-$totalGB = [math]::Round($totalSize / 1GB, 2)
-
-if ($totalSize -gt $threshold) {
-    Write-Host "Excessive temp files: $totalGB GB"
-    exit 1
-}
-
-Write-Host "Temp files normal: $totalGB GB"
-exit 0
+Write-Warning 'Deprecated: moved to scripts/endpoints/remediation/system/Test-RemediationFixTempFiles.ps1 — shim will be removed in 6.0.0.'
+$null = & "$PSScriptRoot/../../../remediation/system/Test-RemediationFixTempFiles.ps1" @args
+exit $LASTEXITCODE

@@ -1,36 +1,15 @@
-<#
+﻿<#
 .SYNOPSIS
-    Flushes DNS cache and resets DNS client to resolve connectivity issues.
+    Deprecated shim — forwards to scripts/endpoints/remediation/network/Invoke-RemediationFixDNSCache.ps1.
 
 .DESCRIPTION
-    This remediation script flushes the DNS cache and resets DNS client settings
-    to resolve DNS resolution problems.
+    Deprecated wrapper retained for compatibility. Forwards execution to the canonical script at scripts/endpoints/remediation/network/Invoke-RemediationFixDNSCache.ps1. Update Intune assignments to the canonical path. Shim will be removed in 6.0.0.
 
 .NOTES
-    Exit 0: Successfully flushed DNS cache
-    Exit 1: Failed to flush DNS cache
+    Deprecated: moved to scripts/endpoints/remediation/network/Invoke-RemediationFixDNSCache.ps1 — shim will be removed in 6.0.0.
+    Intune: exit 0 = healthy, exit 1 = needs remediation (preserved via $LASTEXITCODE).
+    Context: runs as SYSTEM in Proactive Remediations — uses Win32_UserProfile / Win32_Battery / Microsoft.WinGet.Client as applicable.
 #>
-
-$ErrorActionPreference = "Stop"
-
-try {
-    # Flush DNS cache
-    Clear-DnsClientCache
-
-    # Restart DNS client service if needed
-    $dnsClient = Get-Service -Name "Dnscache" -ErrorAction SilentlyContinue
-
-    if ($dnsClient.Status -ne "Running") {
-        Start-Service -Name "Dnscache"
-    }
-    else {
-        Restart-Service -Name "Dnscache" -Force
-    }
-
-    Write-Output "Successfully flushed DNS cache and restarted DNS Client service"
-    exit 0  # Success
-}
-catch {
-    Write-Output "Failed to flush DNS cache: $($_.Exception.Message)"
-    exit 1  # Failure
-}
+Write-Warning 'Deprecated: moved to scripts/endpoints/remediation/network/Invoke-RemediationFixDNSCache.ps1 — shim will be removed in 6.0.0.'
+$null = & "$PSScriptRoot/../../../remediation/network/Invoke-RemediationFixDNSCache.ps1" @args
+exit $LASTEXITCODE

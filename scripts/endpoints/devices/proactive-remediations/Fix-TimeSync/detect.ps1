@@ -1,75 +1,15 @@
-<#
+﻿<#
 .SYNOPSIS
-    Detects time synchronization issues on Windows devices.
+    Deprecated shim — forwards to scripts/endpoints/remediation/system/Test-RemediationFixTimeSync.ps1.
 
 .DESCRIPTION
-    Checks if Windows Time service is running and if time is properly synchronized.
-    Critical for authentication (Kerberos) and certificate validation.
+    Deprecated wrapper retained for compatibility. Forwards execution to the canonical script at scripts/endpoints/remediation/system/Test-RemediationFixTimeSync.ps1. Update Intune assignments to the canonical path. Shim will be removed in 6.0.0.
 
 .NOTES
-    Author: Intune Admin
-    Version: 1.0
-    Intune Context: SYSTEM
-    Exit 0: Time sync is healthy
-    Exit 1: Issues detected - remediation needed
+    Deprecated: moved to scripts/endpoints/remediation/system/Test-RemediationFixTimeSync.ps1 — shim will be removed in 6.0.0.
+    Intune: exit 0 = healthy, exit 1 = needs remediation (preserved via $LASTEXITCODE).
+    Context: runs as SYSTEM in Proactive Remediations — uses Win32_UserProfile / Win32_Battery / Microsoft.WinGet.Client as applicable.
 #>
-
-try {
-    $issues = @()
-
-    # Check if Windows Time service is running
-    $w32timeService = Get-Service -Name "W32Time" -ErrorAction SilentlyContinue
-    if ($w32timeService.Status -ne "Running") {
-        $issues += "Windows Time service is not running"
-    }
-
-    # Check time sync status using w32tm
-    $syncStatus = w32tm /query /status 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        $issues += "Time sync status check failed - service may not be configured"
-    }
-    else {
-        # Check if time source is configured
-        if ($syncStatus -match "Source: Local CMOS Clock") {
-            $issues += "Time source is set to Local CMOS Clock (should sync from network)"
-        }
-
-        # Check last successful sync
-        if ($syncStatus -match "Last Successful Sync Time: (.+)") {
-            $lastSync = $matches[1]
-            if ($lastSync -notmatch "unspecified") {
-                try {
-                    $lastSyncDate = [DateTime]::Parse($lastSync)
-                    $hoursSinceSync = ((Get-Date) - $lastSyncDate).TotalHours
-                    if ($hoursSinceSync -gt 24) {
-                        $issues += "Last successful sync was over 24 hours ago"
-                    }
-                }
-                catch {
-                    Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
-                }
-            }
-        }
-    }
-
-    # Check service startup type (should be Automatic)
-    if ($w32timeService.StartType -ne "Automatic") {
-        $issues += "Windows Time service startup type is not set to Automatic"
-    }
-
-    if ($issues.Count -gt 0) {
-        Write-Host "Time sync issues detected:"
-        foreach ($issue in $issues) {
-            Write-Host "  - $issue"
-        }
-        exit 1
-    }
-
-    Write-Host "Time synchronization is healthy"
-    exit 0
-
-}
-catch {
-    Write-Host "Error checking time sync status: $_"
-    exit 1
-}
+Write-Warning 'Deprecated: moved to scripts/endpoints/remediation/system/Test-RemediationFixTimeSync.ps1 — shim will be removed in 6.0.0.'
+$null = & "$PSScriptRoot/../../../remediation/system/Test-RemediationFixTimeSync.ps1" @args
+exit $LASTEXITCODE

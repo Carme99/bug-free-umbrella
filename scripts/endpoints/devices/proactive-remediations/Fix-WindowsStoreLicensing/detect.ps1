@@ -1,73 +1,15 @@
-<#
+﻿<#
 .SYNOPSIS
-    Detects Windows Store app licensing issues.
+    Deprecated shim — forwards to scripts/endpoints/remediation/system/Test-RemediationFixWindowsStoreLicensing.ps1.
 
 .DESCRIPTION
-    Checks for Windows Store licensing problems that can prevent apps from
-    launching or updating properly.
+    Deprecated wrapper retained for compatibility. Forwards execution to the canonical script at scripts/endpoints/remediation/system/Test-RemediationFixWindowsStoreLicensing.ps1. Update Intune assignments to the canonical path. Shim will be removed in 6.0.0.
 
 .NOTES
-    Author: Intune Admin
-    Version: 1.0
-    Intune Context: SYSTEM
-    Exit 0: Store licensing is healthy
-    Exit 1: Licensing issues detected
+    Deprecated: moved to scripts/endpoints/remediation/system/Test-RemediationFixWindowsStoreLicensing.ps1 — shim will be removed in 6.0.0.
+    Intune: exit 0 = healthy, exit 1 = needs remediation (preserved via $LASTEXITCODE).
+    Context: runs as SYSTEM in Proactive Remediations — uses Win32_UserProfile / Win32_Battery / Microsoft.WinGet.Client as applicable.
 #>
-
-try {
-    $issues = @()
-
-    # Check if Windows Store service is running
-    $storeService = Get-Service -Name "ClipSVC" -ErrorAction SilentlyContinue  # Client License Service
-
-    if ($storeService) {
-        if ($storeService.Status -ne "Running") {
-            $issues += "Client License Service (ClipSVC) is not running"
-        }
-    }
-    else {
-        $issues += "Client License Service (ClipSVC) is not found"
-    }
-
-    # Check Windows Update service (required for Store)
-    $wuService = Get-Service -Name "wuauserv" -ErrorAction SilentlyContinue
-
-    if ($wuService) {
-        if ($wuService.Status -ne "Running" -and $wuService.StartType -eq "Disabled") {
-            $issues += "Windows Update service is disabled (required for Store)"
-        }
-    }
-
-    # Check for licensing cache corruption
-    $licensingPath = "$env:ProgramData\Microsoft\Windows\ClipSVC\tokens.dat"
-
-    if (Test-Path $licensingPath) {
-        $fileInfo = Get-Item $licensingPath -ErrorAction SilentlyContinue
-        if ($fileInfo.Length -eq 0) {
-            $issues += "Store licensing cache is empty or corrupted"
-        }
-    }
-
-    # Check if Store app is registered
-    $storeApp = Get-AppxPackage -Name "Microsoft.WindowsStore" -AllUsers -ErrorAction SilentlyContinue
-
-    if (-not $storeApp) {
-        $issues += "Microsoft Store app is not installed or registered"
-    }
-
-    if ($issues.Count -gt 0) {
-        Write-Host "Windows Store licensing issues detected:"
-        foreach ($issue in $issues) {
-            Write-Host "  - $issue"
-        }
-        exit 1
-    }
-
-    Write-Host "Windows Store licensing appears healthy"
-    exit 0
-
-}
-catch {
-    Write-Host "Error checking Windows Store licensing: $_"
-    exit 1
-}
+Write-Warning 'Deprecated: moved to scripts/endpoints/remediation/system/Test-RemediationFixWindowsStoreLicensing.ps1 — shim will be removed in 6.0.0.'
+$null = & "$PSScriptRoot/../../../remediation/system/Test-RemediationFixWindowsStoreLicensing.ps1" @args
+exit $LASTEXITCODE

@@ -1,0 +1,95 @@
+name: Release Module
+
+# Publishes BugFreeUmbrella to PSGallery on v* tag pushes.
+# workflow_dispatch builds and validates only — it never publishes.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Build and Publish Module
+    runs-on: ubuntu-latest
+
+    # The secrets context is not readable inside step-level if: expressions,
+    # so the API key is surfaced as a job-level env var: steps gate on
+    # env.PSGALLERY_API_KEY and the key never appears inline in step scripts.
+    env:
+      PSGALLERY_API_KEY: ${{ secrets.PSGALLERY_API_KEY }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install PSScriptAnalyzer (build-time gate)
+        shell: pwsh
+        run: |
+          # Keep PSGallery Untrusted; install only the required module for the current user.
+          # tools/Build-Module.ps1 runs a PSSA Error gate on the generated psm1/psd1 and
+          # silently skips it when the module is absent — install it so the gate is real.
+          Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck -Scope CurrentUser
+
+      - name: Derive module version from tag
+        shell: pwsh
+        env:
+          GIT_REF_NAME: ${{ github.ref_name }}
+        run: |
+          # v5.0.0 -> 5.0.0 (prerelease/build suffixes trimmed; ModuleVersion must be plain semver).
+          # Refs without a vX.Y.Z prefix (e.g. workflow_dispatch branches) leave MODULE_VERSION
+          # unset so tools/Build-Module.ps1 falls back to its CHANGELOG-derived default.
+          $tag = $env:GIT_REF_NAME
+          if ($tag -match '^v([0-9]+\.[0-9]+\.[0-9]+)') {
+            $version = $Matches[1]
+            Write-Host "Module version derived from tag '$tag': $version" -ForegroundColor Cyan
+            "MODULE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+          }
+          else {
+            Write-Host "Ref '$tag' carries no vX.Y.Z semver — using CHANGELOG-derived default version." -ForegroundColor Yellow
+          }
+
+      - name: Build module (generate fresh from catalog)
+        shell: pwsh
+        run: |
+          $buildArgs = @()
+          if ($env:MODULE_VERSION) { $buildArgs += @('-Version', $env:MODULE_VERSION) }
+          & ./tools/Build-Module.ps1 @buildArgs
+
+      - name: Test-ModuleManifest gate
+        shell: pwsh
+        run: |
+          $manifest = Test-ModuleManifest -Path ./src/BugFreeUmbrella/BugFreeUmbrella.psd1 -ErrorAction Stop
+          $exported = @($manifest.ExportedFunctions.Values).Count
+          Write-Host "[+] Manifest valid: $($manifest.Name) $($manifest.Version) ($exported exported functions)" -ForegroundColor Green
+
+      - name: Publish to PSGallery
+        # Real publish ONLY on v* tag pushes with the API key present; manual dispatch never publishes.
+        if: startsWith(github.ref, 'refs/tags/v') && env.PSGALLERY_API_KEY != ''
+        shell: pwsh
+        run: |
+          Publish-Module -Path ./src/BugFreeUmbrella -NuGetApiKey $env:PSGALLERY_API_KEY -Repository PSGallery -ErrorAction Stop
+          Write-Host "[+] Published BugFreeUmbrella to PSGallery." -ForegroundColor Green
+
+      - name: Publish skipped — missing PSGALLERY_API_KEY
+        if: startsWith(github.ref, 'refs/tags/v') && env.PSGALLERY_API_KEY == ''
+        shell: pwsh
+        run: |
+          Write-Host "::warning::Tag push detected but the PSGALLERY_API_KEY secret is empty — Publish-Module was skipped. Add the secret in repository settings (Settings > Secrets and variables > Actions) to enable PSGallery releases."
+
+      - name: Publish skipped — manual dispatch
+        if: github.event_name == 'workflow_dispatch'
+        shell: pwsh
+        run: |
+          Write-Host "Manual dispatch: build + validation only. PSGallery publish runs on v* tag pushes."
+
+      - name: Upload module artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bugfreeumbrella-module
+          path: src/BugFreeUmbrella
+          if-no-files-found: warn

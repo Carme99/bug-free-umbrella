@@ -1,4 +1,4 @@
-@{
+﻿@{
     # Pester configuration file
     # This file defines default settings for running Pester tests
 
@@ -10,11 +10,12 @@
 
     CodeCoverage = @{
         Enabled = $true
-        Path = @('./scripts')
+        Path = @('./scripts', './src/BugFreeUmbrella')
         OutputPath = './Tests/CodeCoverage.xml'
         OutputFormat = 'JaCoCo'
         OutputEncoding = 'UTF8'
         RecursePaths = $true
+        CoveragePercentTarget = 30
     }
 
     TestResult = @{

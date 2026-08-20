@@ -1,71 +1,15 @@
-<#
+﻿<#
 .SYNOPSIS
-    Detects corrupted Start Menu layout.
+    Deprecated shim — forwards to scripts/endpoints/remediation/system/Test-RemediationFixStartMenuLayout.ps1.
 
 .DESCRIPTION
-    Checks for corrupted Start Menu or tile database that can cause
-    Start Menu to not open or function properly.
+    Deprecated wrapper retained for compatibility. Forwards execution to the canonical script at scripts/endpoints/remediation/system/Test-RemediationFixStartMenuLayout.ps1. Update Intune assignments to the canonical path. Shim will be removed in 6.0.0.
 
 .NOTES
-    Author: Intune Admin
-    Version: 1.0
-    Intune Context: SYSTEM
-    Exit 0: Start Menu is healthy
-    Exit 1: Start Menu issues detected
+    Deprecated: moved to scripts/endpoints/remediation/system/Test-RemediationFixStartMenuLayout.ps1 — shim will be removed in 6.0.0.
+    Intune: exit 0 = healthy, exit 1 = needs remediation (preserved via $LASTEXITCODE).
+    Context: runs as SYSTEM in Proactive Remediations — uses Win32_UserProfile / Win32_Battery / Microsoft.WinGet.Client as applicable.
 #>
-
-try {
-    $issues = @()
-
-    # Get all user profiles
-    $userProfiles = Get-ChildItem -Path "C:\Users" -Directory -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -notmatch "Public|Default|All Users" }
-
-    foreach ($profile in $userProfiles) {
-        # Check for Start Menu tile database
-        $tileDataPath = "$($profile.FullName)\AppData\Local\TileDataLayer\Database"
-
-        if (Test-Path $tileDataPath) {
-            # Check if database is accessible
-            try {
-                $dbFiles = Get-ChildItem -Path $tileDataPath -File -ErrorAction Stop
-                # Database exists and is accessible
-            }
-            catch {
-                $issues += "Start Menu database is corrupted or inaccessible for user: $($profile.Name)"
-            }
-        }
-
-        # Check for Start Menu cache
-        $startMenuCache = "$($profile.FullName)\AppData\Local\Packages\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy"
-
-        if (Test-Path $startMenuCache) {
-            # Check if cache folder has issues
-            try {
-                $cacheFiles = Get-ChildItem -Path $startMenuCache -ErrorAction Stop
-            }
-            catch {
-                $issues += "Start Menu cache is corrupted for user: $($profile.Name)"
-            }
-        }
-    }
-
-    # Check if Start Menu process is running (indicates it may be working)
-    $startMenuProcess = Get-Process -Name "StartMenuExperienceHost" -ErrorAction SilentlyContinue
-
-    if ($issues.Count -gt 0) {
-        Write-Host "Start Menu issues detected:"
-        foreach ($issue in $issues) {
-            Write-Host "  - $issue"
-        }
-        exit 1
-    }
-
-    Write-Host "Start Menu appears to be healthy"
-    exit 0
-
-}
-catch {
-    Write-Host "Error checking Start Menu health: $_"
-    exit 1
-}
+Write-Warning 'Deprecated: moved to scripts/endpoints/remediation/system/Test-RemediationFixStartMenuLayout.ps1 — shim will be removed in 6.0.0.'
+$null = & "$PSScriptRoot/../../../remediation/system/Test-RemediationFixStartMenuLayout.ps1" @args
+exit $LASTEXITCODE

@@ -21,6 +21,7 @@ flowchart LR
     HUB --> TRO[Troubleshooting.md]
     HUB --> FAQ[FAQ.md]
     HUB --> ARCH[ARCHITECTURE.md]
+    HUB --> MOD[Module.md]
     GS --> USE[Common-Use-Cases.md]
     GS --> WF[Workflows.md]
     CAT --> API[API-Reference.md]
@@ -44,10 +45,6 @@ flowchart LR
 | 🎯 **Solve a specific problem** | [Common-Use-Cases.md](Common-Use-Cases.md) |
 | 🏗️ **Understand how it all fits together** | [ARCHITECTURE.md](ARCHITECTURE.md) |
 
-## 📂 By Technology Domain
-
-| Domain | What's Inside | Category Docs |
-|---|---|---|
 | 📱 **endpoints/** | Intune, Winget, proactive remediations, device health | [Intune-Management.md](Intune-Management.md) · [Intune-Sync-Guide.md](Intune-Sync-Guide.md) · [Winget-Updates.md](Winget-Updates.md) · [Proactive-Remediations.md](Proactive-Remediations.md) |
 | 🖥️ **infrastructure/** | Windows servers, AD, network, virtualization, IIS | [Server-Management.md](Server-Management.md) · [Backup-and-Disaster-Recovery.md](Backup-and-Disaster-Recovery.md) |
 | 🔒 **security/** | CIS/NIST compliance, hardening, monitoring | [Security-Compliance.md](Security-Compliance.md) · [Security-Troubleshooting.md](Security-Troubleshooting.md) |
@@ -56,6 +53,7 @@ flowchart LR
 | 🗄️ **data/** | Databases, APIs | [Database-Administration.md](Database-Administration.md) · [API-Reference.md](API-Reference.md) |
 | ⚙️ **automation/** | CI/CD, IaC | [Workflows.md](Workflows.md) · [Integration-Patterns.md](Integration-Patterns.md) |
 | 🧰 **utilities/** | General toolbox | Browse via [Script-Catalog.md](Script-Catalog.md) |
+| 📦 Module | Installable PSGallery module | [Module.md](Module.md) |
 
 ## 🎓 Guides & Advanced Topics
 
@@ -69,8 +67,9 @@ flowchart LR
 - [Custom-Development-Guide.md](Custom-Development-Guide.md) — write your own scripts for this repo
 - [MCP-Server.md](MCP-Server.md) — 🤖 MCP Server: AI tool integration for all 358 scripts
 
+| 📦 Module | Installable PSGallery module | [Module.md](Module.md) |
 | 🤖 MCP Server | AI tool integration | [MCP-Server.md](MCP-Server.md) |
-
+| 📖 API | REST API reference | [API-Reference.md](API-Reference.md) |
 ## 🆘 When Things Break
 
 - [Troubleshooting.md](Troubleshooting.md) — common issues and solutions

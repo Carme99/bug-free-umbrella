@@ -190,6 +190,11 @@ jobs:
     name: Pester Tests
     runs-on: ubuntu-latest
 
+    # Outcome of the module smoke step, consumed by the summary job as a merge gate
+    # (the test job itself stays non-gating so Pester failures remain informational).
+    outputs:
+      module_smoke: ${{ steps.module_smoke.outcome }}
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -226,6 +231,21 @@ jobs:
             Write-Host "All Pester tests passed!" -ForegroundColor Green
           }
 
+      - name: Module import smoke check (gating)
+        id: module_smoke
+        shell: pwsh
+        run: |
+          # Gating: the generated module must import cleanly and expose the full catalog.
+          # Pester failures above stay informational; this check gates via the summary job.
+          Import-Module ./src/BugFreeUmbrella -Force -ErrorAction Stop
+          $commandCount = (Get-Command -Module BugFreeUmbrella | Measure-Object).Count
+          Write-Host "BugFreeUmbrella exported commands: $commandCount" -ForegroundColor Cyan
+          if ($commandCount -lt 350) {
+            Write-Host "::error::Module smoke check failed: $commandCount exported command(s) < required 350." -ForegroundColor Red
+            exit 1
+          }
+          Write-Host "[+] Module smoke check passed ($commandCount >= 350)." -ForegroundColor Green
+
       - name: Upload Pester Results
         if: always()
         uses: actions/upload-artifact@v4
@@ -249,12 +269,13 @@ jobs:
           echo "PSScriptAnalyzer: ${{ needs.analyze.result }} (gating - fails on errors)"
           echo "Syntax Check: ${{ needs.syntax-check.result }} (gating - fails on errors)"
           echo "Pester Tests: ${{ needs.test.result }} (informational - does not gate merge; coverage is informational)"
+          echo "Module Smoke: ${{ needs.test.outputs.module_smoke }} (gating - module must import with >= 350 commands)"
           echo ""
-          if [ "${{ needs.analyze.result }}" != "success" ] || [ "${{ needs.syntax-check.result }}" != "success" ]; then
-            echo "❌ One or more gating validation jobs failed"
+          if [ "${{ needs.analyze.result }}" != "success" ] || [ "${{ needs.syntax-check.result }}" != "success" ] || [ "${{ needs.test.outputs.module_smoke }}" != "success" ]; then
+            echo "❌ One or more gating validation checks failed"
             exit 1
           fi
-          echo "✓ All gating validation jobs completed!"
+          echo "✓ All gating validation checks completed!"
           if [ "${{ needs.test.result }}" != "success" ] && [ "${{ needs.test.result }}" != "skipped" ]; then
             echo "⚠️ Pester tests had failures — informational only for now"
           fi
