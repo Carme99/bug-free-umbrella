@@ -81,7 +81,7 @@ function Write-Log {
             Add-Content -Path $LogPath -Value $logMessage -ErrorAction SilentlyContinue
         }
         catch {
-            # Fail silently if logging doesn't work
+            Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
         }
     }
 }
@@ -177,7 +177,7 @@ try {
     # winget.exe CLI when the module is unavailable.
     # Reference: https://learn.microsoft.com/en-us/windows/package-manager/winget/troubleshooting
     if (Get-Module -ListAvailable -Name Microsoft.WinGet.Client) {
-        try { Import-Module Microsoft.WinGet.Client -ErrorAction Stop } catch { }
+        try { Import-Module Microsoft.WinGet.Client -ErrorAction Stop } catch { Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false }
         if (Get-Command Get-WinGetPackage -ErrorAction SilentlyContinue) {
             Write-Log "Using Microsoft.WinGet.Client module" -Level Info
 

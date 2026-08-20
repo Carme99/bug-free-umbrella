@@ -307,7 +307,7 @@ if ($IncludePerformanceCounters) {
                 $results.PerformanceData[$counter] = $value
             }
             catch {
-                # Counter might not exist
+                Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
             }
         }
 

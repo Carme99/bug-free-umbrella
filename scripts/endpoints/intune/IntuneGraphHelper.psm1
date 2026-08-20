@@ -70,7 +70,7 @@ function Disconnect-IntuneGraph {
         Write-Host "Disconnected from Microsoft Graph" -ForegroundColor Gray
     }
     catch {
-        # Silently continue
+        Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
     }
 }
 

@@ -20,7 +20,7 @@ $TranscriptPath = "C:\ProgramData\Microsoft\IntuneManagementExtension\Logs"
 $TranscriptName = "AutoPatchRemediation.log"
 New-Item -Path $TranscriptPath -ItemType Directory -Force | Out-Null
 
-try { Stop-Transcript | Out-Null } catch {}
+try { Stop-Transcript | Out-Null } catch { Write-Verbose "No active transcript to stop: $($_.Exception.Message)" }
 
 Start-Transcript -Path "$TranscriptPath\$TranscriptName" -Append
 

@@ -208,7 +208,9 @@ Write-Log "Resetting Windows Update Agent..." "INFO"
 try {
     Remove-Item -Path "$env:SystemRoot\System32\catroot2.bak" -Recurse -Force -ErrorAction SilentlyContinue
 }
-catch {}
+catch {
+    Write-Host "[!] Failed to clean catroot2 backup: $($_.Exception.Message)" -ForegroundColor Yellow
+}
 
 # Start Windows Update Services
 Write-Log "Starting Windows Update services..." "INFO"

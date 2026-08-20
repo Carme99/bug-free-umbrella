@@ -221,7 +221,7 @@ foreach ($sub in $subscriptions) {
                 }
             }
             catch {
-                # Continue checking other vaults
+                Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
             }
         }
 

@@ -248,7 +248,7 @@ try {
                 }
             }
             catch {
-                # Skip groups we can't access
+                Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
             }
         }
 

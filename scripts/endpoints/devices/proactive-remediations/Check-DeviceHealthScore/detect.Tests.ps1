@@ -234,7 +234,7 @@ Describe "Check-DeviceHealthScore.detect.ps1" {
                 $LASTEXITCODE | Should -Be 0
             }
             catch {
-                # Expected exit behavior
+                Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
             }
         }
 
@@ -254,7 +254,7 @@ Describe "Check-DeviceHealthScore.detect.ps1" {
                 $LASTEXITCODE | Should -Be 1
             }
             catch {
-                # Expected exit behavior
+                Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
             }
         }
     }

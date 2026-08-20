@@ -144,7 +144,7 @@ foreach ($path in $registryPaths) {
                             }
                         }
                         catch {
-                            # Continue to next path
+                            Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
                         }
                     }
                 }

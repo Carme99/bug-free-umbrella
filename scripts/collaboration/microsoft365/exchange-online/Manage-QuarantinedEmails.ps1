@@ -97,7 +97,7 @@ function Connect-ToExchangeOnline {
         }
     }
     catch {
-        # Not connected
+        Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
     }
 
     # Attempt connection if AutoConnect is specified

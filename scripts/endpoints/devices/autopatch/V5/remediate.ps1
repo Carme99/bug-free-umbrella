@@ -21,7 +21,9 @@ $TranscriptName = "AutoPatchRemediation.log"
 New-Item $TranscriptPath -ItemType Directory -Force | Out-Null
 
 # Stop any orphaned transcripts
-try { Stop-Transcript | Out-Null } catch [System.InvalidOperationException] {}
+try { Stop-Transcript | Out-Null } catch [System.InvalidOperationException] {
+    Write-Verbose "No active transcript to stop: $($_.Exception.Message)" -Verbose:$false
+}
 
 Start-Transcript -Path "$TranscriptPath\$TranscriptName" -Append
 

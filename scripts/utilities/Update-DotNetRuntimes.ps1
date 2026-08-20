@@ -345,7 +345,7 @@ function Initialize-NetworkDefaults {
             $tls13 = [System.Net.SecurityProtocolType]::Tls13
         }
         catch {
-            # TLS 1.3 not available, will use TLS 1.2 only
+            Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
         }
 
         # Set to TLS 1.2 + TLS 1.3 (if available), explicitly excluding weak protocols
