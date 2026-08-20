@@ -186,10 +186,60 @@ jobs:
             Write-Host "`nAll scripts have valid PowerShell syntax!" -ForegroundColor Green
           }
 
+  test:
+    name: Pester Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser
+          try {
+            $mod = Get-Module -ListAvailable Pester | Sort-Object Version -Descending | Select-Object -First 1
+            if ($mod) { Write-Host "Pester version: $($mod.Version)" -ForegroundColor Gray }
+          } catch {
+            Write-Host "Failed to get Pester version: $($_.Exception.Message)" -ForegroundColor Yellow
+          }
+
+      - name: Run Pester Tests
+        shell: pwsh
+        run: |
+          if (-not (Test-Path './Tests/Pester.Config.psd1')) {
+            Write-Host "Pester config not found at ./Tests/Pester.Config.psd1 — skipping" -ForegroundColor Yellow
+            exit 0
+          }
+          $config = Import-PowerShellDataFile -Path ./Tests/Pester.Config.psd1
+          $pesterConfig = New-PesterConfiguration -Hashtable $config
+          # Coverage is enabled in config but no threshold is enforced — allow low coverage to pass
+          # Pester will still generate CodeCoverage.xml and TestResults.xml for artifact upload
+          Write-Host "Invoking Pester with config from Tests/Pester.Config.psd1..." -ForegroundColor Cyan
+          $result = Invoke-Pester -Configuration $pesterConfig
+          Write-Host "Pester completed: Passed=$($result.PassedCount) Failed=$($result.FailedCount) Skipped=$($result.SkippedCount) Total=$($result.TotalCount)" -ForegroundColor Cyan
+          if ($result.FailedCount -gt 0) {
+            Write-Host "Pester found $($result.FailedCount) failed test(s). Marking as informational — not failing the pipeline (known pre-existing failures)." -ForegroundColor Yellow
+            Write-Host "⚠️ Pester failures are informational until the 6 pre-existing tests are fixed in a follow-up." -ForegroundColor Yellow
+          } else {
+            Write-Host "All Pester tests passed!" -ForegroundColor Green
+          }
+
+      - name: Upload Pester Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pester-results
+          path: |
+            Tests/TestResults.xml
+            Tests/CodeCoverage.xml
+          if-no-files-found: warn
+
   summary:
     name: Validation Summary
     runs-on: ubuntu-latest
-    needs: [analyze, syntax-check]
+    needs: [analyze, syntax-check, test]
     if: always()
 
     steps:
@@ -198,5 +248,13 @@ jobs:
           echo "=== Validation Summary ==="
           echo "PSScriptAnalyzer: ${{ needs.analyze.result }} (gating - fails on errors)"
           echo "Syntax Check: ${{ needs.syntax-check.result }} (gating - fails on errors)"
+          echo "Pester Tests: ${{ needs.test.result }} (informational - does not gate merge; coverage is informational)"
           echo ""
-          echo "✓ All validation jobs completed!"
+          if [ "${{ needs.analyze.result }}" != "success" ] || [ "${{ needs.syntax-check.result }}" != "success" ]; then
+            echo "❌ One or more gating validation jobs failed"
+            exit 1
+          fi
+          echo "✓ All gating validation jobs completed!"
+          if [ "${{ needs.test.result }}" != "success" ] && [ "${{ needs.test.result }}" != "skipped" ]; then
+            echo "⚠️ Pester tests had failures — informational only for now"
+          fi

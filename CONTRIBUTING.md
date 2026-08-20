@@ -248,8 +248,7 @@ Pester tests are welcome but not required for contributions.
 
 2. **Test Your Changes** - Verify the script works as expected
 
-3. **Update Documentation** - Add examples or update README if needed
-
+3. **Update Documentation** - Add examples or update README if needed. Markdown link integrity is checked automatically by `markdown-link-check.yml` (lychee) on PRs touching `*.md` and weekly — `fail: false` so it warns rather than blocks, but please fix broken links when flagged.
 ### PR Guidelines
 
 - Clear title and description

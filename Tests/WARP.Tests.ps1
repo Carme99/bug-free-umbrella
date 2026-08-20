@@ -166,8 +166,9 @@ Describe "WARP.md Documentation Validation" {
             Test-Path $examplesPath | Should -Be $true
         }
 
-        It "Top-level wiki directory should exist" {
-            Test-Path $wikiPath | Should -Be $true
+        It "Top-level docs directory should exist" {
+            $docsPath2 = Join-Path $PSScriptRoot ".." "docs"
+            Test-Path $docsPath2 | Should -Be $true
         }
 
         It "Technology domain: cloud/ should exist" {
@@ -322,9 +323,9 @@ Describe "WARP.md Documentation Validation" {
             $content | Should -Match "non-production|NOT recommended"
         }
 
-        It "WARP.md should reference wiki for documentation" {
+        It "WARP.md should reference docs for documentation" {
             $content = Get-Content $warpMdPath -Raw
-            $content | Should -Match "wiki"
+            $content | Should -Match "docs/"
         }
 
         It "WARP.md should mention semantic commit messages" {
@@ -337,9 +338,10 @@ Describe "WARP.md Documentation Validation" {
             $content | Should -Match "examples/"
         }
 
-        It "Wiki directory should contain documentation files" {
-            $wikiFiles = Get-ChildItem -Path $wikiPath -Filter "*.md" -ErrorAction SilentlyContinue
-            $wikiFiles.Count | Should -BeGreaterThan 0 -Because "Wiki should contain markdown documentation files"
+        It "Docs directory should contain documentation files" {
+            $docsPath = Join-Path $PSScriptRoot ".." "docs"
+            $docsFiles = Get-ChildItem -Path $docsPath -Filter "*.md" -ErrorAction SilentlyContinue
+            $docsFiles.Count | Should -BeGreaterThan 0 -Because "Docs should contain markdown documentation files"
         }
     }
 
@@ -359,14 +361,14 @@ Describe "WARP.md Documentation Validation" {
             $content | Should -Match "v3\.0\.0"
         }
 
-        It "WARP.md should mention technology domains (7 domains)" {
+        It "WARP.md should mention technology domains (8 domains)" {
             $content = Get-Content $warpMdPath -Raw
-            $content | Should -Match "7 technology domains"
+            $content | Should -Match "8 technology domains"
         }
 
-        It "WARP.md should mention GitHub wiki as primary documentation source" {
+        It "WARP.md should mention docs as primary documentation source" {
             $content = Get-Content $warpMdPath -Raw
-            $content | Should -Match "wiki.*primary|primary.*documentation"
+            $content | Should -Match "docs/.*primary|primary.*documentation|Documentation lives.*with the code"
         }
     }
 

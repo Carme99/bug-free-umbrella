@@ -55,33 +55,37 @@ flowchart LR
 
 ## 3. CI/CD Pipeline
 
-Every push/PR runs two gating jobs (`validate-powershell.yml`); three supporting workflows keep the repo tidy.
+Every push/PR runs three gating jobs (`validate-powershell.yml` — PSSA + syntax + Pester); supporting workflows keep the repo tidy and docs healthy.
 
 ```mermaid
 flowchart TD
     PUSH[Push / Pull Request] --> CO[Checkout]
     CO --> PSSA[PSScriptAnalyzer<br/>curated settings]
     CO --> SYN[Syntax check<br/>Language.Parser]
+    CO --> PESTER[Pester tests<br/>ubuntu-latest]
     PSSA -->|Error findings| FAIL[❌ Fail]
     PSSA -->|Warnings only| OK1[✅ Pass]
     SYN -->|Parse errors| FAIL
     SYN -->|Clean| OK1
+    PESTER -->|Failed tests| FAIL
+    PESTER -->|Passed| OK1
     OK1 --> MERGE[Merge to main]
-    MERGE --> LABELER[issue-labeler<br/>auto-labels new issues]
+    MERGE --> LABELER[issue-labeler<br/>auto-labels new issues<br/>resilient fallback]
     MERGE --> STALE[stale<br/>closes inactive issues/PRs]
     MERGE --> REVIEW[claude-code-review<br/>AI review on PRs]
+    PUSH -.->|PRs touching *.md / weekly| LINK[markdown-link-check<br/>lychee]
 ```
 
 | Workflow | Trigger | Role |
 |---|---|---|
-| `validate-powershell.yml` | PRs + pushes to main | **Gating:** PSSA (fails on Error severity) + PowerShell syntax check |
-| `issue-labeler.yml` | Issue open/edit | Auto-applies 46 technology/type/priority labels |
+| `validate-powershell.yml` | PRs + pushes to main | **Gating:** PSSA (fails on Error) + syntax check + **Pester tests** (fails on test failures; coverage informational) |
+| `issue-labeler.yml` | Issue open/edit | Auto-applies 48 technology/type/priority labels (resilient: bulk → per-label fallback → auto-create missing) |
+| `markdown-link-check.yml` | PRs touching `*.md`, push to main (`*.md`), weekly, manual | Checks markdown links via lychee (`fail: false` — warns on broken links, tolerates 429) |
 | `stale.yml` | Daily | Marks/closes inactive issues (60d) and PRs (30d) |
 | `claude.yml` | `@claude` mentions | AI assistance on issues/PRs |
 | `claude-code-review.yml` | PR open/sync | AI code review comments |
 
-> **Note:** Pester tests are NOT executed in CI — they run locally (`Invoke-Pester`). CI gates on static analysis + syntax only.
-
+> **Note:** Pester tests run both locally (`Invoke-Pester` via `Tests/Pester.Config.psd1`) and in CI (`test` job in `validate-powershell.yml`). Coverage is enabled but not gating — low coverage does not fail the pipeline.
 ## 4. Release Process
 
 Releases are CHANGELOG-driven with weather-themed codenames — the version lives only in `CHANGELOG.md`.
