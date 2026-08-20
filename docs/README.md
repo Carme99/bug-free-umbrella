@@ -59,6 +59,8 @@ flowchart LR
 
 ## 🎓 Guides & Advanced Topics
 
+- [Catalog-Automation.md](Catalog-Automation.md) — auto-generated metadata and Invoke-Umbrella launcher
+
 - [Advanced-Scripting-Patterns.md](Advanced-Scripting-Patterns.md) — error handling, logging, parallel execution
 - [Performance-Tuning.md](Performance-Tuning.md) · [Performance-Diagnostics.md](Performance-Diagnostics.md) — make scripts fast
 - [Advanced-Monitoring.md](Advanced-Monitoring.md) — alerting, metrics, dashboards
