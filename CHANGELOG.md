@@ -1,8 +1,8 @@
 # Changelog
 
-![Version](https://img.shields.io/badge/version-4.3.0-blue)
-![Release Date](https://img.shields.io/badge/release-2026--08--08-green)
-![Total Scripts](https://img.shields.io/badge/scripts-350+-orange)
+![Version](https://img.shields.io/badge/version-4.4.0-blue)
+![Release Date](https://img.shields.io/badge/release-2026--08--20-green)
+![Total Scripts](https://img.shields.io/badge/scripts-358-orange)
 ![License](https://img.shields.io/badge/license-Apache%202.0-red)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
 
@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [🌂 About Our Release Names](#-about-our-release-names)
 - [Unreleased](#unreleased)
 - **Latest Releases:**
+  - [v4.4.0 (2026-08-20) 🌧️ Nimbus - Catalog & Intelligence Release](#440---2026-08-20-🌧️-nimbus---catalog--intelligence-release)
   - [v4.3.0 (2026-08-08) 🌈 Zephyr - Quality & Enforcement Release](#430---2026-08-08-🌈-zephyr---quality--enforcement-release)
   - [v4.2.0 (2026-08-06) ⛈️ Tempest - Security & Hardening Release](#420---2026-08-06-️-tempest---security--hardening-release)
   - [v4.1.0 (2026-04-17) ☔ Drizzle - Bug Fix Release](#410-drizzle-bug-fix-release)
@@ -60,6 +61,53 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 ---
 
 ## [Unreleased]
+
+*No unreleased changes — v4.4.0 is the latest.*
+
+---
+
+<a id="440---2026-08-20-🌧️-nimbus---catalog--intelligence-release"></a>
+## [4.4.0] - 2026-08-20 🌧️ **"Nimbus"** - Catalog & Intelligence Release
+
+> Five PRs, four 95/100 reviews, 188 empty catches → 0, and the repo becomes AI-native.
+
+**Highlights:** auto-generated `scripts/.catalog/metadata.json` (358 entries) + `Invoke-Umbrella` launcher, MCP server for Claude/Cursor, CI hardening (labeler resilience + Pester + link-check), and a bulk quality sweep (devcontainer + stale doc fix + empty-catch hardening). All changes reviewed to 95/100 (catalog 96, CI 95, quality & MCP fixed to 95 via follow-ups).
+
+### 🗂️ Catalog & Launcher (PR #249 — 96/100)
+- **tools/Build-Catalog.ps1** — parses 358 scripts via `Language.Parser` (SYNOPSIS, params, CmdletBinding, Requires), writes `scripts/.catalog/metadata.json` (sorted, `scripts/`-prefixed, pretty). Supports `-Validate` (CI stale detection) and `-Verbose`.
+- **scripts/.catalog/metadata.json** — 358 entries, 100% synopsis coverage, `scripts/`-prefixed paths for `get_script` round-trip.
+- **Invoke-Umbrella.ps1** (root) — interactive launcher: `-List`, `-Search <term>`, `-Category <prefix>`, `-Interactive` (Out-GridView → Read-Host), dependency pre-checks, `Get-Help` preview, `-ValidateOnly`.
+- **docs/Catalog-Automation.md** — schema, usage, CI snippet.
+- **docs/Script-Catalog.md** — top note; `scripts/.catalog/README.md` — removes `coming soon`; `docs/README.md` — Guides link.
+- *Review 96/100 — deductions: duplicate `compliance` keyword (nit), no CI enforcement yet (optional), LF vs CRLF+BOM docs mismatch (intentional).*
+
+### 🤖 MCP Server (PR #251 + #254 — 72→95/100)
+- **mcp-server/** — Node 18+ TS (`@modelcontextprotocol/sdk` + `zod`): `src/index.ts` + 5 tools (`search_scripts`, `get_script`, `list_categories`, `get_script_help`, `validate_script`), `catalog://scripts` resource, `find-script` prompt, stdio transport (stderr logging).
+- **Fixes in #254** (review 72→95): re-added `scripts/` prefix in metadata→catalog mapping, fixed category to top-level 8 domains (was 142), hardened traversal to `scriptsRoot+sep` (blocks `scripts/../README.md` + `../../etc/passwd`), fixed `parseSynopsis` dead loop, deleted stub `src/tools/*.ts` (4 files).
+- **Verification:** `npm run build` tsc 0, `node build/index.js` initialize 358, `tools/list` 5, `search intune` with prefix, `list_categories` 8 (endpoints 243, infrastructure 42, ...), `get_script` round-trip, traversal blocks.
+- **docs/MCP-Server.md** — mermaid, tool table, Claude/Cursor/Windsurf setup, troubleshooting; `README.md` — `🤖 AI-Native: MCP Server` subsection with badge.
+
+### 🔧 CI Hardening (PR #250 — 95/100)
+- **.github/workflows/issue-labeler.yml** — hardened: outer try/catch, bulk `addLabels` wrapped, per-label fallback, auto-create missing with color map (azure #0078D4…), normalize `good first issue`→`good-first-issue`, comment failures non-fatal. Created 27 missing labels, deleted typo `priority:high`, re-enabled `stale.yml` (`disabled_inactivity` → `active`).
+- **.github/workflows/validate-powershell.yml** — added `test` job (Pester on ubuntu-latest, `Import-PowerShellDataFile` + `New-PesterConfiguration` + `Invoke-Pester`, artifact upload, informational until 3 pre-existing failures fixed), summary now `needs: [analyze, syntax-check, test]` but only gates on analyze/syntax.
+- **.github/workflows/markdown-link-check.yml** — new lychee `lycheeverse/lychee-action@v1` (PRs `**/*.md`, weekly cron, `fail:false`, tolerates 429).
+- **tools/Sync-Labels.ps1** — 48-label canonical hashtable, `-DryRun/-Repo`, `ShouldProcess`, CRLF+BOM, PSSA-clean.
+- **Tests/CI/Labeler.Tests.ps1** — 9 Its (intune, azure, winget, m365, bug/priority/question, hyphenated, multi-domain) — 9/9 Passed, WARP 66/66 after fix.
+- **docs/ARCHITECTURE.md / WARP.md / CONTRIBUTING.md** — CI table/mermaid updated.
+
+### 🧹 Quality Sweep (PR #252 — 82→95/100 after fixup)
+- **docs**: 260+→358, 350+→358, 7→8 domains, 10 polluted test count clarified (WARP 5→10), `COMPATIBILITY.md` 6-line fix (260→358, percentages 94%→68% etc. + PowerShell version percentages), `README.md` untouched to avoid conflict.
+- **.devcontainer/devcontainer.json** — base:ubuntu + PowerShell + Pester + PSScriptAnalyzer, VS Code extensions, CRLF/BOM settings, postCreate install.
+- **scripts**: 188→0 `PSAvoidUsingEmptyCatchBlock` across 103 files (99 winget/templates + 4 autopatch typed ` [InvalidOperationException]` + 6 core): empty `catch {}` and comment-only `catch { # … }` now `Write-Verbose` (Stop-Transcript → `No active transcript…`), inline `try { Import-Module } catch {}` kept inline to preserve indentation — PSSA 0, syntax 0, policy 0 after inline fix (was 162 style).
+- *Review 82→95 after fixup: recalculated COMPATIBILITY percentages, WARP 5→10, WARP.Tests 7→8, utilities phrasing `plus`→`including`.*
+
+### 📊 By the numbers
+- **358 scripts** — metadata 100% coverage, PSSA Error 0, syntax 0, empty catches 0
+- **8 domains** — catalog, MCP, and WARP now agree
+- **5 PRs** — #249, #250, #251, #252, #254 (follow-up) — all reviewed ≥95/100 (catalog 96, CI 95, quality 95 after fixup, MCP 95 after fixup)
+- **115 files** — quality sweep + 27 labels + devcontainer + MCP server
+
+**Full diff:** `v4.3.0...v4.4.0` — 5 PRs, 115+16+13 files.
 
 ### 📚 Documentation Consolidation
 - GitHub wiki retired; all 31 wiki pages migrated into `docs/` as regular markdown files — documentation is now versioned with the code and PR-reviewable
