@@ -67,7 +67,9 @@ function parseSynopsis(firstLines: string): string {
   const lines = firstLines.split(/\r?\n/);
   for (const l of lines) {
     const t = l.trim().replace(/^#\s*/, "");
-    if (t.length > 20 && !t.startsWith("<#") && !t.startsWith(".") && !t.startsWith("#")) continue;
+    if (t.length > 20 && !t.startsWith("<#") && !t.startsWith(".") && !t.startsWith("#")) {
+      return t.slice(0, 120);
+    }
   }
   return "No synopsis available";
 }
@@ -108,12 +110,12 @@ function buildCatalog(): void {
       const data = JSON.parse(raw);
       if (Array.isArray(data.scripts) && data.scripts.length > 0) {
         catalog = data.scripts.map((s: Record<string, string>) => ({
-          path: s.path ?? s.relativePath ?? "",
-          name: path.basename(s.path ?? "", ".ps1"),
-          category: s.category ?? (s.path ? s.path.split("/")[1] ?? "unknown" : "unknown"),
-          subcategory: s.subcategory ?? "",
+          path: s.path ? `scripts/${s.path}` : s.relativePath ? `scripts/${s.relativePath}` : "",
+          name: path.basename(s.path ?? s.relativePath ?? "", ".ps1"),
+          category: s.path ? s.path.split("/")[0] ?? "unknown" : "unknown",
+          subcategory: s.path ? s.path.split("/")[1] ?? "" : "",
           synopsis: s.synopsis ?? s.description ?? "No synopsis",
-          fullRelativeDir: s.path ? path.dirname(s.path).replace(/^scripts\//, "") : "",
+          fullRelativeDir: s.path ? path.dirname(s.path) : "",
         }));
         log(`Loaded ${catalog.length} entries from metadata.json`);
         return;
@@ -121,12 +123,12 @@ function buildCatalog(): void {
       if (Array.isArray(data) && data.length > 0) {
         // alternate shape: array of entries
         catalog = data.map((s: Record<string, string>) => ({
-          path: s.path,
+          path: s.path ? (s.path.startsWith("scripts/") ? s.path : `scripts/${s.path}`) : "",
           name: path.basename(s.path ?? "", ".ps1"),
-          category: (s.path ?? "").split("/")[1] ?? "unknown",
-          subcategory: (s.path ?? "").split("/")[2] ?? "",
+          category: (s.path ?? "").replace(/^scripts\//, "").split("/")[0] ?? "unknown",
+          subcategory: (s.path ?? "").replace(/^scripts\//, "").split("/")[1] ?? "",
           synopsis: s.synopsis ?? "No synopsis",
-          fullRelativeDir: s.path ? path.dirname(s.path).replace(/^scripts\//, "") : "",
+          fullRelativeDir: s.path ? path.dirname(s.path.replace(/^scripts\//, "")) : "",
         }));
         if (catalog.length > 0) {
           log(`Loaded ${catalog.length} entries from metadata.json (array shape)`);
@@ -251,8 +253,8 @@ function handleGetScript(args: unknown) {
   const repoRoot = path.resolve(scriptsRoot, "..");
   const absPath = path.resolve(repoRoot, parsed.path);
 
-  // Security: ensure requested path is inside repo
-  if (!absPath.startsWith(repoRoot)) {
+  // Security: ensure requested path is inside scripts directory
+  if (!absPath.startsWith(scriptsRoot + path.sep) && absPath !== scriptsRoot) {
     throw new Error(`Path traversal detected: ${parsed.path}`);
   }
   if (!fs.existsSync(absPath)) {
@@ -306,7 +308,7 @@ function handleGetScriptHelp(args: unknown) {
   const parsed = GetScriptHelpSchema.parse(args);
   const repoRoot = path.resolve(scriptsRoot, "..");
   const absPath = path.resolve(repoRoot, parsed.path);
-  if (!absPath.startsWith(repoRoot)) throw new Error(`Path traversal detected: ${parsed.path}`);
+  if (!absPath.startsWith(scriptsRoot + path.sep) && absPath !== scriptsRoot) throw new Error(`Path traversal detected: ${parsed.path}`);
   if (!fs.existsSync(absPath)) throw new Error(`Script not found: ${parsed.path}`);
   const content = fs.readFileSync(absPath, "utf-8");
   const helpBlock = extractHelpBlock(content);
@@ -320,7 +322,7 @@ function handleValidateScript(args: unknown) {
   const parsed = ValidateScriptSchema.parse(args);
   const repoRoot = path.resolve(scriptsRoot, "..");
   const absPath = path.resolve(repoRoot, parsed.path);
-  if (!absPath.startsWith(repoRoot)) throw new Error(`Path traversal detected: ${parsed.path}`);
+  if (!absPath.startsWith(scriptsRoot + path.sep) && absPath !== scriptsRoot) throw new Error(`Path traversal detected: ${parsed.path}`);
   if (!fs.existsSync(absPath)) throw new Error(`Script not found: ${parsed.path}`);
   const content = fs.readFileSync(absPath, "utf-8");
   const first50 = content.split(/\r?\n/).slice(0, 50).join("\n");
