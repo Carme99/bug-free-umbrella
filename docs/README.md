@@ -65,6 +65,9 @@ flowchart LR
 - [Migration-Strategy.md](Migration-Strategy.md) · [Scaling-and-Load-Balancing.md](Scaling-and-Load-Balancing.md) — grow safely
 - [Best-Practices-Checklist.md](Best-Practices-Checklist.md) — dev, security, compliance
 - [Custom-Development-Guide.md](Custom-Development-Guide.md) — write your own scripts for this repo
+- [MCP-Server.md](MCP-Server.md) — 🤖 MCP Server: AI tool integration for all 358 scripts
+
+| 🤖 MCP Server | AI tool integration | [MCP-Server.md](MCP-Server.md) |
 
 ## 🆘 When Things Break
 

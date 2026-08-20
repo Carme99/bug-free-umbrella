@@ -252,6 +252,12 @@ This entire repository is maintained by one human developer and [Claude Code](ht
 - 🔍 **Thorough** - AI catches things humans miss
 - 🎯 **Focused** - Solves real problems, not theoretical ones
 
+### 🤖 AI-Native: MCP Server
+
+[![MCP](https://img.shields.io/badge/MCP-Server-8B5CF6?style=for-the-badge)](https://modelcontextprotocol.io)
+
+This repo ships an MCP server (`mcp-server/`) that exposes all 358 scripts as AI tools — search, preview, and validate scripts from Claude Desktop. [→ MCP Docs](docs/MCP-Server.md)
+
 **License:** Apache 2.0 (use it, share it, improve it)
 
 ---
