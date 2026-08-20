@@ -6,6 +6,7 @@ on:
 
 permissions:
   issues: write
+  contents: read
 
 jobs:
   label:
@@ -106,51 +107,152 @@ jobs:
               labels.push('priority-high');
             }
 
-            // Good first issue (for contributors)
-            if (combined.match(/\b(good first issue|beginner|easy|simple)\b/)) {
+            // Good first issue (for contributors) — normalize to hyphenated form
+            if (combined.match(/\b(good first issue|good-first-issue|beginner|easy|simple)\b/)) {
               labels.push('good-first-issue');
             }
 
-            // ========== APPLY LABELS ==========
+            // ========== LABEL COLOR MAP (for auto-creation fallback) ==========
+            const labelColors = {
+              'azure': '0078D4',
+              'aws': 'FF9900',
+              'containers': '0DB7ED',
+              'intune': '0066CC',
+              'winget': '00CC6A',
+              'proactive-remediations': '00A4EF',
+              'windows-update': '0078D6',
+              'bitlocker': '0078D4',
+              'windows-server': '0078D6',
+              'active-directory': '003366',
+              'group-policy': '4A90E2',
+              'virtualization': '7B68EE',
+              'iis': '512BD4',
+              'linux': 'FCC624',
+              'networking': '00B294',
+              'security': 'D73A49',
+              'compliance': 'B60205',
+              'hardening': 'D93F0B',
+              'devops': '24292E',
+              'iac': '623CE4',
+              'microsoft-365': 'D83B01',
+              'exchange': '0078D4',
+              'teams': '6264A3',
+              'sharepoint': '03787C',
+              'azure-ad': '00BCF2',
+              'defender': '00A4EF',
+              'database': '336791',
+              'api': '0052CC',
+              'bug': 'd73a4a',
+              'enhancement': 'a2eeef',
+              'documentation': '0075ca',
+              'question': 'd876e3',
+              'performance': 'FEF2C0',
+              'testing': '0E8A16',
+              'priority-high': 'B60205',
+              'priority-medium': 'fbca04',
+              'priority-low': '0e8a16',
+              'good-first-issue': '7057FF',
+              'good first issue': '7057FF'
+            };
+            const defaultColor = 'CCCCCC';
 
-            if (labels.length > 0) {
-              // Remove duplicates
-              const uniqueLabels = [...new Set(labels)];
+            // ========== APPLY LABELS (resilient) ==========
 
-              console.log(`Adding labels to issue #${issue.number}: ${uniqueLabels.join(', ')}`);
+            try {
+              if (labels.length > 0) {
+                // Remove duplicates
+                const uniqueLabels = [...new Set(labels)];
 
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                labels: uniqueLabels
-              });
+                console.log(`Adding labels to issue #${issue.number}: ${uniqueLabels.join(', ')}`);
 
-              // Add comment if multiple categories detected
-              if (uniqueLabels.length >= 3) {
-                const categoryLabels = uniqueLabels.filter(l =>
-                  !['bug', 'enhancement', 'documentation', 'question', 'performance', 'testing', 'priority-high', 'good-first-issue'].includes(l)
-                );
+                try {
+                  await github.rest.issues.addLabels({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issue.number,
+                    labels: uniqueLabels
+                  });
+                  console.log('Bulk label apply succeeded');
+                } catch (bulkError) {
+                  console.log(`Bulk label apply failed: ${bulkError.message} — falling back to per-label`);
+                  for (const lbl of uniqueLabels) {
+                    try {
+                      await github.rest.issues.addLabels({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: issue.number,
+                        labels: [lbl]
+                      });
+                      console.log(`Added label: ${lbl}`);
+                    } catch (perLabelError) {
+                      console.log(`Failed to add label '${lbl}': ${perLabelError.message}`);
+                      const isMissing = perLabelError.status === 404 || (perLabelError.message && perLabelError.message.toLowerCase().includes('not found')) || (perLabelError.message && perLabelError.message.toLowerCase().includes('label does not exist'));
+                      if (isMissing) {
+                        try {
+                          const color = labelColors[lbl] || defaultColor;
+                          console.log(`Attempting to create missing label '${lbl}' with color ${color}`);
+                          await github.rest.issues.createLabel({
+                            owner: context.repo.owner,
+                            repo: context.repo.repo,
+                            name: lbl,
+                            color: color,
+                            description: `Auto-created by labeler for ${lbl}`
+                          });
+                          console.log(`Created missing label: ${lbl} (${color})`);
+                          // Retry adding after creation
+                          await github.rest.issues.addLabels({
+                            owner: context.repo.owner,
+                            repo: context.repo.repo,
+                            issue_number: issue.number,
+                            labels: [lbl]
+                          });
+                          console.log(`Added newly created label: ${lbl}`);
+                        } catch (createError) {
+                          console.log(`Failed to create/add label '${lbl}': ${createError.message} — skipping`);
+                        }
+                      } else {
+                        console.log(`Non-missing error for '${lbl}' — skipping`);
+                      }
+                    }
+                  }
+                }
 
-                if (categoryLabels.length > 1) {
+                // Add comment if multiple categories detected (non-fatal)
+                try {
+                  if (uniqueLabels.length >= 3) {
+                    const categoryLabels = uniqueLabels.filter(l =>
+                      !['bug', 'enhancement', 'documentation', 'question', 'performance', 'testing', 'priority-high', 'good-first-issue'].includes(l)
+                    );
+
+                    if (categoryLabels.length > 1) {
+                      await github.rest.issues.createComment({
+                        owner: context.repo.owner,
+                        repo: context.repo.repo,
+                        issue_number: issue.number,
+                        body: `🏷️ Auto-labeled with: **${uniqueLabels.join('**, **')}**\n\nDetected multiple technology domains. Please update labels if needed!`
+                      });
+                    }
+                  }
+                } catch (commentError) {
+                  console.log(`Comment failed (non-fatal): ${commentError.message}`);
+                }
+              } else {
+                console.log(`No matching labels found for issue #${issue.number}`);
+
+                // Add a comment suggesting manual labeling (non-fatal)
+                try {
                   await github.rest.issues.createComment({
                     owner: context.repo.owner,
                     repo: context.repo.repo,
                     issue_number: issue.number,
-                    body: `🏷️ Auto-labeled with: **${uniqueLabels.join('**, **')}**\n\nDetected multiple technology domains. Please update labels if needed!`
+                    body: `👋 Thanks for opening this issue! No automatic labels were detected. Please add appropriate labels to help with organization.\n\n**Available categories:** Azure, AWS, Intune, Winget, Microsoft 365, Security, DevOps, and more.`
                   });
+                } catch (commentError) {
+                  console.log(`Fallback comment failed (non-fatal): ${commentError.message}`);
                 }
               }
-            } else {
-              console.log(`No matching labels found for issue #${issue.number}`);
-
-              // Add a comment suggesting manual labeling
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                body: `👋 Thanks for opening this issue! No automatic labels were detected. Please add appropriate labels to help with organization.\n\n**Available categories:** Azure, AWS, Intune, Winget, Microsoft 365, Security, DevOps, and more.`
-              });
+            } catch (e) {
+              console.log(`Label apply failed: ${e.message}`);
+              console.log(e.stack || e);
+              // Never throw — workflow must not fail on label errors
             }
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

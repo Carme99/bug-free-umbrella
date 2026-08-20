@@ -67,7 +67,7 @@ The layout was restructured in **v3.0.0** to group scripts by technology domain 
 - Configuration for running the suite locally is centralised in `./Tests/Pester.Config.psd1`, which enables **code coverage** against `./scripts` and excludes `Integration`-tagged tests by default.
 - Each test file follows the `Describe` / `Context` / `It` structure with `#Requires -Modules Pester` at the top.
 - See the `Tests/Common/HelperFunctions.Tests.ps1` file for the shared helper test conventions.
-- **CI does not execute Pester.** The `validate-powershell.yml` workflow runs PSScriptAnalyzer and a PowerShell syntax check only; Pester tests must be run locally (see [Common Development Commands](#common-development-commands)).
+- **CI executes Pester** via the `test` job in `validate-powershell.yml` (ubuntu-latest, `Import-PowerShellDataFile ./Tests/Pester.Config.psd1` → `Invoke-Pester`). The job gates on test failures but allows low code coverage to pass; Pester tests should still be run locally (see [Common Development Commands](#common-development-commands)) alongside PSScriptAnalyzer and the syntax check.
 - Always test in **non-production** environments first; most scripts are **NOT recommended** for direct production use until validated.
 
 ---
@@ -79,7 +79,7 @@ Contributors should follow the guidance in [CONTRIBUTING.md](./CONTRIBUTING.md) 
 - Use **semantic commit** messages (`feat:`, `fix:`, `docs:`, etc.) as described in [AGENTS.md](./AGENTS.md).
 - Ensure every script is **PSScriptAnalyzer** compliant by running `Invoke-ScriptAnalyzer` before committing.
 - Include comment-based help (`.SYNOPSIS`, `.DESCRIPTION`, `.EXAMPLE`) on every script.
-- Run the relevant Pester tests locally for your changes (note that Pester is not executed in CI).
+- Run the relevant Pester tests locally for your changes (Pester also runs in CI via the `test` job in `validate-powershell.yml`; see `Tests/Pester.Config.psd1`).
 - Keep the **docs/** directory up to date (it is the primary documentation source); update the relevant pages when you change scripts or paths.
 - Follow the existing script patterns in the same directory.
 
