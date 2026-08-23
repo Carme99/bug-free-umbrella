@@ -97,7 +97,7 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for detailed guidelines.
 
 ## Statistics
 
-- **Total Scripts:** 358
+- **Total Scripts:** 357
 - **Cross-Platform:** ~200 (56%)
 - **Windows-Only:** ~158 (44%)
 - **Categories:** 30+
@@ -123,7 +123,7 @@ Use `Invoke-Umbrella.ps1` at the repo root for interactive discovery:
 
 ## Roadmap
 
-- [x] Complete metadata.json with all 358 scripts
+- [x] Complete metadata.json with all 357 scripts
 - [ ] Automated compatibility testing in CI/CD
 - [ ] Platform-specific script bundles
 - [ ] Interactive web-based script browser

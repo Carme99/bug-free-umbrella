@@ -1,77 +1,15 @@
-<#
+﻿<#
 .SYNOPSIS
-    Notifies users about required system reboots.
+    Deprecated shim — forwards to scripts/endpoints/remediation/system/Invoke-RemediationCheckDeviceUptime.ps1.
 
 .DESCRIPTION
-    Schedules a user notification about the need to reboot. For excessive uptime
-    or pending updates, creates a persistent reminder to help maintain system health.
+    Deprecated wrapper retained for compatibility. Forwards execution to the canonical script at scripts/endpoints/remediation/system/Invoke-RemediationCheckDeviceUptime.ps1. Update Intune assignments to the canonical path. Shim will be removed in 6.0.0.
 
 .NOTES
-    Author: Intune Admin
-    Version: 1.0
-    Intune Context: SYSTEM
-    Exit 0: Notification scheduled
+    Deprecated: moved to scripts/endpoints/remediation/system/Invoke-RemediationCheckDeviceUptime.ps1 — shim will be removed in 6.0.0.
+    Intune: exit 0 = healthy, exit 1 = needs remediation (preserved via $LASTEXITCODE).
+    Context: runs as SYSTEM in Proactive Remediations — uses Win32_UserProfile / Win32_Battery / Microsoft.WinGet.Client as applicable.
 #>
-
-try {
-    $remediationActions = @()
-
-    # Get uptime info
-    $os = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue
-
-    if ($os) {
-        $lastBoot = $os.LastBootUpTime
-        $uptime = (Get-Date) - $lastBoot
-        $uptimeDays = [Math]::Round($uptime.TotalDays, 2)
-
-        # Check for pending reboots
-        $pendingReboot = $false
-        $rebootReasons = @()
-
-        if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired") {
-            $pendingReboot = $true
-            $rebootReasons += "Windows Update"
-        }
-
-        if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending") {
-            $pendingReboot = $true
-            $rebootReasons += "Component Based Servicing"
-        }
-
-        Write-Host "Device Uptime Remediation:"
-        Write-Host "  Current Uptime: $uptimeDays days"
-        Write-Host "  Last Boot: $lastBoot"
-
-        if ($pendingReboot) {
-            Write-Host "  Pending Reboot Reasons: $($rebootReasons -join ', ')"
-            $remediationActions += "Pending reboot detected for: $($rebootReasons -join ', ')"
-        }
-
-        if ($uptimeDays -gt 14) {
-            $remediationActions += "Device uptime exceeds 14 days - reboot recommended for system health"
-        }
-
-        # Create a scheduled task to notify the user (interactive notification)
-        # Note: In SYSTEM context, we can't directly show user notifications
-        # Instead, we log the remediation for Intune reporting
-        Write-Host ""
-        Write-Host "Remediation logged in Intune for IT review."
-        Write-Host "IT should contact user to schedule reboot if needed."
-        Write-Host ""
-        Write-Host "Recommended actions:"
-        Write-Host "  - Schedule reboot during off-hours"
-        Write-Host "  - Save all work before rebooting"
-        Write-Host "  - Reboot will install pending updates and improve performance"
-
-        foreach ($action in $remediationActions) {
-            Write-Host "  - $action"
-        }
-    }
-
-    exit 0
-
-}
-catch {
-    Write-Host "Error during uptime remediation: $_"
-    exit 1
-}
+Write-Warning 'Deprecated: moved to scripts/endpoints/remediation/system/Invoke-RemediationCheckDeviceUptime.ps1 — shim will be removed in 6.0.0.'
+$null = & "$PSScriptRoot/../../../remediation/system/Invoke-RemediationCheckDeviceUptime.ps1" @args
+exit $LASTEXITCODE

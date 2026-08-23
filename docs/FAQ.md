@@ -22,7 +22,7 @@ Common questions about Bug-Free Umbrella scripts and how to use them.
 
 ### What is Bug-Free Umbrella?
 
-Bug-Free Umbrella is a comprehensive collection of 358 PowerShell scripts for enterprise IT management, covering:
+Bug-Free Umbrella is a comprehensive collection of 357 PowerShell scripts for enterprise IT management, covering:
 
 - Microsoft 365 & Intune administration
 - Azure & AWS cloud management
@@ -59,6 +59,12 @@ Yes, but always:
 ```powershell
 git clone https://github.com/Carme99/bug-free-umbrella.git
 cd bug-free-umbrella
+```
+
+After cloning, you can bootstrap the installable `BugFreeUmbrella` module into your session (PowerShell 7+):
+
+```powershell
+pwsh -NoProfile -File ./install.ps1
 ```
 
 **Option 2: Download ZIP**
@@ -373,10 +379,10 @@ git pull origin main
 
 Check the **[Changelog](../CHANGELOG.md)** for release history. Recent updates:
 
-- **v3.0.2 "Drizzle"** (2026-01-03) - Documentation cleanup
-- **v3.0.1 "Drizzle"** (2025-12-31) - Bug fixes
-- **v3.0.0 "Hurricane"** (2025-12-30) - Repository restructure
-- **v2.2.0 "Shower"** (2025-12-28) - Navigation improvements
+- **v4.4.0 "Nimbus"** (2026-08-20) - Catalog & intelligence release
+- **v4.3.0 "Zephyr"** (2026-08-08) - Quality & enforcement release
+- **v4.2.0 "Tempest"** (2026-08-06) - Security & hardening release
+- **v4.1.0 "Drizzle"** (2026-04-17) - Bug fix release
 
 ### Will old scripts break after updates?
 
@@ -433,7 +439,7 @@ Yes, use:
 
 - [Getting Started](Getting-Started.md) - Step-by-step onboarding
 - [Prerequisites](Prerequisites.md) - System requirements and setup
-- [Script Catalog](Script-Catalog.md) - Browse all 358 scripts
+- [Script Catalog](Script-Catalog.md) - Browse all 357 scripts
 - [Troubleshooting](Troubleshooting.md) - Solve common problems
 - [Support Guide](../SUPPORT.md) - Get help
 - [Contributing](../CONTRIBUTING.md) - Contribute to the project

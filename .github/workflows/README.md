@@ -128,12 +128,47 @@ This directory contains automated workflows for repository management and qualit
 
 ---
 
+### 6. **Markdown Link Check** (`markdown-link-check.yml`)
+
+**Purpose:** Validates links across all repository markdown files
+
+**Triggers:**
+- Pushes to `main` touching `**/*.md` files
+- Pull requests touching `**/*.md` files
+- Weekly schedule (Mondays 06:00 UTC)
+- Manual dispatch
+
+**What it does:**
+- Runs `lychee` link checking over changed/whole markdown docs
+- Flags broken internal and external links as check failures
+
+---
+
+### 7. **Release Module** (`release-module.yml`)
+
+**Purpose:** Builds and publishes the `BugFreeUmbrella` module on release tags
+
+**Triggers:**
+- Push of a `v*` tag
+- Manual dispatch (`workflow_dispatch`)
+
+**What it does:**
+- Builds the module from `src/BugFreeUmbrella/`
+- Publishes to PSGallery **only** when the tag starts with `v` AND `PSGALLERY_API_KEY` is configured; otherwise the publish step is skipped with an explicit notice (the key never appears inline in step scripts)
+
+**Configuration:**
+- Requires `PSGALLERY_API_KEY` secret for actual publishing
+- `contents: read` permission only
+
+---
+
 ## 🚀 Setup & Configuration
 
 ### Prerequisites
 
 All workflows require these secrets to be configured in repository settings:
 - `CLAUDE_CODE_OAUTH_TOKEN` - For Claude Code workflows (claude.yml, claude-code-review.yml)
+- `PSGALLERY_API_KEY` - For PSGallery publishing on `v*` tags (release-module.yml)
 
 ### Creating Labels
 

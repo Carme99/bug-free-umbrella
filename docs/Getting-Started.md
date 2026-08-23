@@ -70,6 +70,35 @@ Get-ExecutionPolicy
 # If Restricted, run: Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
+## Install & Launch
+
+### One-line module bootstrap (PowerShell 7+)
+
+From the repo root:
+
+```powershell
+pwsh -NoProfile -File ./install.ps1
+```
+
+This imports the `BugFreeUmbrella` module (v5.0.0, `src/BugFreeUmbrella/`) into your session, prints how many commands it exposes (`Get-BUScript`, `Invoke-BUScript`), and suggests next steps. Re-running is idempotent.
+
+### Launcher CLI v2: `Invoke-Umbrella.ps1`
+
+Discover and run any of the 357 scripts without memorizing paths:
+
+```powershell
+# List every script (name, category, synopsis)
+pwsh -File ./Invoke-Umbrella.ps1 -List
+
+# Fuzzy search across path/synopsis/category
+pwsh -File ./Invoke-Umbrella.ps1 -Search intune
+
+# Interactive picker (Out-GridView -> fzf -> numbered list)
+pwsh -File ./Invoke-Umbrella.ps1 -Interactive
+```
+
+See [Catalog-Automation.md](Catalog-Automation.md) for the full CLI reference.
+
 ---
 
 ## Choose Your Path
@@ -131,7 +160,7 @@ Try: Fix-DiskSpace (detect.ps1 first!)
     ↓
 Follow: [Automated Winget Updates Workflow](Workflows.md#setting-up-automated-winget-updates)
     ↓
-Explore: All 14 remediation pairs
+Explore: All 50+ detect/remediate pairs
 ```
 
 **[Start with Proactive Remediations →](Proactive-Remediations.md)**
@@ -167,11 +196,8 @@ Get-Help .\Get-DeviceComplianceReport.ps1 -Detailed
 # Navigate to server monitoring
 cd scripts/infrastructure/windows/monitoring
 
-# Run basic health check
+# Run basic health check (interactive menu opens when no parameters are supplied)
 .\Monitor-ServerHealth.ps1
-
-# Try the new interactive mode!
-.\Monitor-ServerHealth.ps1 -Interactive
 ```
 
 **What it does:**

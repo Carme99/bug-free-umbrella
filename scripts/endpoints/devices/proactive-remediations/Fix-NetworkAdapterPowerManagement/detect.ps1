@@ -1,53 +1,15 @@
-<#
+﻿<#
 .SYNOPSIS
-    Detects network adapters with problematic power management settings.
+    Deprecated shim — forwards to scripts/endpoints/remediation/network/Test-RemediationFixNetworkAdapterPowerManagement.ps1.
 
 .DESCRIPTION
-    Checks if network adapters have "Allow computer to turn off this device to save power"
-    enabled, which can cause connectivity issues and disconnect from Intune.
+    Deprecated wrapper retained for compatibility. Forwards execution to the canonical script at scripts/endpoints/remediation/network/Test-RemediationFixNetworkAdapterPowerManagement.ps1. Update Intune assignments to the canonical path. Shim will be removed in 6.0.0.
 
 .NOTES
-    Author: Intune Admin
-    Version: 1.0
-    Intune Context: SYSTEM
-    Exit 0: Power management properly configured
-    Exit 1: Issues detected - remediation needed
+    Deprecated: moved to scripts/endpoints/remediation/network/Test-RemediationFixNetworkAdapterPowerManagement.ps1 — shim will be removed in 6.0.0.
+    Intune: exit 0 = healthy, exit 1 = needs remediation (preserved via $LASTEXITCODE).
+    Context: runs as SYSTEM in Proactive Remediations — uses Win32_UserProfile / Win32_Battery / Microsoft.WinGet.Client as applicable.
 #>
-
-try {
-    $issues = @()
-    $problematicAdapters = @()
-
-    # Get all physical network adapters (exclude virtual adapters)
-    $adapters = Get-NetAdapter | Where-Object {
-        $_.Status -eq "Up" -and
-        $_.Virtual -eq $false -and
-        $_.Name -notmatch "Bluetooth|Virtual|Loopback"
-    }
-
-    foreach ($adapter in $adapters) {
-        # Get power management settings
-        $powerMgmt = Get-WmiObject -Class MSPower_DeviceEnable -Namespace root\wmi -ErrorAction SilentlyContinue |
-            Where-Object { $_.InstanceName -like "*$($adapter.InterfaceGuid)*" }
-
-        if ($powerMgmt -and $powerMgmt.Enable -eq $true) {
-            $problematicAdapters += $adapter.Name
-        }
-    }
-
-    if ($problematicAdapters.Count -gt 0) {
-        Write-Host "Network adapters with power saving enabled:"
-        foreach ($adapterName in $problematicAdapters) {
-            Write-Host "  - $adapterName"
-        }
-        exit 1
-    }
-
-    Write-Host "Network adapter power management is properly configured"
-    exit 0
-
-}
-catch {
-    Write-Host "Error checking network adapter power settings: $_"
-    exit 1
-}
+Write-Warning 'Deprecated: moved to scripts/endpoints/remediation/network/Test-RemediationFixNetworkAdapterPowerManagement.ps1 — shim will be removed in 6.0.0.'
+$null = & "$PSScriptRoot/../../../remediation/network/Test-RemediationFixNetworkAdapterPowerManagement.ps1" @args
+exit $LASTEXITCODE

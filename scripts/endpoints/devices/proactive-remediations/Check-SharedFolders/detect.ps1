@@ -1,71 +1,15 @@
-<#
+﻿<#
 .SYNOPSIS
-    Detects unauthorized network shares on the device.
+    Deprecated shim — forwards to scripts/endpoints/remediation/network/Test-RemediationCheckSharedFolders.ps1.
 
 .DESCRIPTION
-    Checks for network shares that are not in the approved list, which could
-    represent a security risk or data exposure.
+    Deprecated wrapper retained for compatibility. Forwards execution to the canonical script at scripts/endpoints/remediation/network/Test-RemediationCheckSharedFolders.ps1. Update Intune assignments to the canonical path. Shim will be removed in 6.0.0.
 
 .NOTES
-    Author: Intune Admin
-    Version: 1.0
-    Intune Context: SYSTEM
-    Exit 0: Only authorized shares present
-    Exit 1: Unauthorized shares detected
-
-.CONFIGURATION
-    $approvedShares: List of approved share names (default: system shares)
+    Deprecated: moved to scripts/endpoints/remediation/network/Test-RemediationCheckSharedFolders.ps1 — shim will be removed in 6.0.0.
+    Intune: exit 0 = healthy, exit 1 = needs remediation (preserved via $LASTEXITCODE).
+    Context: runs as SYSTEM in Proactive Remediations — uses Win32_UserProfile / Win32_Battery / Microsoft.WinGet.Client as applicable.
 #>
-
-try {
-    # Configuration - Add your approved share names here
-    $approvedShares = @(
-        "ADMIN$",
-        "C$",
-        "D$",
-        "IPC$",
-        "print$"
-    )
-
-    $issues = @()
-    $unauthorizedShares = @()
-
-    # Get all network shares
-    $shares = Get-SmbShare -ErrorAction SilentlyContinue
-
-    foreach ($share in $shares) {
-        # Skip special shares (ending with $) if they're in approved list
-        $isApproved = $false
-
-        foreach ($approved in $approvedShares) {
-            if ($share.Name -like $approved) {
-                $isApproved = $true
-                break
-            }
-        }
-
-        if (-not $isApproved) {
-            $unauthorizedShares += [PSCustomObject]@{
-                Name = $share.Name
-                Path = $share.Path
-                Description = $share.Description
-            }
-        }
-    }
-
-    if ($unauthorizedShares.Count -gt 0) {
-        Write-Host "Unauthorized network shares detected:"
-        foreach ($share in $unauthorizedShares) {
-            Write-Host "  - $($share.Name) ($($share.Path))"
-        }
-        exit 1
-    }
-
-    Write-Host "No unauthorized network shares detected"
-    exit 0
-
-}
-catch {
-    Write-Host "Error checking network shares: $_"
-    exit 1
-}
+Write-Warning 'Deprecated: moved to scripts/endpoints/remediation/network/Test-RemediationCheckSharedFolders.ps1 — shim will be removed in 6.0.0.'
+$null = & "$PSScriptRoot/../../../remediation/network/Test-RemediationCheckSharedFolders.ps1" @args
+exit $LASTEXITCODE

@@ -4,7 +4,7 @@
 
 Comprehensive scripts for Microsoft Intune device management, application deployment, compliance reporting, and maintenance. These scripts help you manage and monitor endpoints enrolled in Microsoft Endpoint Manager.
 
-**⭐ NEW in v3.6.0:** Two powerful new scripts for device primary user reporting and Lenovo device enrichment!
+**Added in v3.6.0:** Two powerful new scripts for device primary user reporting and Lenovo device enrichment!
 
 ## Overview
 
@@ -632,9 +632,9 @@ Get-MgContext | Select-Object Scopes
 
 ---
 
-## New Scripts in v3.6.0
+## Scripts Added in v3.6.0
 
-### Get-IntuneDevicePrimaryUsers.ps1 ⭐ NEW
+### Get-IntuneDevicePrimaryUsers.ps1
 
 Comprehensive device reporting tool that resolves primary users and collects detailed hardware specifications for Intune managed devices.
 

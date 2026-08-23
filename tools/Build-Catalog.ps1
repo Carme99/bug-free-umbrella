@@ -160,6 +160,7 @@ function Get-TagsFromSynopsis {
 # -------------------------------------------------------------------------
 
 $psFiles = Get-ChildItem -Path $scriptsRoot -Filter '*.ps1' -Recurse -File |
+    Where-Object { $_.FullName -notmatch '/devices/(winget|proactive-remediations)/' } |
     Sort-Object FullName
 
 $entries = [System.Collections.Generic.List[object]]::new()

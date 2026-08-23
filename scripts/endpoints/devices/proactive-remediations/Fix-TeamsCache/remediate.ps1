@@ -1,144 +1,15 @@
-<#
+﻿<#
 .SYNOPSIS
-    Remediates Microsoft Teams cache issues.
+    Deprecated shim — forwards to scripts/endpoints/remediation/system/Invoke-RemediationFixTeamsCache.ps1.
 
 .DESCRIPTION
-    This remediation script fixes Microsoft Teams cache problems by:
-    - Closing Microsoft Teams if running
-    - Clearing Teams cache directories for EVERY user profile (in SYSTEM context
-      $env:APPDATA points at the SYSTEM profile, so user caches must be
-      enumerated explicitly - the detect script scans per-user profiles)
-    - Removing old log files
-    - Preserving user settings and credentials
-    - Restarting Teams (optional)
+    Deprecated wrapper retained for compatibility. Forwards execution to the canonical script at scripts/endpoints/remediation/system/Invoke-RemediationFixTeamsCache.ps1. Update Intune assignments to the canonical path. Shim will be removed in 6.0.0.
 
 .NOTES
-    Returns exit code 0 if remediation is successful.
-    Returns exit code 1 if remediation fails.
+    Deprecated: moved to scripts/endpoints/remediation/system/Invoke-RemediationFixTeamsCache.ps1 — shim will be removed in 6.0.0.
+    Intune: exit 0 = healthy, exit 1 = needs remediation (preserved via $LASTEXITCODE).
+    Context: runs as SYSTEM in Proactive Remediations — uses Win32_UserProfile / Win32_Battery / Microsoft.WinGet.Client as applicable.
 #>
-
-try {
-    Write-Host "Starting Microsoft Teams cache remediation..."
-
-    # Stop Teams process if running
-    Write-Host "Checking for running Teams processes..."
-    $teamsProcesses = Get-Process -Name "Teams" -ErrorAction SilentlyContinue
-
-    if ($teamsProcesses) {
-        Write-Host "Stopping Microsoft Teams processes..."
-        $teamsProcesses | Stop-Process -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Seconds 3
-
-        # Verify Teams is stopped
-        $teamsStillRunning = Get-Process -Name "Teams" -ErrorAction SilentlyContinue
-        if ($teamsStillRunning) {
-            Write-Host "Warning: Could not stop all Teams processes"
-            # Continue anyway as cache might still be clearable
-        }
-        else {
-            Write-Host "Teams processes stopped successfully"
-        }
-    }
-    else {
-        Write-Host "Teams is not running"
-    }
-
-    # Enumerate user profiles the same way detect.ps1 does. In SYSTEM context
-    # $env:APPDATA is the SYSTEM profile - clearing only that would never
-    # converge with the per-user detection. Every non-special profile is
-    # enumerated so caches of users who are not currently logged on are also
-    # cleared.
-    $userProfiles = Get-CimInstance Win32_UserProfile | Where-Object {
-        $_.Special -eq $false -and $_.LocalPath -notmatch 'systemprofile|defaultuser'
-    }
-
-    if (-not $userProfiles -or $userProfiles.Count -eq 0) {
-        Write-Host "No eligible user profiles found"
-        exit 0
-    }
-
-    # Clear cache directories
-    $clearedSize = 0
-    $failedPaths = @()
-
-    foreach ($userProfile in $userProfiles) {
-        $teamsAppData = Join-Path $userProfile.LocalPath "AppData\Roaming\Microsoft\Teams"
-
-        if (-not (Test-Path $teamsAppData)) {
-            continue
-        }
-
-        $userName = Split-Path $userProfile.LocalPath -Leaf
-        Write-Host "Clearing Teams cache for user: $userName"
-
-        $teamsCacheLocations = @(
-            "$teamsAppData\Application Cache",
-            "$teamsAppData\Cache",
-            "$teamsAppData\GPUCache",
-            "$teamsAppData\IndexedDB",
-            "$teamsAppData\Local Storage",
-            "$teamsAppData\tmp"
-        )
-
-        foreach ($cachePath in $teamsCacheLocations) {
-            if (Test-Path $cachePath) {
-                try {
-                    # Calculate size before deletion
-                    $sizeBefore = (Get-ChildItem -Path $cachePath -Recurse -ErrorAction SilentlyContinue |
-                            Measure-Object -Property Length -Sum -ErrorAction SilentlyContinue).Sum
-
-                    # Remove cache contents
-                    Get-ChildItem -Path $cachePath -Recurse -ErrorAction SilentlyContinue |
-                        Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
-
-                    $clearedSize += $sizeBefore
-
-                    Write-Host "Cleared $(Split-Path $cachePath -Leaf) for $userName successfully"
-                }
-                catch {
-                    Write-Host "Warning: Could not fully clear $cachePath for $userName : $($_.Exception.Message)"
-                    $failedPaths += $cachePath
-                }
-            }
-        }
-
-        # Clear old log files (keep last 7 days) for this user
-        if (Test-Path "$teamsAppData\logs") {
-            try {
-                Write-Host "Clearing old log files for $userName..."
-                $oldLogs = Get-ChildItem -Path "$teamsAppData\logs" -Recurse -ErrorAction SilentlyContinue |
-                    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) }
-
-                $logCount = @($oldLogs).Count
-                $oldLogs | Remove-Item -Force -ErrorAction SilentlyContinue
-
-                Write-Host "Removed $logCount old log files for $userName"
-            }
-            catch {
-                Write-Host "Warning: Could not clear old logs for ${userName}: $($_.Exception.Message)"
-            }
-        }
-    }
-
-    # Report results
-    $clearedSizeMB = [math]::Round($clearedSize / 1MB, 2)
-    Write-Host "`nTeams cache remediation completed"
-    Write-Host "Cleared approximately $clearedSizeMB MB of cache data"
-
-    if ($failedPaths.Count -gt 0) {
-        Write-Host "Warning: Could not clear the following paths:"
-        $failedPaths | ForEach-Object { Write-Host "  - $_" }
-    }
-
-    # Note: We don't auto-restart Teams as it may disrupt user work
-    # Teams will start automatically next time user logs in or manually starts it
-    Write-Host "`nNote: Microsoft Teams cache has been cleared."
-    Write-Host "Teams will use fresh cache on next launch."
-
-    exit 0
-
-}
-catch {
-    Write-Host "Error during Teams cache remediation: $($_.Exception.Message)"
-    exit 1
-}
+Write-Warning 'Deprecated: moved to scripts/endpoints/remediation/system/Invoke-RemediationFixTeamsCache.ps1 — shim will be removed in 6.0.0.'
+$null = & "$PSScriptRoot/../../../remediation/system/Invoke-RemediationFixTeamsCache.ps1" @args
+exit $LASTEXITCODE

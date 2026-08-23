@@ -1,6 +1,6 @@
 # 🤖 MCP Server — AI-Native Script Discovery
 
-> Expose all 358 PowerShell scripts as [Model Context Protocol](https://modelcontextprotocol.io) tools. Search, preview, and validate scripts directly from Claude Desktop, Cursor, or Windsurf.
+> Expose all 357 PowerShell scripts as [Model Context Protocol](https://modelcontextprotocol.io) tools. Search, preview, and validate scripts directly from Claude Desktop, Cursor, or Windsurf.
 
 ---
 
@@ -23,7 +23,7 @@ The `mcp-server/` directory ships a lightweight Node.js MCP server that indexes 
 flowchart LR
     Claude["Claude / Cursor / Windsurf"] -->|JSON-RPC stdio| MCP["MCP Server<br/>(mcp-server/build/index.js)"]
     MCP -->|scan or metadata.json| Catalog["Catalog Index<br/>(in-memory)"]
-    Catalog -->|path + synopsis| Scripts["scripts/**/*.ps1<br/>(358 scripts)"]
+    Catalog -->|path + synopsis| Scripts["scripts/**/*.ps1<br/>(357 scripts)"]
     MCP -->|fs read| Scripts
 
     style Claude fill:#8B5CF6,stroke:#6D28D9,color:#fff
@@ -241,7 +241,7 @@ The catalog is built **once at startup**. After adding or renaming scripts, rest
 
 ## Related Docs
 
-- [Script Catalog](Script-Catalog.md) — browse all 358 scripts by domain
+- [Script Catalog](Script-Catalog.md) — browse all 357 scripts by domain
 - [Getting Started](Getting-Started.md) — first-time setup for scripts
 - [Architecture](ARCHITECTURE.md) — repo layout and design
 - [mcp-server/README.md](../mcp-server/README.md) — quick start, badges, verification

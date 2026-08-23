@@ -4,11 +4,11 @@
 [![Node](https://img.shields.io/badge/Node-18+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue?style=for-the-badge)](../LICENSE)
 
-> **AI-native script discovery** — every one of the 358 PowerShell scripts in this repo is now a tool your AI assistant can search, preview, and validate.
+> **AI-native script discovery** — every one of the 357 PowerShell scripts in this repo is now a tool your AI assistant can search, preview, and validate.
 
 ## Why MCP?
 
-Bug-Free Umbrella has 358 scripts across 8 domains. Finding the right one by browsing folders is slow. The MCP server puts the entire catalog behind a standard [Model Context Protocol](https://modelcontextprotocol.io) interface so Claude, Cursor, or Windsurf can answer:
+Bug-Free Umbrella has 357 scripts across 8 domains. Finding the right one by browsing folders is slow. The MCP server puts the entire catalog behind a standard [Model Context Protocol](https://modelcontextprotocol.io) interface so Claude, Cursor, or Windsurf can answer:
 
 - *"Find me Intune compliance scripts"*
 - *"Show me the help for Monitor-ServerHealth"*

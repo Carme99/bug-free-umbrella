@@ -1,14 +1,14 @@
 # 🏗️ Bug-Free Umbrella — Architecture
 
-> How the repo is organized, how it's built, and how it ships. 358 PowerShell scripts, 8 technology domains, one umbrella. 🌂
+> How the repo is organized, how it's built, and how it ships. 357 PowerShell scripts, 8 technology domains, one umbrella. 🌂
 
-**Applies to:** v4.3.0 "Zephyr" · **Last verified:** 2026-08-08
+**Applies to:** v5.0.0 "Hurricane" (staged, unreleased; latest tagged: v4.4.0 "Nimbus") · **Last verified:** 2026-08-23
 
 ---
 
 ## 1. Overview
 
-Bug-Free Umbrella is a collection of **358 PowerShell scripts** for enterprise IT management: endpoint management (Intune/Winget), server administration, security compliance, M365, cloud (Azure/AWS), databases, and CI/CD automation.
+Bug-Free Umbrella is a collection of **357 PowerShell scripts** for enterprise IT management: endpoint management (Intune/Winget), server administration, security compliance, M365, cloud (Azure/AWS), databases, and CI/CD automation.
 
 - **PowerShell:** developed on PowerShell 7 (5.1-compatible where noted)
 - **Style:** enforced by PSScriptAnalyzer + a CI gate (see [§3 CI/CD](#3-cicd-pipeline))
@@ -19,7 +19,7 @@ Bug-Free Umbrella is a collection of **358 PowerShell scripts** for enterprise I
 
 ```text
 bug-free-umbrella/
-├── scripts/                  # 358 PowerShell scripts, organized by domain
+├── scripts/                  # 357 PowerShell scripts, organized by domain
 │   ├── automation/           #   CI/CD pipelines, Infrastructure as Code
 │   ├── cloud/                #   Azure (incl. AVD), AWS, containers
 │   ├── collaboration/        #   M365, Exchange, Teams, SharePoint
@@ -49,6 +49,7 @@ flowchart LR
         U[utilities]
     end
     CAT[.catalog<br/>metadata + compatibility] -. indexes .-> SCRIPTS
+    MOD[Module<br/>BugFreeUmbrella.psd1 + .psm1] -. exports .-> SCRIPTS
     DOC[docs/ · Architecture · Catalog · Guides] -. documents .-> SCRIPTS
     TST[Tests/ + colocated Pester suites] -. validates .-> SCRIPTS
 ```
@@ -135,6 +136,11 @@ flowchart LR
 
 Docs live **in the repository** — no external wiki (retired 2026-08-08). Benefits: versioned with code, PR-reviewable, link-checked by review, impossible to silently drift.
 
+`docs/Module.md` is auto-generated from the manifest + catalog (see `tools/Build-Docs.ps1`);
+it is the PSGallery-facing reference and is validated in CI via `Build-Docs.ps1 -Validate`.
+
+Module loads 357 wrappers via Build-Module, version from CHANGELOG, PSSA 0
+
 ```mermaid
 flowchart LR
     HUB[docs/README.md<br/>entry point + map]
@@ -145,7 +151,6 @@ flowchart LR
     CAT --> DOMAIN[Category guides<br/>Intune · Server · Security · M365 · Cloud · Data]
     DOMAIN --> SCRIPTS2[scripts/ tree]
 ```
-
 - **`docs/README.md`** — entry point, documentation map, by-domain index
 - **`docs/Script-Catalog.md`** — full index of all scripts with paths
 - **Category guides** — one page per domain (Intune, Server Management, Security, M365, Cloud…)

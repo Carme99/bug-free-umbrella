@@ -191,7 +191,7 @@ scripts/
 **Example**: Creating an Azure monitoring script
 ```powershell
 # Create file in appropriate location
-New-Item -Path "scripts/cloud/azure/monitoring/Monitor-AzureVMHealth.ps1" -ItemType File
+New-Item -Path "scripts/cloud/azure/compute/Monitor-AzureVMHealth.ps1" -ItemType File
 ```
 
 ### Step 2: Use Standard Template

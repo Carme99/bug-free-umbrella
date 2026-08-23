@@ -1,10 +1,10 @@
 # 📚 Bug-Free Umbrella Documentation
 
-> The complete guide to the repo: **358 PowerShell scripts** for enterprise IT automation — Intune, M365, servers, security, cloud, and everything in between.
+> The complete guide to the repo: **357 PowerShell scripts** for enterprise IT automation — Intune, M365, servers, security, cloud, and everything in between.
 
 Documentation lives **with the code** — every page here is versioned, PR-reviewable, and travels with its release. No separate wiki to go stale. 🌂
 
-**Current release:** [v4.3.0 "Zephyr" 🌈](../CHANGELOG.md) · **Docs consolidated:** 2026-08-08
+**Current release:** [v4.4.0 "Nimbus" 🌧️](../CHANGELOG.md) · **Docs updated:** 2026-08-23
 
 ---
 
@@ -21,6 +21,7 @@ flowchart LR
     HUB --> TRO[Troubleshooting.md]
     HUB --> FAQ[FAQ.md]
     HUB --> ARCH[ARCHITECTURE.md]
+    HUB --> MOD[Module.md]
     GS --> USE[Common-Use-Cases.md]
     GS --> WF[Workflows.md]
     CAT --> API[API-Reference.md]
@@ -44,9 +45,9 @@ flowchart LR
 | 🎯 **Solve a specific problem** | [Common-Use-Cases.md](Common-Use-Cases.md) |
 | 🏗️ **Understand how it all fits together** | [ARCHITECTURE.md](ARCHITECTURE.md) |
 
-## 📂 By Technology Domain
+## 📂 Browse by Directory
 
-| Domain | What's Inside | Category Docs |
+| Area | What's inside | Guides |
 |---|---|---|
 | 📱 **endpoints/** | Intune, Winget, proactive remediations, device health | [Intune-Management.md](Intune-Management.md) · [Intune-Sync-Guide.md](Intune-Sync-Guide.md) · [Winget-Updates.md](Winget-Updates.md) · [Proactive-Remediations.md](Proactive-Remediations.md) |
 | 🖥️ **infrastructure/** | Windows servers, AD, network, virtualization, IIS | [Server-Management.md](Server-Management.md) · [Backup-and-Disaster-Recovery.md](Backup-and-Disaster-Recovery.md) |
@@ -56,6 +57,7 @@ flowchart LR
 | 🗄️ **data/** | Databases, APIs | [Database-Administration.md](Database-Administration.md) · [API-Reference.md](API-Reference.md) |
 | ⚙️ **automation/** | CI/CD, IaC | [Workflows.md](Workflows.md) · [Integration-Patterns.md](Integration-Patterns.md) |
 | 🧰 **utilities/** | General toolbox | Browse via [Script-Catalog.md](Script-Catalog.md) |
+| 📦 Module | Installable PSGallery module | [Module.md](Module.md) |
 
 ## 🎓 Guides & Advanced Topics
 
@@ -67,9 +69,7 @@ flowchart LR
 - [Migration-Strategy.md](Migration-Strategy.md) · [Scaling-and-Load-Balancing.md](Scaling-and-Load-Balancing.md) — grow safely
 - [Best-Practices-Checklist.md](Best-Practices-Checklist.md) — dev, security, compliance
 - [Custom-Development-Guide.md](Custom-Development-Guide.md) — write your own scripts for this repo
-- [MCP-Server.md](MCP-Server.md) — 🤖 MCP Server: AI tool integration for all 358 scripts
-
-| 🤖 MCP Server | AI tool integration | [MCP-Server.md](MCP-Server.md) |
+- [MCP-Server.md](MCP-Server.md) — 🤖 MCP Server: AI tool integration for all 357 scripts
 
 ## 🆘 When Things Break
 

@@ -2,7 +2,7 @@
 
 > **Because IT shouldn't rain on your parade.**
 
-Your personal collection of **358 battle-tested PowerShell scripts** for when you need to automate *everything* in your enterprise environment.
+Your personal collection of **357 battle-tested PowerShell scripts** for when you need to automate *everything* in your enterprise environment.
 
 <div align="center">
 
@@ -16,7 +16,7 @@ Your personal collection of **358 battle-tested PowerShell scripts** for when yo
 [![Issues](https://img.shields.io/github/issues/Carme99/bug-free-umbrella?style=for-the-badge)](https://github.com/Carme99/bug-free-umbrella/issues)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge)](CONTRIBUTING.md)
 
-[![Scripts](https://img.shields.io/badge/Scripts-358-FF6B6B?style=for-the-badge&logo=files&logoColor=white)](docs/Script-Catalog.md)
+[![Scripts](https://img.shields.io/badge/Scripts-357-FF6B6B?style=for-the-badge&logo=files&logoColor=white)](docs/Script-Catalog.md)
 [![Docs](https://img.shields.io/badge/📚_Full_Documentation-docs%2F-4A9EFF?style=for-the-badge)](docs/README.md)
 [![Claude Code](https://img.shields.io/badge/Built_with-Claude_Code-8B5CF6?style=for-the-badge&logo=anthropic&logoColor=white)](https://github.com/anthropics/claude-code)
 [![Last Commit](https://img.shields.io/github/last-commit/Carme99/bug-free-umbrella?style=for-the-badge)](https://github.com/Carme99/bug-free-umbrella/commits/main)
@@ -61,6 +61,15 @@ Ever find yourself thinking *"there's got to be a script for this"*? Well, now t
 | **☁️ Cloud Automation** | Azure, AWS, and container management scripts |
 | **🖥️ Server Management** | 30+ scripts for Windows/Linux servers |
 | **👥 M365 Everything** | Exchange, Teams, SharePoint, and more |
+
+
+[![PowerShell Gallery](https://img.shields.io/powershellgallery/v/BugFreeUmbrella?style=for-the-badge)](https://www.powershellgallery.com/packages/BugFreeUmbrella)
+
+```powershell
+# Install from the PowerShell Gallery…
+Install-Module BugFreeUmbrella -Scope CurrentUser
+# …or bootstrap a clone: git clone https://github.com/Carme99/bug-free-umbrella.git && cd bug-free-umbrella && ./install.ps1
+```
 
 ---
 
@@ -150,7 +159,7 @@ New here? **Try these first** - they're the most commonly used scripts in the wi
 </tr>
 </table>
 
-**[→ Browse all 358 scripts in the catalog](docs/Script-Catalog.md)**
+**[→ Browse all 357 scripts in the catalog](docs/Script-Catalog.md)**
 
 ---
 
@@ -200,7 +209,7 @@ This repo exists because:
 
 | Metric | Count | What It Means |
 |--------|-------|---------------|
-| 📜 **Scripts** | 358 | Solutions to 358 real problems |
+| 📜 **Scripts** | 357 | Solutions to 357 real problems |
 | 🏗️ **Domains** | 8 | Organized so you can actually find things |
 | 🔧 **Remediation Pairs** | 51 | Auto-fix scripts running in prod |
 | 📦 **Winget Pairs** | 16 | Apps that update themselves |
@@ -256,7 +265,7 @@ This entire repository is maintained by one human developer and [Claude Code](ht
 
 [![MCP](https://img.shields.io/badge/MCP-Server-8B5CF6?style=for-the-badge)](https://modelcontextprotocol.io)
 
-This repo ships an MCP server (`mcp-server/`) that exposes all 358 scripts as AI tools — search, preview, and validate scripts from Claude Desktop. [→ MCP Docs](docs/MCP-Server.md)
+This repo ships an MCP server (`mcp-server/`) that exposes all 357 scripts as AI tools — search, preview, and validate scripts from Claude Desktop. [→ MCP Docs](docs/MCP-Server.md)
 
 **License:** Apache 2.0 (use it, share it, improve it)
 

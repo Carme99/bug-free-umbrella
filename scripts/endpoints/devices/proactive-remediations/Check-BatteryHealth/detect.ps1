@@ -1,109 +1,15 @@
-<#
+﻿<#
 .SYNOPSIS
-    Checks laptop battery health and capacity degradation.
+    Deprecated shim — forwards to scripts/endpoints/remediation/system/Test-RemediationCheckBatteryHealth.ps1.
 
 .DESCRIPTION
-    Monitors battery design capacity vs current full charge capacity to
-    detect battery degradation on laptops.
+    Deprecated wrapper retained for compatibility. Forwards execution to the canonical script at scripts/endpoints/remediation/system/Test-RemediationCheckBatteryHealth.ps1. Update Intune assignments to the canonical path. Shim will be removed in 6.0.0.
 
 .NOTES
-    Author: Intune Admin
-    Version: 1.0
-    Intune Context: SYSTEM
-    Exit 0: Battery is healthy or not applicable
-    Exit 1: Battery degradation detected
-
-.CONFIGURATION
-    $degradationThreshold: Warn when battery capacity drops below this percentage (default: 70%)
+    Deprecated: moved to scripts/endpoints/remediation/system/Test-RemediationCheckBatteryHealth.ps1 — shim will be removed in 6.0.0.
+    Intune: exit 0 = healthy, exit 1 = needs remediation (preserved via $LASTEXITCODE).
+    Context: runs as SYSTEM in Proactive Remediations — uses Win32_UserProfile / Win32_Battery / Microsoft.WinGet.Client as applicable.
 #>
-
-try {
-    # Configuration
-    $degradationThreshold = 70  # Percentage
-
-    # Check if device has a battery
-    $battery = Get-CimInstance -ClassName Win32_Battery -ErrorAction SilentlyContinue
-
-    if (-not $battery) {
-        Write-Host "No battery detected (desktop or battery not present)"
-        exit 0
-    }
-
-    $issues = @()
-
-    # Get battery report
-    $output = powercfg /batteryreport /output "$env:TEMP\battery-report.xml" /xml 2>&1
-    $powercfgSuccess = $LASTEXITCODE -eq 0
-
-    if ($powercfgSuccess -and (Test-Path "$env:TEMP\battery-report.xml")) {
-        [xml]$batteryReport = Get-Content "$env:TEMP\battery-report.xml"
-
-        # Validate XML structure exists
-        if ($batteryReport.BatteryReport.Batteries.Battery) {
-            # Handle multi-battery systems - get first battery or single battery
-            $battery = if ($batteryReport.BatteryReport.Batteries.Battery -is [array]) {
-                $batteryReport.BatteryReport.Batteries.Battery[0]
-            }
-            else {
-                $batteryReport.BatteryReport.Batteries.Battery
-            }
-
-            # Validate properties exist before casting
-            if ($battery.DesignCapacity -and $battery.FullChargeCapacity) {
-                $designCapacity = [int]$battery.DesignCapacity
-                $fullChargeCapacity = [int]$battery.FullChargeCapacity
-            }
-            else {
-                $designCapacity = 0
-                $fullChargeCapacity = 0
-            }
-        }
-        else {
-            $designCapacity = 0
-            $fullChargeCapacity = 0
-        }
-
-        if ($designCapacity -gt 0) {
-            $healthPercentage = [math]::Round(($fullChargeCapacity / $designCapacity) * 100, 1)
-
-            if ($healthPercentage -lt $degradationThreshold) {
-                $issues += "Battery capacity degraded to $healthPercentage% (design: $designCapacity mWh, current: $fullChargeCapacity mWh)"
-            }
-
-            Write-Host "Battery Health: $healthPercentage%"
-            Write-Host "Design Capacity: $designCapacity mWh"
-            Write-Host "Full Charge Capacity: $fullChargeCapacity mWh"
-        }
-
-        # Clean up
-        Remove-Item "$env:TEMP\battery-report.xml" -Force -ErrorAction SilentlyContinue
-    }
-
-    # Check for battery warnings in event log
-    $batteryEvents = Get-WinEvent -FilterHashtable @{
-        LogName = 'System'
-        ProviderName = 'Microsoft-Windows-Kernel-Power'
-        ID = 105, 106  # Battery capacity warnings
-        StartTime = (Get-Date).AddDays(-30)
-    } -MaxEvents 5 -ErrorAction SilentlyContinue
-
-    if ($batteryEvents) {
-        $issues += "Battery capacity warnings detected in event log"
-    }
-
-    if ($issues.Count -gt 0) {
-        Write-Host "Battery health issues detected:"
-        foreach ($issue in $issues) {
-            Write-Host "  - $issue"
-        }
-        exit 1
-    }
-
-    Write-Host "Battery health is acceptable"
-    exit 0
-
-}
-catch {
-    Write-Host "Error checking battery health: $_"
-    exit 1
-}
+Write-Warning 'Deprecated: moved to scripts/endpoints/remediation/system/Test-RemediationCheckBatteryHealth.ps1 — shim will be removed in 6.0.0.'
+$null = & "$PSScriptRoot/../../../remediation/system/Test-RemediationCheckBatteryHealth.ps1" @args
+exit $LASTEXITCODE
