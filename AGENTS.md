@@ -1,6 +1,6 @@
 # AGENTS.md - Bug-Free Umbrella
 
-> PowerShell enterprise automation toolkit (357 scripts). PowerShell 7.0+, Pester 5.5.0+, PSScriptAnalyzer.
+> PowerShell enterprise automation toolkit (544 scripts). PowerShell 7.0+, Pester 5.5.0+, PSScriptAnalyzer.
 
 ---
 

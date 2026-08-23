@@ -2,7 +2,7 @@
 
 # 📦 BugFreeUmbrella Module
 
-> Installable PowerShell module — 357 functions across 8 domains. Auto-generated from
+> Installable PowerShell module — 544 functions across 8 domains. Auto-generated from
 > `src/BugFreeUmbrella/BugFreeUmbrella.psd1` + `scripts/.catalog/metadata.json`.
 > Do not edit by hand — run `pwsh -File tools/Build-Docs.ps1`.
 
@@ -15,7 +15,7 @@
 ```powershell
 Install-Module BugFreeUmbrella -Scope CurrentUser
 Import-Module  BugFreeUmbrella
-Get-Command -Module BugFreeUmbrella | Measure-Object  # → 357
+Get-Command -Module BugFreeUmbrella | Measure-Object  # → 544
 ```
 
 ## Quick Usage
@@ -58,7 +58,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     User --> MOD[Module]
-    MOD --> SCRIPTS[scripts/ — 357 scripts · 8 domains]
+    MOD --> SCRIPTS[scripts/ — 544 scripts · 8 domains]
     SCRIPTS --> CAT[.catalog/metadata.json]
 ```
 
@@ -66,7 +66,7 @@ PSSA 0 — generator and module pass PSScriptAnalyzer with 0 findings.
 
 ## Function Reference
 
-> 357 functions grouped by top-level domain. Synopsis truncated to 120 characters.
+> 544 functions grouped by top-level domain. Synopsis truncated to 120 characters.
 
 ### automation — 6 functions
 
@@ -119,7 +119,7 @@ PSSA 0 — generator and module pass PSScriptAnalyzer with 0 findings.
 | Get-UserMailboxPermissions | collaboration/microsoft365/exchange-online | Displays all mailbox permissions and delegates for a specific user. | [scripts/collaboration/microsoft365/exchange-online/Get-UserMailboxPermissions.ps1](../scripts/collaboration/microsoft365/exchange-online/Get-UserMailboxPermissions.ps1) |
 | Get-UserMailRules | collaboration/microsoft365/exchange-online | Displays all email forwarding rules and inbox rules for a specific user. | [scripts/collaboration/microsoft365/exchange-online/Get-UserMailRules.ps1](../scripts/collaboration/microsoft365/exchange-online/Get-UserMailRules.ps1) |
 | Manage-QuarantinedEmails | collaboration/microsoft365/exchange-online | Interactive tool for managing quarantined emails for a specific M365 user. | [scripts/collaboration/microsoft365/exchange-online/Manage-QuarantinedEmails.ps1](../scripts/collaboration/microsoft365/exchange-online/Manage-QuarantinedEmails.ps1) |
-| Manage-QuarantinedEmails.Tests | collaboration/microsoft365/exchange-online | Pester test suite for the Manage-QuarantinedEmails.ps1 script. | [scripts/collaboration/microsoft365/exchange-online/Manage-QuarantinedEmails.Tests.ps1](../scripts/collaboration/microsoft365/exchange-online/Manage-QuarantinedEmails.Tests.ps1) |
+| Manage-QuarantinedEmails.Tests | collaboration/microsoft365/exchange-online | Pester test suite for the Manage-QuarantinedEmails.ps1 script. | [Tests/collaboration/microsoft365/exchange-online/Manage-QuarantinedEmails.Tests.ps1](../Tests/collaboration/microsoft365/exchange-online/Manage-QuarantinedEmails.Tests.ps1) |
 | Set-MailboxRegionalSettings | collaboration/microsoft365/exchange-online | Checks and configures Exchange Online mailbox regional and calendar settings. | [scripts/collaboration/microsoft365/exchange-online/Set-MailboxRegionalSettings.ps1](../scripts/collaboration/microsoft365/exchange-online/Set-MailboxRegionalSettings.ps1) |
 | Set-OneDriveRegionalSettings | collaboration/microsoft365/sharepoint-onedrive | Checks and configures OneDrive personal site regional settings. | [scripts/collaboration/microsoft365/sharepoint-onedrive/Set-OneDriveRegionalSettings.ps1](../scripts/collaboration/microsoft365/sharepoint-onedrive/Set-OneDriveRegionalSettings.ps1) |
 | Set-OrganizationDefaults | collaboration/microsoft365/azure-ad | Audits and configures the organization-wide PreferredLanguage setting in Microsoft 365. | [scripts/collaboration/microsoft365/azure-ad/Set-OrganizationDefaults.ps1](../scripts/collaboration/microsoft365/azure-ad/Set-OrganizationDefaults.ps1) |

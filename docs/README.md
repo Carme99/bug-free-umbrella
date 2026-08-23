@@ -1,14 +1,14 @@
-# 📚 Bug-Free Umbrella Documentation
+# BugFreeUmbrella Documentation
 
-> The complete guide to the repo: **357 PowerShell scripts** for enterprise IT automation — Intune, M365, servers, security, cloud, and everything in between.
+> The complete guide to the repository: **544 PowerShell scripts across 8 domains** for enterprise IT automation — Intune, M365, servers, security, cloud, data, and CI/CD.
 
-Documentation lives **with the code** — every page here is versioned, PR-reviewable, and travels with its release. No separate wiki to go stale. 🌂
+Documentation lives **with the code** — every page here is versioned, reviewable in PRs, and ships with each release. There is no separate wiki to drift out of date.
 
-**Current release:** [v4.4.0 "Nimbus" 🌧️](../CHANGELOG.md) · **Docs updated:** 2026-08-23
+**Current release:** [v4.4.0 "Nimbus"](../CHANGELOG.md) · **Docs updated:** 2026-08-23
 
 ---
 
-## 🗺️ Documentation Map
+## Documentation Map
 
 ```mermaid
 flowchart LR
@@ -33,55 +33,58 @@ flowchart LR
     TRO --> ST[Security-Troubleshooting.md]
 ```
 
-## 🚀 Start Here
+## Start Here
 
 | If you want to... | Read |
 |---|---|
-| 🆕 **Get started from scratch** | [Getting-Started.md](Getting-Started.md) |
-| ⚙️ **Know what you need installed** | [Prerequisites.md](Prerequisites.md) |
-| 🔍 **Find a specific script** | [Script-Catalog.md](Script-Catalog.md) |
-| 🧪 **See scripts in action** | [Script-Examples.md](Script-Examples.md) |
-| ⚡ **Grab copy-paste commands** | [RECIPES.md](RECIPES.md) — 80+ ready-to-run recipes |
-| 🎯 **Solve a specific problem** | [Common-Use-Cases.md](Common-Use-Cases.md) |
-| 🏗️ **Understand how it all fits together** | [ARCHITECTURE.md](ARCHITECTURE.md) |
+| **Get started from scratch** | [Getting-Started.md](Getting-Started.md) |
+| **Know what you need installed** | [Prerequisites.md](Prerequisites.md) |
+| **Find a specific script** | [Script-Catalog.md](Script-Catalog.md) |
+| **See scripts in action** | [Script-Examples.md](Script-Examples.md) |
+| **Grab copy-paste commands** | [RECIPES.md](RECIPES.md) — 80+ ready-to-run recipes |
+| **Solve a specific problem** | [Common-Use-Cases.md](Common-Use-Cases.md) |
+| **Understand how it all fits together** | [ARCHITECTURE.md](ARCHITECTURE.md) |
 
-## 📂 Browse by Directory
+## Browse by Domain
 
-| Area | What's inside | Guides |
+| Domain | Contents | Guides |
 |---|---|---|
-| 📱 **endpoints/** | Intune, Winget, proactive remediations, device health | [Intune-Management.md](Intune-Management.md) · [Intune-Sync-Guide.md](Intune-Sync-Guide.md) · [Winget-Updates.md](Winget-Updates.md) · [Proactive-Remediations.md](Proactive-Remediations.md) |
-| 🖥️ **infrastructure/** | Windows servers, AD, network, virtualization, IIS | [Server-Management.md](Server-Management.md) · [Backup-and-Disaster-Recovery.md](Backup-and-Disaster-Recovery.md) |
-| 🔒 **security/** | CIS/NIST compliance, hardening, monitoring | [Security-Compliance.md](Security-Compliance.md) · [Security-Troubleshooting.md](Security-Troubleshooting.md) |
-| 👥 **collaboration/** | M365, Exchange, Teams, SharePoint | [Microsoft-365-Cloud-Services.md](Microsoft-365-Cloud-Services.md) |
-| ☁️ **cloud/** | Azure, AVD, AWS, containers | [Azure-Virtual-Desktop.md](Azure-Virtual-Desktop.md) · [Azure-Compute-Gallery-Image-Builder.md](Azure-Compute-Gallery-Image-Builder.md) · [AWS-Guide.md](AWS-Guide.md) |
-| 🗄️ **data/** | Databases, APIs | [Database-Administration.md](Database-Administration.md) · [API-Reference.md](API-Reference.md) |
-| ⚙️ **automation/** | CI/CD, IaC | [Workflows.md](Workflows.md) · [Integration-Patterns.md](Integration-Patterns.md) |
-| 🧰 **utilities/** | General toolbox | Browse via [Script-Catalog.md](Script-Catalog.md) |
-| 📦 Module | Installable PSGallery module | [Module.md](Module.md) |
+| **endpoints/** (429 scripts) | Intune, Winget updates, proactive remediations, device health | [Intune-Management.md](Intune-Management.md) · [Intune-Sync-Guide.md](Intune-Sync-Guide.md) · [Winget-Updates.md](Winget-Updates.md) · [Proactive-Remediations.md](Proactive-Remediations.md) |
+| **infrastructure/** (42) | Windows servers, AD, network, virtualization, IIS | [Server-Management.md](Server-Management.md) · [Backup-and-Disaster-Recovery.md](Backup-and-Disaster-Recovery.md) |
+| **security/** (16) | CIS/NIST compliance, hardening, monitoring | [Security-Compliance.md](Security-Compliance.md) · [Security-Troubleshooting.md](Security-Troubleshooting.md) |
+| **collaboration/** (24) | M365, Exchange, Teams, SharePoint | [Microsoft-365-Cloud-Services.md](Microsoft-365-Cloud-Services.md) |
+| **cloud/** (16) | Azure, AVD, AWS, containers | [Azure-Virtual-Desktop.md](Azure-Virtual-Desktop.md) · [Azure-Compute-Gallery-Image-Builder.md](Azure-Compute-Gallery-Image-Builder.md) · [AWS-Guide.md](AWS-Guide.md) |
+| **data/** (6) | Databases, APIs | [Database-Administration.md](Database-Administration.md) · [API-Reference.md](API-Reference.md) |
+| **automation/** (6) | CI/CD, IaC | [Workflows.md](Workflows.md) · [Integration-Patterns.md](Integration-Patterns.md) |
+| **utilities/** (5) | General-purpose helpers | Browse via [Script-Catalog.md](Script-Catalog.md) |
+| Module | Installable PSGallery module | [Module.md](Module.md) |
 
-## 🎓 Guides & Advanced Topics
+## Guides and Advanced Topics
 
-- [Catalog-Automation.md](Catalog-Automation.md) — auto-generated metadata and Invoke-Umbrella launcher
-
+- [Catalog-Automation.md](Catalog-Automation.md) — auto-generated metadata and the Invoke-Umbrella launcher
 - [Advanced-Scripting-Patterns.md](Advanced-Scripting-Patterns.md) — error handling, logging, parallel execution
-- [Performance-Tuning.md](Performance-Tuning.md) · [Performance-Diagnostics.md](Performance-Diagnostics.md) — make scripts fast
+- [Performance-Tuning.md](Performance-Tuning.md) · [Performance-Diagnostics.md](Performance-Diagnostics.md) — making scripts fast
 - [Advanced-Monitoring.md](Advanced-Monitoring.md) — alerting, metrics, dashboards
-- [Migration-Strategy.md](Migration-Strategy.md) · [Scaling-and-Load-Balancing.md](Scaling-and-Load-Balancing.md) — grow safely
-- [Best-Practices-Checklist.md](Best-Practices-Checklist.md) — dev, security, compliance
-- [Custom-Development-Guide.md](Custom-Development-Guide.md) — write your own scripts for this repo
-- [MCP-Server.md](MCP-Server.md) — 🤖 MCP Server: AI tool integration for all 357 scripts
+- [Migration-Strategy.md](Migration-Strategy.md) · [Scaling-and-Load-Balancing.md](Scaling-and-Load-Balancing.md) — growing deployments safely
+- [Best-Practices-Checklist.md](Best-Practices-Checklist.md) — development, security, compliance
+- [Custom-Development-Guide.md](Custom-Development-Guide.md) — writing your own scripts for this repository
+- [MCP-Server.md](MCP-Server.md) — MCP server: AI tool integration for the script catalog
 
-## 🆘 When Things Break
+## When Things Break
 
 - [Troubleshooting.md](Troubleshooting.md) — common issues and solutions
-- [Security-Troubleshooting.md](Security-Troubleshooting.md) — certs, auth, audit logging
+- [Security-Troubleshooting.md](Security-Troubleshooting.md) — certificates, auth, audit logging
 - [FAQ.md](FAQ.md) — frequently asked questions
 - Still stuck? [Open an issue](https://github.com/Carme99/bug-free-umbrella/issues) or see [SUPPORT.md](../SUPPORT.md)
 
-## 📋 Project Files
+## Contributor Standards
 
-- [CHANGELOG.md](../CHANGELOG.md) — version history with weather codenames
+- [RELAUNCH-SPEC.md](RELAUNCH-SPEC.md) — **the v1.0.0 relaunch standards contract**: mandatory header/help format, behavior standard (`Main` + dot-source guard), PowerShell 5.1/7 compatibility rules, mirrored Pester test requirements, and the per-script definition of done. New and modified scripts must satisfy it.
 - [CONTRIBUTING.md](../CONTRIBUTING.md) · [GOVERNANCE.md](../GOVERNANCE.md) · [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md)
+
+## Project Files
+
+- [CHANGELOG.md](../CHANGELOG.md) — version history
 - [SECURITY.md](../SECURITY.md) — vulnerability reporting
 - [examples/](../examples/README.md) — end-to-end workflow examples
 

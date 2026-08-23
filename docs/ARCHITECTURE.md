@@ -1,6 +1,6 @@
-# 🏗️ Bug-Free Umbrella — Architecture
+# Bug-Free Umbrella — Architecture
 
-> How the repo is organized, how it's built, and how it ships. 357 PowerShell scripts, 8 technology domains, one umbrella. 🌂
+> How the repository is organized, built, and shipped. 544 PowerShell scripts across 8 technology domains.
 
 **Applies to:** v5.0.0 "Hurricane" (staged, unreleased; latest tagged: v4.4.0 "Nimbus") · **Last verified:** 2026-08-23
 
@@ -8,7 +8,7 @@
 
 ## 1. Overview
 
-Bug-Free Umbrella is a collection of **357 PowerShell scripts** for enterprise IT management: endpoint management (Intune/Winget), server administration, security compliance, M365, cloud (Azure/AWS), databases, and CI/CD automation.
+Bug-Free Umbrella is a collection of **544 PowerShell scripts** for enterprise IT management: endpoint management (Intune/Winget), server administration, security compliance, M365, cloud (Azure/AWS), databases, and CI/CD automation.
 
 - **PowerShell:** developed on PowerShell 7 (5.1-compatible where noted)
 - **Style:** enforced by PSScriptAnalyzer + a CI gate (see [§3 CI/CD](#3-cicd-pipeline))
@@ -19,7 +19,7 @@ Bug-Free Umbrella is a collection of **357 PowerShell scripts** for enterprise I
 
 ```text
 bug-free-umbrella/
-├── scripts/                  # 357 PowerShell scripts, organized by domain
+├── scripts/                  # 544 PowerShell scripts, organized by domain
 │   ├── automation/           #   CI/CD pipelines, Infrastructure as Code
 │   ├── cloud/                #   Azure (incl. AVD), AWS, containers
 │   ├── collaboration/        #   M365, Exchange, Teams, SharePoint
@@ -139,7 +139,7 @@ Docs live **in the repository** — no external wiki (retired 2026-08-08). Benef
 `docs/Module.md` is auto-generated from the manifest + catalog (see `tools/Build-Docs.ps1`);
 it is the PSGallery-facing reference and is validated in CI via `Build-Docs.ps1 -Validate`.
 
-Module loads 357 wrappers via Build-Module, version from CHANGELOG, PSSA 0
+Module loads 544 wrappers via Build-Module, version from CHANGELOG, PSSA 0
 
 ```mermaid
 flowchart LR

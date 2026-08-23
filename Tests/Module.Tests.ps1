@@ -2,11 +2,11 @@
 
 <#
 .SYNOPSIS
-    Validates the BugFreeUmbrella PowerShell module (5.0 Hurricane) — import, manifest, exports, PSSA.
+    Validates the BugFreeUmbrella PowerShell module — import, manifest, exports, PSSA.
 
 .DESCRIPTION
     Exercises src/BugFreeUmbrella/BugFreeUmbrella.psd1 + .psm1 as an installable PSGallery module:
-    import, manifest version 5.0.0, exported command count 358, loader hygiene, and PSScriptAnalyzer clean.
+    import, manifest ModuleVersion parity with CHANGELOG.md, exported command count 358, loader hygiene, and PSScriptAnalyzer clean.
     Designed to run on Ubuntu (CI) without Windows-only modules — Windows-specific imports are mocked.
 
 .NOTES
@@ -35,9 +35,18 @@ Describe "BugFreeUmbrella Module" -Tag 'Module' {
             Test-Path -LiteralPath $script:ManifestPath | Should -Be $true -Because "Module manifest not found at $script:ManifestPath — did DesignModule run? src/BugFreeUmbrella/BugFreeUmbrella.psd1 absent."
         }
 
-        It "should have ModuleVersion 5.0.0" {
+        It "should have ModuleVersion matching the first CHANGELOG release heading" {
             $manifest = Import-PowerShellDataFile -Path $script:ManifestPath
-            $manifest.ModuleVersion | Should -Be '5.0.0' -Because "Expected ModuleVersion 5.0.0 but found $($manifest.ModuleVersion) — bump CHANGELOG and manifest together."
+            $changelogPath = Join-Path $script:RepoRoot 'CHANGELOG.md'
+            Test-Path -LiteralPath $changelogPath | Should -Be $true -Because "CHANGELOG.md must exist for version parity"
+            $heading = (Get-Content -LiteralPath $changelogPath) |
+                Where-Object { $_ -match '^## \[([0-9]+\.[0-9]+\.[0-9]+)\]' } |
+                Select-Object -First 1
+            $heading | Should -Not -BeNullOrEmpty -Because "CHANGELOG.md should contain a '## [X.Y.Z]' release heading"
+            $headingText = if ($heading -match '^## \[([0-9]+\.[0-9]+\.[0-9]+)\]') { $Matches[1] } else { $null }
+            $changelogVersion = [version]$headingText
+            $manifest.ModuleVersion | Should -Be ([version]$manifest.ModuleVersion).ToString() -Because "ModuleVersion should be a valid version string"
+            $changelogVersion | Should -Be ([version]$manifest.ModuleVersion) -Because "manifest ModuleVersion ($($manifest.ModuleVersion)) must equal the first '## [' heading in CHANGELOG.md ($($headingText)) — single source of truth."
         }
 
         It "should declare PowerShellVersion 7.0+ compatible and no hardcoded secrets" {
@@ -52,17 +61,6 @@ Describe "BugFreeUmbrella Module" -Tag 'Module' {
             { Test-ModuleManifest -Path $script:ManifestPath -ErrorAction Stop | Out-Null } | Should -Not -Throw
         }
 
-        It "manifest version matches CHANGELOG latest release heading" {
-            $changelogPath = Join-Path $script:RepoRoot 'CHANGELOG.md'
-            Test-Path -LiteralPath $changelogPath | Should -Be $true -Because "CHANGELOG.md must exist for version parity"
-            $heading = (Get-Content -LiteralPath $changelogPath) |
-                Where-Object { $_ -match '^## \[([0-9]+\.[0-9]+\.[0-9]+)\]' } |
-                Select-Object -First 1
-            $heading | Should -Not -BeNullOrEmpty -Because "CHANGELOG.md should contain a '## [X.Y.Z]' release heading"
-            $changelogVersion = [version]$Matches[1]
-            $manifest = Import-PowerShellDataFile -Path $script:ManifestPath
-            $changelogVersion | Should -Be ([version]$manifest.ModuleVersion) -Because "latest CHANGELOG release ($($Matches[1])) must match manifest ModuleVersion $($manifest.ModuleVersion)"
-        }
     }
 
     Context "Import" {

@@ -22,7 +22,7 @@ Common questions about Bug-Free Umbrella scripts and how to use them.
 
 ### What is Bug-Free Umbrella?
 
-Bug-Free Umbrella is a comprehensive collection of 357 PowerShell scripts for enterprise IT management, covering:
+Bug-Free Umbrella is a comprehensive collection of 544 PowerShell scripts for enterprise IT management, covering:
 
 - Microsoft 365 & Intune administration
 - Azure & AWS cloud management
@@ -439,7 +439,7 @@ Yes, use:
 
 - [Getting Started](Getting-Started.md) - Step-by-step onboarding
 - [Prerequisites](Prerequisites.md) - System requirements and setup
-- [Script Catalog](Script-Catalog.md) - Browse all 357 scripts
+- [Script Catalog](Script-Catalog.md) - Browse all 544 scripts
 - [Troubleshooting](Troubleshooting.md) - Solve common problems
 - [Support Guide](../SUPPORT.md) - Get help
 - [Contributing](../CONTRIBUTING.md) - Contribute to the project

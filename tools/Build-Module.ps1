@@ -16,7 +16,8 @@
     if they differ (stale). Does not overwrite the files.
 
 .PARAMETER Version
-    Override ModuleVersion. Defaults to version parsed from CHANGELOG.md (5.0.0).
+    Override ModuleVersion. Defaults to the ModuleVersion in src/BugFreeUmbrella/BugFreeUmbrella.psd1
+    (falling back to the first '## [X.Y.Z]' heading in CHANGELOG.md) — the manifest is the single source of truth.
 
 .PARAMETER Publish
     After build, run Publish-Module -WhatIf dry-run. Real publish (without -WhatIf)
@@ -41,13 +42,12 @@
     File Name  : Build-Module.ps1
     Author     : Carme99
     Prerequisite: PowerShell 7.0+
-    Version    : 5.0.0
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [switch]$Validate,
 
-    [string]$Version = '5.0.0',
+    [string]$Version = '',
 
     [switch]$Publish
 )
@@ -461,19 +461,27 @@ if (-not (Test-Path -LiteralPath $script:ChangelogPath)) {
 
 $changelogRaw = Get-Content -LiteralPath $script:ChangelogPath -Raw
 $versionMatch = [regex]::Match($changelogRaw, '##\s*\[(?<ver>\d+\.\d+\.\d+)\]')
-$changelogVersion = if ($versionMatch.Success) { $versionMatch.Groups['ver'].Value } else { $Version }
-if ([string]::IsNullOrWhiteSpace($Version) -or $Version -eq '5.0.0') {
-    # Prefer changelog version if it is 5.0.0, else use param
-    if ($changelogVersion -eq '5.0.0') { $Version = '5.0.0' }
-    elseif ($changelogVersion -and $changelogVersion -ne '5.0.0') {
-        Write-Warning "CHANGELOG version $changelogVersion does not match expected 5.0.0 — using $Version"
+$changelogVersion = if ($versionMatch.Success) { $versionMatch.Groups['ver'].Value } else { $null }
+# Single source of truth: ModuleVersion from the existing generated manifest.
+if ([string]::IsNullOrWhiteSpace($Version)) {
+    $Version = $null
+    if (Test-Path -LiteralPath $script:Psd1Path) {
+        try {
+            $existingModuleVersion = (Import-PowerShellDataFile -Path $script:Psd1Path).ModuleVersion
+            if (-not [string]::IsNullOrWhiteSpace($existingModuleVersion)) { $Version = $existingModuleVersion }
+        } catch {
+            Write-Verbose "Could not read ModuleVersion from existing manifest: $($_.Exception.Message)"
+        }
+    }
+    # Fallback: first '## [X.Y.Z]' release heading in CHANGELOG.md
+    if (-not $Version -and $changelogVersion) { $Version = $changelogVersion }
+    if (-not $Version) {
+        throw "Cannot determine ModuleVersion — no readable manifest at $script:Psd1Path, no '## [X.Y.Z]' heading in CHANGELOG.md, and -Version not supplied."
     }
 }
-if ($Version -ne '5.0.0') {
-    Write-Warning "ModuleVersion $Version is not 5.0.0 — Hurricane expects 5.0.0"
+if ($changelogVersion -and $changelogVersion -ne $Version) {
+    Write-Warning "CHANGELOG latest release ($changelogVersion) differs from module version $Version — bump them together."
 }
-
-# Resolve OutDir (create if missing)
 if (-not (Test-Path -LiteralPath $script:OutDir)) {
     New-Item -ItemType Directory -Path $script:OutDir -Force | Out-Null
 }
@@ -583,7 +591,7 @@ $psm1Header = @'
     File Name  : BugFreeUmbrella.psm1
     Author     : Carme99
     Prerequisite: PowerShell 7.0+ recommended (5.1 minimum for import)
-    Version    : 5.0.0
+    Version    : __MODULE_VERSION__
 #>
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -740,7 +748,8 @@ $beginRemap    }
 $psm1FunctionsText = ($functionBlocks -join "`r`n`r`n")
 $exportListText = ($allExports | ForEach-Object { "    '$_'" }) -join ",`r`n"
 $psm1FooterResolved = $psm1Footer -replace '__EXPORT_LIST__', $exportListText
-$psm1Content = $psm1Header + "`r`n" + $psm1FunctionsText + "`r`n" + $psm1FooterResolved
+$psm1HeaderResolved = $psm1Header -replace '__MODULE_VERSION__', $Version
+$psm1Content = $psm1HeaderResolved + "`r`n" + $psm1FunctionsText + "`r`n" + $psm1FooterResolved
 
 # --- PSD1 generation ---
 
@@ -758,17 +767,20 @@ if (-not $existingGuid) {
     $existingGuid = [guid]::NewGuid().ToString()
 }
 
-# ReleaseNotes from CHANGELOG truncated to 500 chars, single-lined
-$releaseNotes = '5.0.0 Hurricane - Platform'
+# ReleaseNotes derived from the top CHANGELOG.md section title + body, truncated to 500 chars, single-lined
+$releaseNotes = "BugFreeUmbrella $Version"
 try {
     $clLines = Get-Content -LiteralPath $script:ChangelogPath -Raw
-    # Try to extract Unreleased or 5.0.0 section
-    $unreleasedMatch = [regex]::Match($clLines, '##\s*\[Unreleased\](?<notes>.*?)(?=##\s*\[)', [System.Text.RegularExpressions.RegexOptions]::Singleline)
-    $notesRaw = if ($unreleasedMatch.Success) { $unreleasedMatch.Groups['notes'].Value } else { $clLines }
-    $notesSingle = ($notesRaw -replace "`r`n", ' ' -replace "`n", ' ' -replace '\s+', ' ').Trim()
+    # Extract the topmost '## [...]' section (Unreleased or latest release)
+    $sectionMatch = [regex]::Match($clLines, '(?ms)^##\s*\[(?<title>[^\]]+)\](?<notes>.*?)(?=^##\s*\[|\z)')
+    if ($sectionMatch.Success) {
+        $notesSingle = ("$($sectionMatch.Groups['title'].Value) - $($sectionMatch.Groups['notes'].Value)" -replace "`r`n", ' ' -replace "`n", ' ' -replace '\s+', ' ').Trim()
+    } else {
+        $notesSingle = ($clLines -replace "`r`n", ' ' -replace "`n", ' ' -replace '\s+', ' ').Trim()
+    }
     if ($notesSingle.Length -gt 500) { $notesSingle = $notesSingle.Substring(0, 497) + '...' }
     if (-not [string]::IsNullOrWhiteSpace($notesSingle) -and $notesSingle.Length -gt 10) {
-        $releaseNotes = "5.0.0 Hurricane - Platform. $notesSingle"
+        $releaseNotes = $notesSingle
         if ($releaseNotes.Length -gt 500) { $releaseNotes = $releaseNotes.Substring(0, 497) + '...' }
     }
 } catch {
@@ -820,7 +832,6 @@ $psdFunctions
             ProjectUri                 = 'https://github.com/Carme99/bug-free-umbrella'
             IconUri                    = ''
             ReleaseNotes               = '$($releaseNotes -replace "'", "''")'
-            Prerelease                 = ''
             RequireLicenseAcceptance   = `$false
             ExternalModuleDependencies = @()
         }

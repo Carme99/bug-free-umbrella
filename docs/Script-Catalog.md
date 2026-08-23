@@ -137,7 +137,7 @@ START HERE → Main README → Winget Updates Section
 | Document | Purpose | When to Use |
 |----------|---------|-------------|
 | **[README](../README.md)** | Repository overview, quick start | First stop for new users |
-| **[CHANGELOG](../CHANGELOG.md)** | Version history with fun codenames! 🌂 | See what's new, understand changes |
+| **[CHANGELOG](../CHANGELOG.md)** | Version history and release notes | See what's new, understand changes |
 | **[Documentation Home](README.md)** | Complete documentation hub | Deep dive into all scripts |
 | **[Script Examples](Script-Examples.md)** | Detailed examples with outputs | Learn how scripts work |
 | **[Workflows](Workflows.md)** | End-to-end step-by-step guides | Follow complete processes |
@@ -290,7 +290,7 @@ START HERE → Main README → Winget Updates Section
 - Backup-GroupPolicies.ps1 - GPO backup automation
 
 **Monitoring** (`monitoring/`)
-- Monitor-ServerHealth.ps1 - **NEW! 13 major features!** 🌈
+- Monitor-ServerHealth.ps1 - Comprehensive server health check
   - Interactive mode with menu
   - Disk I/O, Windows Update status, Security monitoring
   - Network connectivity, Certificate monitoring
@@ -319,10 +319,10 @@ START HERE → Main README → Winget Updates Section
 
 ### 🖱️ Device Management (60+ scripts)
 
-#### Proactive Remediations (51 pairs = 102 scripts)
-**Location:** `scripts/endpoints/devices/proactive-remediations/`
+#### Proactive Remediations (51 pairs = 103 scripts)
+**Location:** `scripts/endpoints/remediation/` (`system/`, `network/`, `security/`)
 
-Each has `detect.ps1` and `remediate.ps1`:
+Each remediation ships a detection script (`Test-*`) and a remediation script (`Invoke-*`):
 - **Fix-DiskSpace** - Low disk space cleanup
 - **Fix-TempFiles** - Temporary file removal
 - **Fix-StaleProfiles** - Old profile cleanup
@@ -339,17 +339,17 @@ Each has `detect.ps1` and `remediate.ps1`:
 - **language-pack-audit** - Language pack cleanup
 
 #### Winget Application Updates (35 apps)
-**Location:** `scripts/endpoints/devices/winget/`
+**Location:** `scripts/endpoints/remediation/winget/`
 
 Organized by category:
-- `browsers/` - Chrome, Firefox, Edge
-- `communication/` - Teams, Zoom, Slack, Discord
-- `development/` - VS Code, Git, Python, Node.js, Azure CLI
-- `media/` - VLC, Spotify, iTunes
-- `productivity/` - 7-Zip, Notepad++, Adobe Reader
-- `remote-access/` - TeamViewer, AnyDesk, WinSCP
-- `runtimes/` - .NET, C++ Redistributables, Java
-- `utilities/` - Various system utilities
+- `browsers/` - Chrome, Firefox
+- `communication/` - Slack, Discord
+- `development/` - VS Code, Git, PowerShell 7, Azure CLI, SSMS
+- `media/` - OBS, VLC, Zoom
+- `productivity/` - Microsoft Teams, Adobe Reader, Notepad++, Remote Desktop
+- `remote-access/` - TeamViewer, WinSCP
+- `runtimes/` - Visual C++ Redistributables, Edge WebView2
+- `security/` · `utilities/` · `vendor-specific/` - 1Password, 7-Zip, Lenovo Dock Manager
 
 #### Other Device Management
 **Location:** `scripts/endpoints/devices/`
@@ -426,11 +426,11 @@ Organized by category:
 
 | Metric | Count |
 |--------|-------|
-| **Total Scripts** | 357 |
+| **Total Scripts** | 544 |
 | **Top-Level Domains** | 8 |
 | **Subcategories** | 94 |
-| **Proactive Remediations** | 51 pairs (102 scripts) |
-| **Winget App Templates** | 35 |
+| **Proactive Remediations** | 51 pairs (103 scripts) |
+| **Winget-Managed Applications** | 35 |
 | **Documentation Files** | 36 |
 | **Latest Release** | [v4.4.0 "Nimbus - Catalog & Intelligence"](../CHANGELOG.md) 🌧️ |
 
@@ -475,7 +475,7 @@ Resolves 122 open issues (#106-#245) via 18 PRs (#228-#245).
 
 - **GitHub Repository**: [Carme99/bug-free-umbrella](https://github.com/Carme99/bug-free-umbrella)
 - **Issues & Feature Requests**: [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues)
-- **Changelog with Fun Codenames**: [CHANGELOG](../CHANGELOG.md) 🌂
+- **Changelog**: [CHANGELOG](../CHANGELOG.md)
 - **Claude Code**: [github.com/anthropics/claude-code](https://github.com/anthropics/claude-code)
 
 ---

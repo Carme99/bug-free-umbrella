@@ -62,7 +62,7 @@
     File Name  : Invoke-Umbrella.ps1
     Author     : Carme99
     Prerequisite: PowerShell 7.0+
-    Version    : 2.0.0
+    Version    : 1.0.0
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'Default', SupportsShouldProcess = $true)]

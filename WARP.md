@@ -63,7 +63,7 @@ The layout was restructured in **v3.0.0** to group scripts by technology domain 
 ## Testing Strategy
 
 - The existing test files use **Pester 5.5.0+**. Test files live under `./Tests`, with a few additional suites colocated next to the scripts they test.
-- Test coverage is **limited by design**: only a small number of Pester test files exist (4 as of v5.0.0) for the 357 scripts in the repository, and the tests do **not** mirror the full `scripts/` directory structure. Most domains currently have no automated tests.
+- Test coverage targets **every script**: all 544 scripts in the repository have a Pester test file under `./Tests` that mirrors the script's repo-relative directory (e.g. `scripts/endpoints/devices/autopatch/V3/detect.ps1` → `Tests/endpoints/devices/autopatch/V3/detect.Tests.ps1`). Never write flat `Tests/<Name>.Tests.ps1` files — many scripts share basenames and flat paths collide.
 - Configuration for running the suite locally is centralised in `./Tests/Pester.Config.psd1`, which enables **code coverage** against `./scripts` and excludes `Integration`-tagged tests by default.
 - Each test file follows the `Describe` / `Context` / `It` structure with `#Requires -Modules Pester` at the top.
 - See the `Tests/Common/HelperFunctions.Tests.ps1` file for the shared helper test conventions.

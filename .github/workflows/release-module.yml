@@ -39,7 +39,7 @@ jobs:
         env:
           GIT_REF_NAME: ${{ github.ref_name }}
         run: |
-          # v5.0.0 -> 5.0.0 (prerelease/build suffixes trimmed; ModuleVersion must be plain semver).
+          # v1.0.0 -> 1.0.0 (prerelease/build suffixes trimmed; ModuleVersion must be plain semver).
           # Refs without a vX.Y.Z prefix (e.g. workflow_dispatch branches) leave MODULE_VERSION
           # unset so tools/Build-Module.ps1 falls back to its CHANGELOG-derived default.
           $tag = $env:GIT_REF_NAME
@@ -56,7 +56,7 @@ jobs:
         shell: pwsh
         run: |
           # Hashtable splatting: array splatting binds positionally and cannot carry
-          # named parameters like -Version (v5.0.0 tag run failed on exactly this).
+          # named parameters like -Version.
           $buildArgs = @{}
           if ($env:MODULE_VERSION) { $buildArgs.Version = $env:MODULE_VERSION }
           & ./tools/Build-Module.ps1 @buildArgs

@@ -84,7 +84,7 @@ This imports the `BugFreeUmbrella` module (v5.0.0, `src/BugFreeUmbrella/`) into 
 
 ### Launcher CLI v2: `Invoke-Umbrella.ps1`
 
-Discover and run any of the 357 scripts without memorizing paths:
+Discover and run any of the 544 scripts without memorizing paths:
 
 ```powershell
 # List every script (name, category, synopsis)
