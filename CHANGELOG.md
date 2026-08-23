@@ -1,7 +1,7 @@
 # Changelog
 
-![Version](https://img.shields.io/badge/version-4.4.0-blue)
-![Release Date](https://img.shields.io/badge/release-2026--08--20-green)
+![Version](https://img.shields.io/badge/version-5.0.0-blue)
+![Release Date](https://img.shields.io/badge/release-2026--08--23-green)
 ![Total Scripts](https://img.shields.io/badge/scripts-357-orange)
 ![License](https://img.shields.io/badge/license-Apache%202.0-red)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - [🌂 About Our Release Names](#-about-our-release-names)
 - [Unreleased](#unreleased)
 - **Latest Releases:**
+  - [v5.0.0 (2026-08-23) 🌪️ Hurricane - Platform & Distribution Release](#500---2026-08-23-🌪️-hurricane---platform--distribution-release)
   - [v4.4.0 (2026-08-20) 🌧️ Nimbus - Catalog & Intelligence Release](#440---2026-08-20-🌧️-nimbus---catalog--intelligence-release)
   - [v4.3.0 (2026-08-08) 🌈 Zephyr - Quality & Enforcement Release](#430---2026-08-08-🌈-zephyr---quality--enforcement-release)
   - [v4.2.0 (2026-08-06) ⛈️ Tempest - Security & Hardening Release](#420---2026-08-06-️-tempest---security--hardening-release)
@@ -62,7 +63,9 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ## [Unreleased]
 
-## [5.0.0] - Unreleased 🌪️ **"Hurricane"** - Platform & Distribution Release
+<a id="500---2026-08-23-🌪️-hurricane---platform--distribution-release"></a>
+
+## [5.0.0] - 2026-08-23 🌪️ **"Hurricane"** - Platform & Distribution Release
 
 > The collection becomes a platform: an installable PSGallery module, a CLI v2, a breaking remediation reorg with deprecation shims, and a 32-test verification suite — all gated at 100/100.
 
@@ -1619,6 +1622,8 @@ Comprehensive documentation suite:
 
 | Version | Date | Codename | Type | Major Changes |
 |---------|------|----------|------|---------------|
+| **5.0.0** | 2026-08-23 | 🌪️ Hurricane | Major | PSGallery module, CLI v2, remediation reorg with shims |
+| **4.4.0** | 2026-08-20 | 🌧️ Nimbus | Minor | Catalog + MCP server, CI hardening, quality sweep |
 | **4.3.0** | 2026-08-08 | 🌈 Zephyr | Minor | MS Learn alignment (97 findings), PSSA enforcement gates, 122 issues |
 | **4.2.0** | 2026-08-06 | ⛈️ Tempest | Minor | Security & hardening, CI integrity, docs accuracy |
 | **4.1.0** | 2026-04-17 | ☔ Drizzle | Minor | Bug fixes, error handling standardization, deprecated cmdlets |
@@ -1644,6 +1649,12 @@ Comprehensive documentation suite:
 ---
 
 ## Upgrade Notes
+
+### Upgrading to 5.0.0 (Hurricane)
+- ⚠️ **Path changes with forwarding shims**: winget + proactive-remediation scripts moved to canonical `scripts/endpoints/remediation/{winget,system,network,security}/` locations with Test-/Invoke- Verb-Noun names. Old paths still work via shims — **shims are removed in 6.0.0**; migrate automation now.
+- 📦 **New installable module**: `install.ps1` bootstrap or `Install-Module BugFreeUmbrella` (PSGallery); exports 360 commands (357 wrappers + `Get-BUScript`, `Invoke-BUScript`, `Register-BUCompleter`).
+- 🖥️ **CLI v2**: `./Invoke-Umbrella.ps1` with `-List/-Search/-Category/-Name/-Invoke/-Export/-Interactive` and tab completion.
+- 🤖 **MCP server**: expose all 357 scripts as AI tools (`mcp-server/`, Node 18+).
 
 ### Upgrading to 4.3.0 (Zephyr)
 - ✅ **No breaking changes** - fully backward compatible
@@ -1707,6 +1718,6 @@ Scripts in this repository were created with the assistance of **[Claude Code](h
 
 For detailed commit history, see [Git Log](https://github.com/Carme99/bug-free-umbrella/commits/main).
 
-**Last Updated**: 2026-08-08
+**Last Updated**: 2026-08-23
 
 [⬆️ Back to top](#-table-of-contents)
