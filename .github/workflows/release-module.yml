@@ -55,8 +55,10 @@ jobs:
       - name: Build module (generate fresh from catalog)
         shell: pwsh
         run: |
-          $buildArgs = @()
-          if ($env:MODULE_VERSION) { $buildArgs += @('-Version', $env:MODULE_VERSION) }
+          # Hashtable splatting: array splatting binds positionally and cannot carry
+          # named parameters like -Version (v5.0.0 tag run failed on exactly this).
+          $buildArgs = @{}
+          if ($env:MODULE_VERSION) { $buildArgs.Version = $env:MODULE_VERSION }
           & ./tools/Build-Module.ps1 @buildArgs
 
       - name: Test-ModuleManifest gate
