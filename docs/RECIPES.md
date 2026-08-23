@@ -20,22 +20,17 @@ A cookbook of common IT tasks with ready-to-run commands. Copy, customize, and e
 
 ### Get comprehensive user information
 ```powershell
-.\scripts\collaboration\microsoft365\Get-M365UserInfo.ps1 -UserPrincipalName "user@company.com"
+.\scripts\collaboration\microsoft365\Get-M365UserInfo.ps1 -UserEmail "user@company.com"
 ```
 
-### Clean up quarantined spam emails
+### Review and clean up quarantined emails (interactive menu)
 ```powershell
-.\scripts\collaboration\microsoft365\exchange-online\Manage-QuarantinedEmails.ps1 -Action Delete -OlderThanDays 30
-```
-
-### Review quarantined emails before deletion
-```powershell
-.\scripts\collaboration\microsoft365\exchange-online\Manage-QuarantinedEmails.ps1 -Action List -ExportToCSV
+.\scripts\collaboration\microsoft365\exchange-online\Manage-QuarantinedEmails.ps1 -UserEmail "user@company.com" -Days 30 -AutoConnect
 ```
 
 ### Check mailbox health and size
 ```powershell
-.\scripts\collaboration\microsoft365\exchange-online\Get-MailboxHealth.ps1 -UserPrincipalName "user@company.com"
+.\scripts\collaboration\microsoft365\exchange-online\Get-MailboxHealth.ps1 -IncludeArchive
 ```
 
 ### Audit shared mailbox permissions
@@ -45,27 +40,27 @@ A cookbook of common IT tasks with ready-to-run commands. Copy, customize, and e
 
 ### Find suspicious mail rules
 ```powershell
-.\scripts\collaboration\microsoft365\exchange-online\Get-UserMailRules.ps1 -CheckForSuspicious
+.\scripts\collaboration\microsoft365\exchange-online\Get-UserMailRules.ps1 -UserEmail "user@company.com" -ExportReport
 ```
 
 ### Analyze mail flow issues
 ```powershell
-.\scripts\collaboration\microsoft365\exchange-online\Get-MailFlowAnalysis.ps1 -Days 7
+.\scripts\collaboration\microsoft365\exchange-online\Get-MailFlowAnalysis.ps1 -DaysToAnalyze 7
 ```
 
 ### Get Microsoft 365 license usage
 ```powershell
-.\scripts\collaboration\microsoft365\azure-ad\Get-AzureADLicenseReport.ps1 -ExportToCSV
+.\scripts\collaboration\microsoft365\azure-ad\Get-AzureADLicenseReport.ps1 -ExportCSV
 ```
 
 ### Audit guest users in Azure AD
 ```powershell
-.\scripts\collaboration\microsoft365\azure-ad\Get-AzureADGuestAudit.ps1 -IncludeInactive
+.\scripts\collaboration\microsoft365\azure-ad\Get-AzureADGuestAudit.ps1 -InactivityDays 30
 ```
 
 ### Get Teams usage report
 ```powershell
-.\scripts\collaboration\microsoft365\teams\Get-TeamsReport.ps1 -ReportType Activity -Days 30
+.\scripts\collaboration\microsoft365\teams\Get-TeamsReport.ps1 -IncludeGuests -ExportHTML
 ```
 
 ### Get OneDrive storage usage
@@ -75,66 +70,68 @@ A cookbook of common IT tasks with ready-to-run commands. Copy, customize, and e
 
 ### Check Defender for Office 365 threats
 ```powershell
-.\scripts\collaboration\microsoft365\defender-office365\Get-DefenderO365ThreatReport.ps1 -Days 7
+.\scripts\collaboration\microsoft365\defender-office365\Get-DefenderO365ThreatReport.ps1 -DaysToAnalyze 7
 ```
 
 ---
 
 ## Intune & Device Management
 
-### Get device compliance status report
+### Get device compliance status report (HTML by default)
 ```powershell
-.\scripts\endpoints\intune\reporting\Get-DeviceComplianceReport.ps1 -ExportHTML
+.\scripts\endpoints\intune\reporting\Get-DeviceComplianceReport.ps1
 ```
 
-### Find only non-compliant devices
+### Include compliant devices in the report
 ```powershell
-.\scripts\endpoints\intune\reporting\Get-DeviceComplianceReport.ps1 -ComplianceState NonCompliant
+.\scripts\endpoints\intune\reporting\Get-DeviceComplianceReport.ps1 -IncludeCompliant
 ```
 
 ### Check BitLocker encryption status
 ```powershell
-.\scripts\endpoints\intune\reporting\Get-BitLockerStatus.ps1 -ExportToCSV
+.\scripts\endpoints\intune\reporting\Get-BitLockerStatus.ps1 -ShowMissingKeys -ExportFormat CSV
 ```
 
 ### Find stale/inactive devices
 ```powershell
-.\scripts\endpoints\intune\maintenance\Find-StaleDevices.ps1 -InactiveDays 90
+.\scripts\endpoints\intune\maintenance\Find-StaleDevices.ps1 -DaysInactive 90
 ```
 
 ### Check Windows Update compliance
 ```powershell
-.\scripts\endpoints\intune\reporting\Get-WindowsUpdateCompliance.ps1 -ExportHTML
+.\scripts\endpoints\intune\reporting\Get-WindowsUpdateCompliance.ps1 -ShowNonCompliantOnly
 ```
 
-### Get Winget update compliance
+### Get Winget update compliance (outdated apps shown by default)
 ```powershell
-.\scripts\endpoints\intune\reporting\Get-WingetUpdateCompliance.ps1 -ShowOutdated
+.\scripts\endpoints\intune\reporting\Get-WingetUpdateCompliance.ps1
 ```
 
 ### Audit Autopilot deployment status
 ```powershell
-.\scripts\endpoints\intune\reporting\Get-AutopilotDeploymentReport.ps1 -Last30Days
+.\scripts\endpoints\intune\reporting\Get-AutopilotDeploymentReport.ps1 -Days 30
 ```
 
 ### Export Intune configuration for backup
 ```powershell
-.\scripts\endpoints\intune\maintenance\Export-IntuneConfiguration.ps1 -ExportPath "C:\Backup\Intune"
+.\scripts\endpoints\intune\maintenance\Export-IntuneConfiguration.ps1 -OutputPath "C:\Backup\Intune"
 ```
 
 ### Find policy conflicts
 ```powershell
-.\scripts\endpoints\intune\maintenance\Find-PolicyConflicts.ps1 -DeviceId "device-id-here"
+.\scripts\endpoints\intune\maintenance\Find-PolicyConflicts.ps1 -CheckSettingsCatalog -CheckCompliancePolicies
 ```
 
-### Check configuration drift
+### Check configuration drift against a saved baseline
 ```powershell
-.\scripts\endpoints\intune\maintenance\Compare-ConfigurationDrift.ps1 -BaselineDate "2025-01-01"
+# Capture a baseline first...
+.\scripts\endpoints\intune\maintenance\Compare-ConfigurationDrift.ps1 -CreateBaseline
+# ...then compare any time with -BaselinePath <path-to-baseline>
 ```
 
 ### Perform bulk device actions
 ```powershell
-.\scripts\endpoints\intune\maintenance\Invoke-DeviceBulkActions.ps1 -Action Sync -DeviceIds @("id1", "id2")
+.\scripts\endpoints\intune\maintenance\Invoke-DeviceBulkActions.ps1 -Action Sync -NonCompliantOnly
 ```
 
 ### Test Intune connectivity
@@ -144,7 +141,7 @@ A cookbook of common IT tasks with ready-to-run commands. Copy, customize, and e
 
 ### Get policy assignment report
 ```powershell
-.\scripts\endpoints\intune\reporting\Get-PolicyAssignmentReport.ps1 -PolicyType All -ExportHTML
+.\scripts\endpoints\intune\reporting\Get-PolicyAssignmentReport.ps1
 ```
 
 ### Get device group membership
@@ -158,42 +155,42 @@ A cookbook of common IT tasks with ready-to-run commands. Copy, customize, and e
 
 ### Run comprehensive security scan (CIS Benchmark)
 ```powershell
-.\scripts\security\compliance\frameworks\Invoke-SecurityComplianceScan.ps1 -Framework CIS -ExportHTML
+.\scripts\security\hardening\Invoke-SecurityComplianceScan.ps1 -Framework CIS -TargetSystem Windows
 ```
 
 ### Run NIST compliance scan
 ```powershell
-.\scripts\security\compliance\frameworks\Invoke-SecurityComplianceScan.ps1 -Framework NIST -Detailed
+.\scripts\security\hardening\Invoke-SecurityComplianceScan.ps1 -Framework NIST -TargetSystem Windows
 ```
 
-### Run HIPAA compliance check
+### Run PCI-DSS compliance check
 ```powershell
-.\scripts\security\compliance\frameworks\Invoke-SecurityComplianceScan.ps1 -Framework HIPAA
+.\scripts\security\hardening\Invoke-SecurityComplianceScan.ps1 -Framework PCI-DSS -TargetSystem Windows
 ```
 
-### Check antivirus status
+### Check antivirus status (runs locally)
 ```powershell
-.\scripts\security\compliance\frameworks\Get-AntivirusStatus.ps1 -ComputerName SERVER01
+.\scripts\security\compliance\frameworks\Get-AntivirusStatus.ps1 -CheckThirdParty
 ```
 
 ### Find expiring certificates (next 30 days)
 ```powershell
-.\scripts\security\compliance\frameworks\Get-ExpiredCertificates.ps1 -DaysBeforeExpiration 30
+.\scripts\security\compliance\frameworks\Get-ExpiredCertificates.ps1 -DaysToExpire 30
 ```
 
 ### Audit failed login attempts
 ```powershell
-.\scripts\security\compliance\frameworks\Get-FailedLoginReport.ps1 -Hours 24 -ExportHTML
+.\scripts\security\compliance\frameworks\Get-FailedLoginReport.ps1 -Hours 24 -ExportReport
 ```
 
 ### Audit local administrator accounts
 ```powershell
-.\scripts\security\compliance\frameworks\Get-LocalAdminAudit.ps1 -ExportToCSV
+.\scripts\security\compliance\frameworks\Get-LocalAdminAudit.ps1 -ExportReport
 ```
 
 ### Scan for open ports
 ```powershell
-.\scripts\security\compliance\frameworks\Get-OpenPortScan.ps1 -ComputerName SERVER01
+.\scripts\security\compliance\frameworks\Get-OpenPortScan.ps1 -HighRiskOnly
 ```
 
 ### Check security baseline compliance
@@ -208,56 +205,56 @@ A cookbook of common IT tasks with ready-to-run commands. Copy, customize, and e
 
 ### Audit USB device usage
 ```powershell
-.\scripts\security\compliance\frameworks\Get-USBDeviceAudit.ps1 -Days 30
+.\scripts\security\compliance\frameworks\Get-USBDeviceAudit.ps1 -IncludeHistory
 ```
 
 ### Check software license compliance
 ```powershell
-.\scripts\security\compliance\frameworks\Get-SoftwareLicenseCompliance.ps1 -ExportHTML
+.\scripts\security\compliance\frameworks\Get-SoftwareLicenseCompliance.ps1
 ```
 
 ---
 
 ## Server Monitoring & Health
 
-### Run comprehensive server health check
+### Run comprehensive server health check (run locally on the server)
 ```powershell
-.\scripts\infrastructure\windows\monitoring\Monitor-ServerHealth.ps1 -ComputerName SERVER01 -CheckAll
+.\scripts\infrastructure\windows\monitoring\Monitor-ServerHealth.ps1 -IncludeSecurity -IncludeWindowsUpdate -ExportReport
 ```
 
-### Quick health check (fast)
+### Browse the interactive health-check menu
 ```powershell
-.\scripts\infrastructure\windows\monitoring\Monitor-ServerHealth.ps1 -QuickCheck
+.\scripts\infrastructure\windows\monitoring\Monitor-ServerHealth.ps1
 ```
 
-### Check disk space only
+### Include disk I/O metrics in the health check
 ```powershell
-.\scripts\infrastructure\windows\monitoring\Monitor-ServerHealth.ps1 -CheckDiskSpace -WarningThresholdGB 50
+.\scripts\infrastructure\windows\monitoring\Monitor-ServerHealth.ps1 -IncludeDiskIO
 ```
 
 ### Check certificate expiration
 ```powershell
-.\scripts\infrastructure\windows\monitoring\Monitor-ServerHealth.ps1 -CheckCertificates -DaysBeforeExpiration 30
+.\scripts\infrastructure\windows\monitoring\Monitor-ServerHealth.ps1 -IncludeCertificates -CertificateWarningDays 30
 ```
 
 ### Check Windows Update status
 ```powershell
-.\scripts\infrastructure\windows\monitoring\Monitor-ServerHealth.ps1 -CheckWindowsUpdate
+.\scripts\infrastructure\windows\monitoring\Monitor-ServerHealth.ps1 -IncludeWindowsUpdate
 ```
 
 ### Get performance metrics report
 ```powershell
-.\scripts\infrastructure\windows\monitoring\Get-PerformanceReport.ps1 -ComputerName SERVER01 -Duration 60
+.\scripts\infrastructure\windows\monitoring\Get-PerformanceReport.ps1 -DurationMinutes 60
 ```
 
 ### Get event log errors (last 24 hours)
 ```powershell
-.\scripts\infrastructure\windows\monitoring\Get-EventLogReport.ps1 -Hours 24 -Level Error -ExportHTML
+.\scripts\infrastructure\windows\monitoring\Get-EventLogReport.ps1 -Hours 24 -Severity Error -ExportHTML
 ```
 
-### Get critical and error events (last 7 days)
+### Get error events (last 7 days)
 ```powershell
-.\scripts\infrastructure\windows\monitoring\Get-EventLogReport.ps1 -Hours 168 -Level Critical,Error
+.\scripts\infrastructure\windows\monitoring\Get-EventLogReport.ps1 -Days 7 -Severity Error
 ```
 
 ---
@@ -266,12 +263,12 @@ A cookbook of common IT tasks with ready-to-run commands. Copy, customize, and e
 
 ### Get detailed mailbox permissions for a user
 ```powershell
-.\scripts\collaboration\microsoft365\exchange-online\Get-UserMailboxPermissions.ps1 -UserPrincipalName "user@company.com"
+.\scripts\collaboration\microsoft365\exchange-online\Get-UserMailboxPermissions.ps1 -UserEmail "user@company.com"
 ```
 
 ### Audit distribution list membership
 ```powershell
-.\scripts\collaboration\microsoft365\exchange-online\Get-DistributionListAudit.ps1 -ExportToCSV
+.\scripts\collaboration\microsoft365\exchange-online\Get-DistributionListAudit.ps1 -ExportCSV
 ```
 
 ### Set mailbox regional settings (bulk)
@@ -286,12 +283,12 @@ A cookbook of common IT tasks with ready-to-run commands. Copy, customize, and e
 
 ### Set Teams regional settings
 ```powershell
-.\scripts\collaboration\microsoft365\teams\Set-TeamsRegionalSettings.ps1 -UserPrincipalName "user@company.com" -Language "en-US"
+.\scripts\collaboration\microsoft365\teams\Set-TeamsRegionalSettings.ps1 -UserPrincipalName "user@company.com" -TimeZone "Pacific Standard Time"
 ```
 
-### Set organization-wide defaults
+### Set organization-wide defaults (audit first, apply with -Apply)
 ```powershell
-.\scripts\collaboration\microsoft365\azure-ad\Set-OrganizationDefaults.ps1 -TimeZone "Pacific Standard Time" -Language "en-US"
+.\scripts\collaboration\microsoft365\azure-ad\Set-OrganizationDefaults.ps1 -PreferredLanguage "en-US" -AuditOnly
 ```
 
 ---
@@ -300,12 +297,12 @@ A cookbook of common IT tasks with ready-to-run commands. Copy, customize, and e
 
 ### Create Winget update packages for Intune
 ```powershell
-.\scripts\endpoints\intune\deployment\New-BulkWingetUpdater.ps1 -AppIds @("Google.Chrome", "Mozilla.Firefox")
+.\scripts\endpoints\intune\deployment\New-BulkWingetUpdater.ps1 -AppName "Google Chrome" -WingetID "Google.Chrome" -ProcessName "chrome"
 ```
 
 ### Create Win32 app template
 ```powershell
-.\scripts\endpoints\intune\deployment\New-Win32AppTemplate.ps1 -AppName "CustomApp" -Version "1.0"
+.\scripts\endpoints\intune\deployment\New-Win32AppTemplate.ps1 -AppName "CustomApp" -InstallCommand "msiexec /i app.msi /qn" -DetectionType MSI
 ```
 
 ### Package app as .intunewin
@@ -315,7 +312,7 @@ A cookbook of common IT tasks with ready-to-run commands. Copy, customize, and e
 
 ### Export Winget package list
 ```powershell
-.\scripts\endpoints\intune\deployment\Export-WingetPackageList.ps1 -ExportPath "C:\Exports\winget-packages.json"
+.\scripts\endpoints\intune\deployment\Export-WingetPackageList.ps1 -ExportFormat JSON -OutputPath "C:\Exports\winget-packages.json"
 ```
 
 ---
@@ -324,16 +321,16 @@ A cookbook of common IT tasks with ready-to-run commands. Copy, customize, and e
 
 ### Export Intune configuration (full backup)
 ```powershell
-.\scripts\endpoints\intune\maintenance\Export-IntuneConfiguration.ps1 -ExportPath "C:\Backup\Intune_$(Get-Date -Format 'yyyyMMdd')" -IncludeAll
+.\scripts\endpoints\intune\maintenance\Export-IntuneConfiguration.ps1 -OutputPath "C:\Backup\Intune_$(Get-Date -Format 'yyyyMMdd')" -IncludeAssignments -CompressOutput
 ```
 
 ---
 
 ## Active Directory
 
-### Audit local administrator accounts across domain
+### Audit local administrator accounts (run locally on each host)
 ```powershell
-.\scripts\security\compliance\frameworks\Get-LocalAdminAudit.ps1 -ComputerName (Get-ADComputer -Filter *).Name -ExportToCSV
+.\scripts\security\compliance\frameworks\Get-LocalAdminAudit.ps1 -Detailed -ExportReport
 ```
 
 ---
@@ -362,37 +359,37 @@ A cookbook of common IT tasks with ready-to-run commands. Copy, customize, and e
 
 ## 💡 Pro Tips
 
-### Combine scripts for powerful workflows
+### Discover scripts with the BugFreeUmbrella module
 ```powershell
-# Find non-compliant devices and export BitLocker status
-$NonCompliant = .\scripts\endpoints\intune\reporting\Get-DeviceComplianceReport.ps1 -ComplianceState NonCompliant
-$NonCompliant | ForEach-Object { .\scripts\endpoints\intune\reporting\Get-BitLockerStatus.ps1 -DeviceId $_.DeviceId }
+# Bootstrap once per session, then search the catalog
+Import-Module ./src/BugFreeUmbrella
+Get-BUScript -Search bitlocker
 ```
 
 ### Schedule reports with Task Scheduler
 ```powershell
 # Create a scheduled task for daily compliance report
-$Action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument "-File C:\Scripts\Get-DeviceComplianceReport.ps1 -ExportHTML"
+$Action = New-ScheduledTaskAction -Execute "pwsh.exe" -Argument "-File C:\Scripts\bug-free-umbrella\scripts\endpoints\intune\reporting\Get-DeviceComplianceReport.ps1"
 $Trigger = New-ScheduledTaskTrigger -Daily -At 8:00AM
 Register-ScheduledTask -TaskName "Daily Compliance Report" -Action $Action -Trigger $Trigger
 ```
 
 ### Export to multiple formats
 ```powershell
-# Most scripts support -ExportHTML, -ExportToCSV, or -ExportToJSON
-.\scripts\endpoints\intune\reporting\Get-DeviceComplianceReport.ps1 -ExportHTML -ExportToCSV
+# Reporting scripts use -ExportFormat HTML, CSV, or Both
+.\scripts\endpoints\intune\reporting\Get-DeviceComplianceReport.ps1 -ExportFormat Both
 ```
 
 ### Use -Verbose for troubleshooting
 ```powershell
 # Get detailed execution information
-.\scripts\security\compliance\frameworks\Invoke-SecurityComplianceScan.ps1 -Framework CIS -Verbose
+.\scripts\security\hardening\Invoke-SecurityComplianceScan.ps1 -Framework CIS -TargetSystem Windows -Verbose
 ```
 
-### Filter results with PowerShell pipeline
+### Find a script when you only know the topic
 ```powershell
-# Get only critical certificate expirations
-.\scripts\security\compliance\frameworks\Get-ExpiredCertificates.ps1 -DaysBeforeExpiration 30 | Where-Object { $_.DaysUntilExpiration -lt 7 }
+# Fuzzy search the catalog from the launcher CLI
+pwsh -File ./Invoke-Umbrella.ps1 -Search certificate -List
 ```
 
 ---
@@ -425,6 +422,6 @@ Found a useful recipe? Add it to this guide! See [CONTRIBUTING.md](../CONTRIBUTI
 
 ---
 
-**Last Updated**: 2025-01-09
+**Last Updated**: 2026-08-23
 **Repository**: [bug-free-umbrella](https://github.com/Carme99/bug-free-umbrella)
 **License**: Apache License 2.0

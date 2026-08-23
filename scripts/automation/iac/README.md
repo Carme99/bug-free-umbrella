@@ -240,22 +240,22 @@ Set-AzContext -SubscriptionId "your-subscription-id"
 ```yaml
 - name: Validate Bicep
   run: |
-    pwsh -File ./scripts/Test-BicepTemplates.ps1 -TemplatePath ./bicep -OutputFormat JSON
+    pwsh -File ./scripts/automation/iac/Test-BicepTemplates.ps1 -TemplatePath ./bicep -OutputFormat JSON
 
 - name: Validate Terraform
   run: |
-    pwsh -File ./scripts/Test-TerraformConfiguration.ps1 -ConfigPath ./terraform -IncludePlan -OutputFormat JSON
+    pwsh -File ./scripts/automation/iac/Test-TerraformConfiguration.ps1 -ConfigPath ./terraform -IncludePlan -OutputFormat JSON
 ```
 
 ### GitLab CI
 ```yaml
 validate_bicep:
   script:
-    - pwsh -File ./scripts/Test-BicepTemplates.ps1 -TemplatePath ./bicep -OutputFormat JSON
+    - pwsh -File ./scripts/automation/iac/Test-BicepTemplates.ps1 -TemplatePath ./bicep -OutputFormat JSON
 
 validate_terraform:
   script:
-    - pwsh -File ./scripts/Test-TerraformConfiguration.ps1 -ConfigPath ./terraform -IncludeSecurityScan -OutputFormat JSON
+    - pwsh -File ./scripts/automation/iac/Test-TerraformConfiguration.ps1 -ConfigPath ./terraform -IncludeSecurityScan -OutputFormat JSON
 ```
 
 ---

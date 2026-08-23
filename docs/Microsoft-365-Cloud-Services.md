@@ -295,7 +295,7 @@ Inactive Mailboxes (90+ days):
    Recommendation: Review and consider disabling
 ```
 
-### 4. User Management Toolkit (NEW in v3.3.0)
+### 4. User Management Toolkit (added in v3.3.0)
 
 🆕 Comprehensive toolkit for managing individual user accounts with interactive menus and detailed reporting.
 

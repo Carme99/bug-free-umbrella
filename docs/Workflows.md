@@ -170,7 +170,7 @@ Next Month Actions:
 
 ```powershell
 # Navigate to winget templates
-cd "C:\bug-free-umbrella\scripts\endpoints\devices\winget\_templates"
+cd "C:\bug-free-umbrella\scripts\endpoints\remediation\winget\_templates"
 
 # Copy template files to new folder
 $appName = "Google Chrome"

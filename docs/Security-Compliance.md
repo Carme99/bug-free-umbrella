@@ -503,8 +503,8 @@ secedit /export /cfg C:\temp\secpol.cfg
 
 ### Example 3: Certificate Monitoring
 ```powershell
-# Check for expiring certificates (30 days)
-.\Get-ExpiringCertificates.ps1 -DaysUntilExpiration 30 -ExportHTML
+# Check for expired or expiring certificates (30 days)
+.\scripts\security\compliance\frameworks\Get-ExpiredCertificates.ps1 -DaysToExpire 30 -ExportReport
 ```
 
 ---

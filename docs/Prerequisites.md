@@ -31,7 +31,7 @@ Before using Bug-Free Umbrella scripts, ensure you have the following prerequisi
 - **Windows Server 2019** - Supported, PowerShell 5.1+ or 7+
 - **Windows Server 2022** - Supported, PowerShell 5.1+ or 7+
 - **Windows Server 2025** - Fully supported, PowerShell 7+ recommended
-- **Linux** - Partial support (scripts in `scripts/infrastructure/linux/`)
+- **Linux** - Limited support (cross-platform PowerShell 7 tools only)
 - **macOS** - Limited support (cross-platform tools only)
 
 ### PowerShell Version Guide
@@ -109,8 +109,10 @@ Install-Module MicrosoftTeams -Scope CurrentUser -Force
 ### Intune Management
 
 ```powershell
-# Microsoft Graph is the primary module for Intune
-Install-Module Microsoft.Graph.Intune -Scope CurrentUser -Force
+# Microsoft Graph is the primary module for Intune — the same
+# Microsoft.Graph install above covers it. (The legacy
+# Microsoft.Graph.Intune module is deprecated and not used here.)
+Get-Module Microsoft.Graph -ListAvailable
 ```
 
 ### AWS Management
@@ -262,6 +264,12 @@ foreach ($module in $modules) {
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
 
 Write-Host "`nPrerequisites installation complete!" -ForegroundColor Green
+```
+
+Already cloned the repo? Bootstrap the `BugFreeUmbrella` module (PowerShell 7+) with:
+
+```powershell
+pwsh -NoProfile -File ./install.ps1
 ```
 
 ## Script-Specific Requirements

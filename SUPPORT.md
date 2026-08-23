@@ -48,7 +48,7 @@ To help me help you faster, please include:
 
 ### For Script Issues:
 ```
-- Script name and location (e.g., scripts/endpoints/intune/Get-DeviceComplianceReport.ps1)
+- Script name and location (e.g., scripts/endpoints/intune/reporting/Get-DeviceComplianceReport.ps1)
 - PowerShell version: $PSVersionTable.PSVersion
 - Operating System and version
 - Full error message and stack trace

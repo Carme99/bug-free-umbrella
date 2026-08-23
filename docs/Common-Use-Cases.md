@@ -21,12 +21,12 @@ Find the right script for your task quickly. This page organizes scripts by comm
 **Scenario:** Automatically update applications across managed devices
 
 **Solutions:**
-- **`scripts/endpoints/devices/winget/`** - 40+ Winget auto-update templates
+- **`scripts/endpoints/remediation/winget/`** - 35 ready-made Winget auto-update detect/remediate pairs
   - `browsers/GoogleChrome/` - Auto-update Chrome
   - `development/VisualStudioCode/` - Auto-update VS Code
   - `productivity/MicrosoftTeams/` - Auto-update Teams
 - **`scripts/utilities/Update-AllAppsWinget.ps1`** - System-wide winget updater
-- **`scripts/utilities/Update-DotNetRuntimes.ps1`** (v2.5) - .NET runtime maintenance with interactive menu and security-hardened updates
+- **`scripts/utilities/Update-DotNetRuntimes.ps1`** - .NET runtime maintenance with interactive menu and security-hardened updates
 
 **Documentation:** [Winget Updates](Winget-Updates.md) | [Script Catalog](Script-Catalog.md#winget-updates)
 
@@ -316,7 +316,7 @@ For end-to-end processes, see:
 
 Try these resources:
 
-1. **[Script Catalog](Script-Catalog.md)** - Browse all 358 scripts by category
+1. **[Script Catalog](Script-Catalog.md)** - Browse all 357 scripts by category
 2. **[Script Examples](Script-Examples.md)** - See detailed usage examples
 3. **[Repository Search](https://github.com/Carme99/bug-free-umbrella)** - Search GitHub repository
 4. **[GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues)** - Request new scripts

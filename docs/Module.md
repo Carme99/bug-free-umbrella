@@ -2,7 +2,7 @@
 
 # 📦 BugFreeUmbrella Module
 
-> Installable PowerShell module — 358 functions across 8 domains. Auto-generated from
+> Installable PowerShell module — 357 functions across 8 domains. Auto-generated from
 > `src/BugFreeUmbrella/BugFreeUmbrella.psd1` + `scripts/.catalog/metadata.json`.
 > Do not edit by hand — run `pwsh -File tools/Build-Docs.ps1`.
 
@@ -15,7 +15,7 @@
 ```powershell
 Install-Module BugFreeUmbrella -Scope CurrentUser
 Import-Module  BugFreeUmbrella
-Get-Command -Module BugFreeUmbrella | Measure-Object  # → 358
+Get-Command -Module BugFreeUmbrella | Measure-Object  # → 357
 ```
 
 ## Quick Usage
@@ -58,7 +58,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     User --> MOD[Module]
-    MOD --> SCRIPTS[scripts/ — 358 scripts · 8 domains]
+    MOD --> SCRIPTS[scripts/ — 357 scripts · 8 domains]
     SCRIPTS --> CAT[.catalog/metadata.json]
 ```
 
@@ -66,7 +66,7 @@ PSSA 0 — generator and module pass PSScriptAnalyzer with 0 findings.
 
 ## Function Reference
 
-> 358 functions grouped by top-level domain. Synopsis truncated to 120 characters.
+> 357 functions grouped by top-level domain. Synopsis truncated to 120 characters.
 
 ### automation — 6 functions
 

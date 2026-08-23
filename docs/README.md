@@ -1,10 +1,10 @@
 # 📚 Bug-Free Umbrella Documentation
 
-> The complete guide to the repo: **358 PowerShell scripts** for enterprise IT automation — Intune, M365, servers, security, cloud, and everything in between.
+> The complete guide to the repo: **357 PowerShell scripts** for enterprise IT automation — Intune, M365, servers, security, cloud, and everything in between.
 
 Documentation lives **with the code** — every page here is versioned, PR-reviewable, and travels with its release. No separate wiki to go stale. 🌂
 
-**Current release:** [v4.3.0 "Zephyr" 🌈](../CHANGELOG.md) · **Docs consolidated:** 2026-08-08
+**Current release:** [v4.4.0 "Nimbus" 🌧️](../CHANGELOG.md) · **Docs updated:** 2026-08-23
 
 ---
 
@@ -45,6 +45,10 @@ flowchart LR
 | 🎯 **Solve a specific problem** | [Common-Use-Cases.md](Common-Use-Cases.md) |
 | 🏗️ **Understand how it all fits together** | [ARCHITECTURE.md](ARCHITECTURE.md) |
 
+## 📂 Browse by Directory
+
+| Area | What's inside | Guides |
+|---|---|---|
 | 📱 **endpoints/** | Intune, Winget, proactive remediations, device health | [Intune-Management.md](Intune-Management.md) · [Intune-Sync-Guide.md](Intune-Sync-Guide.md) · [Winget-Updates.md](Winget-Updates.md) · [Proactive-Remediations.md](Proactive-Remediations.md) |
 | 🖥️ **infrastructure/** | Windows servers, AD, network, virtualization, IIS | [Server-Management.md](Server-Management.md) · [Backup-and-Disaster-Recovery.md](Backup-and-Disaster-Recovery.md) |
 | 🔒 **security/** | CIS/NIST compliance, hardening, monitoring | [Security-Compliance.md](Security-Compliance.md) · [Security-Troubleshooting.md](Security-Troubleshooting.md) |
@@ -65,11 +69,8 @@ flowchart LR
 - [Migration-Strategy.md](Migration-Strategy.md) · [Scaling-and-Load-Balancing.md](Scaling-and-Load-Balancing.md) — grow safely
 - [Best-Practices-Checklist.md](Best-Practices-Checklist.md) — dev, security, compliance
 - [Custom-Development-Guide.md](Custom-Development-Guide.md) — write your own scripts for this repo
-- [MCP-Server.md](MCP-Server.md) — 🤖 MCP Server: AI tool integration for all 358 scripts
+- [MCP-Server.md](MCP-Server.md) — 🤖 MCP Server: AI tool integration for all 357 scripts
 
-| 📦 Module | Installable PSGallery module | [Module.md](Module.md) |
-| 🤖 MCP Server | AI tool integration | [MCP-Server.md](MCP-Server.md) |
-| 📖 API | REST API reference | [API-Reference.md](API-Reference.md) |
 ## 🆘 When Things Break
 
 - [Troubleshooting.md](Troubleshooting.md) — common issues and solutions

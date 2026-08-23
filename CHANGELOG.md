@@ -2,7 +2,7 @@
 
 ![Version](https://img.shields.io/badge/version-4.4.0-blue)
 ![Release Date](https://img.shields.io/badge/release-2026--08--20-green)
-![Total Scripts](https://img.shields.io/badge/scripts-358-orange)
+![Total Scripts](https://img.shields.io/badge/scripts-357-orange)
 ![License](https://img.shields.io/badge/license-Apache%202.0-red)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
 

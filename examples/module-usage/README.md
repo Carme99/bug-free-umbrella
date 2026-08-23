@@ -1,6 +1,6 @@
 # Module Usage Recipes
 
-Five quick recipes for the `BugFreeUmbrella` module (PowerShell 7+). Import once per session, then drive the 358-script catalog from the command line.
+Five quick recipes for the `BugFreeUmbrella` module (PowerShell 7+). Import once per session, then drive the 357-script catalog from the command line.
 
 ```powershell
 Import-Module ./src/BugFreeUmbrella -Force
@@ -67,4 +67,4 @@ Expected output: an untrusted-repository prompt once (`Do you want to install th
 
 ---
 
-See [docs/Getting-Started.md](../../docs/Getting-Started.md) for the full tour and [docs/Script-Catalog.md](../../docs/Script-Catalog.md) for all 358 scripts.
+See [docs/Getting-Started.md](../../docs/Getting-Started.md) for the full tour and [docs/Script-Catalog.md](../../docs/Script-Catalog.md) for all 357 scripts.

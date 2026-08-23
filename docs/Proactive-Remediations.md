@@ -14,13 +14,13 @@ Benefits:
 - **Automate maintenance** - Run on schedules without manual intervention
 - **Provide visibility** - Track issues across your device fleet
 
-All scripts are located in: `/scripts/endpoints/devices/proactive-remediations/`
+All scripts are located in: `/scripts/endpoints/remediation/` (`system/`, `network/`, `security/`). Legacy paths under `/scripts/endpoints/devices/proactive-remediations/` are deprecated shims that forward to these canonical scripts.
 
 ---
 
 ## Available Remediations
 
-**Total: 51 detect/remediate script pairs** across 8 categories
+**Total: 51 detect/remediate script pairs**, organized under `/scripts/endpoints/remediation/` into `system`, `network`, and `security` buckets
 
 > **🆕 Version 3.2 Update**: Added Check-OutdatedCriticalApps remediation for rapid security patching of critical applications (browsers, VPN, security tools) using winget.
 >
@@ -236,7 +236,7 @@ catch {
 
 Automatically clean up disk space when drives are running low.
 
-**Detection Script (`detect.ps1`):**
+**Detection Script (`Test-RemediationFixDiskSpace.ps1`):**
 ```powershell
 <#
 .SYNOPSIS
@@ -278,7 +278,7 @@ Write-Host "Disk space healthy"
 exit 0
 ```
 
-**Remediation Script (`remediate.ps1`):**
+**Remediation Script (`Invoke-RemediationFixDiskSpace.ps1`):**
 ```powershell
 <#
 .SYNOPSIS
@@ -341,8 +341,8 @@ catch {
 2. Click **Create script package**
 3. Configure:
    - **Name:** Fix Low Disk Space
-   - **Detection script:** Upload `detect.ps1`
-   - **Remediation script:** Upload `remediate.ps1`
+   - **Detection script:** Upload `Test-RemediationFixDiskSpace.ps1`
+   - **Remediation script:** Upload `Invoke-RemediationFixDiskSpace.ps1`
    - **Run in 64-bit PowerShell:** Yes
    - **Run script in logged-on credentials:** No (run as SYSTEM)
 4. Assign to device groups
@@ -559,7 +559,7 @@ exit 0
 
 ### Step 1: Prepare Scripts
 
-1. **Review script pairs** in `/scripts/endpoints/devices/proactive-remediations/`
+1. **Review script pairs** in `/scripts/endpoints/remediation/` (`Test-*.ps1` = detection, `Invoke-*.ps1` = remediation)
 2. **Test locally** on representative devices
 3. **Customize thresholds** if needed (e.g., disk space warnings)
 4. **Verify exit codes** are correct
@@ -576,8 +576,8 @@ exit 0
 
 ### Step 3: Upload Scripts
 
-1. **Detection script:** Upload `detect.ps1`
-2. **Remediation script:** Upload `remediate.ps1`
+1. **Detection script:** Upload the `Test-Remediation*.ps1` script
+2. **Remediation script:** Upload the matching `Invoke-Remediation*.ps1` script
 3. **Settings:**
    - ✅ Run this script using the logged-on credentials: **No** (run as SYSTEM)
    - ✅ Enforce script signature check: No (unless scripts are signed)
@@ -740,11 +740,11 @@ Top Failure Reasons:
 
 ### Template Structure
 
-Create two files in a new folder:
+Create two files following the repo's naming convention (`Test-` = detection, `Invoke-` = remediation):
 
-**Folder:** `/scripts/endpoints/devices/proactive-remediations/Fix-YourIssue/`
+**Folder:** `/scripts/endpoints/remediation/system/` (pick the bucket matching your issue)
 
-**File 1: `detect.ps1`**
+**File 1: `Test-RemediationFixYourIssue.ps1`**
 ```powershell
 <#
 .SYNOPSIS
@@ -790,7 +790,7 @@ catch {
 }
 ```
 
-**File 2: `remediate.ps1`**
+**File 2: `Invoke-RemediationFixYourIssue.ps1`**
 ```powershell
 <#
 .SYNOPSIS
@@ -834,16 +834,16 @@ catch {
 
 ```powershell
 # Test detection script
-.\detect.ps1
+.\Test-RemediationFixYourIssue.ps1
 Write-Host "Exit code: $LASTEXITCODE"
 
 # If exit code is 1, test remediation
 if ($LASTEXITCODE -eq 1) {
-    .\remediate.ps1
+    .\Invoke-RemediationFixYourIssue.ps1
     Write-Host "Remediation exit code: $LASTEXITCODE"
 
     # Re-run detection to verify fix
-    .\detect.ps1
+    .\Test-RemediationFixYourIssue.ps1
     Write-Host "Post-remediation detection: $LASTEXITCODE"
 }
 ```
@@ -855,28 +855,36 @@ if ($LASTEXITCODE -eq 1) {
 ### Example 1: Test Remediation Locally
 ```powershell
 # Test detection script
-.\Check-DiskSpace\detect.ps1
+.\scripts/endpoints/remediation/system/Test-RemediationFixDiskSpace.ps1
 
 # If detection fails, test remediation
-.\Check-DiskSpace\remediate.ps1
+.\scripts/endpoints/remediation/system/Invoke-RemediationFixDiskSpace.ps1
 ```
 
 ### Example 2: Deploy to Intune
 ```powershell
-# Create remediation package
-New-IntuneProactiveRemediation `
-    -Name "Disk Space Monitor" `
-    -DetectionScript (Get-Content .\Check-DiskSpace\detect.ps1 -Raw) `
-    -RemediationScript (Get-Content .\Check-DiskSpace\remediate.ps1 -Raw) `
+# Create a remediation script package via Microsoft Graph
+# (requires the Microsoft.Graph.DeviceManagement module)
+Connect-MgGraph -Scopes "DeviceManagementConfiguration.ReadWrite.All"
+
+$detect = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((Get-Content .\Test-RemediationFixDiskSpace.ps1 -Raw)))
+$fix    = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes((Get-Content .\Invoke-RemediationFixDiskSpace.ps1 -Raw)))
+
+New-MgDeviceManagementDeviceHealthScript `
+    -DisplayName "Disk Space Monitor" `
+    -DetectionScriptContent $detect `
+    -RemediationScriptContent $fix `
+    -RunAsAccount "system" `
     -RunAs32Bit $false `
-    -EnforceSignatureCheck $false `
-    -Schedule Daily
+    -EnforceSignatureCheck $false
 ```
 
 ### Example 3: Monitor Results
 ```powershell
-# Get remediation results from Intune
-Get-IntuneProactiveRemediationStatus -RemediationName "Disk Space Monitor"
+# List remediation script packages and their assignments
+Get-MgDeviceManagementDeviceHealthScript | Select-Object DisplayName, Id
+
+Get-MgDeviceManagementDeviceHealthScriptAssignment -DeviceHealthScriptId <id>
 ```
 
 ---

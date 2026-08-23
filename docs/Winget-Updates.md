@@ -4,13 +4,13 @@ Automate application updates using Windows Package Manager (winget) with Intune 
 
 ## Overview
 
-The **Winget Updates** collection provides 40+ detect/remediate script pairs for automatically updating applications via winget in Microsoft Intune. Each application has dedicated scripts that:
+The **Winget Updates** collection provides 35 application script pairs for automatically updating applications via winget in Microsoft Intune. Each application has dedicated scripts that:
 - **Detect** if an update is available
 - **Remediate** by installing the latest version
 - Support **forced close** options for active applications
 - Work with **maintenance windows** for minimal user disruption
 
-**Location:** `scripts/endpoints/devices/winget/`
+**Location:** `scripts/endpoints/remediation/winget/`
 
 ---
 
@@ -19,50 +19,50 @@ The **Winget Updates** collection provides 40+ detect/remediate script pairs for
 ### Browsers
 | Application | Package ID | Scripts |
 |-------------|-----------|---------|
-| **Google Chrome** | `Google.Chrome` | [detect.ps1](../scripts/endpoints/devices/winget/browsers/GoogleChrome/detect.ps1) / [remediate.ps1](../scripts/endpoints/devices/winget/browsers/GoogleChrome/remediate.ps1) |
-| **Mozilla Firefox** | `Mozilla.Firefox` | [detect.ps1](../scripts/endpoints/devices/winget/browsers/Firefox/detect.ps1) / [remediate.ps1](../scripts/endpoints/devices/winget/browsers/Firefox/remediate.ps1) |
+| **Google Chrome** | `Google.Chrome` | [Test-WingetGoogleChrome.ps1](../scripts/endpoints/remediation/winget/browsers/GoogleChrome/Test-WingetGoogleChrome.ps1) / [Invoke-WingetGoogleChrome.ps1](../scripts/endpoints/remediation/winget/browsers/GoogleChrome/Invoke-WingetGoogleChrome.ps1) |
+| **Mozilla Firefox** | `Mozilla.Firefox` | [Test-WingetFirefox.ps1](../scripts/endpoints/remediation/winget/browsers/Firefox/Test-WingetFirefox.ps1) / [Invoke-WingetFirefox.ps1](../scripts/endpoints/remediation/winget/browsers/Firefox/Invoke-WingetFirefox.ps1) |
 
 ### Development Tools
 | Application | Package ID | Scripts |
 |-------------|-----------|---------|
-| **Visual Studio Code** | `Microsoft.VisualStudioCode` | [detect.ps1](../scripts/endpoints/devices/winget/development/VisualStudioCode/detect.ps1) / [remediate.ps1](../scripts/endpoints/devices/winget/development/VisualStudioCode/remediate.ps1) |
-| **PowerShell 7** | `Microsoft.PowerShell` | [detect.ps1](../scripts/endpoints/devices/winget/development/PowerShell7/detect.ps1) / [remediate_maintenance_window.ps1](../scripts/endpoints/devices/winget/development/PowerShell7/remediate_maintenance_window.ps1) |
-| **Git** | `Git.Git` | [detect.ps1](../scripts/endpoints/devices/winget/development/Git/detect.ps1) / [remediate.ps1](../scripts/endpoints/devices/winget/development/Git/remediate.ps1) |
-| **Azure CLI** | `Microsoft.AzureCLI` | [detect.ps1](../scripts/endpoints/devices/winget/development/AzureCLI/detect.ps1) / [remediate.ps1](../scripts/endpoints/devices/winget/development/AzureCLI/remediate.ps1) |
+| **Visual Studio Code** | `Microsoft.VisualStudioCode` | [Test-WingetVisualStudioCode.ps1](../scripts/endpoints/remediation/winget/development/VisualStudioCode/Test-WingetVisualStudioCode.ps1) / [Invoke-WingetVisualStudioCode.ps1](../scripts/endpoints/remediation/winget/development/VisualStudioCode/Invoke-WingetVisualStudioCode.ps1) |
+| **PowerShell 7** | `Microsoft.PowerShell` | [Test-WingetPowerShell7.ps1](../scripts/endpoints/remediation/winget/development/PowerShell7/Test-WingetPowerShell7.ps1) / [Invoke-WingetPowerShell7MaintenanceWindow.ps1](../scripts/endpoints/remediation/winget/development/PowerShell7/Invoke-WingetPowerShell7MaintenanceWindow.ps1) |
+| **Git** | `Git.Git` | [Test-WingetGit.ps1](../scripts/endpoints/remediation/winget/development/Git/Test-WingetGit.ps1) / [Invoke-WingetGit.ps1](../scripts/endpoints/remediation/winget/development/Git/Invoke-WingetGit.ps1) |
+| **Azure CLI** | `Microsoft.AzureCLI` | [Test-WingetAzureCLI.ps1](../scripts/endpoints/remediation/winget/development/AzureCLI/Test-WingetAzureCLI.ps1) / [Invoke-WingetAzureCLI.ps1](../scripts/endpoints/remediation/winget/development/AzureCLI/Invoke-WingetAzureCLI.ps1) |
 
 ### Productivity
 | Application | Package ID | Scripts |
 |-------------|-----------|---------|
-| **Microsoft Teams** | `Microsoft.Teams` | [detect.ps1](../scripts/endpoints/devices/winget/productivity/MicrosoftTeams/detect.ps1) / [remediate.ps1](../scripts/endpoints/devices/winget/productivity/MicrosoftTeams/remediate.ps1) |
-| **Adobe Reader (64-bit)** | `Adobe.Acrobat.Reader.64-bit` | [detect.ps1](../scripts/endpoints/devices/winget/productivity/AdobeReader64bit/detect.ps1) / [remediate.ps1](../scripts/endpoints/devices/winget/productivity/AdobeReader64bit/remediate.ps1) |
-| **Notepad++** | `Notepad++.Notepad++` | [detect.ps1](../scripts/endpoints/devices/winget/productivity/NotepadPlusPlus/detect.ps1) / [remediate.ps1](../scripts/endpoints/devices/winget/productivity/NotepadPlusPlus/remediate.ps1) |
+| **Microsoft Teams** | `Microsoft.Teams` | [Test-WingetMicrosoftTeams.ps1](../scripts/endpoints/remediation/winget/productivity/MicrosoftTeams/Test-WingetMicrosoftTeams.ps1) / [Invoke-WingetMicrosoftTeams.ps1](../scripts/endpoints/remediation/winget/productivity/MicrosoftTeams/Invoke-WingetMicrosoftTeams.ps1) |
+| **Adobe Reader (64-bit)** | `Adobe.Acrobat.Reader.64-bit` | [Test-WingetAdobeReader64bit.ps1](../scripts/endpoints/remediation/winget/productivity/AdobeReader64bit/Test-WingetAdobeReader64bit.ps1) / [Invoke-WingetAdobeReader64bit.ps1](../scripts/endpoints/remediation/winget/productivity/AdobeReader64bit/Invoke-WingetAdobeReader64bit.ps1) |
+| **Notepad++** | `Notepad++.Notepad++` | [Test-WingetNotepadPlusPlus.ps1](../scripts/endpoints/remediation/winget/productivity/NotepadPlusPlus/Test-WingetNotepadPlusPlus.ps1) / [Invoke-WingetNotepadPlusPlus.ps1](../scripts/endpoints/remediation/winget/productivity/NotepadPlusPlus/Invoke-WingetNotepadPlusPlus.ps1) |
 
 ### Communication
 | Application | Package ID | Scripts |
 |-------------|-----------|---------|
-| **Zoom** | `Zoom.Zoom` | [detect.ps1](../scripts/endpoints/devices/winget/media/Zoom/detect.ps1) / [remediate.ps1](../scripts/endpoints/devices/winget/media/Zoom/remediate.ps1) |
-| **Slack** | `SlackTechnologies.Slack` | [detect.ps1](../scripts/endpoints/devices/winget/communication/Slack/detect.ps1) / [remediate.ps1](../scripts/endpoints/devices/winget/communication/Slack/remediate.ps1) |
-| **Discord** | `Discord.Discord` | [detect.ps1](../scripts/endpoints/devices/winget/communication/Discord/detect.ps1) / [remediate.ps1](../scripts/endpoints/devices/winget/communication/Discord/remediate.ps1) |
+| **Zoom** | `Zoom.Zoom` | [Test-WingetZoom.ps1](../scripts/endpoints/remediation/winget/media/Zoom/Test-WingetZoom.ps1) / [Invoke-WingetZoom.ps1](../scripts/endpoints/remediation/winget/media/Zoom/Invoke-WingetZoom.ps1) |
+| **Slack** | `SlackTechnologies.Slack` | [Test-WingetSlack.ps1](../scripts/endpoints/remediation/winget/communication/Slack/Test-WingetSlack.ps1) / [Invoke-WingetSlack.ps1](../scripts/endpoints/remediation/winget/communication/Slack/Invoke-WingetSlack.ps1) |
+| **Discord** | `Discord.Discord` | [Test-WingetDiscord.ps1](../scripts/endpoints/remediation/winget/communication/Discord/Test-WingetDiscord.ps1) / [Invoke-WingetDiscord.ps1](../scripts/endpoints/remediation/winget/communication/Discord/Invoke-WingetDiscord.ps1) |
 
 ### Remote Access
 | Application | Package ID | Scripts |
 |-------------|-----------|---------|
-| **TeamViewer (Full)** | `TeamViewer.TeamViewer` | [detect.ps1](../scripts/endpoints/devices/winget/remote-access/TeamViewerFull/detect.ps1) / [remediate.ps1](../scripts/endpoints/devices/winget/remote-access/TeamViewerFull/remediate.ps1) |
-| **WinSCP** | `WinSCP.WinSCP` | [detect.ps1](../scripts/endpoints/devices/winget/remote-access/WinSCP/detect.ps1) / [remediate.ps1](../scripts/endpoints/devices/winget/remote-access/WinSCP/remediate.ps1) |
+| **TeamViewer (Full)** | `TeamViewer.TeamViewer` | [Test-WingetTeamViewerFull.ps1](../scripts/endpoints/remediation/winget/remote-access/TeamViewerFull/Test-WingetTeamViewerFull.ps1) / [Invoke-WingetTeamViewerFull.ps1](../scripts/endpoints/remediation/winget/remote-access/TeamViewerFull/Invoke-WingetTeamViewerFull.ps1) |
+| **WinSCP** | `WinSCP.WinSCP` | [Test-WingetWinSCP.ps1](../scripts/endpoints/remediation/winget/remote-access/WinSCP/Test-WingetWinSCP.ps1) / [Invoke-WingetWinSCP.ps1](../scripts/endpoints/remediation/winget/remote-access/WinSCP/Invoke-WingetWinSCP.ps1) |
 
 ### Runtimes
 | Application | Package ID | Scripts |
 |-------------|-----------|---------|
-| **Visual C++ 2015-2022 (x64)** | `Microsoft.VCRedist.2015+.x64` | [detect.ps1](../scripts/endpoints/devices/winget/runtimes/Cpp2015-2019Redist-x64/detect.ps1) / [remediate.ps1](../scripts/endpoints/devices/winget/runtimes/Cpp2015-2019Redist-x64/remediate.ps1) |
-| **Microsoft Edge WebView2** | `Microsoft.EdgeWebView2Runtime` | [detect.ps1](../scripts/endpoints/devices/winget/runtimes/EdgeWebView2/detect.ps1) / [remediate.ps1](../scripts/endpoints/devices/winget/runtimes/EdgeWebView2/remediate.ps1) |
+| **Visual C++ 2015-2022 (x64)** | `Microsoft.VCRedist.2015+.x64` | [Test-WingetCpp20152019RedistX64.ps1](../scripts/endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x64/Test-WingetCpp20152019RedistX64.ps1) / [Invoke-WingetCpp20152019RedistX64.ps1](../scripts/endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x64/Invoke-WingetCpp20152019RedistX64.ps1) |
+| **Microsoft Edge WebView2** | `Microsoft.EdgeWebView2Runtime` | [Test-WingetEdgeWebView2.ps1](../scripts/endpoints/remediation/winget/runtimes/EdgeWebView2/Test-WingetEdgeWebView2.ps1) / [Invoke-WingetEdgeWebView2.ps1](../scripts/endpoints/remediation/winget/runtimes/EdgeWebView2/Invoke-WingetEdgeWebView2.ps1) |
 
-**Complete list:** Browse the [winget directory](../scripts/endpoints/devices/winget/README.md) for all 40+ applications.
+**Complete list:** Browse the [winget directory](../scripts/endpoints/remediation/winget/README.md) for all 35 applications.
 
 ---
 
 ## How It Works
 
-### Detection Script (detect.ps1)
+### Detection Script (`Test-Winget<App>.ps1`)
 Checks if an update is available:
 ```powershell
 # Example: Check if VS Code update available
@@ -71,22 +71,22 @@ winget list --id Microsoft.VisualStudioCode --exact
 # Exit 0 if up to date (no action needed)
 ```
 
-### Remediation Script (remediate.ps1)
+### Remediation Script (`Invoke-Winget<App>.ps1`)
 Installs the latest version:
 ```powershell
 # Example: Update VS Code
 winget upgrade --id Microsoft.VisualStudioCode --exact --silent --accept-source-agreements
 ```
 
-### Versions Available
+### Script Variants
 
-Each application may have multiple remediation versions:
+Most applications ship a single `Test-`/`Invoke-` pair. Where user impact requires it, dedicated variants exist:
 
-| Version | Description | Use Case |
+| Variant | Description | Use Case |
 |---------|-------------|----------|
-| **remediate.ps1** | Standard update | App not running or can wait |
-| **remediate_v2_force_close.ps1** | Force close before update | Update during business hours |
-| **remediate_v3_maintenance_window.ps1** | Scheduled update | Update outside business hours |
+| **Invoke-Winget<App>.ps1** | Standard update | App not running or can wait |
+| **Invoke-WingetTeamViewerFullForceClose.ps1** | Force close before update | Update during business hours |
+| **Invoke-WingetPowerShell7MaintenanceWindow.ps1** | Scheduled update | Update outside business hours |
 
 ---
 
@@ -97,8 +97,8 @@ Each application may have multiple remediation versions:
 2. Click **Create script package**
 3. Configure:
    - **Name:** "Winget - Update Google Chrome"
-   - **Detection script:** Upload `detect.ps1`
-   - **Remediation script:** Upload `remediate.ps1`
+   - **Detection script:** Upload `Test-WingetGoogleChrome.ps1`
+   - **Remediation script:** Upload `Invoke-WingetGoogleChrome.ps1`
    - **Run in 32-bit:** No
    - **Run as user:** No (run as System)
 
@@ -122,18 +122,22 @@ For updating ALL applications at once, use:
 **`scripts/utilities/Update-AllAppsWinget.ps1`**
 
 ```powershell
-# Update all winget-managed applications
+# Update all winget-managed applications (installs dependencies if needed)
 .\Update-AllAppsWinget.ps1
 
-# With auto-configuration (sets winget settings)
-.\Update-AllAppsWinget.ps1 -AutoConfigure
+# With custom log path and retry count
+.\Update-AllAppsWinget.ps1 -LogPath "C:\Logs\winget-updates.log" -MaxRetries 5
+
+# Skip dependency installation if already configured
+.\Update-AllAppsWinget.ps1 -SkipDependencyCheck
 ```
 
 **Features:**
 - Updates all installed applications
-- Configures winget settings automatically
-- Generates detailed reports
-- Handles errors gracefully
+- Automatic winget configuration detection and setup
+- Installs VCLibs and UI.Xaml dependencies if needed
+- Comprehensive logging (`-LogPath`) and error handling
+- Runs in SYSTEM context (suitable for scheduled tasks)
 
 ---
 
@@ -141,14 +145,19 @@ For updating ALL applications at once, use:
 
 Use the template generator to create scripts for new applications:
 
-**`scripts/endpoints/devices/winget/_generate-winget-scripts.ps1`**
+**`scripts/endpoints/remediation/winget/_generate-winget-scripts.ps1`**
+
+The generator takes no parameters. Instead, add an entry to the `$AppDefinitions` array at the top of the script, then run it:
 
 ```powershell
-# Generate scripts for a new application
-.\_generate-winget-scripts.ps1 -PackageId "NewVendor.NewApp" -AppName "New Application"
+# 1. Edit $AppDefinitions in _generate-winget-scripts.ps1:
+#    @{ WingetId = 'NewVendor.NewApp'; Category = 'utilities'; FolderName = 'NewApp'; ForceClose = $false; NotifySeconds = 0 }
+#
+# 2. Run the generator (creates detect.ps1/remediate.ps1-style pair from the v3 templates):
+.\_generate-winget-scripts.ps1
 ```
 
-Templates are located in: `scripts/endpoints/devices/winget/_templates/`
+Templates are located in: `scripts/endpoints/remediation/winget/_templates/`
 
 ---
 

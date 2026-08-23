@@ -426,16 +426,17 @@ Organized by category:
 
 | Metric | Count |
 |--------|-------|
-| **Total Scripts** | 358 |
-| **Script Categories** | 20 |
+| **Total Scripts** | 357 |
+| **Top-Level Domains** | 8 |
+| **Subcategories** | 94 |
 | **Proactive Remediations** | 51 pairs (102 scripts) |
 | **Winget App Templates** | 35 |
 | **Documentation Files** | 36 |
-| **Latest Release** | [v4.3.0 "Zephyr - Quality & Enforcement"](../CHANGELOG.md) 🌈 |
+| **Latest Release** | [v4.4.0 "Nimbus - Catalog & Intelligence"](../CHANGELOG.md) 🌧️ |
 
 ---
 
-## 🌈 Latest Updates (v4.3.0 "Zephyr")
+## 🌧️ Latest Updates (v4.4.0 "Nimbus")
 
 **What's New:**
 - 📐 **PSSA Policy Enforcement**: Comment-based help, style rules and ShouldProcess (-WhatIf) are now enforced in CI on every PR; 4,404 style findings fixed across 345 scripts; 56 state-changing functions retrofitted with `SupportsShouldProcess` guards

@@ -13,9 +13,9 @@ This document provides a comprehensive overview of script compatibility across d
 
 | Platform | Total Scripts | Fully Supported | Partial Support | Not Supported | Notes |
 |----------|--------------|-----------------|-----------------|---------------|-------|
-| **Windows** | 358 | 245 (68%) | 10 (4%) | 5 (2%) | Primary target platform |
-| **Linux** | 358 | 45 (13%) | 15 (6%) | 200 (77%) | Cloud & cross-platform scripts |
-| **macOS** | 358 | 40 (11%) | 10 (4%) | 210 (81%) | Cloud & cross-platform scripts |
+| **Windows** | 357 | 245 (68%) | 10 (4%) | 5 (2%) | Primary target platform |
+| **Linux** | 357 | 45 (13%) | 15 (6%) | 200 (77%) | Cloud & cross-platform scripts |
+| **macOS** | 357 | 40 (11%) | 10 (4%) | 210 (81%) | Cloud & cross-platform scripts |
 
 ### PowerShell Version Support
 
