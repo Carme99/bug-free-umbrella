@@ -11,6 +11,12 @@
     - Group memberships (privileged accounts highlighted)
     - Export options for remediation planning
 
+    This is a read-only detection script: it never modifies accounts. Reports are
+    written only when -ExportHTML/-ExportCSV are supplied.
+
+    Exit codes: 0 = no privileged inactive accounts found, 1 = one or more
+    privileged inactive accounts found (or fatal error).
+
 .PARAMETER DaysInactive
     Number of days since last logon to consider inactive (default: 90).
 
@@ -36,26 +42,35 @@
     Show what would happen if inactive accounts were disabled.
 
 .EXAMPLE
-    .\Get-InactiveUserReport.ps1 -DaysInactive 90
+    PS C:\> .\Get-InactiveUserReport.ps1 -DaysInactive 90
     Finds users who haven't logged in for 90 days.
 
 .EXAMPLE
-    .\Get-InactiveUserReport.ps1 -DaysInactive 180 -HighlightPrivileged -ExportHTML
+    PS C:\> .\Get-InactiveUserReport.ps1 -DaysInactive 180 -HighlightPrivileged -ExportHTML
     Finds inactive users for 180 days and highlights privileged accounts.
 
 .EXAMPLE
-    .\Get-InactiveUserReport.ps1 -SearchBase "OU=Employees,DC=domain,DC=com" -ExcludeServiceAccounts
+    PS C:\> .\Get-InactiveUserReport.ps1 -SearchBase "OU=Employees,DC=domain,DC=com" -ExcludeServiceAccounts
     Searches specific OU and excludes service accounts.
 
 .NOTES
-    Requires Active Directory PowerShell module
-    Requires appropriate AD read permissions
-    Compatible with Windows Server 2016, 2019, 2022
+    File Name:     Get-InactiveUserReport.ps1
+    Author:        Bug-Free Umbrella
+    Prerequisite:  PowerShell 5.1+
+    Version:       1.0.0
+    Date:          2026-08-23
+
+    Requires the Active Directory PowerShell module at runtime (mocked in tests).
+    Requires appropriate AD read permissions.
+    Compatible with Windows Server 2016, 2019, and 2022.
 #>
 
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+    Justification = 'Console reporting tool: prefixed, color-coded host output is the intended user interface.')]
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
+    [ValidateRange(1, [int]::MaxValue)]
     [int]$DaysInactive = 90,
 
     [Parameter(Mandatory = $false)]
@@ -80,186 +95,220 @@ param(
     [switch]$WhatIfDisable
 )
 
-#Requires -Modules ActiveDirectory
+$ErrorActionPreference = 'Stop'
 
-$ErrorActionPreference = "Stop"
-$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$cutoffDate = (Get-Date).AddDays(-$DaysInactive)
+function Main {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        [int]$DaysInactive = 90,
 
-# Reports directory (internal output location)
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-# Validate report directory: reject '..' traversal and UNC remote paths before resolution
-if ([string]::IsNullOrWhiteSpace($ReportDir) -or
-    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
-    $ReportDir -match '^(\\\\|//)') {
-    Write-Error "Unsafe report directory: $ReportDir. Report directory must be a local absolute path without '..' traversal."
-    exit 1
-}
-$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
+        [Parameter(Mandatory = $false)]
+        [switch]$IncludeDisabled,
 
-Write-Host "`n=== Inactive User Account Report ===" -ForegroundColor Cyan
-Write-Host "Inactivity Threshold: $DaysInactive days (since $($cutoffDate.ToShortDateString()))" -ForegroundColor Yellow
-Write-Host "Domain: $env:USERDNSDOMAIN" -ForegroundColor Yellow
-Write-Host ""
+        [Parameter(Mandatory = $false)]
+        [string]$SearchBase,
 
-# Build search parameters
-$searchParams = @{
-    Filter = "*"
-    Properties = "LastLogonDate", "PasswordLastSet", "Created", "MemberOf", "Description", "Enabled", "DistinguishedName", "whenChanged"
-}
+        [Parameter(Mandatory = $false)]
+        [switch]$ExcludeServiceAccounts,
 
-if ($SearchBase) {
-    $searchParams.SearchBase = $SearchBase
-    Write-Host "[*] Searching in: $SearchBase" -ForegroundColor Cyan
-}
+        [Parameter(Mandatory = $false)]
+        [switch]$HighlightPrivileged,
 
-Write-Host "[*] Retrieving user accounts..." -ForegroundColor Cyan
+        [Parameter(Mandatory = $false)]
+        [switch]$ExportHTML,
 
-try {
-    $allUsers = Get-ADUser @searchParams
+        [Parameter(Mandatory = $false)]
+        [switch]$ExportCSV,
 
-    Write-Host "[+] Found $($allUsers.Count) total user accounts" -ForegroundColor Green
-
-    # Filter for inactive users
-    $inactiveUsers = $allUsers | Where-Object {
-        # Check if we should include disabled accounts
-        if (-not $IncludeDisabled -and $_.Enabled -eq $false) {
-            return $false
-        }
-
-        # Check last logon date
-        $isInactive = $false
-
-        if ($null -eq $_.LastLogonDate) {
-            # Never logged in
-            $isInactive = $true
-        }
-        elseif ($_.LastLogonDate -lt $cutoffDate) {
-            # Last logon too old
-            $isInactive = $true
-        }
-
-        return $isInactive
-    }
-
-    Write-Host "[+] Found $($inactiveUsers.Count) inactive user accounts" -ForegroundColor $(if ($inactiveUsers.Count -gt 0) { "Yellow" } else { "Green" })
-    Write-Host ""
-
-    # Process inactive users
-    $results = @()
-    $privilegedCount = 0
-    $neverLoggedInCount = 0
-
-    # Privileged group SIDs
-    $privilegedGroups = @(
-        "S-1-5-32-544",  # Administrators
-        "S-1-5-32-548",  # Account Operators
-        "S-1-5-32-549",  # Server Operators
-        "S-1-5-32-551"   # Backup Operators
+        [Parameter(Mandatory = $false)]
+        [switch]$WhatIfDisable
     )
 
-    foreach ($user in $inactiveUsers) {
-        # Check if service account
-        if ($ExcludeServiceAccounts) {
-            if ($user.Description -match "(service|svc|robot|automation)" -or
-                $user.SamAccountName -match "^(svc|service)") {
-                continue
-            }
+    try {
+        $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+        $cutoffDate = (Get-Date).AddDays(-$DaysInactive)
+
+        # Reports directory (internal output location)
+        $ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+        # Validate report directory: reject '..' traversal and UNC remote paths before resolution
+        if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+            $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+            $ReportDir -match '^(\\\\|//)') {
+            $reason = "Report directory must be a local absolute path without '..' traversal."
+            throw "Unsafe report directory: $ReportDir. $reason"
+        }
+        $ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+        if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+            New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
         }
 
-        # Check for privileged access
-        $isPrivileged = $false
-        $adminGroups = @()
+        Write-Host "`n[*] === Inactive User Account Report ===" -ForegroundColor Cyan
+        Write-Host "[!] Inactivity Threshold: $DaysInactive days (since $($cutoffDate.ToShortDateString()))"`
+            -ForegroundColor Yellow
+        Write-Host "[*] Domain: $env:USERDNSDOMAIN" -ForegroundColor Yellow
+        Write-Host ""
 
-        if ($user.MemberOf) {
-            foreach ($group in $user.MemberOf) {
-                $groupObj = Get-ADGroup $group -Properties SID
-                if ($privilegedGroups -contains $groupObj.SID.Value) {
-                    $isPrivileged = $true
-                    $adminGroups += $groupObj.Name
+        # Build search parameters
+        $searchParams = @{
+            Filter = "*"
+            Properties = "LastLogonDate", "PasswordLastSet", "Created", "MemberOf",
+                "Description", "Enabled", "DistinguishedName", "whenChanged"
+        }
+
+        if ($SearchBase) {
+            $searchParams.SearchBase = $SearchBase
+            Write-Host "[*] Searching in: $SearchBase" -ForegroundColor Cyan
+        }
+
+        Write-Host "[*] Retrieving user accounts..." -ForegroundColor Cyan
+
+        $allUsers = Get-ADUser @searchParams
+
+        Write-Host "[+] Found $($allUsers.Count) total user accounts" -ForegroundColor Green
+
+        # Filter for inactive users
+        $inactiveUsers = @($allUsers | Where-Object {
+            # Check if we should include disabled accounts
+            if (-not $IncludeDisabled -and $_.Enabled -eq $false) {
+                return $false
+            }
+
+            # Check last logon date
+            $isInactive = $false
+
+            if ($null -eq $_.LastLogonDate) {
+                # Never logged in
+                $isInactive = $true
+            }
+            elseif ($_.LastLogonDate -lt $cutoffDate) {
+                # Last logon too old
+                $isInactive = $true
+            }
+
+            return $isInactive
+        })
+
+        $inactiveColor = if ($inactiveUsers.Count -gt 0) { "Yellow" } else { "Green" }
+        Write-Host "[+] Found $($inactiveUsers.Count) inactive user accounts" -ForegroundColor $inactiveColor
+        Write-Host ""
+
+        # Process inactive users
+        $results = @()
+        $privilegedCount = 0
+        $neverLoggedInCount = 0
+
+        # Privileged group SIDs
+        $privilegedGroups = @(
+            "S-1-5-32-544",  # Administrators
+            "S-1-5-32-548",  # Account Operators
+            "S-1-5-32-549",  # Server Operators
+            "S-1-5-32-551"   # Backup Operators
+        )
+
+        foreach ($user in $inactiveUsers) {
+            # Check if service account
+            if ($ExcludeServiceAccounts) {
+                if ($user.Description -match "(service|svc|robot|automation)" -or
+                    $user.SamAccountName -match "^(svc|service)") {
+                    continue
                 }
             }
+
+            # Check for privileged access
+            $isPrivileged = $false
+            $adminGroups = @()
+
+            if ($user.MemberOf) {
+                foreach ($group in $user.MemberOf) {
+                    $groupObj = Get-ADGroup $group -Properties SID
+                    if ($privilegedGroups -contains $groupObj.SID.Value) {
+                        $isPrivileged = $true
+                        $adminGroups += $groupObj.Name
+                    }
+                }
+            }
+
+            if ($isPrivileged) {
+                $privilegedCount++
+            }
+
+            # Calculate inactivity days
+            $daysSinceLogon = if ($user.LastLogonDate) {
+                ((Get-Date) - $user.LastLogonDate).Days
+            }
+            else {
+                $neverLoggedInCount++
+                "Never"
+            }
+
+            $daysSincePasswordSet = if ($user.PasswordLastSet) {
+                ((Get-Date) - $user.PasswordLastSet).Days
+            }
+            else {
+                "N/A"
+            }
+
+            $result = [PSCustomObject]@{
+                SamAccountName = $user.SamAccountName
+                Name = $user.Name
+                Enabled = $user.Enabled
+                LastLogon = if ($user.LastLogonDate) { $user.LastLogonDate } else { "Never" }
+                DaysSinceLogon = $daysSinceLogon
+                PasswordLastSet = $user.PasswordLastSet
+                DaysSincePasswordSet = $daysSincePasswordSet
+                Created = $user.Created
+                IsPrivileged = $isPrivileged
+                PrivilegedGroups = $adminGroups -join "; "
+                Description = $user.Description
+                DistinguishedName = $user.DistinguishedName
+            }
+
+            $results += $result
         }
 
-        if ($isPrivileged) {
-            $privilegedCount++
+        # Display summary
+        Write-Host "[*] === Summary ===" -ForegroundColor Cyan
+        Write-Host "[*] Total Inactive Users: $($results.Count)" -ForegroundColor White
+        $privColor = if ($privilegedCount -gt 0) { "Red" } else { "Green" }
+        Write-Host "[!] Privileged Accounts: $privilegedCount" -ForegroundColor $privColor
+        Write-Host "[!] Never Logged In: $neverLoggedInCount" -ForegroundColor Yellow
+        $enabledInactiveCount = ($results | Where-Object { $_.Enabled -eq $true }).Count
+        $disabledInactiveCount = ($results | Where-Object { $_.Enabled -eq $false }).Count
+        Write-Host "[!] Enabled Inactive: $enabledInactiveCount" -ForegroundColor Yellow
+        Write-Host "[*] Disabled Inactive: $disabledInactiveCount" -ForegroundColor Gray
+        Write-Host ""
+
+        # Show top 20 inactive users
+        if ($results.Count -gt 0) {
+            Write-Host "[*] === Top 20 Inactive Users ===" -ForegroundColor Cyan
+            $results | Sort-Object LastLogon | Select-Object -First 20 SamAccountName, Name, Enabled,
+                LastLogon, DaysSinceLogon, IsPrivileged |
+                Format-Table -AutoSize
         }
 
-        # Calculate inactivity days
-        $daysSinceLogon = if ($user.LastLogonDate) {
-            ((Get-Date) - $user.LastLogonDate).Days
-        }
-        else {
-            $neverLoggedInCount++
-            "Never"
-        }
-
-        $daysSincePasswordSet = if ($user.PasswordLastSet) {
-            ((Get-Date) - $user.PasswordLastSet).Days
-        }
-        else {
-            "N/A"
+        # Show privileged inactive accounts
+        if ($HighlightPrivileged -and $privilegedCount -gt 0) {
+            Write-Host "`n[-] === Privileged Inactive Accounts (CRITICAL) ===" -ForegroundColor Red
+            $results | Where-Object { $_.IsPrivileged -eq $true } |
+                Select-Object SamAccountName, Name, Enabled, LastLogon, DaysSinceLogon, PrivilegedGroups |
+                Format-Table -AutoSize
         }
 
-        $result = [PSCustomObject]@{
-            SamAccountName = $user.SamAccountName
-            Name = $user.Name
-            Enabled = $user.Enabled
-            LastLogon = if ($user.LastLogonDate) { $user.LastLogonDate } else { "Never" }
-            DaysSinceLogon = $daysSinceLogon
-            PasswordLastSet = $user.PasswordLastSet
-            DaysSincePasswordSet = $daysSincePasswordSet
-            Created = $user.Created
-            IsPrivileged = $isPrivileged
-            PrivilegedGroups = $adminGroups -join "; "
-            Description = $user.Description
-            DistinguishedName = $user.DistinguishedName
+        # WhatIf disable preview (read-only; no accounts are modified)
+        if ($WhatIfDisable) {
+            Write-Host "`n[*] === What-If: Disable Inactive Accounts ===" -ForegroundColor Cyan
+            $enabledInactive = $results | Where-Object { $_.Enabled -eq $true }
+            Write-Host "[!] Would disable $($enabledInactive.Count) enabled inactive accounts:" -ForegroundColor Yellow
+            $enabledInactive | Select-Object -First 10 SamAccountName, Name, LastLogon | Format-Table -AutoSize
+            Write-Host "... and $($enabledInactive.Count - 10) more" -ForegroundColor Gray
         }
 
-        $results += $result
-    }
+        # Export results
+        if ($ExportHTML) {
+            $htmlPath = Join-Path $ReportDir "InactiveUsers_$timestamp.html"
 
-    # Display summary
-    Write-Host "=== Summary ===" -ForegroundColor Cyan
-    Write-Host "Total Inactive Users: $($results.Count)" -ForegroundColor White
-    Write-Host "Privileged Accounts: $privilegedCount" -ForegroundColor $(if ($privilegedCount -gt 0) { "Red" } else { "Green" })
-    Write-Host "Never Logged In: $neverLoggedInCount" -ForegroundColor Yellow
-    Write-Host "Enabled Inactive: $(($results | Where-Object { $_.Enabled -eq $true }).Count)" -ForegroundColor Yellow
-    Write-Host "Disabled Inactive: $(($results | Where-Object { $_.Enabled -eq $false }).Count)" -ForegroundColor Gray
-    Write-Host ""
-
-    # Show top 20 inactive users
-    if ($results.Count -gt 0) {
-        Write-Host "=== Top 20 Inactive Users ===" -ForegroundColor Cyan
-        $results | Sort-Object LastLogon | Select-Object -First 20 SamAccountName, Name, Enabled, LastLogon, DaysSinceLogon, IsPrivileged |
-            Format-Table -AutoSize
-    }
-
-    # Show privileged inactive accounts
-    if ($HighlightPrivileged -and $privilegedCount -gt 0) {
-        Write-Host "`n=== Privileged Inactive Accounts (CRITICAL) ===" -ForegroundColor Red
-        $results | Where-Object { $_.IsPrivileged -eq $true } |
-            Select-Object SamAccountName, Name, Enabled, LastLogon, DaysSinceLogon, PrivilegedGroups |
-            Format-Table -AutoSize
-    }
-
-    # WhatIf disable
-    if ($WhatIfDisable) {
-        Write-Host "`n=== What-If: Disable Inactive Accounts ===" -ForegroundColor Cyan
-        $enabledInactive = $results | Where-Object { $_.Enabled -eq $true }
-        Write-Host "Would disable $($enabledInactive.Count) enabled inactive accounts:" -ForegroundColor Yellow
-        $enabledInactive | Select-Object -First 10 SamAccountName, Name, LastLogon | Format-Table -AutoSize
-        Write-Host "... and $($enabledInactive.Count - 10) more" -ForegroundColor Gray
-    }
-
-    # Export results
-    if ($ExportHTML) {
-        $htmlPath = Join-Path $ReportDir "InactiveUsers_$timestamp.html"
-
-        $html = @"
+            $html = @"
 <!DOCTYPE html>
 <html>
 <head>
@@ -301,9 +350,12 @@ try {
         </tr>
 "@
 
-        foreach ($result in ($results | Sort-Object -Property @{Expression = { $_.IsPrivileged }; Descending = $true }, LastLogon)) {
-            $rowClass = if ($result.IsPrivileged) { "privileged" } elseif (-not $result.Enabled) { "disabled" } else { "" }
-            $html += @"
+            $sortedResults = $results |
+                Sort-Object -Property @{Expression = { $_.IsPrivileged }; Descending = $true }, LastLogon
+            foreach ($result in $sortedResults) {
+                $rowClass = if ($result.IsPrivileged) { "privileged" } else { "" }
+                if (-not $result.IsPrivileged -and -not $result.Enabled) { $rowClass = "disabled" }
+                $html += @"
         <tr class="$rowClass">
             <td>$([System.Net.WebUtility]::HtmlEncode("$($result.SamAccountName)"))</td>
             <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Name)"))</td>
@@ -315,31 +367,34 @@ try {
             <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Description)"))</td>
         </tr>
 "@
+            }
+
+            $html += "</table></body></html>"
+
+            $html | Out-File -FilePath $htmlPath -Encoding UTF8
+            Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
         }
 
-        $html += "</table></body></html>"
-
-        $html | Out-File -FilePath $htmlPath -Encoding UTF8
-        Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+        if ($ExportCSV) {
+            $csvPath = Join-Path $ReportDir "InactiveUsers_$timestamp.csv"
+            $results | Export-Csv -Path $csvPath -NoTypeInformation
+            Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
+        }
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
 
-    if ($ExportCSV) {
-        $csvPath = Join-Path $ReportDir "InactiveUsers_$timestamp.csv"
-        $results | Export-Csv -Path $csvPath -NoTypeInformation
-        Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
+    Write-Host "`n[+] Report completed!" -ForegroundColor Green
+
+    # Exit with warning code if privileged accounts are inactive (documented detect semantics)
+    if ($privilegedCount -gt 0) {
+        return 1
     }
 
-}
-catch {
-    Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
+    return 0
 }
 
-Write-Host "`n[+] Report completed!" -ForegroundColor Green
-
-# Exit with warning if privileged accounts are inactive
-if ($privilegedCount -gt 0) {
-    exit 1
-}
-
-exit 0
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main @PSBoundParameters) }

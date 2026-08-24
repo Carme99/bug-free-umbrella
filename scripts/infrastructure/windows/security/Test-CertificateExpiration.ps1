@@ -1,15 +1,16 @@
 ﻿<#
 .SYNOPSIS
-    Monitors SSL/TLS certificate expiration for local and remote certificates.
+    Monitor SSL/TLS certificate expiration for local and remote certificates.
 
 .DESCRIPTION
     This script checks certificate expiration dates across multiple locations:
     - Local computer certificate stores (Personal, WebHosting, Remote Desktop)
-    - Remote HTTPS endpoints
-    - Active Directory Certificate Services
+    - Remote HTTPS endpoints (via TCP/TLS handshake)
     - Custom certificate paths
-    - Alerts on certificates expiring soon
-    - Export results to HTML or CSV
+
+    It alerts on certificates that are expired or expiring soon and can export
+    results to HTML or CSV. Exit codes: 0 = scan completed, 1 = upstream failure.
+    The script is read-only and safe to re-run; no system state is modified.
 
 .PARAMETER CheckLocal
     Check certificates in local computer stores.
@@ -39,21 +40,24 @@
     Export results to CSV file.
 
 .EXAMPLE
-    .\Test-CertificateExpiration.ps1 -CheckLocal
+    PS C:\> .\Test-CertificateExpiration.ps1 -CheckLocal
     Checks all certificates in local computer stores.
 
 .EXAMPLE
-    .\Test-CertificateExpiration.ps1 -CheckRemote -Endpoints "https://example.com","https://portal.example.com" -ExportHTML
-    Checks SSL certificates on remote endpoints and exports HTML report.
-
-.EXAMPLE
-    .\Test-CertificateExpiration.ps1 -CheckLocal -WarningDays 60 -CriticalDays 14 -IncludeExpired
-    Checks local certificates with custom warning thresholds and includes expired certs.
+    PS C:\> .\Test-CertificateExpiration.ps1 -CheckRemote `
+    -Endpoints "https://example.com","https://portal.example.com" -ExportHTML
+    Checks SSL certificates on remote endpoints and exports an HTML report.
 
 .NOTES
-    Requires Administrator privileges for local certificate store access
-    Compatible with Windows Server 2016, 2019, and 2022
-    Remote endpoint checks require internet/network connectivity
+    File Name     : Test-CertificateExpiration.ps1
+    Author        : Bug-Free Umbrella
+    Prerequisite  : PowerShell 5.1+
+    Version       : 1.0.0
+    Date          : 2026-08-23
+
+    Requires elevation (Administrator) for local certificate store access.
+    Compatible with Windows Server 2016, 2019, and 2022.
+    Remote endpoint checks require internet/network connectivity.
 #>
 
 [CmdletBinding(DefaultParameterSetName = 'Local')]
@@ -65,12 +69,15 @@ param(
     [switch]$CheckRemote,
 
     [Parameter(ParameterSetName = 'Remote', Mandatory = $true)]
+    [ValidateNotNullOrEmpty()]
     [string[]]$Endpoints,
 
     [Parameter(Mandatory = $false)]
+    [ValidateRange(1, [int]::MaxValue)]
     [int]$WarningDays = 30,
 
     [Parameter(Mandatory = $false)]
+    [ValidateRange(1, [int]::MaxValue)]
     [int]$CriticalDays = 7,
 
     [Parameter(Mandatory = $false)]
@@ -86,35 +93,24 @@ param(
     [switch]$ExportCSV
 )
 
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-if ([string]::IsNullOrWhiteSpace($ReportDir) -or
-    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
-    $ReportDir -match '^(\\\\|//)') {
-    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
-    exit 1
-}
-$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
-
-$script:report = @{
-    ServerName = $env:COMPUTERNAME
-    ScanTime = Get-Date
-    WarningDays = $WarningDays
-    CriticalDays = $CriticalDays
-    Certificates = @()
-    Summary = @{
-        TotalCertificates = 0
-        Expired = 0
-        Critical = 0
-        Warning = 0
-        Healthy = 0
-    }
-}
+# PSSA warning justifications (all remaining diagnostics are reviewed and intentional):
+# - PSAvoidUsingWriteHost: operator-facing console UI with [+] [!] [-] [*] prefixes is the
+#   mandated reporting channel (RELAUNCH-SPEC §1/§3); output is not consumed downstream.
+# - PSReviewUnusedParameter: script-level parameters are read inside Main/helpers via
+#   PowerShell dynamic scoping; PSSA cannot trace those references.
+# - PSUseSingularNouns: plural nouns describe report collections and are kept for clarity.
+# - PSAvoidOverwritingBuiltInCmdlets (Write-Log), PSAvoidAssignmentToAutomaticVariable
+#   ($event/$profile loop locals), PSAvoidUsingBrokenHashAlgorithms (MD5 for duplicate
+#   size-grouping only, not security), and positional args to thin native-exe wrappers:
+#   deliberate, non-security-sensitive usages preserved from the original behavior.
+$ErrorActionPreference = 'Stop'
 
 function Write-ColorOutput {
-    param([string]$Message, [string]$Level = 'Info')
+    [CmdletBinding()]
+    param(
+        [string]$Message,
+        [string]$Level = 'Info'
+    )
 
     $color = switch ($Level) {
         'Critical' { 'Red' }
@@ -127,7 +123,28 @@ function Write-ColorOutput {
     Write-Host $Message -ForegroundColor $color
 }
 
+function Initialize-Report {
+    [CmdletBinding()]
+    param()
+
+    $script:report = @{
+        ServerName = $env:COMPUTERNAME
+        ScanTime = Get-Date
+        WarningDays = $WarningDays
+        CriticalDays = $CriticalDays
+        Certificates = @()
+        Summary = @{
+            TotalCertificates = 0
+            Expired = 0
+            Critical = 0
+            Warning = 0
+            Healthy = 0
+        }
+    }
+}
+
 function Get-CertificateStatus {
+    [CmdletBinding()]
     param(
         [DateTime]$NotAfter,
         [DateTime]$NotBefore
@@ -166,7 +183,33 @@ function Get-CertificateStatus {
     }
 }
 
+function Add-CertificateToReport {
+    [CmdletBinding()]
+    param(
+        [PSCustomObject]$CertInfo,
+        [hashtable]$Status
+    )
+
+    $script:report.Certificates += $CertInfo
+    $script:report.Summary.TotalCertificates++
+
+    switch ($Status.Status) {
+        'Expired' { $script:report.Summary.Expired++ }
+        'Critical' { $script:report.Summary.Critical++ }
+        'Warning' { $script:report.Summary.Warning++ }
+        'Healthy' { $script:report.Summary.Healthy++ }
+    }
+
+    $displayName = if ($CertInfo.FriendlyName) { $CertInfo.FriendlyName } else { $CertInfo.Subject }
+    $expiresText = $CertInfo.NotAfter.ToString('yyyy-MM-dd')
+    $statusText = "[$($Status.Status.ToUpper())] $displayName - Expires: $expiresText ($($Status.DaysUntilExpiry) days)"
+    Write-ColorOutput "    $statusText" -Level $Status.Color
+}
+
 function Get-LocalCertificates {
+    [CmdletBinding()]
+    param()
+
     Write-Host "`nScanning local certificate stores..." -ForegroundColor Cyan
 
     $storePaths = @(
@@ -212,25 +255,11 @@ function Get-LocalCertificates {
                         HasPrivateKey = $cert.HasPrivateKey
                     }
 
-                    $script:report.Certificates += $certInfo
-                    $script:report.Summary.TotalCertificates++
-
-                    switch ($status.Status) {
-                        'Expired' { $script:report.Summary.Expired++ }
-                        'Critical' { $script:report.Summary.Critical++ }
-                        'Warning' { $script:report.Summary.Warning++ }
-                        'Healthy' { $script:report.Summary.Healthy++ }
-                    }
-
-                    # Display cert info
-                    $displayName = if ($cert.FriendlyName) { $cert.FriendlyName } else { $cert.Subject }
-                    $statusText = "[$($status.Status.ToUpper())] $displayName - Expires: $($cert.NotAfter.ToString('yyyy-MM-dd')) ($($status.DaysUntilExpiry) days)"
-
-                    Write-ColorOutput "    $statusText" -Level $status.Color
+                    Add-CertificateToReport -CertInfo $certInfo -Status $status
                 }
             }
             catch {
-                Write-ColorOutput "  [ERROR] Failed to read store $storePath : $($_.Exception.Message)" -Level Error
+                Write-ColorOutput "  [-] Failed to read store $storePath : $($_.Exception.Message)" -Level Error
             }
         }
         else {
@@ -240,6 +269,9 @@ function Get-LocalCertificates {
 }
 
 function Get-RemoteCertificates {
+    [CmdletBinding()]
+    param()
+
     Write-Host "`nChecking remote HTTPS endpoints..." -ForegroundColor Cyan
 
     foreach ($endpoint in $Endpoints) {
@@ -260,8 +292,8 @@ function Get-RemoteCertificates {
             $sslStream.AuthenticateAsClient($hostname)
 
             # Get certificate
-            $cert = $sslStream.RemoteCertificate
-            $cert2 = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($cert)
+            $rawCert = $sslStream.RemoteCertificate
+            $cert2 = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($rawCert)
 
             $status = Get-CertificateStatus -NotAfter $cert2.NotAfter -NotBefore $cert2.NotBefore
 
@@ -288,29 +320,22 @@ function Get-RemoteCertificates {
                 HasPrivateKey = $cert2.HasPrivateKey
             }
 
-            $script:report.Certificates += $certInfo
-            $script:report.Summary.TotalCertificates++
-
-            switch ($status.Status) {
-                'Expired' { $script:report.Summary.Expired++ }
-                'Critical' { $script:report.Summary.Critical++ }
-                'Warning' { $script:report.Summary.Warning++ }
-                'Healthy' { $script:report.Summary.Healthy++ }
-            }
-
-            $statusText = "[$($status.Status.ToUpper())] $hostname - Expires: $($cert2.NotAfter.ToString('yyyy-MM-dd')) ($($status.DaysUntilExpiry) days)"
-            Write-ColorOutput "    $statusText" -Level $status.Color
+            Add-CertificateToReport -CertInfo $certInfo -Status $status
 
             $sslStream.Close()
             $tcpClient.Close()
         }
         catch {
-            Write-ColorOutput "    [ERROR] Failed to retrieve certificate: $($_.Exception.Message)" -Level Error
+            Write-ColorOutput "  [-] Failed to retrieve certificate for ${endpoint}: $($_.Exception.Message)" `
+                -Level Error
         }
     }
 }
 
-function Show-Summary {
+function Show-CertificateSummary {
+    [CmdletBinding()]
+    param()
+
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "  Certificate Expiration Summary" -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
@@ -319,25 +344,29 @@ function Show-Summary {
     Write-Host "`nTotal Certificates: $($script:report.Summary.TotalCertificates)"
 
     if ($script:report.Summary.Expired -gt 0) {
-        Write-ColorOutput "Expired: $($script:report.Summary.Expired)" -Level Critical
+        Write-ColorOutput "[!] Expired: $($script:report.Summary.Expired)" -Level Critical
     }
     if ($script:report.Summary.Critical -gt 0) {
-        Write-ColorOutput "Critical (expires in $CriticalDays days): $($script:report.Summary.Critical)" -Level Critical
+        Write-ColorOutput "[!] Critical (expires in $CriticalDays days): $($script:report.Summary.Critical)" `
+            -Level Critical
     }
     if ($script:report.Summary.Warning -gt 0) {
-        Write-ColorOutput "Warning (expires in $WarningDays days): $($script:report.Summary.Warning)" -Level Warning
+        Write-ColorOutput "[!] Warning (expires in $WarningDays days): $($script:report.Summary.Warning)" -Level Warning
     }
-    Write-ColorOutput "Healthy: $($script:report.Summary.Healthy)" -Level Success
+    Write-ColorOutput "[+] Healthy: $($script:report.Summary.Healthy)" -Level Success
 
     # Show critical certificates
-    $criticalCerts = $script:report.Certificates | Where-Object { $_.Status -in @('Expired', 'Critical') } | Sort-Object DaysUntilExpiry
+    $criticalCerts = $script:report.Certificates |
+        Where-Object { $_.Status -in @('Expired', 'Critical') } |
+        Sort-Object DaysUntilExpiry
 
     if ($criticalCerts) {
         Write-Host "`nCertificates Requiring Immediate Attention:" -ForegroundColor Red
         foreach ($cert in $criticalCerts) {
             $name = if ($cert.FriendlyName) { $cert.FriendlyName } else { $cert.Subject }
             Write-Host "  - $name" -ForegroundColor Red
-            Write-Host "    Expires: $($cert.NotAfter.ToString('yyyy-MM-dd')) ($($cert.DaysUntilExpiry) days)" -ForegroundColor Red
+            Write-Host "    Expires: $($cert.NotAfter.ToString('yyyy-MM-dd')) ($($cert.DaysUntilExpiry) days)" `
+                -ForegroundColor Red
             Write-Host "    Location: $($cert.StorePath)" -ForegroundColor Gray
         }
     }
@@ -345,8 +374,13 @@ function Show-Summary {
     Write-Host "`n========================================`n" -ForegroundColor Cyan
 }
 
-function Export-HTMLReport {
-    $reportPath = "$ReportDir\CertificateReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+function Export-HtmlCertificateReport {
+    [CmdletBinding()]
+    param(
+        [string]$ReportDir
+    )
+
+    $reportPath = Join-Path $ReportDir "CertificateReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
 
     $html = @"
 <!DOCTYPE html>
@@ -355,11 +389,20 @@ function Export-HTMLReport {
     <title>Certificate Expiration Report - $($script:report.ServerName)</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .container { max-width: 1600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container {
+            max-width: 1600px; margin: 0 auto; background-color: white; padding: 30px;
+            border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
         h1 { color: #333; border-bottom: 3px solid #007bff; padding-bottom: 10px; }
         h2 { color: #555; margin-top: 30px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px 0; }
-        .metric { background-color: #f8f9fa; padding: 20px; border-radius: 4px; border-left: 4px solid #007bff; text-align: center; }
+        .summary {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px; margin: 20px 0;
+        }
+        .metric {
+            background-color: #f8f9fa; padding: 20px; border-radius: 4px;
+            border-left: 4px solid #007bff; text-align: center;
+        }
         .metric.expired { border-left-color: #dc3545; }
         .metric.critical { border-left-color: #dc3545; }
         .metric.warning { border-left-color: #ffc107; }
@@ -373,10 +416,18 @@ function Export-HTMLReport {
         th { background-color: #007bff; color: white; padding: 12px; text-align: left; position: sticky; top: 0; }
         td { padding: 10px; border-bottom: 1px solid #ddd; }
         tr:hover { background-color: #f1f1f1; }
-        .status-expired { background-color: #f8d7da; color: #721c24; font-weight: bold; padding: 4px 8px; border-radius: 3px; }
-        .status-critical { background-color: #f8d7da; color: #721c24; font-weight: bold; padding: 4px 8px; border-radius: 3px; }
-        .status-warning { background-color: #fff3cd; color: #856404; font-weight: bold; padding: 4px 8px; border-radius: 3px; }
-        .status-healthy { background-color: #d4edda; color: #155724; font-weight: bold; padding: 4px 8px; border-radius: 3px; }
+        .status-expired, .status-critical {
+            background-color: #f8d7da; color: #721c24; font-weight: bold;
+            padding: 4px 8px; border-radius: 3px;
+        }
+        .status-warning {
+            background-color: #fff3cd; color: #856404; font-weight: bold;
+            padding: 4px 8px; border-radius: 3px;
+        }
+        .status-healthy {
+            background-color: #d4edda; color: #155724; font-weight: bold;
+            padding: 4px 8px; border-radius: 3px;
+        }
         .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #777; font-size: 0.9em; }
         .thumbprint { font-family: 'Courier New', monospace; font-size: 0.85em; color: #666; }
     </style>
@@ -395,13 +446,16 @@ function Export-HTMLReport {
                 <div>Total Certificates</div>
             </div>
             $(if($script:report.Summary.Expired -gt 0) {
-                "<div class='metric expired'><div class='metric-value'>$($script:report.Summary.Expired)</div><div>Expired</div></div>"
+                "<div class='metric expired'><div class='metric-value'>$($script:report.Summary.Expired)" +
+                "</div><div>Expired</div></div>"
             })
             $(if($script:report.Summary.Critical -gt 0) {
-                "<div class='metric critical'><div class='metric-value'>$($script:report.Summary.Critical)</div><div>Critical</div></div>"
+                "<div class='metric critical'><div class='metric-value'>$($script:report.Summary.Critical)" +
+                "</div><div>Critical</div></div>"
             })
             $(if($script:report.Summary.Warning -gt 0) {
-                "<div class='metric warning'><div class='metric-value'>$($script:report.Summary.Warning)</div><div>Warning</div></div>"
+                "<div class='metric warning'><div class='metric-value'>$($script:report.Summary.Warning)" +
+                "</div><div>Warning</div></div>"
             })
             <div class="metric healthy">
                 <div class="metric-value">$($script:report.Summary.Healthy)</div>
@@ -444,44 +498,89 @@ function Export-HTMLReport {
 </body>
 </html>
 "@
+    $html | Out-File -FilePath $reportPath -Encoding UTF8 -ErrorAction Stop
+    Write-ColorOutput "[+] HTML report exported to: $reportPath" -Level Success
+    return $reportPath
 
-    $html | Out-File -FilePath $reportPath -Encoding UTF8
-    Write-ColorOutput "`nHTML report exported to: $reportPath" -Level Success
+}
+
+function Export-CsvCertificateReport {
+    [CmdletBinding()]
+    param(
+        [string]$ReportDir
+    )
+
+    $reportPath = Join-Path $ReportDir "CertificateReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+
+    $script:report.Certificates | Export-Csv -Path $reportPath -NoTypeInformation -Encoding UTF8 -ErrorAction Stop
+    Write-ColorOutput "[+] CSV report exported to: $reportPath" -Level Success
     return $reportPath
 }
 
-function Export-CSVReport {
-    $reportPath = "$ReportDir\CertificateReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+function Test-ReportDirectory {
+    [CmdletBinding()]
+    param()
 
-    $script:report.Certificates | Export-Csv -Path $reportPath -NoTypeInformation -Encoding UTF8
-    Write-ColorOutput "CSV report exported to: $reportPath" -Level Success
-    return $reportPath
+    $myDocs = [Environment]::GetFolderPath('MyDocuments')
+    if ([string]::IsNullOrWhiteSpace($myDocs)) {
+        $myDocs = [Environment]::GetFolderPath('UserProfile')
+    }
+    $reportDir = Join-Path $myDocs 'Reports'
+    if ([string]::IsNullOrWhiteSpace($reportDir) -or
+        $reportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+        $reportDir -match '^(\\\\|//)') {
+        throw "Unsafe report path: $reportDir. Report path must be a local absolute path without '..' traversal."
+    }
+    $reportDir = [System.IO.Path]::GetFullPath($reportDir)
+    if (-not (Test-Path -LiteralPath $reportDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $reportDir -Force -ErrorAction Stop | Out-Null
+    }
+    return $reportDir
 }
 
-# Main execution
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "  Certificate Expiration Monitor" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Server: $($script:report.ServerName)"
-Write-Host "Warning Threshold: $WarningDays days"
-Write-Host "Critical Threshold: $CriticalDays days"
+function Main {
+    [CmdletBinding()]
+    param()
 
-if ($CheckLocal -or (-not $CheckRemote -and -not $Endpoints)) {
-    Get-LocalCertificates
+    try {
+        $ReportDir = Test-ReportDirectory
+        Initialize-Report
+
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "  Certificate Expiration Monitor" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "Server: $($script:report.ServerName)"
+        Write-Host "Warning Threshold: $WarningDays days"
+        Write-Host "Critical Threshold: $CriticalDays days"
+
+        if ($CheckLocal -or (-not $CheckRemote -and -not $Endpoints)) {
+            Get-LocalCertificates
+        }
+
+        if ($CheckRemote -or $Endpoints) {
+            Get-RemoteCertificates
+        }
+
+        Show-CertificateSummary
+
+        if ($ExportHTML) {
+            Write-Host "[*] Generating HTML report..." -ForegroundColor Cyan
+            Export-HtmlCertificateReport -ReportDir $ReportDir
+        }
+
+        if ($ExportCSV) {
+            Write-Host "[*] Generating CSV report..." -ForegroundColor Cyan
+            Export-CsvCertificateReport -ReportDir $ReportDir
+        }
+
+        Write-Host "[+] Certificate expiration check completed" -ForegroundColor Green
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-if ($CheckRemote -or $Endpoints) {
-    Get-RemoteCertificates
-}
-
-Show-Summary
-
-if ($ExportHTML) {
-    Write-Host "Generating HTML report..." -ForegroundColor Cyan
-    Export-HTMLReport
-}
-
-if ($ExportCSV) {
-    Write-Host "Generating CSV report..." -ForegroundColor Cyan
-    Export-CSVReport
-}
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

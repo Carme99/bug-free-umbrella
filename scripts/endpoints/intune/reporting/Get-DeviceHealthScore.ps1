@@ -1,11 +1,15 @@
-<#
+﻿<#
 .SYNOPSIS
-    Generates a comprehensive device health score report.
+    Generate a device health score report from Intune managed device metrics.
 
 .DESCRIPTION
     Analyzes multiple health metrics (compliance, encryption, updates, check-in)
     and calculates an overall health score for each device. Helps identify
     devices requiring attention.
+
+    Requires connection to Microsoft Graph with DeviceManagementManagedDevices.Read.All
+    permissions. The resulting HTML or CSV report is written to the path given by
+    -OutputPath (default: current directory).
 
 .PARAMETER TenantId
     Azure AD Tenant ID (optional, will prompt if not provided)
@@ -20,14 +24,20 @@
     Filter devices below this health score (0-100, default: 0 = show all)
 
 .EXAMPLE
-    .\Get-DeviceHealthScore.ps1 -MinHealthScore 75
+    PS C:\> .\Get-DeviceHealthScore.ps1 -MinHealthScore 75
+    Generates an HTML report of devices scoring 75 or higher.
 
 .EXAMPLE
-    .\Get-DeviceHealthScore.ps1 -Format CSV
+    PS C:\> .\Get-DeviceHealthScore.ps1 -Format CSV
+    Generates a CSV health score report in the current directory.
 
 .NOTES
+    File Name: Get-DeviceHealthScore.ps1
     Author: Intune Admin
-    Version: 1.0
+    Prerequisite: PowerShell 7.0
+    Version: 1.0.0
+    Date: 2026-08-23
+
     Requires: Microsoft.Graph (PowerShell SDK) module
     Permissions: DeviceManagementManagedDevices.Read.All
 
@@ -41,6 +51,7 @@
     Total: 100 points
 #>
 
+[CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
     [string]$TenantId,
@@ -57,19 +68,9 @@ param(
     [int]$MinHealthScore = 0
 )
 
-# Import helper module
-$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
-$helperModule = "$scriptPath\..\IntuneGraphHelper.psm1"
+$ErrorActionPreference = 'Stop'
 
-if (-not (Test-Path $helperModule)) {
-    Write-Error "Required module not found: $helperModule"
-    Write-Error "Please ensure IntuneGraphHelper.psm1 is present in the scripts/endpoints/intune directory"
-    exit 1
-}
-
-Import-Module $helperModule -Force
-
-function Calculate-DeviceHealthScore {
+function Measure-DeviceHealthScore {
     param($device)
 
     $score = 0
@@ -151,70 +152,92 @@ function Calculate-DeviceHealthScore {
     }
 }
 
-try {
-    Write-Host "Connecting to Microsoft Graph..." -ForegroundColor Cyan
-    Connect-IntuneGraph -TenantId $TenantId
+function Main {
+    try {
+        # Import helper module from the parent (intune/) directory
+        $helperModule = Join-Path (Split-Path -Parent $PSScriptRoot) 'IntuneGraphHelper.psm1'
 
-    Write-Host "Retrieving all managed devices..." -ForegroundColor Cyan
-    $devices = Get-AllIntuneDevices
+        if (-not (Test-Path -LiteralPath $helperModule)) {
+            Write-Host "[-] Required module not found: $helperModule" -ForegroundColor Red
+            Write-Host `
+                "[-] Please ensure IntuneGraphHelper.psm1 is present in the scripts/endpoints/intune directory" `
+                -ForegroundColor Red
+            return 1
+        }
 
-    Write-Host "Found $($devices.Count) devices. Calculating health scores..." -ForegroundColor Cyan
+        Import-Module $helperModule -Force -ErrorAction Stop
 
-    $healthReport = @()
+        Write-Host "[*] Connecting to Microsoft Graph..." -ForegroundColor Cyan
+        Connect-IntuneGraph -TenantId $TenantId -ErrorAction Stop
 
-    foreach ($device in $devices) {
-        $health = Calculate-DeviceHealthScore -device $device
+        Write-Host "[*] Retrieving all managed devices..." -ForegroundColor Cyan
+        $devices = Get-AllIntuneDevices -ErrorAction Stop
 
-        if ($health.Percentage -ge $MinHealthScore) {
-            $healthReport += [PSCustomObject]@{
-                DeviceName = $device.deviceName
-                UserPrincipalName = $device.userPrincipalName
-                OperatingSystem = $device.operatingSystem
-                OSVersion = $device.osVersion
-                HealthScore = $health.Percentage
-                HealthRating = $health.HealthRating
-                ComplianceState = $device.complianceState
-                IsEncrypted = $device.isEncrypted
-                LastSyncDate = $device.lastSyncDateTime
-                DaysSinceSync = if ($device.lastSyncDateTime) {
-                    [math]::Round(((Get-Date) - [DateTime]::Parse($device.lastSyncDateTime)).TotalDays, 1)
+        Write-Host "[*] Found $($devices.Count) devices. Calculating health scores..." -ForegroundColor Cyan
+
+        $healthReport = @()
+
+        foreach ($device in $devices) {
+            $health = Measure-DeviceHealthScore -device $device
+
+            if ($health.Percentage -ge $MinHealthScore) {
+                $healthReport += [PSCustomObject]@{
+                    DeviceName = $device.deviceName
+                    UserPrincipalName = $device.userPrincipalName
+                    OperatingSystem = $device.operatingSystem
+                    OSVersion = $device.osVersion
+                    HealthScore = $health.Percentage
+                    HealthRating = $health.HealthRating
+                    ComplianceState = $device.complianceState
+                    IsEncrypted = $device.isEncrypted
+                    LastSyncDate = $device.lastSyncDateTime
+                    DaysSinceSync = if ($device.lastSyncDateTime) {
+                        [math]::Round(((Get-Date) - [DateTime]::Parse($device.lastSyncDateTime)).TotalDays, 1)
+                    }
+                    else { "Never" }
+                    SerialNumber = $device.serialNumber
+                    Model = $device.model
+                    Issues = $health.Issues
+                    ManagementState = $device.managementState
                 }
-                else { "Never" }
-                SerialNumber = $device.serialNumber
-                Model = $device.model
-                Issues = $health.Issues
-                ManagementState = $device.managementState
             }
         }
+
+        # Sort by health score (lowest first)
+        $healthReport = $healthReport | Sort-Object HealthScore
+
+        Write-Host "`nHealth Score Summary:" -ForegroundColor Yellow
+        Write-Host "  Excellent (90-100): $(($healthReport | Where-Object { $_.HealthScore -ge 90 }).Count)"
+        $goodCount = @($healthReport | Where-Object { $_.HealthScore -ge 75 -and $_.HealthScore -lt 90 }).Count
+        $fairCount = @($healthReport | Where-Object { $_.HealthScore -ge 60 -and $_.HealthScore -lt 75 }).Count
+        $poorCount = @($healthReport | Where-Object { $_.HealthScore -ge 40 -and $_.HealthScore -lt 60 }).Count
+        Write-Host "  Good (75-89): $goodCount"
+        Write-Host "  Fair (60-74): $fairCount"
+        Write-Host "  Poor (40-59): $poorCount"
+        Write-Host "  Critical (0-39): $(($healthReport | Where-Object { $_.HealthScore -lt 40 }).Count)"
+
+        # Generate report
+        $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+        $reportPath = Join-Path $OutputPath "DeviceHealthScore-$timestamp.$($Format.ToLower())"
+
+        if ($Format -eq "CSV") {
+            $healthReport | Export-Csv -Path $reportPath -NoTypeInformation -ErrorAction Stop
+        }
+        else {
+            Export-IntuneReportToHTML -Data $healthReport -Title "Device Health Score Report" `
+                -Description "Generated on $(Get-Date) | Minimum Score: $MinHealthScore" `
+                -FilePath $reportPath -ErrorAction Stop
+        }
+
+        Write-Host "`n[+] Report generated successfully:" -ForegroundColor Green
+        Write-Host "   $reportPath" -ForegroundColor Cyan
+        return 0
     }
-
-    # Sort by health score (lowest first)
-    $healthReport = $healthReport | Sort-Object HealthScore
-
-    Write-Host "`nHealth Score Summary:" -ForegroundColor Yellow
-    Write-Host "  Excellent (90-100): $(($healthReport | Where-Object { $_.HealthScore -ge 90 }).Count)"
-    Write-Host "  Good (75-89): $(($healthReport | Where-Object { $_.HealthScore -ge 75 -and $_.HealthScore -lt 90 }).Count)"
-    Write-Host "  Fair (60-74): $(($healthReport | Where-Object { $_.HealthScore -ge 60 -and $_.HealthScore -lt 75 }).Count)"
-    Write-Host "  Poor (40-59): $(($healthReport | Where-Object { $_.HealthScore -ge 40 -and $_.HealthScore -lt 60 }).Count)"
-    Write-Host "  Critical (0-39): $(($healthReport | Where-Object { $_.HealthScore -lt 40 }).Count)"
-
-    # Generate report
-    $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
-    $reportPath = Join-Path $OutputPath "DeviceHealthScore-$timestamp.$($Format.ToLower())"
-
-    if ($Format -eq "CSV") {
-        $healthReport | Export-Csv -Path $reportPath -NoTypeInformation
+    catch {
+        Write-Host "[-] Error generating device health score report: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
-    else {
-        $htmlReport = ConvertTo-IntuneHtmlReport -Data $healthReport -Title "Device Health Score Report" -Description "Generated on $(Get-Date) | Minimum Score: $MinHealthScore"
-        $htmlReport | Out-File -FilePath $reportPath -Encoding UTF8
-    }
-
-    Write-Host "`n✅ Report generated successfully:" -ForegroundColor Green
-    Write-Host "   $reportPath" -ForegroundColor Cyan
-
 }
-catch {
-    Write-Error "Error generating device health score report: $_"
-    exit 1
-}
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Adds Lenovo friendly model names to Intune device Notes and Entra ID device extension attributes.
 
@@ -92,8 +92,11 @@
     Enables detailed per-device logging.
 
 .NOTES
+    File Name: Add-LenovoFriendlyModelNames.ps1
     Author: System Administrator
-    Version: 2.0
+    Prerequisite: PowerShell 5.1+
+    Version: 1.0.0
+    Date: 2026-08-23
     Last Modified: 2026-01-16
 
     Requirements:
@@ -115,7 +118,8 @@
     - Lenovo Model Dataset: https://download.lenovo.com/bsco/public/allModels.json
 
     Reference Documentation:
-    - Lenovo MTM System: https://www.linkedin.com/pulse/use-lenovo-friendly-model-names-sccm-queries-instead-machine-philip
+    - Lenovo MTM System: https://www.linkedin.com/pulse/use-lenovo-friendly-model-names-
+      sccm-queries-instead-machine-philip
     - Intune Notes API: https://community.spiceworks.com/t/intune-enrolled-device-notes/953047
     - Lenovo Commercial Systems: https://docs.lenovocdrt.com/guides/lcsm/lcsm_top/
 #>
@@ -136,9 +140,11 @@ param(
 
     [Parameter(Mandatory = $false)]
     [ValidateSet(
-        "extensionAttribute1", "extensionAttribute2", "extensionAttribute3", "extensionAttribute4", "extensionAttribute5",
-        "extensionAttribute6", "extensionAttribute7", "extensionAttribute8", "extensionAttribute9", "extensionAttribute10",
-        "extensionAttribute11", "extensionAttribute12", "extensionAttribute13", "extensionAttribute14", "extensionAttribute15"
+        "extensionAttribute1", "extensionAttribute2", "extensionAttribute3",
+        "extensionAttribute4", "extensionAttribute5", "extensionAttribute6",
+        "extensionAttribute7", "extensionAttribute8", "extensionAttribute9",
+        "extensionAttribute10", "extensionAttribute11", "extensionAttribute12",
+        "extensionAttribute13", "extensionAttribute14", "extensionAttribute15"
     )]
     [string]$ExtensionAttributeName = "extensionAttribute1",
 
@@ -171,10 +177,10 @@ function Write-Log {
     )
 
     switch ($Level) {
-        "Info" { Write-Host $Message -ForegroundColor Cyan }
-        "Warn" { Write-Host $Message -ForegroundColor Yellow }
-        "Error" { Write-Host $Message -ForegroundColor Red }
-        "Verbose" { if ($VerboseOutput) { Write-Host $Message -ForegroundColor DarkGray } }
+        "Info" { Write-Host "[*] $Message" -ForegroundColor Cyan }
+        "Warn" { Write-Host "[!] $Message" -ForegroundColor Yellow }
+        "Error" { Write-Host "[-] $Message" -ForegroundColor Red }
+        "Verbose" { if ($VerboseOutput) { Write-Host "    $Message" -ForegroundColor DarkGray } }
     }
 }
 
@@ -211,7 +217,8 @@ function Connect-GraphRobust {
     }
     catch {
         if ($_.Exception.Message -match "window handle must be configured") {
-            Write-Log "Interactive auth failed (window handle issue). Falling back to device code authentication." "Warn"
+            Write-Log "Interactive auth failed (window handle issue). Falling back `
+                to device code authentication." "Warn"
             try {
                 Connect-MgGraph -Scopes $Scopes -UseDeviceCode -NoWelcome -ErrorAction Stop | Out-Null
                 Write-Log "Connected to Microsoft Graph using device code authentication" "Info"
@@ -290,13 +297,14 @@ function Get-LenovoModelLookup {
 
     for ($attempt = 1; $attempt -le $maxRetries; $attempt++) {
         try {
-            $allModels = Invoke-RestMethod -Uri $allModelsUrl -Method Get -TimeoutSec 30 -ErrorAction Stop
+            $allModels = @(Invoke-RestMethod -Uri $allModelsUrl -Method Get -TimeoutSec 30 -ErrorAction Stop)
             Write-Log "Successfully downloaded Lenovo model dataset (attempt $attempt/$maxRetries)" "Verbose"
             break
         }
         catch {
             if ($attempt -eq $maxRetries) {
-                Write-Log "Failed to download Lenovo dataset after $maxRetries attempts: $($_.Exception.Message)" "Error"
+                Write-Log "Failed to download Lenovo dataset after $maxRetries attempts: `
+                    $($_.Exception.Message)" "Error"
                 throw
             }
 
@@ -389,7 +397,7 @@ function Get-NormalisedNoteLines {
         Where-Object { $_ }
 }
 
-function Build-NotesLine {
+function New-NotesLine {
     <#
     .SYNOPSIS
         Builds the line to add to Notes field
@@ -452,7 +460,9 @@ function Set-EntraDeviceExtensionAttribute {
     # Attempt 1: Treat identifier as Entra device object ID
     try {
         if ($PSCmdlet.ShouldProcess($AzureDeviceIdentifier, "Set extension attribute $AttributeName")) {
-            Invoke-MgGraphRequest -Method PATCH -Uri "/v1.0/devices/$AzureDeviceIdentifier" -Body $payloadJson -ErrorAction Stop | Out-Null
+            Invoke-MgGraphRequest -Method PATCH `
+                -Uri "/v1.0/devices/$AzureDeviceIdentifier" `
+                -Body $payloadJson -ErrorAction Stop | Out-Null
             return "PatchedByObjectId"
         }
         return
@@ -469,7 +479,9 @@ function Set-EntraDeviceExtensionAttribute {
     # Attempt 2: Treat identifier as Entra deviceId
     try {
         if ($PSCmdlet.ShouldProcess($AzureDeviceIdentifier, "Set extension attribute $AttributeName")) {
-            Invoke-MgGraphRequest -Method PATCH -Uri "/v1.0/devices(deviceId='$AzureDeviceIdentifier')" -Body $payloadJson -ErrorAction Stop | Out-Null
+            Invoke-MgGraphRequest -Method PATCH `
+                -Uri "/v1.0/devices(deviceId='$AzureDeviceIdentifier')" `
+                -Body $payloadJson -ErrorAction Stop | Out-Null
             return "PatchedByDeviceId"
         }
         return
@@ -484,291 +496,306 @@ function Set-EntraDeviceExtensionAttribute {
 
 #region Main Script Logic
 
-try {
-    Write-Log "=== Lenovo Friendly Model Names Update Script ===" "Info"
-    Write-Log "Version 2.0 - Enhanced with retry logic, progress tracking, and error logging" "Info"
-    Write-Host ""
-
-    # Set default values for switches (only if not explicitly set)
-    if (-not $PSBoundParameters.ContainsKey('UpdateNotes')) {
-        $UpdateNotes = $true
-    }
-    if (-not $PSBoundParameters.ContainsKey('UpdateExtensionAttributes')) {
-        $UpdateExtensionAttributes = $true
-    }
-
-    # Validation: ensure at least one update target is enabled (unless auditing)
-    if (-not $AuditOnly -and -not $UpdateNotes -and -not $UpdateExtensionAttributes) {
-        throw "No update targets enabled. Set UpdateNotes and/or UpdateExtensionAttributes to `$true, or run with -AuditOnly"
-    }
-
-    # Display configuration
-    Write-Log "Configuration:" "Info"
-    Write-Log "  Audit Only: $AuditOnly" "Info"
-    Write-Log "  Update Notes: $UpdateNotes" "Info"
-    Write-Log "  Update Extension Attributes: $UpdateExtensionAttributes" "Info"
-    if ($UpdateExtensionAttributes) {
-        Write-Log "  Extension Attribute: $ExtensionAttributeName" "Info"
-    }
-    if ($UpdateNotes -and $NotesPrefix) {
-        Write-Log "  Notes Prefix: $NotesPrefix" "Info"
-    }
-    Write-Host ""
-
-    # Required Graph API scopes
-    $scopes = @(
-        "DeviceManagementManagedDevices.ReadWrite.All",  # For Intune managedDevice updates
-        "Device.ReadWrite.All"                            # For Entra device updates
-    )
-
-    # Connect to Microsoft Graph with robust auth handling
-    Connect-GraphRobust -Scopes $scopes
-
-    # Retrieve all Lenovo devices from Intune
-    Write-Log "Retrieving Lenovo managed devices from Intune..." "Info"
-
-    $lenovoDevices = Get-MgDeviceManagementManagedDevice `
-        -Filter "manufacturer eq 'LENOVO'" `
-        -All `
-        -Property "id,deviceName,manufacturer,model,notes,azureADDeviceId" `
-        -ErrorAction Stop
-
-    if (-not $lenovoDevices -or $lenovoDevices.Count -eq 0) {
-        Write-Log "No Lenovo devices found in Intune. Exiting." "Warn"
-        return
-    }
-
-    Write-Log "Found $($lenovoDevices.Count) Lenovo devices" "Info"
-
-    # Extract unique MTM codes from tenant devices
-    Write-Log "Extracting unique MTM codes from device models..." "Info"
-
-    $tenantMtms = $lenovoDevices |
-        ForEach-Object { Get-MtmTypeFromModel -Model $_.Model } |
-        Where-Object { $_ } |
-        Sort-Object -Unique
-
-    if (-not $tenantMtms -or $tenantMtms.Count -eq 0) {
-        Write-Log "No valid MTM codes could be extracted from device models. Exiting." "Warn"
-        return
-    }
-
-    Write-Log "Identified $($tenantMtms.Count) unique MTM codes in tenant" "Info"
-    Write-Host ""
-
-    # Build MTM to family name mapping from Lenovo dataset
-    Write-Log "Building MTM to friendly name mapping from Lenovo dataset..." "Info"
-
-    $mappingResult = Get-LenovoModelLookup -TenantMtms $tenantMtms
-    $mtmToFamily = $mappingResult.Lookup
-    $missingMtms = $mappingResult.Missing
-
-    Write-Log "Mapping Results:" "Info"
-    Write-Log "  Successfully mapped: $($mtmToFamily.Count) MTM codes" "Info"
-    Write-Log "  Unable to map: $($missingMtms.Count) MTM codes" "Info"
-    Write-Log "  Lenovo dataset entries processed: $($mappingResult.TotalProcessed)" "Info"
-
-    # Report missing MTM codes
-    if ($missingMtms.Count -gt 0) {
-        Write-Host ""
-        Write-Log "WARNING: The following MTM codes could not be mapped:" "Warn"
-        $missingMtms | ForEach-Object { Write-Log "  - $_" "Warn" }
-
-        # Find example devices with unmapped MTMs
-        $exampleDevices = $lenovoDevices |
-            Where-Object { $missingMtms -contains (Get-MtmTypeFromModel -Model $_.Model) } |
-            Select-Object -First 3
-
-        if ($exampleDevices) {
-            Write-Log "Example devices with unmapped MTMs:" "Warn"
-            $exampleDevices | ForEach-Object {
-                Write-Log "  - $($_.deviceName): $($_.model)" "Warn"
-            }
-        }
-
-        if ($FailIfMissingMappings) {
-            throw "FailIfMissingMappings specified and $($missingMtms.Count) MTM code(s) could not be resolved"
-        }
-    }
-
-    Write-Host ""
-
-    # Exit if audit only mode
-    if ($AuditOnly) {
-        Write-Log "=== Audit Only Mode - No Changes Made ===" "Info"
-        Write-Log "To apply changes, run without -AuditOnly flag" "Info"
-        return
-    }
-
-    # Initialize counters and error tracking
-    $stats = @{
-        NotesUpdated = 0
-        NotesSkipped = 0
-        ExtUpdated = 0
-        ExtSkipped = 0
-        Unknown = 0
-        Errors = 0
-    }
-
-    $errorLog = New-Object System.Collections.Generic.List[object]
-
-    # Process each device
-    Write-Host ""
-    Write-Log "Processing devices..." "Info"
-
-    $deviceIndex = 0
-    foreach ($device in $lenovoDevices) {
-        $deviceIndex++
-
-        # Update progress indicator
-        $percentComplete = [math]::Round(($deviceIndex / $lenovoDevices.Count) * 100, 1)
-        Write-Progress `
-            -Activity "Updating Lenovo device records" `
-            -Status "Processing device $deviceIndex of $($lenovoDevices.Count): $($device.deviceName)" `
-            -PercentComplete $percentComplete
-
-        # Extract and validate MTM code
-        $mtm = Get-MtmTypeFromModel -Model $device.Model
-
-        if (-not $mtm) {
-            $stats.Unknown++
-            Write-Log "Skipping $($device.deviceName): Could not extract valid MTM from model '$($device.model)'" "Verbose"
-            continue
-        }
-
-        if (-not $mtmToFamily.ContainsKey($mtm)) {
-            $stats.Unknown++
-            Write-Log "Skipping $($device.deviceName): MTM code '$mtm' not in mapping" "Verbose"
-            continue
-        }
-
-        $familyName = [string]$mtmToFamily[$mtm]
-
-        # Determine if Notes update is needed
-        $notesLine = Build-NotesLine -FamilyName $familyName
-        $existingNoteLines = Get-NormalisedNoteLines -Notes ([string]$device.Notes)
-        $needsNotesUpdate = $UpdateNotes -and -not ($existingNoteLines -contains $notesLine)
-
-        $newNotes = $null
-        if ($needsNotesUpdate) {
-            $newNotes = if ($existingNoteLines.Count -eq 0) {
-                $notesLine
-            }
-            else {
-                ($existingNoteLines + $notesLine) -join $NotesSeparator
-            }
-        }
-
-        # Determine if Entra extension attribute update is needed
-        $azureDeviceIdentifier = [string]$device.azureADDeviceId
-        $hasAzureId = -not [string]::IsNullOrWhiteSpace($azureDeviceIdentifier)
-        $needsExtUpdate = $UpdateExtensionAttributes -and $hasAzureId
-
-        # Skip device if no updates needed
-        if (-not $needsNotesUpdate -and -not $needsExtUpdate) {
-            if ($UpdateNotes) { $stats.NotesSkipped++ }
-            if ($UpdateExtensionAttributes -and $hasAzureId) { $stats.ExtSkipped++ }
-            Write-Log "Skipping $($device.deviceName): Already up to date" "Verbose"
-            continue
-        }
-
-        try {
-            # Update Intune Notes
-            if ($needsNotesUpdate) {
-                if ($PSCmdlet.ShouldProcess($device.deviceName, "Update Intune Notes with '$notesLine'")) {
-                    Update-MgDeviceManagementManagedDevice -ManagedDeviceId $device.id -Notes $newNotes -ErrorAction Stop | Out-Null
-                    $stats.NotesUpdated++
-                    Write-Log "Updated Notes for $($device.deviceName): $familyName" "Verbose"
-                }
-            }
-            elseif ($UpdateNotes) {
-                $stats.NotesSkipped++
-            }
-
-            # Update Entra extension attribute
-            if ($needsExtUpdate) {
-                if ($PSCmdlet.ShouldProcess($device.deviceName, "Set Entra $ExtensionAttributeName to '$familyName'")) {
-                    $methodUsed = Set-EntraDeviceExtensionAttribute `
-                        -AzureDeviceIdentifier $azureDeviceIdentifier `
-                        -AttributeName $ExtensionAttributeName `
-                        -Value $familyName `
-                        -ErrorAction Stop
-
-                    $stats.ExtUpdated++
-                    Write-Log "Updated $ExtensionAttributeName for $($device.deviceName) using ${methodUsed}: $familyName" "Verbose"
-                }
-            }
-            elseif ($UpdateExtensionAttributes) {
-                $stats.ExtSkipped++
-                if (-not $hasAzureId) {
-                    Write-Log "Skipping Entra update for $($device.deviceName): No azureADDeviceId" "Verbose"
-                }
-            }
-
-            # Rate limiting - brief pause to avoid Graph API throttling
-            Start-Sleep -Milliseconds 100
-        }
-        catch {
-            $stats.Errors++
-
-            $errorDetails = [PSCustomObject]@{
-                DeviceName = $device.deviceName
-                Model = $device.model
-                MTM = $mtm
-                IntuneId = $device.id
-                AzureADDeviceId = $azureDeviceIdentifier
-                Error = $_.Exception.Message
-                Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-            }
-
-            $errorLog.Add($errorDetails)
-
-            Write-Log "ERROR updating $($device.deviceName): $($_.Exception.Message)" "Warn"
-        }
-    }
-
-    Write-Progress -Activity "Updating Lenovo device records" -Completed
-
-    # Display summary
-    Write-Host ""
-    Write-Host ""
-    Write-Log "=== Update Summary ===" "Info"
-    Write-Host "Intune Notes:"
-    Write-Host "  Updated: $($stats.NotesUpdated)"
-    Write-Host "  Skipped (already present): $($stats.NotesSkipped)"
-    Write-Host ""
-    Write-Host "Entra Extension Attributes:"
-    Write-Host "  Updated: $($stats.ExtUpdated)"
-    Write-Host "  Skipped: $($stats.ExtSkipped)"
-    Write-Host ""
-    Write-Host "Other:"
-    Write-Host "  Unknown/Unmapped: $($stats.Unknown)"
-    Write-Host "  Errors: $($stats.Errors)"
-
-    # Export error log if errors occurred
-    if ($errorLog.Count -gt 0) {
-        $errorLogPath = Join-Path $PWD "LenovoUpdateErrors_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
-        $errorLog | Export-Csv -Path $errorLogPath -NoTypeInformation -Encoding UTF8
-        Write-Host ""
-        Write-Log "Error log exported to: $errorLogPath" "Warn"
-    }
-
-    Write-Host ""
-    Write-Log "Script completed successfully" "Info"
+# Set default values for switches (only if not explicitly set)
+if (-not $PSBoundParameters.ContainsKey('UpdateNotes')) {
+    $UpdateNotes = $true
 }
-catch {
-    Write-Log "Script failed with error: $($_.Exception.Message)" "Error"
-    Write-Log "Stack trace: $($_.ScriptStackTrace)" "Error"
-    throw
+if (-not $PSBoundParameters.ContainsKey('UpdateExtensionAttributes')) {
+    $UpdateExtensionAttributes = $true
 }
-finally {
-    # Clean up Graph connection
+
+function Main {
+    [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = "Medium")]
+    param()
+
     try {
-        Disconnect-MgGraph -ErrorAction SilentlyContinue | Out-Null
+        Write-Log "=== Lenovo Friendly Model Names Update Script ===" "Info"
+        Write-Log "Enhanced with retry logic, progress tracking, and error logging" "Info"
+        Write-Host ""
+
+
+        # Validation: ensure at least one update target is enabled (unless auditing)
+        if (-not $AuditOnly -and -not $UpdateNotes -and -not $UpdateExtensionAttributes) {
+            throw "No update targets enabled. Set UpdateNotes and/or `
+                UpdateExtensionAttributes to `$true, or run with -AuditOnly"
+        }
+
+        # Display configuration
+        Write-Log "Configuration:" "Info"
+        Write-Log "  Audit Only: $AuditOnly" "Info"
+        Write-Log "  Update Notes: $UpdateNotes" "Info"
+        Write-Log "  Update Extension Attributes: $UpdateExtensionAttributes" "Info"
+        if ($UpdateExtensionAttributes) {
+            Write-Log "  Extension Attribute: $ExtensionAttributeName" "Info"
+        }
+        if ($UpdateNotes -and $NotesPrefix) {
+            Write-Log "  Notes Prefix: $NotesPrefix" "Info"
+        }
+        Write-Host ""
+
+        # Required Graph API scopes
+        $scopes = @(
+            "DeviceManagementManagedDevices.ReadWrite.All",  # For Intune managedDevice updates
+            "Device.ReadWrite.All"                            # For Entra device updates
+        )
+
+        # Connect to Microsoft Graph with robust auth handling
+        Connect-GraphRobust -Scopes $scopes
+
+        # Retrieve all Lenovo devices from Intune
+        Write-Log "Retrieving Lenovo managed devices from Intune..." "Info"
+
+        $lenovoDevices = @(Get-MgDeviceManagementManagedDevice `
+            -Filter "manufacturer eq 'LENOVO'" `
+            -All `
+            -Property "id,deviceName,manufacturer,model,notes,azureADDeviceId" `
+            -ErrorAction Stop)
+
+        if (-not $lenovoDevices -or $lenovoDevices.Count -eq 0) {
+            Write-Log "No Lenovo devices found in Intune. Exiting." "Warn"
+            return 0
+        }
+
+        Write-Log "Found $($lenovoDevices.Count) Lenovo devices" "Info"
+
+        # Extract unique MTM codes from tenant devices
+        Write-Log "Extracting unique MTM codes from device models..." "Info"
+
+        $tenantMtms = @($lenovoDevices |
+            ForEach-Object { Get-MtmTypeFromModel -Model $_.Model } |
+            Where-Object { $_ } |
+            Sort-Object -Unique)
+
+        if (-not $tenantMtms -or $tenantMtms.Count -eq 0) {
+            Write-Log "No valid MTM codes could be extracted from device models. Exiting." "Warn"
+            return 0
+        }
+
+        Write-Log "Identified $($tenantMtms.Count) unique MTM codes in tenant" "Info"
+        Write-Host ""
+
+        # Build MTM to family name mapping from Lenovo dataset
+        Write-Log "Building MTM to friendly name mapping from Lenovo dataset..." "Info"
+
+        $mappingResult = Get-LenovoModelLookup -TenantMtms $tenantMtms
+        $mtmToFamily = $mappingResult.Lookup
+        $missingMtms = $mappingResult.Missing
+
+        Write-Log "Mapping Results:" "Info"
+        Write-Log "  Successfully mapped: $($mtmToFamily.Count) MTM codes" "Info"
+        Write-Log "  Unable to map: $($missingMtms.Count) MTM codes" "Info"
+        Write-Log "  Lenovo dataset entries processed: $($mappingResult.TotalProcessed)" "Info"
+
+        # Report missing MTM codes
+        if ($missingMtms.Count -gt 0) {
+            Write-Host ""
+            Write-Log "WARNING: The following MTM codes could not be mapped:" "Warn"
+            $missingMtms | ForEach-Object { Write-Log "  - $_" "Warn" }
+
+            # Find example devices with unmapped MTMs
+            $exampleDevices = $lenovoDevices |
+                Where-Object { $missingMtms -contains (Get-MtmTypeFromModel -Model $_.Model) } |
+                Select-Object -First 3
+
+            if ($exampleDevices) {
+                Write-Log "Example devices with unmapped MTMs:" "Warn"
+                $exampleDevices | ForEach-Object {
+                    Write-Log "  - $($_.deviceName): $($_.model)" "Warn"
+                }
+            }
+
+            if ($FailIfMissingMappings) {
+                throw "FailIfMissingMappings specified and $($missingMtms.Count) MTM code(s) could not be resolved"
+            }
+        }
+
+        Write-Host ""
+
+        # Exit if audit only mode
+        if ($AuditOnly) {
+            Write-Log "=== Audit Only Mode - No Changes Made ===" "Info"
+            Write-Log "To apply changes, run without -AuditOnly flag" "Info"
+            return 0
+        }
+
+        # Initialize counters and error tracking
+        $stats = @{
+            NotesUpdated = 0
+            NotesSkipped = 0
+            ExtUpdated = 0
+            ExtSkipped = 0
+            Unknown = 0
+            Errors = 0
+        }
+
+        $errorLog = New-Object System.Collections.Generic.List[object]
+
+        # Process each device
+        Write-Host ""
+        Write-Log "Processing devices..." "Info"
+
+        $deviceIndex = 0
+        foreach ($device in $lenovoDevices) {
+            $deviceIndex++
+
+            # Update progress indicator
+            $percentComplete = [math]::Round(($deviceIndex / $lenovoDevices.Count) * 100, 1)
+            Write-Progress `
+                -Activity "Updating Lenovo device records" `
+                -Status "Processing device $deviceIndex of $($lenovoDevices.Count): $($device.deviceName)" `
+                -PercentComplete $percentComplete
+
+            # Extract and validate MTM code
+            $mtm = Get-MtmTypeFromModel -Model $device.Model
+
+            if (-not $mtm) {
+                $stats.Unknown++
+                Write-Log "Skipping $($device.deviceName): Could not extract valid MTM `
+                    from model '$($device.model)'" "Verbose"
+                continue
+            }
+
+            if (-not $mtmToFamily.ContainsKey($mtm)) {
+                $stats.Unknown++
+                Write-Log "Skipping $($device.deviceName): MTM code '$mtm' not in mapping" "Verbose"
+                continue
+            }
+
+            $familyName = [string]$mtmToFamily[$mtm]
+
+            # Determine if Notes update is needed
+            $notesLine = New-NotesLine -FamilyName $familyName
+            $existingNoteLines = @(Get-NormalisedNoteLines -Notes ([string]$device.Notes))
+            $needsNotesUpdate = $UpdateNotes -and -not ($existingNoteLines -contains $notesLine)
+
+            $newNotes = $null
+            if ($needsNotesUpdate) {
+                $newNotes = if ($existingNoteLines.Count -eq 0) {
+                    $notesLine
+                }
+                else {
+                    ($existingNoteLines + $notesLine) -join $NotesSeparator
+                }
+            }
+
+            # Determine if Entra extension attribute update is needed
+            $azureDeviceIdentifier = [string]$device.azureADDeviceId
+            $hasAzureId = -not [string]::IsNullOrWhiteSpace($azureDeviceIdentifier)
+            $needsExtUpdate = $UpdateExtensionAttributes -and $hasAzureId
+
+            # Skip device if no updates needed
+            if (-not $needsNotesUpdate -and -not $needsExtUpdate) {
+                if ($UpdateNotes) { $stats.NotesSkipped++ }
+                if ($UpdateExtensionAttributes -and $hasAzureId) { $stats.ExtSkipped++ }
+                Write-Log "Skipping $($device.deviceName): Already up to date" "Verbose"
+                continue
+            }
+
+            try {
+                # Update Intune Notes
+                if ($needsNotesUpdate) {
+                    if ($PSCmdlet.ShouldProcess($device.deviceName, "Update Intune Notes with '$notesLine'")) {
+                        Update-MgDeviceManagementManagedDevice `
+                            -ManagedDeviceId $device.id -Notes $newNotes -ErrorAction Stop | Out-Null
+                        $stats.NotesUpdated++
+                        Write-Log "Updated Notes for $($device.deviceName): $familyName" "Verbose"
+                    }
+                }
+                elseif ($UpdateNotes) {
+                    $stats.NotesSkipped++
+                }
+
+                # Update Entra extension attribute
+                if ($needsExtUpdate) {
+                    $whatIfTarget = "Set Entra $ExtensionAttributeName to '$familyName'"
+                    if ($PSCmdlet.ShouldProcess($device.deviceName, $whatIfTarget)) {
+                        $methodUsed = Set-EntraDeviceExtensionAttribute `
+                            -AzureDeviceIdentifier $azureDeviceIdentifier `
+                            -AttributeName $ExtensionAttributeName `
+                            -Value $familyName `
+                            -ErrorAction Stop
+
+                        $stats.ExtUpdated++
+                        Write-Log "Updated $ExtensionAttributeName for $($device.deviceName) `
+                            using ${methodUsed}: $familyName" "Verbose"
+                    }
+                }
+                elseif ($UpdateExtensionAttributes) {
+                    $stats.ExtSkipped++
+                    if (-not $hasAzureId) {
+                        Write-Log "Skipping Entra update for $($device.deviceName): No azureADDeviceId" "Verbose"
+                    }
+                }
+
+                # Rate limiting - brief pause to avoid Graph API throttling
+                Start-Sleep -Milliseconds 100
+            }
+            catch {
+                $stats.Errors++
+
+                $errorDetails = [PSCustomObject]@{
+                    DeviceName = $device.deviceName
+                    Model = $device.model
+                    MTM = $mtm
+                    IntuneId = $device.id
+                    AzureADDeviceId = $azureDeviceIdentifier
+                    Error = $_.Exception.Message
+                    Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+                }
+
+                $errorLog.Add($errorDetails)
+
+                Write-Log "ERROR updating $($device.deviceName): $($_.Exception.Message)" "Warn"
+            }
+        }
+
+        Write-Progress -Activity "Updating Lenovo device records" -Completed
+
+        # Display summary
+        Write-Host ""
+        Write-Host ""
+        Write-Log "=== Update Summary ===" "Info"
+        Write-Host "Intune Notes:"
+        Write-Host "  Updated: $($stats.NotesUpdated)"
+        Write-Host "  Skipped (already present): $($stats.NotesSkipped)"
+        Write-Host ""
+        Write-Host "Entra Extension Attributes:"
+        Write-Host "  Updated: $($stats.ExtUpdated)"
+        Write-Host "  Skipped: $($stats.ExtSkipped)"
+        Write-Host ""
+        Write-Host "Other:"
+        Write-Host "  Unknown/Unmapped: $($stats.Unknown)"
+        Write-Host "  Errors: $($stats.Errors)"
+
+        # Export error log if errors occurred
+        if ($errorLog.Count -gt 0) {
+            $errorLogPath = Join-Path $PWD "LenovoUpdateErrors_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+            $errorLog | Export-Csv -Path $errorLogPath -NoTypeInformation -Encoding UTF8 -ErrorAction Stop
+            Write-Host ""
+            Write-Log "Error log exported to: $errorLogPath" "Warn"
+        }
+
+        Write-Host ""
+        Write-Log "Script completed successfully" "Info"
+        Write-Host "[+] Script completed successfully" -ForegroundColor Green
+        return 0
     }
     catch {
-        Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
+    finally {
+        # Clean up Graph connection
+        try {
+            Disconnect-MgGraph -ErrorAction SilentlyContinue | Out-Null
+        }
+        catch {
+            Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
+        }
     }
 }
 
 #endregion Main Script Logic
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

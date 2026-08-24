@@ -1,49 +1,93 @@
-<#
+﻿<#
 .SYNOPSIS
-    Clean temp files older than 7 days
+    Clean temp files older than 7 days.
 
 .DESCRIPTION
-    Deletes temp files older than 7 days from the SYSTEM temp folder, the Windows temp folder and every per-user temp folder (enumerated from Win32_UserProfile). Reports the number of files and space reclaimed.
+    Deletes temp files older than 7 days from the SYSTEM temp folder, the Windows
+    temp folder and every per-user temp folder (enumerated from Win32_UserProfile).
+    The deletion of each file is gated behind -WhatIf/-Confirm via SupportsShouldProcess.
+    Re-running on an already-converged system finds no stale files, makes no changes
+    and still exits 0 (idempotent).
 
 .EXAMPLE
-    ./remediate.ps1
+    PS C:\> .\Invoke-RemediationFixTempFiles.ps1
+
+    Deletes every temp file older than 7 days across SYSTEM and per-user temp folders.
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationFixTempFiles.ps1 -WhatIf
+
+    Shows which temp files would be deleted without deleting anything.
 
 .NOTES
-    File Name  : remediate.ps1
+    File Name  : Invoke-RemediationFixTempFiles.ps1
     Author     : Intune / Proactive Remediations
-    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Prerequisite: PowerShell 7.0
     Version    : 1.0.0
-    Date       : 2026-08-08
+    Date       : 2026-08-23
 #>
 
-# Clean temp files older than 7 days
-# In SYSTEM context $env:TEMP points at the SYSTEM profile temp folder - real
-# user temp folders must be enumerated explicitly or they are never cleaned.
-$tempPaths = @("$env:TEMP", "$env:SystemRoot\Temp")
+[CmdletBinding(SupportsShouldProcess)]
+param()
 
-# Per-user temp folders - every non-special profile is enumerated so temp files
-# of users who are not currently logged on are also covered.
-$userProfiles = Get-CimInstance Win32_UserProfile | Where-Object {
-    $_.Special -eq $false -and $_.LocalPath -notmatch 'systemprofile|defaultuser'
-}
+$ErrorActionPreference = 'Stop'
 
-foreach ($profile in $userProfiles) {
-    $userTemp = Join-Path $profile.LocalPath "AppData\Local\Temp"
-    if (Test-Path $userTemp) {
-        $tempPaths += $userTemp
+function Main {
+    # Advanced function so $PSCmdlet (and thus ShouldProcess) resolves inside Main.
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
+    try {
+        Write-Host "[*] Cleaning temp files older than 7 days..." -ForegroundColor Cyan
+
+        # In SYSTEM context $env:TEMP points at the SYSTEM profile temp folder - real
+        # user temp folders must be enumerated explicitly or they are never cleaned.
+        $cutoff = (Get-Date).AddDays(-7)
+        $tempPaths = @("$env:TEMP", "$env:SystemRoot\Temp")
+
+        # Per-user temp folders - every non-special profile is enumerated so temp files
+        # of users who are not currently logged on are also covered.
+        $userProfiles = Get-CimInstance -ClassName Win32_UserProfile -ErrorAction Stop |
+            Where-Object { $_.Special -eq $false -and $_.LocalPath -notmatch 'systemprofile|defaultuser' }
+
+        foreach ($userProfile in $userProfiles) {
+            $userTemp = Join-Path $userProfile.LocalPath "AppData\Local\Temp"
+            if (Test-Path $userTemp) {
+                $tempPaths += $userTemp
+            }
+        }
+
+        $cleanedCount = 0
+
+        foreach ($path in $tempPaths) {
+            if (-not (Test-Path $path)) {
+                continue
+            }
+
+            $staleFiles = Get-ChildItem $path -Recurse -File -ErrorAction SilentlyContinue |
+                Where-Object { $_.LastWriteTime -lt $cutoff }
+
+            foreach ($file in $staleFiles) {
+                if ($PSCmdlet.ShouldProcess($file.FullName, "Delete stale temp file")) {
+                    Remove-Item -LiteralPath $file.FullName -Force -ErrorAction Stop
+                    $cleanedCount++
+                }
+            }
+        }
+
+        if ($cleanedCount -eq 0) {
+            Write-Host "[+] Already clean: no temp files older than 7 days found" -ForegroundColor Green
+        }
+        else {
+            Write-Host "[+] Cleaned $cleanedCount stale temp file(s)" -ForegroundColor Green
+        }
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error cleaning temp files: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
 }
 
-$cleaned = 0
-
-foreach ($path in $tempPaths) {
-    if (Test-Path $path) {
-        $beforeSize = (Get-ChildItem $path -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
-        Get-ChildItem $path -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-7) } | Remove-Item -Force -ErrorAction SilentlyContinue
-        $afterSize = (Get-ChildItem $path -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum
-        $cleaned += [math]::Round(($beforeSize - $afterSize) / 1GB, 2)
-    }
-}
-
-Write-Host "Cleaned $cleaned GB of temp files"
-exit 0
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

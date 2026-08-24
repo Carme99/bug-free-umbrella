@@ -1,51 +1,55 @@
-<#
+﻿<#
 .SYNOPSIS
-    Remediates outdated critical applications using winget.
+    Remediates outdated critical applications by running winget upgrades.
 
 .DESCRIPTION
-    Updates security-critical applications detected by the companion detect script.
-    Includes retry logic, process detection, and comprehensive error handling.
-
-    Supports both priority-only and full update modes, with optional process
-    termination for applications that are running.
-
-.NOTES
-    Author: Bug-Free Umbrella
-    Version: 1.0
-    Intune Context: SYSTEM
-    Exit 0: Remediation successful
-    Exit 1: Remediation failed
+    Detects installed applications with pending winget upgrades and updates the security-critical
+    subset: priority applications (browsers, VPN clients, development and security tools) plus the
+    standard application allowlist. Updates run with retry logic, per-application timeouts,
+    process detection and optional forced closing of running applications.
+    Exit codes:
+    - 0: remediation successful, or no critical applications required updates.
+    - 1: remediation failed, or no application could be updated.
 
 .PARAMETER EnableLogging
-    Enable detailed logging to %TEMP%\WingetUpdateRemediation.log
+    Enable detailed logging to %TEMP%\WingetUpdateRemediation.log.
 
 .PARAMETER MaxRetries
-    Maximum retry attempts per application (default: 3)
+    Maximum retry attempts per application (default: 3).
 
 .PARAMETER PriorityAppsOnly
-    Only update priority applications (browsers, security tools)
+    Only update priority applications (browsers, security tools).
 
 .PARAMETER UpdateOnlyIfNotRunning
-    Skip updates for applications that are currently running (default: true)
+    Skip updates for applications that are currently running (default: true).
 
 .PARAMETER ForceCloseApps
-    Force close running applications before updating (use with caution)
+    Force close running applications before updating (use with caution).
 
 .PARAMETER TimeoutPerAppMinutes
-    Timeout per application update in minutes (default: 10)
+    Timeout per application update in minutes (default: 10).
 
 .EXAMPLE
-    .\remediate.ps1
-    Standard remediation with default settings
+    PS C:\> .\Invoke-RemediationCheckOutdatedCriticalApps.ps1
+    Standard remediation with default settings.
 
 .EXAMPLE
-    .\remediate.ps1 -EnableLogging $true -PriorityAppsOnly $true
-    Update only priority apps with logging
+    PS C:\> .\Invoke-RemediationCheckOutdatedCriticalApps.ps1 -PriorityAppsOnly $true
+    Update only priority apps, skipping applications that are running.
 
-.EXAMPLE
-    .\remediate.ps1 -ForceCloseApps $true -EnableLogging $true
-    Force close running apps before updating (use in maintenance windows)
+.NOTES
+    File Name: Invoke-RemediationCheckOutdatedCriticalApps.ps1
+    Author: Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version: 1.0.0
+    Date: 2026-08-23
+
+    USAGE RECOMMENDATION:
+    Deploy with the standard maintenance cadence for comprehensive updates. Use
+    Invoke-RemediationCheckOutdatedCriticalAppsPriorityOnly.ps1 for rapid security response.
 #>
+
+[CmdletBinding(SupportsShouldProcess)]
 
 param(
     [bool]$EnableLogging = $false,
@@ -60,6 +64,8 @@ param(
     [ValidateRange(1, 60)]
     [int]$TimeoutPerAppMinutes = 10
 )
+
+$ErrorActionPreference = 'Stop'
 
 # ========================= CONFIGURATION ========================= #
 
@@ -133,14 +139,36 @@ $ProcessNameMap = @{
     'Microsoft.PowerToys' = 'PowerToys'
 }
 
-$LogPath = "$env:TEMP\WingetUpdateRemediation.log"
+$LogPath = Join-Path $env:TEMP 'WingetUpdateRemediation.log'
+
+# ========================= WINGET WRAPPER ========================= #
+
+function Invoke-Winget {
+    param([string[]]$ArgumentList)
+
+    $output = & winget.exe @ArgumentList 2>&1
+    $exitCode = $LASTEXITCODE
+
+    return [PSCustomObject]@{
+        Output = @($output)
+        ExitCode = $exitCode
+    }
+}
 
 # ========================= LOGGING ========================= #
 
 function Write-Log {
     param([string]$Message, [string]$Level = "INFO")
+
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$timestamp] [$Level] $Message"
+    $levelPrefixes = @{
+        "SUCCESS" = "[+]"
+        "WARN" = "[!]"
+        "ERROR" = "[-]"
+    }
+    $prefix = $levelPrefixes[$Level]
+    if (-not $prefix) { $prefix = "[*]" }
+    $logMessage = "$prefix [$timestamp] [$Level] $Message"
 
     if ($EnableLogging) {
         Add-Content -Path $LogPath -Value $logMessage -ErrorAction SilentlyContinue
@@ -210,7 +238,7 @@ function Stop-AppProcess {
 
             $remainingProcesses = Get-Process -Name $processName -ErrorAction SilentlyContinue
             if (-not $remainingProcesses) {
-                Write-Log "Successfully closed $processName"
+                Write-Log "Successfully closed $processName" "SUCCESS"
                 return $true
             }
 
@@ -222,13 +250,13 @@ function Stop-AppProcess {
                 }
                 Start-Sleep -Seconds 2
 
-                # FIX: Verify process was actually terminated
+                # Verify the process was actually terminated
                 $stillRunning = Get-Process -Name $processName -ErrorAction SilentlyContinue
                 if ($stillRunning) {
                     Write-Log "Failed to terminate $processName after force kill" "ERROR"
                     return $false
                 }
-                Write-Log "Successfully force-killed $processName"
+                Write-Log "Successfully force-killed $processName" "SUCCESS"
                 return $true
             }
 
@@ -300,7 +328,7 @@ function Update-Application {
 
     try {
         # Execute winget upgrade with timeout
-        Write-Log "Executing: winget upgrade --id $AppId --source winget --silent --accept-source-agreements --accept-package-agreements"
+        Write-Log "Executing: winget upgrade --id $AppId (source winget, silent, agreements accepted)"
 
         $timeoutSeconds = $TimeoutPerAppMinutes * 60
         if (-not $PSCmdlet.ShouldProcess($AppId, 'Run winget upgrade')) {
@@ -313,7 +341,15 @@ function Update-Application {
         }
         $job = Start-Job -ScriptBlock {
             param($id)
-            & winget upgrade --id $id --source winget --silent --accept-source-agreements --accept-package-agreements 2>&1
+            function Invoke-WingetUpgradeJob {
+                param([string[]]$ArgumentList)
+                & winget.exe @ArgumentList 2>&1
+                return $LASTEXITCODE
+            }
+            Invoke-WingetUpgradeJob -ArgumentList @(
+                'upgrade', '--id', $id, '--source', 'winget', '--silent',
+                '--accept-source-agreements', '--accept-package-agreements'
+            ) | Out-Null
         } -ArgumentList $AppId
 
         $completed = Wait-Job -Job $job -Timeout $timeoutSeconds
@@ -325,7 +361,7 @@ function Update-Application {
             # Check actual winget output for success indicators
             $outputString = $output -join "`n"
 
-            # FIX: Differentiate between actually updated, already up-to-date, and failed
+            # Differentiate between actually updated, already up-to-date, and failed
             $wasUpdated = $outputString -match 'Successfully installed'
             $alreadyUpToDate = $outputString -match 'No applicable update found' -or
             $outputString -match 'No available upgrade found'
@@ -356,7 +392,8 @@ function Update-Application {
                 if ($RetryCount -lt ($MaxRetries - 1)) {
                     Write-Log "Retrying update (attempt $($RetryCount + 2)/$MaxRetries)..."
                     Start-Sleep -Seconds ([Math]::Pow(2, $RetryCount))
-                    return Update-Application -AppId $AppId -AppName $AppName -IsPriority $IsPriority -RetryCount ($RetryCount + 1)
+                    return Update-Application -AppId $AppId -AppName $AppName `
+                        -IsPriority $IsPriority -RetryCount ($RetryCount + 1)
                 }
 
                 return [PSCustomObject]@{
@@ -368,7 +405,7 @@ function Update-Application {
             }
         }
         else {
-            # Timeout occurred - FIX: Add error handling for job cleanup
+            # Timeout occurred - clean up the job before reporting failure
             try {
                 Stop-Job -Job $job -ErrorAction SilentlyContinue
                 Remove-Job -Job $job -Force -ErrorAction SilentlyContinue
@@ -393,7 +430,8 @@ function Update-Application {
         if ($RetryCount -lt ($MaxRetries - 1)) {
             Write-Log "Retrying update (attempt $($RetryCount + 2)/$MaxRetries)..."
             Start-Sleep -Seconds ([Math]::Pow(2, $RetryCount))
-            return Update-Application -AppId $AppId -AppName $AppName -IsPriority $IsPriority -RetryCount ($RetryCount + 1)
+            return Update-Application -AppId $AppId -AppName $AppName `
+                -IsPriority $IsPriority -RetryCount ($RetryCount + 1)
         }
 
         return [PSCustomObject]@{
@@ -407,7 +445,12 @@ function Update-Application {
 
 function Get-OutdatedApps {
     try {
-        $wingetOutput = & winget list --upgrade-available --source winget 2>&1 | Out-String
+        $wingetResult = Invoke-Winget -ArgumentList @('list', '--upgrade-available', '--source', 'winget')
+        if ($wingetResult.ExitCode -ne 0) {
+            Write-Log "winget list exited with code $($wingetResult.ExitCode)" "ERROR"
+            return @()
+        }
+        $wingetOutput = $wingetResult.Output | Out-String
         $lines = $wingetOutput -split "`n" | Where-Object { $_ -match '\S' }
         $outdatedApps = @()
 
@@ -438,88 +481,96 @@ function Get-OutdatedApps {
 
 # ========================= MAIN REMEDIATION LOGIC ========================= #
 
-try {
-    Write-Log "=== Winget Critical App Update Remediation Started ==="
-    Write-Log "Priority Apps Only: $PriorityAppsOnly"
-    Write-Log "Update Only If Not Running: $UpdateOnlyIfNotRunning"
-    Write-Log "Force Close Apps: $ForceCloseApps"
+function Main {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
 
-    # Get outdated applications
-    $outdatedApps = Get-OutdatedApps
+    try {
+        Write-Log "=== Winget Critical App Update Remediation Started ==="
+        Write-Log "Priority Apps Only: $PriorityAppsOnly"
+        Write-Log "Update Only If Not Running: $UpdateOnlyIfNotRunning"
+        Write-Log "Force Close Apps: $ForceCloseApps"
 
-    if ($outdatedApps.Count -eq 0) {
-        Write-Log "No outdated applications found"
-        exit 0
-    }
+        # Get outdated applications
+        $outdatedApps = Get-OutdatedApps
 
-    # Filter apps to update
-    if ($PriorityAppsOnly) {
-        $appsToUpdate = $outdatedApps | Where-Object { $_.IsPriority -eq $true }
-    }
-    else {
-        $appsToCheck = $PriorityApps + $StandardApps
-        $appsToUpdate = $outdatedApps | Where-Object { $_.Id -in $appsToCheck }
-    }
-
-    if ($appsToUpdate.Count -eq 0) {
-        Write-Log "No critical applications require updates"
-        exit 0
-    }
-
-    Write-Log "Updating $($appsToUpdate.Count) applications..."
-    Write-Log ""
-
-    # Update applications
-    $results = @()
-    $successCount = 0
-    $failCount = 0
-    $skippedCount = 0
-
-    foreach ($app in ($appsToUpdate | Sort-Object -Property IsPriority -Descending)) {
-        $result = Update-Application -AppId $app.Id -AppName $app.Name -IsPriority $app.IsPriority
-        $results += $result
-
-        if ($result.Success) {
-            $successCount++
+        if ($outdatedApps.Count -eq 0) {
+            Write-Log "No outdated applications found"
+            return 0
         }
-        elseif ($result.Message -match "running") {
-            $skippedCount++
+
+        # Filter apps to update
+        if ($PriorityAppsOnly) {
+            $appsToUpdate = $outdatedApps | Where-Object { $_.IsPriority -eq $true }
         }
         else {
-            $failCount++
+            $appsToCheck = $PriorityApps + $StandardApps
+            $appsToUpdate = $outdatedApps | Where-Object { $_.Id -in $appsToCheck }
         }
 
-        Write-Log ""
-    }
-
-    # Summary
-    Write-Log "=== Remediation Complete ==="
-    Write-Log "Total Applications: $($appsToUpdate.Count)"
-    Write-Log "Successfully Updated: $successCount"
-    Write-Log "Skipped (Running): $skippedCount"
-    Write-Log "Failed: $failCount"
-
-    if ($failCount -gt 0) {
-        Write-Log ""
-        Write-Log "Failed updates:"
-        foreach ($result in ($results | Where-Object { -not $_.Success -and $_.Message -notmatch "running" })) {
-            Write-Log "  - $($result.AppName): $($result.Message)"
+        if ($appsToUpdate.Count -eq 0) {
+            Write-Log "No critical applications require updates"
+            return 0
         }
-    }
 
-    # Exit with appropriate code
-    if ($successCount -gt 0) {
-        Write-Log "Remediation completed successfully (some apps may require restart)"
-        exit 0
-    }
-    else {
-        Write-Log "No applications were successfully updated" "WARN"
-        exit 1
-    }
+        Write-Log "Updating $($appsToUpdate.Count) applications..."
+        Write-Log ""
 
+        # Update applications
+        $results = @()
+        $successCount = 0
+        $failCount = 0
+        $skippedCount = 0
+
+        foreach ($app in ($appsToUpdate | Sort-Object -Property IsPriority -Descending)) {
+            $result = Update-Application -AppId $app.Id -AppName $app.Name -IsPriority $app.IsPriority
+            $results += $result
+
+            if ($result.Success) {
+                $successCount++
+            }
+            elseif ($result.Message -match "running") {
+                $skippedCount++
+            }
+            else {
+                $failCount++
+            }
+
+            Write-Log ""
+        }
+
+        # Summary
+        Write-Log "=== Remediation Complete ==="
+        Write-Log "Total Applications: $($appsToUpdate.Count)"
+        Write-Log "Successfully Updated: $successCount" "SUCCESS"
+        Write-Log "Skipped (Running): $skippedCount"
+        Write-Log "Failed: $failCount"
+
+        if ($failCount -gt 0) {
+            Write-Log ""
+            Write-Log "Failed updates:"
+            foreach ($result in ($results | Where-Object { -not $_.Success -and $_.Message -notmatch "running" })) {
+                Write-Log "  - $($result.AppName): $($result.Message)"
+            }
+        }
+
+        # Exit with appropriate code
+        if ($successCount -gt 0) {
+            Write-Log "Remediation completed successfully (some apps may require restart)" "SUCCESS"
+            return 0
+        }
+        else {
+            Write-Log "No applications were successfully updated" "WARN"
+            return 1
+        }
+
+    }
+    catch {
+        Write-Log "Unexpected error during remediation: $_" "ERROR"
+        Write-Log "Stack trace: $($_.ScriptStackTrace)" "ERROR"
+        return 1
+    }
 }
-catch {
-    Write-Log "Unexpected error during remediation: $_" "ERROR"
-    Write-Log "Stack trace: $($_.ScriptStackTrace)" "ERROR"
-    exit 1
-}
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

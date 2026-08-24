@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-    Audits Exchange Online shared mailboxes for usage, permissions, and compliance.
+    Audit Exchange Online shared mailboxes for usage, permissions, and compliance.
 
 .DESCRIPTION
     This script analyzes shared mailboxes for:
@@ -11,6 +11,9 @@
     - Sign-in status (should be disabled)
     - Licensing status
     - Auto-mapping configuration
+    The script is read-only: it never modifies shared mailboxes; it writes optional HTML/CSV reports only.
+    Exit codes: 0 when the audit completes with no issues; 1 when issues are detected (sign-in enabled,
+    no permissions) or on fatal errors.
 
 .PARAMETER IncludePermissions
     Include detailed permission analysis.
@@ -28,17 +31,22 @@
     Export results to CSV file.
 
 .EXAMPLE
-    .\Get-SharedMailboxReport.ps1
+    PS C:\> .\Get-SharedMailboxReport.ps1
     Basic shared mailbox audit.
 
 .EXAMPLE
-    .\Get-SharedMailboxReport.ps1 -IncludePermissions -CheckInactive -ExportHTML
+    PS C:\> .\Get-SharedMailboxReport.ps1 -IncludePermissions -CheckInactive -ExportHTML
     Comprehensive audit with permissions and inactive mailbox detection.
 
 .NOTES
-    Requires Exchange Online PowerShell module
-    Requires Exchange Administrator or Global Reader role
-    Compatible with Exchange Online (Microsoft 365)
+    File Name  : Get-SharedMailboxReport.ps1
+    Author     : Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version    : 1.0.0
+    Date       : 2026-08-23
+
+    Requires Exchange Administrator or Global Reader role.
+    Compatible with Exchange Online (Microsoft 365).
 #>
 
 [CmdletBinding()]
@@ -59,169 +67,180 @@ param(
     [switch]$ExportCSV
 )
 
-$ErrorActionPreference = "Stop"
-$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
+$ErrorActionPreference = 'Stop'
+# PSScriptAnalyzer note: PSAvoidUsingWriteHost / PSReviewUnusedParameter warnings are accepted here.
+# The relaunch spec mandates Write-Host status output ([+]/[!]/[-]/[*]); script parameters are read inside Main.
 
-Write-Host "`n=== Shared Mailbox Audit Report ===" -ForegroundColor Cyan
-Write-Host "Timestamp: $(Get-Date)" -ForegroundColor Gray
-Write-Host ""
+function Main {
+    try {
+        $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+        $ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+        if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+            New-Item -ItemType Directory -Path $ReportDir -Force -ErrorAction Stop | Out-Null
+        }
 
-# Check connection
-try {
-    $connectionStatus = Get-ConnectionInformation -ErrorAction SilentlyContinue
-    if (-not $connectionStatus) {
-        Write-Host "[!] Connecting to Exchange Online..." -ForegroundColor Yellow
-        Connect-ExchangeOnline -ShowBanner:$false
-    }
-}
-catch {
-    Write-Host "[-] Error connecting: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
-}
+        Write-Host "`n=== Shared Mailbox Audit Report ===" -ForegroundColor Cyan
+        Write-Host "Timestamp: $(Get-Date)" -ForegroundColor Gray
+        Write-Host ""
 
-Write-Host "[*] Retrieving shared mailboxes..." -ForegroundColor Cyan
+        # Check connection
+        $connectionStatus = Get-ConnectionInformation -ErrorAction SilentlyContinue
+        if (-not $connectionStatus) {
+            Write-Host "[!] Connecting to Exchange Online..." -ForegroundColor Yellow
+            Connect-ExchangeOnline -ShowBanner:$false -ErrorAction Stop
+        }
 
-$sharedMailboxes = Get-EXOMailbox -ResultSize Unlimited -RecipientTypeDetails SharedMailbox -Properties DisplayName, UserPrincipalName, PrimarySmtpAddress, WhenCreated, AccountDisabled
+        Write-Host "[*] Retrieving shared mailboxes..." -ForegroundColor Cyan
 
-Write-Host "[+] Found $($sharedMailboxes.Count) shared mailbox(es)" -ForegroundColor Green
-Write-Host ""
+        $sharedMailboxes = Get-EXOMailbox -ResultSize Unlimited -RecipientTypeDetails SharedMailbox `
+            -Properties DisplayName, UserPrincipalName, PrimarySmtpAddress, WhenCreated, AccountDisabled `
+            -ErrorAction Stop
 
-$results = @()
-$issueCount = 0
-$signInEnabled = 0
-$noPermissions = 0
-$inactiveCount = 0
+        Write-Host "[+] Found $($sharedMailboxes.Count) shared mailbox(es)" -ForegroundColor Green
+        Write-Host ""
 
-$i = 0
-foreach ($mailbox in $sharedMailboxes) {
-    $i++
-    Write-Progress -Activity "Analyzing Shared Mailboxes" -Status "$i of $($sharedMailboxes.Count): $($mailbox.DisplayName)" -PercentComplete (($i / $sharedMailboxes.Count) * 100)
+        $results = @()
+        $issueCount = 0
+        $signInEnabled = 0
+        $noPermissions = 0
+        $inactiveCount = 0
 
-    # Get statistics
-    $stats = Get-EXOMailboxStatistics -Identity $mailbox.UserPrincipalName -ErrorAction SilentlyContinue
+        $i = 0
+        foreach ($mailbox in $sharedMailboxes) {
+            $i++
+            Write-Progress -Activity "Analyzing Shared Mailboxes" `
+                -Status "$i of $($sharedMailboxes.Count): $($mailbox.DisplayName)" `
+                -PercentComplete (($i / $sharedMailboxes.Count) * 100)
 
-    $mailboxSizeGB = if ($stats.TotalItemSize) {
-        [math]::Round(($stats.TotalItemSize.ToString().Split('(')[1].Split(' ')[0].Replace(',', '') -as [double]) / 1GB, 2)
-    }
-    else { 0 }
+            # Get statistics
+            $stats = Get-EXOMailboxStatistics -Identity $mailbox.UserPrincipalName -ErrorAction SilentlyContinue
 
-    # Check sign-in status
-    if (-not $mailbox.AccountDisabled) {
-        $signInEnabled++
-        $issueCount++
-    }
-
-    # Get permissions
-    $fullAccessUsers = @()
-    $sendAsUsers = @()
-    $sendOnBehalfUsers = @()
-    $totalPermissions = 0
-
-    if ($IncludePermissions) {
-        try {
-            # Full Access
-            $fullAccess = Get-EXOMailboxPermission -Identity $mailbox.UserPrincipalName -ErrorAction Stop |
-                Where-Object { $_.AccessRights -contains "FullAccess" -and $_.User -notlike "NT AUTHORITY\*" -and $_.IsInherited -eq $false }
-
-            $fullAccessUsers = $fullAccess | ForEach-Object { $_.User }
-            $totalPermissions += $fullAccessUsers.Count
-
-            # Send As
-            $sendAs = Get-EXORecipientPermission -Identity $mailbox.UserPrincipalName -ErrorAction Stop |
-                Where-Object { $_.Trustee -notlike "NT AUTHORITY\*" -and $_.AccessRights -contains "SendAs" }
-
-            $sendAsUsers = $sendAs | ForEach-Object { $_.Trustee }
-            $totalPermissions += $sendAsUsers.Count
-
-            # Send on Behalf
-            $mailboxDetail = Get-EXOMailbox -Identity $mailbox.UserPrincipalName -Properties GrantSendOnBehalfTo -ErrorAction Stop
-            if ($mailboxDetail.GrantSendOnBehalfTo) {
-                $sendOnBehalfUsers = $mailboxDetail.GrantSendOnBehalfTo
-                $totalPermissions += $sendOnBehalfUsers.Count
+            $mailboxSizeGB = if ($stats.TotalItemSize) {
+                $sizeBytes = $stats.TotalItemSize.ToString().Split('(')[1].Split(' ')[0].Replace(',', '')
+                [math]::Round(($sizeBytes -as [double]) / 1GB, 2)
             }
+            else { 0 }
 
-            if ($totalPermissions -eq 0) {
-                $noPermissions++
+            # Check sign-in status
+            if (-not $mailbox.AccountDisabled) {
+                $signInEnabled++
                 $issueCount++
             }
+
+            # Get permissions
+            $fullAccessUsers = @()
+            $sendAsUsers = @()
+            $sendOnBehalfUsers = @()
+            $totalPermissions = 0
+
+            if ($IncludePermissions) {
+                try {
+                    # Full Access
+                    $fullAccess = Get-EXOMailboxPermission -Identity $mailbox.UserPrincipalName -ErrorAction Stop |
+                        Where-Object {
+                            $_.AccessRights -contains "FullAccess" -and
+                            $_.User -notlike "NT AUTHORITY\*" -and
+                            $_.IsInherited -eq $false
+                        }
+
+                    $fullAccessUsers = $fullAccess | ForEach-Object { $_.User }
+                    $totalPermissions += $fullAccessUsers.Count
+
+                    # Send As
+                    $sendAs = Get-EXORecipientPermission -Identity $mailbox.UserPrincipalName -ErrorAction Stop |
+                        Where-Object { $_.Trustee -notlike "NT AUTHORITY\*" -and $_.AccessRights -contains "SendAs" }
+
+                    $sendAsUsers = $sendAs | ForEach-Object { $_.Trustee }
+                    $totalPermissions += $sendAsUsers.Count
+
+                    # Send on Behalf
+                    $mailboxDetail = Get-EXOMailbox -Identity $mailbox.UserPrincipalName `
+                        -Properties GrantSendOnBehalfTo -ErrorAction Stop
+                    if ($mailboxDetail.GrantSendOnBehalfTo) {
+                        $sendOnBehalfUsers = $mailboxDetail.GrantSendOnBehalfTo
+                        $totalPermissions += $sendOnBehalfUsers.Count
+                    }
+
+                    if ($totalPermissions -eq 0) {
+                        $noPermissions++
+                        $issueCount++
+                    }
+                }
+                catch {
+                    $issueCount++
+                    $fullAccessUsers = @("Permission lookup failed: $($_.Exception.Message)")
+                }
+            }
+
+            # Check inactivity
+            $isInactive = $false
+            if ($CheckInactive) {
+                $inactivityThreshold = (Get-Date).AddDays(-$InactivityDays)
+                if ($stats.LastLogonTime -and $stats.LastLogonTime -lt $inactivityThreshold) {
+                    $isInactive = $true
+                    $inactiveCount++
+                }
+                elseif (-not $stats.LastLogonTime) {
+                    $isInactive = $true
+                    $inactiveCount++
+                }
+            }
+
+            $result = [PSCustomObject]@{
+                DisplayName       = $mailbox.DisplayName
+                PrimarySmtpAddress = $mailbox.PrimarySmtpAddress
+                SizeGB            = $mailboxSizeGB
+                ItemCount         = $stats.ItemCount
+                SignInEnabled     = -not $mailbox.AccountDisabled
+                FullAccessUsers   = $fullAccessUsers -join '; '
+                SendAsUsers       = $sendAsUsers -join '; '
+                SendOnBehalfUsers = $sendOnBehalfUsers -join '; '
+                TotalPermissions  = $totalPermissions
+                LastActivity      = $stats.LastLogonTime
+                IsInactive        = $isInactive
+                Created           = $mailbox.WhenCreated
+            }
+
+            $results += $result
         }
-        catch {
-            $issueCount++
-            $fullAccessUsers = @("Permission lookup failed: $($_.Exception.Message)")
+
+        Write-Progress -Activity "Analyzing Shared Mailboxes" -Completed
+
+        Write-Host ""
+        Write-Host "=== Summary ===" -ForegroundColor Cyan
+        Write-Host "Total Shared Mailboxes: $($results.Count)" -ForegroundColor White
+        $signInColor = if ($signInEnabled -gt 0) { "Red" } else { "Green" }
+        Write-Host "Sign-In Enabled (should be disabled): $signInEnabled" -ForegroundColor $signInColor
+        if ($IncludePermissions) {
+            $permColor = if ($noPermissions -gt 0) { "Yellow" } else { "Green" }
+            Write-Host "Without Permissions: $noPermissions" -ForegroundColor $permColor
         }
-    }
-
-    # Check inactivity
-    $isInactive = $false
-    if ($CheckInactive) {
-        $inactivityThreshold = (Get-Date).AddDays(-$InactivityDays)
-        if ($stats.LastLogonTime -and $stats.LastLogonTime -lt $inactivityThreshold) {
-            $isInactive = $true
-            $inactiveCount++
+        if ($CheckInactive) {
+            Write-Host "Inactive (>$InactivityDays days): $inactiveCount" -ForegroundColor Yellow
         }
-        elseif (-not $stats.LastLogonTime) {
-            $isInactive = $true
-            $inactiveCount++
+        Write-Host "Issues Found: $issueCount" -ForegroundColor $(if ($issueCount -gt 0) { "Red" } else { "Green" })
+        Write-Host ""
+
+        # Show issues
+        if ($signInEnabled -gt 0) {
+            Write-Host "=== Shared Mailboxes with Sign-In Enabled ===" -ForegroundColor Red
+            $results | Where-Object { $_.SignInEnabled -eq $true } |
+                Select-Object DisplayName, PrimarySmtpAddress |
+                Format-Table -AutoSize
         }
-    }
 
-    $result = [PSCustomObject]@{
-        DisplayName = $mailbox.DisplayName
-        PrimarySmtpAddress = $mailbox.PrimarySmtpAddress
-        SizeGB = $mailboxSizeGB
-        ItemCount = $stats.ItemCount
-        SignInEnabled = -not $mailbox.AccountDisabled
-        FullAccessUsers = $fullAccessUsers -join '; '
-        SendAsUsers = $sendAsUsers -join '; '
-        SendOnBehalfUsers = $sendOnBehalfUsers -join '; '
-        TotalPermissions = $totalPermissions
-        LastActivity = $stats.LastLogonTime
-        IsInactive = $isInactive
-        Created = $mailbox.WhenCreated
-    }
+        if ($noPermissions -gt 0) {
+            Write-Host "`n=== Shared Mailboxes Without Permissions ===" -ForegroundColor Yellow
+            $results | Where-Object { $_.TotalPermissions -eq 0 } |
+                Select-Object DisplayName, PrimarySmtpAddress, Created |
+                Format-Table -AutoSize
+        }
 
-    $results += $result
-}
+        # Export
+        if ($ExportHTML) {
+            $htmlPath = (Join-Path $ReportDir "SharedMailboxAudit_$timestamp.html")
 
-Write-Progress -Activity "Analyzing Shared Mailboxes" -Completed
-
-Write-Host ""
-Write-Host "=== Summary ===" -ForegroundColor Cyan
-Write-Host "Total Shared Mailboxes: $($results.Count)" -ForegroundColor White
-Write-Host "Sign-In Enabled (should be disabled): $signInEnabled" -ForegroundColor $(if ($signInEnabled -gt 0) { "Red" } else { "Green" })
-if ($IncludePermissions) {
-    Write-Host "Without Permissions: $noPermissions" -ForegroundColor $(if ($noPermissions -gt 0) { "Yellow" } else { "Green" })
-}
-if ($CheckInactive) {
-    Write-Host "Inactive (>$InactivityDays days): $inactiveCount" -ForegroundColor Yellow
-}
-Write-Host "Issues Found: $issueCount" -ForegroundColor $(if ($issueCount -gt 0) { "Red" } else { "Green" })
-Write-Host ""
-
-# Show issues
-if ($signInEnabled -gt 0) {
-    Write-Host "=== Shared Mailboxes with Sign-In Enabled ===" -ForegroundColor Red
-    $results | Where-Object { $_.SignInEnabled -eq $true } |
-        Select-Object DisplayName, PrimarySmtpAddress |
-        Format-Table -AutoSize
-}
-
-if ($noPermissions -gt 0) {
-    Write-Host "`n=== Shared Mailboxes Without Permissions ===" -ForegroundColor Yellow
-    $results | Where-Object { $_.TotalPermissions -eq 0 } |
-        Select-Object DisplayName, PrimarySmtpAddress, Created |
-        Format-Table -AutoSize
-}
-
-# Export
-if ($ExportHTML) {
-    $htmlPath = (Join-Path $ReportDir "SharedMailboxAudit_$timestamp.html")
-
-    $html = @"
+            $html = @"
 <!DOCTYPE html>
 <html>
 <head>
@@ -261,9 +280,9 @@ if ($ExportHTML) {
         </tr>
 "@
 
-    foreach ($result in ($results | Sort-Object DisplayName)) {
-        $rowClass = if ($result.SignInEnabled -or $result.TotalPermissions -eq 0) { "issue" } else { "" }
-        $html += @"
+            foreach ($result in ($results | Sort-Object DisplayName)) {
+                $rowClass = if ($result.SignInEnabled -or $result.TotalPermissions -eq 0) { "issue" } else { "" }
+                $html += @"
         <tr class="$rowClass">
             <td>$([System.Net.WebUtility]::HtmlEncode("$($result.DisplayName)"))</td>
             <td>$([System.Net.WebUtility]::HtmlEncode("$($result.PrimarySmtpAddress)"))</td>
@@ -274,23 +293,32 @@ if ($ExportHTML) {
             <td>$([System.Net.WebUtility]::HtmlEncode("$($result.LastActivity)"))</td>
         </tr>
 "@
+            }
+
+            $html += "</table></body></html>"
+            $html | Out-File -FilePath $htmlPath -Encoding utf8 -ErrorAction Stop
+            Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+        }
+
+        if ($ExportCSV) {
+            $csvPath = (Join-Path $ReportDir "SharedMailboxAudit_$timestamp.csv")
+            $results | Export-Csv -Path $csvPath -NoTypeInformation -ErrorAction Stop
+            Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
+        }
+
+        Write-Host "`n[+] Audit completed!" -ForegroundColor Green
+
+        if ($issueCount -gt 0) {
+            return 1
+        }
+
+        return 0
     }
-
-    $html += "</table></body></html>"
-    $html | Out-File -FilePath $htmlPath -Encoding UTF8
-    Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-if ($ExportCSV) {
-    $csvPath = (Join-Path $ReportDir "SharedMailboxAudit_$timestamp.csv")
-    $results | Export-Csv -Path $csvPath -NoTypeInformation
-    Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
-}
-
-Write-Host "`n[+] Audit completed!" -ForegroundColor Green
-
-if ($issueCount -gt 0) {
-    exit 1
-}
-
-exit 0
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

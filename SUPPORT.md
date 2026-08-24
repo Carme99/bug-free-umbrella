@@ -16,9 +16,9 @@ If you've found a bug or have a feature request, please use GitHub Issues:
 
 1. **Search First**: Check if someone else has already reported the issue
 2. **Use Templates**: We have specific templates for:
-   - 🐛 [Bug Reports](../../issues/new?template=bug_report.yml)
-   - ✨ [Feature Requests](../../issues/new?template=feature_request.yml)
-   - 📜 [Script Requests](../../issues/new?template=script_request.yml)
+   - 🐛 [Bug Reports](https://github.com/Carme99/bug-free-umbrella/issues/new?template=bug_report.yml)
+   - ✨ [Feature Requests](https://github.com/Carme99/bug-free-umbrella/issues/new?template=feature_request.yml)
+   - 📜 [Script Requests](https://github.com/Carme99/bug-free-umbrella/issues/new?template=script_request.yml)
 3. **Be Specific**: Include PowerShell version, OS version, and error messages
 4. **Be Patient**: Remember this is a hobby project maintained by one person
 
@@ -36,9 +36,9 @@ Before opening an issue, check if your question is answered in the documentation
 ### 💬 Questions?
 
 **For general questions:**
-- Open a [GitHub Issue](../../issues/new) with the "question" label
+- Open a [GitHub Issue](https://github.com/Carme99/bug-free-umbrella/issues/new) with the "question" label
 - Check the [FAQ](docs/FAQ.md)
-- Review existing [closed issues](../../issues?q=is%3Aissue+is%3Aclosed) - your question may have been answered before
+- Review existing [closed issues](https://github.com/Carme99/bug-free-umbrella/issues?q=is%3Aissue+is%3Aclosed) - your question may have been answered before
 
 **Note**: This repository does not have GitHub Discussions enabled. Please use Issues for all questions.
 

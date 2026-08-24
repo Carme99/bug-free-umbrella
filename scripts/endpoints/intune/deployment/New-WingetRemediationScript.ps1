@@ -1,11 +1,9 @@
-<#
+﻿<#
 .SYNOPSIS
     Generates Intune Proactive Remediation scripts for Winget package updates.
-
 .DESCRIPTION
-    This script automatically creates a pair of detection and remediation scripts
-    for use with Intune Proactive Remediations to keep applications up-to-date
-    using Winget in SYSTEM context.
+    Creates a pair of detection and remediation scripts for use with Intune Proactive
+    Remediations to keep applications up-to-date using Winget in SYSTEM context.
 
     The generated scripts will:
     - Detect if the specified app needs an update
@@ -14,45 +12,38 @@
     - Log all actions
     - Handle errors gracefully
 
-    Perfect for keeping apps like:
-    - Google Chrome
-    - Firefox
-    - Microsoft Edge
-    - Adobe Reader
-    - 7-Zip
-    - Any Winget-available package
-
+    Useful for keeping apps like Google Chrome, Firefox, Microsoft Edge, Adobe Reader,
+    7-Zip, or any Winget-available package current. Generated files are written to
+    -OutputFolder and are safe to regenerate (existing files are overwritten).
 .PARAMETER PackageId
     The Winget package ID (e.g., "Google.Chrome", "Mozilla.Firefox").
-    If not provided, script will prompt interactively.
-
+    Prompts interactively when omitted.
 .PARAMETER OutputFolder
-    Where to save the generated scripts (default: Desktop\WingetRemediations).
-
+    Where to save the generated scripts. Default: Desktop\WingetRemediations\<PackageId>.
 .PARAMETER AppDisplayName
-    Friendly name for the app (optional, used in script comments).
-
+    Friendly name for the app (optional, used in script comments). Derived from PackageId
+    when omitted.
 .PARAMETER IncludeReadme
     Generate a README with deployment instructions.
-
 .EXAMPLE
-    .\New-WingetRemediationScript.ps1
-    Prompts for package ID and generates remediation scripts.
-
+    PS C:\> .\New-WingetRemediationScript.ps1 -PackageId "Google.Chrome"
+    Generates detection and remediation scripts for Google Chrome.
 .EXAMPLE
-    .\New-WingetRemediationScript.ps1 -PackageId "Google.Chrome"
-    Generates remediation scripts for Google Chrome.
-
-.EXAMPLE
-    .\New-WingetRemediationScript.ps1 -PackageId "Mozilla.Firefox" -AppDisplayName "Firefox Browser" -IncludeReadme
-    Generates scripts with custom display name and README.
-
+    PS C:\> .\New-WingetRemediationScript.ps1 -PackageId "Mozilla.Firefox" -AppDisplayName "Firefox Browser" `
+        -IncludeReadme
+    Generates scripts with a custom display name and a deployment README.
 .NOTES
-    No Graph API connection needed - this is a local script generator
-    Output scripts are ready to upload to Intune Proactive Remediations
+    File Name   : New-WingetRemediationScript.ps1
+    Author      : Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version     : 1.0.0
+    Date        : 2026-08-23
+
+    No Graph API connection needed - this is a local script generator.
+    Output scripts are ready to upload to Intune Proactive Remediations.
 #>
 
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory = $false)]
     [string]$PackageId,
@@ -67,52 +58,14 @@ param(
     [switch]$IncludeReadme
 )
 
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "Winget Proactive Remediation Generator" -ForegroundColor Cyan
-Write-Host "========================================`n" -ForegroundColor Cyan
+$ErrorActionPreference = 'Stop'
 
-# Prompt for Package ID if not provided
-if (-not $PackageId) {
-    Write-Host "Enter the Winget Package ID to create remediation for:" -ForegroundColor Yellow
-    Write-Host "Examples:" -ForegroundColor Gray
-    Write-Host "  Google.Chrome" -ForegroundColor Gray
-    Write-Host "  Mozilla.Firefox" -ForegroundColor Gray
-    Write-Host "  Microsoft.Edge" -ForegroundColor Gray
-    Write-Host "  Adobe.Acrobat.Reader.64-bit" -ForegroundColor Gray
-    Write-Host "  7zip.7zip" -ForegroundColor Gray
-    Write-Host "  Microsoft.VisualStudioCode" -ForegroundColor Gray
-    Write-Host "`nTip: Search for packages at https://winget.run" -ForegroundColor Cyan
+function Get-DetectionScriptContent {
+    # Builds the Winget-based detection script body for the target package.
+    [CmdletBinding()]
+    param()
 
-    $PackageId = Read-Host "`nPackage ID"
-
-    if ([string]::IsNullOrWhiteSpace($PackageId)) {
-        Write-Host "✗ Package ID cannot be empty." -ForegroundColor Red
-        exit 1
-    }
-}
-
-# Set display name if not provided
-if (-not $AppDisplayName) {
-    # Try to extract a friendly name from Package ID
-    $AppDisplayName = $PackageId -replace '\.', ' '
-}
-
-# Set output folder
-if (-not $OutputFolder) {
-    $OutputFolder = Join-Path $env:USERPROFILE "Desktop\WingetRemediations\$($PackageId -replace '\.', '_')"
-}
-
-# Create output folder
-if (-not (Test-Path $OutputFolder)) {
-    New-Item -Path $OutputFolder -ItemType Directory -Force | Out-Null
-}
-
-Write-Host "✓ Package ID: $PackageId" -ForegroundColor Green
-Write-Host "✓ Display Name: $AppDisplayName" -ForegroundColor Green
-Write-Host "✓ Output Folder: $OutputFolder" -ForegroundColor Green
-
-# Generate Detection Script
-$detectScript = @"
+    return @"
 <#
 .SYNOPSIS
     Detection script for $AppDisplayName Winget update.
@@ -148,7 +101,8 @@ try {
         Write-Log "Winget not found - may need installation"
         # Try common paths
         `$wingetPath = "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller*_x64__8wekyb3d8bbwe\winget.exe"
-        `$wingetExe = Get-Item `$wingetPath -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        `$wingetExe = Get-Item `$wingetPath -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 1
 
         if (`$wingetExe) {
             `$wingetPath = `$wingetExe.FullName
@@ -201,9 +155,14 @@ catch {
     exit 1  # Error during detection
 }
 "@
+}
 
-# Generate Remediation Script
-$remediateScript = @"
+function Get-RemediateScriptContent {
+    # Builds the Winget-based silent-update remediation script body.
+    [CmdletBinding()]
+    param()
+
+    return @"
 <#
 .SYNOPSIS
     Remediation script for $AppDisplayName Winget update.
@@ -237,7 +196,8 @@ try {
     if (-not `$wingetPath) {
         Write-Log "Winget not found - trying common paths"
         `$wingetPath = "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller*_x64__8wekyb3d8bbwe\winget.exe"
-        `$wingetExe = Get-Item `$wingetPath -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        `$wingetExe = Get-Item `$wingetPath -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 1
 
         if (`$wingetExe) {
             `$wingetPath = `$wingetExe.FullName
@@ -253,9 +213,14 @@ try {
     Write-Log "Winget path: `$wingetPath"
 
     # Perform upgrade
-    Write-Log "Executing: winget upgrade --id `$packageId --silent --accept-package-agreements --accept-source-agreements"
+    Write-Log ("Executing: winget upgrade --id `$packageId --silent " +
+        "--accept-package-agreements --accept-source-agreements")
 
-    `$upgradeOutput = & `$wingetPath upgrade --id `$packageId --silent --accept-package-agreements --accept-source-agreements 2>&1
+    `$upgradeArgs = @(
+        'upgrade', '--id', `$packageId, '--silent',
+        '--accept-package-agreements', '--accept-source-agreements'
+    )
+    `$upgradeOutput = & `$wingetPath @upgradeArgs 2>&1
     `$upgradeExitCode = `$LASTEXITCODE
 
     # Log output
@@ -286,20 +251,14 @@ catch {
     exit 1  # Failed
 }
 "@
+}
 
-# Save scripts
-$detectPath = Join-Path $OutputFolder "detect.ps1"
-$remediatePath = Join-Path $OutputFolder "remediate.ps1"
+function Get-ReadmeContent {
+    # Builds the deployment instructions README for the generated pair.
+    [CmdletBinding()]
+    param()
 
-$detectScript | Out-File -FilePath $detectPath -Encoding UTF8 -Force
-$remediateScript | Out-File -FilePath $remediatePath -Encoding UTF8 -Force
-
-Write-Host "`n✓ Detection script created: $detectPath" -ForegroundColor Green
-Write-Host "✓ Remediation script created: $remediatePath" -ForegroundColor Green
-
-# Generate README if requested
-if ($IncludeReadme) {
-    $readmeContent = @"
+    return @"
 # Winget Proactive Remediation for $AppDisplayName
 
 **Package ID:** $PackageId
@@ -398,30 +357,123 @@ Test manually on a device:
 **Generated by:** New-WingetRemediationScript.ps1
 **Support:** Check Intune proactive remediation logs for execution details
 "@
-
-    $readmePath = Join-Path $OutputFolder "README.md"
-    $readmeContent | Out-File -FilePath $readmePath -Encoding UTF8 -Force
-    Write-Host "✓ README created: $readmePath" -ForegroundColor Green
 }
 
-# Display summary
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "GENERATION COMPLETE!" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "`nNext Steps:" -ForegroundColor Yellow
-Write-Host "1. Review the generated scripts in: $OutputFolder" -ForegroundColor White
-Write-Host "2. Test on a device manually (optional)" -ForegroundColor White
-Write-Host "3. Upload to Intune > Devices > Scripts and remediations" -ForegroundColor White
-Write-Host "4. Configure to run as SYSTEM in 64-bit PowerShell" -ForegroundColor White
-Write-Host "5. Assign to device groups" -ForegroundColor White
+function Main {
+    # Justification: Write-Host with colors is mandated by the relaunch output-prefix standard.
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
 
-Write-Host "`nScript Settings for Intune:" -ForegroundColor Cyan
-Write-Host "  Run using logged-on credentials: No" -ForegroundColor Gray
-Write-Host "  Enforce script signature check: No" -ForegroundColor Gray
-Write-Host "  Run in 64-bit PowerShell: Yes" -ForegroundColor Gray
+    try {
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "Winget Proactive Remediation Generator" -ForegroundColor Cyan
+        Write-Host "========================================`n" -ForegroundColor Cyan
 
-# Open folder
-Write-Host "`nOpening output folder..." -ForegroundColor Cyan
-Start-Process $OutputFolder
+        # Prompt for Package ID if not provided
+        if (-not $PackageId) {
+            Write-Host "Enter the Winget Package ID to create remediation for:" -ForegroundColor Yellow
+            Write-Host "Examples:" -ForegroundColor White
+            Write-Host "  Google.Chrome" -ForegroundColor White
+            Write-Host "  Mozilla.Firefox" -ForegroundColor White
+            Write-Host "  Microsoft.Edge" -ForegroundColor White
+            Write-Host "  Adobe.Acrobat.Reader.64-bit" -ForegroundColor White
+            Write-Host "  7zip.7zip" -ForegroundColor White
+            Write-Host "  Microsoft.VisualStudioCode" -ForegroundColor White
+            Write-Host "`nTip: Search for packages at https://winget.run" -ForegroundColor Cyan
 
-Write-Host "`n✓ Winget remediation scripts generated successfully!" -ForegroundColor Green
+            $PackageId = Read-Host "`nPackage ID"
+
+            if ([string]::IsNullOrWhiteSpace($PackageId)) {
+                Write-Host "[-] Package ID cannot be empty." -ForegroundColor Red
+                return 1
+            }
+        }
+
+        # Set display name if not provided
+        if (-not $AppDisplayName) {
+            # Try to extract a friendly name from Package ID
+            $AppDisplayName = $PackageId -replace '\.', ' '
+        }
+
+        # Set output folder
+        if (-not $OutputFolder) {
+            $OutputFolder = Join-Path $env:USERPROFILE "Desktop\WingetRemediations\$($PackageId -replace '\.', '_')"
+        }
+
+        # Create output folder
+        if (-not (Test-Path -LiteralPath $OutputFolder)) {
+            if ($PSCmdlet.ShouldProcess($OutputFolder, 'Create output folder')) {
+                New-Item -Path $OutputFolder -ItemType Directory -Force -ErrorAction Stop | Out-Null
+            }
+        }
+
+        Write-Host "[+] Package ID: $($PackageId)" -ForegroundColor Green
+        Write-Host "[+] Display Name: $($AppDisplayName)" -ForegroundColor Green
+        Write-Host "[+] Output Folder: $($OutputFolder)" -ForegroundColor Green
+
+        # Generate scripts
+        $detectScript = Get-DetectionScriptContent -ErrorAction Stop
+        $remediateScript = Get-RemediateScriptContent -ErrorAction Stop
+
+        # Save scripts
+        $detectPath = Join-Path $OutputFolder "detect.ps1"
+        $remediatePath = Join-Path $OutputFolder "remediate.ps1"
+
+        if ($PSCmdlet.ShouldProcess($detectPath, 'Write detection script')) {
+            $detectScript | Out-File -FilePath $detectPath -Encoding UTF8 -Force -ErrorAction Stop
+            Write-Host "`n[+] Detection script created: $detectPath" -ForegroundColor Green
+        }
+
+        if ($PSCmdlet.ShouldProcess($remediatePath, 'Write remediation script')) {
+            $remediateScript | Out-File -FilePath $remediatePath -Encoding UTF8 -Force -ErrorAction Stop
+            Write-Host "[+] Remediation script created: $remediatePath" -ForegroundColor Green
+        }
+
+        # Generate README if requested
+        if ($IncludeReadme) {
+            $readmeContent = Get-ReadmeContent -ErrorAction Stop
+            $readmePath = Join-Path $OutputFolder "README.md"
+
+            if ($PSCmdlet.ShouldProcess($readmePath, 'Write README')) {
+                $readmeContent | Out-File -FilePath $readmePath -Encoding UTF8 -Force -ErrorAction Stop
+                Write-Host "[+] README created: $readmePath" -ForegroundColor Green
+            }
+        }
+
+        # Display summary
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "GENERATION COMPLETE!" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "`nNext Steps:" -ForegroundColor Yellow
+        Write-Host "1. Review the generated scripts in: $($OutputFolder)" -ForegroundColor White
+        Write-Host "2. Test on a device manually (optional)" -ForegroundColor White
+        Write-Host "3. Upload to Intune > Devices > Scripts and remediations" -ForegroundColor White
+        Write-Host "4. Configure to run as SYSTEM in 64-bit PowerShell" -ForegroundColor White
+        Write-Host "5. Assign to device groups" -ForegroundColor White
+
+        Write-Host "`nScript Settings for Intune:" -ForegroundColor Cyan
+        Write-Host "  Run using logged-on credentials: No" -ForegroundColor White
+        Write-Host "  Enforce script signature check: No" -ForegroundColor White
+        Write-Host "  Run in 64-bit PowerShell: Yes" -ForegroundColor White
+
+        # Open folder
+        Write-Host "`n[*] Opening output folder..." -ForegroundColor Cyan
+        try {
+            Start-Process -FilePath $OutputFolder -ErrorAction Stop
+        }
+        catch {
+            Write-Host "[!] Could not open output folder: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+
+        Write-Host "`n[+] Winget remediation scripts generated successfully!" -ForegroundColor Green
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
+}
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

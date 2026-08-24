@@ -1,39 +1,54 @@
-<#
+﻿<#
 .SYNOPSIS
     Performs comprehensive system integrity checks on Windows Server 2016-2022.
 
 .DESCRIPTION
-    This script runs multiple system integrity verification tools:
+    This script runs multiple system integrity verification tools and reports the outcome:
     - System File Checker (SFC)
-    - Deployment Image Servicing and Management (DISM)
-    - Check Disk (CHKDSK) analysis
-    - Windows Component Store verification
-    - Event log analysis for critical errors
+    - Deployment Image Servicing and Management (DISM) component store analysis
+    - Check Disk (CHKDSK) dirty-bit analysis
+    - Event log analysis for critical errors (last 24 hours)
+
+    With -AutoRepair, detected component store corruption is repaired via DISM
+    /RestoreHealth (gated by -WhatIf/-Confirm). Findings are reported in the console
+    log and optionally written to an HTML report under the user's Documents\Reports
+    folder.
+
+    Exit codes: 0 = scan completed (any overall status), 1 = fatal error or the
+    session lacks Administrator privileges.
 
 .PARAMETER QuickScan
     Performs only SFC and basic DISM checks (faster).
 
 .PARAMETER AutoRepair
-    Automatically attempts to repair detected issues.
+    Automatically attempts to repair detected component store issues.
 
 .PARAMETER GenerateReport
     Creates a detailed HTML report of findings.
 
 .EXAMPLE
-    .\Check-SystemIntegrity.ps1
+    PS C:\> .\Check-SystemIntegrity.ps1
     Performs a standard integrity check.
 
 .EXAMPLE
-    .\Check-SystemIntegrity.ps1 -AutoRepair -GenerateReport
+    PS C:\> .\Check-SystemIntegrity.ps1 -AutoRepair -GenerateReport
     Checks integrity, repairs issues, and generates a report.
 
 .NOTES
-    Requires Administrator privileges
-    Compatible with Windows Server 2016, 2019, and 2022
-    May take 15-30 minutes to complete full scan
+    File Name:     Check-SystemIntegrity.ps1
+    Author:        Bug-Free Umbrella
+    Prerequisite:  PowerShell 5.1+
+    Version:       1.0.0
+    Date:          2026-08-23
+
+    Requires Administrator privileges on supported operating systems.
+    Compatible with Windows Server 2016, 2019, and 2022.
+    May take 15-30 minutes to complete a full scan.
 #>
 
-[CmdletBinding()]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+    Justification = 'Console remediation tool: prefixed, color-coded host output is the intended user interface.')]
+[CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory = $false)]
     [switch]$QuickScan,
@@ -45,38 +60,97 @@ param(
     [switch]$GenerateReport
 )
 
-#Requires -RunAsAdministrator
+$ErrorActionPreference = 'Stop'
 
-$script:results = @{
-    ServerName = $env:COMPUTERNAME
-    ScanDate = Get-Date
-    OSVersion = (Get-CimInstance -ClassName Win32_OperatingSystem).Caption
-    SFCResult = ""
-    DISMResult = ""
-    CHKDSKResult = ""
-    EventLogErrors = @()
-    OverallStatus = "UNKNOWN"
+function Test-AdminPrivilege {
+    [CmdletBinding()]
+    param()
+
+    try {
+        $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+        $principal = [System.Security.Principal.WindowsPrincipal]$identity
+        return $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+    }
+    catch {
+        # Non-Windows platform or unavailable identity APIs.
+        return $false
+    }
 }
 
-function Write-Log {
-    param([string]$Message, [string]$Type = "INFO")
+function Write-LogEntry {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Message,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("INFO", "SUCCESS", "WARNING", "ERROR", "HEADER")]
+        [string]$Type = "INFO"
+    )
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $prefix = switch ($Type) {
+        "ERROR" { "[-]" }
+        "SUCCESS" { "[+]" }
+        "WARNING" { "[!]" }
+        default { "[*]" }
+    }
     $color = switch ($Type) {
         "ERROR" { "Red" }
         "SUCCESS" { "Green" }
         "WARNING" { "Yellow" }
-        default { "White" }
+        "HEADER" { "Cyan" }
+        default { "Cyan" }
     }
-    Write-Host "[$timestamp] [$Type] $Message" -ForegroundColor $color
+    Write-Host "[$timestamp] $prefix $Message" -ForegroundColor $color
+}
+
+function Invoke-Sfc {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        [string[]]$ArgumentList = @('/scannow')
+    )
+
+    $output = & "$env:windir\System32\sfc.exe" @ArgumentList 2>&1
+    return [PSCustomObject]@{ ExitCode = $LASTEXITCODE; Output = ($output | Out-String) }
+}
+
+function Invoke-Dism {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$ArgumentList
+    )
+
+    $output = & "$env:windir\System32\Dism.exe" @ArgumentList 2>&1
+    return [PSCustomObject]@{ ExitCode = $LASTEXITCODE; Output = ($output | Out-String) }
+}
+
+function Invoke-Fsutil {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$ArgumentList
+    )
+
+    $output = & "$env:windir\System32\fsutil.exe" @ArgumentList 2>&1
+    return [PSCustomObject]@{ ExitCode = $LASTEXITCODE; Output = ($output | Out-String) }
 }
 
 function Test-SystemFileChecker {
-    Write-Log "Running System File Checker (SFC)..." "INFO"
-    Write-Log "This may take several minutes..." "WARNING"
+    [CmdletBinding()]
+    param()
+
+    Write-LogEntry "Running System File Checker (SFC)..." "INFO"
+    Write-LogEntry "This may take several minutes..." "WARNING"
 
     try {
         $sfcLog = "$env:windir\Logs\CBS\CBS.log"
-        $output = & sfc /scannow 2>&1
+        $sfcResult = Invoke-Sfc
+
+        if ($sfcResult.ExitCode -ne 0) {
+            Write-LogEntry "SFC exited with code $($sfcResult.ExitCode)" "WARNING"
+        }
 
         Start-Sleep -Seconds 5
 
@@ -84,107 +158,123 @@ function Test-SystemFileChecker {
             $logContent = Get-Content $sfcLog -Tail 50 | Out-String
 
             if ($logContent -match "Windows Resource Protection did not find any integrity violations") {
-                Write-Log "SFC: No integrity violations found" "SUCCESS"
+                Write-LogEntry "SFC: No integrity violations found" "SUCCESS"
                 $script:results.SFCResult = "PASSED"
                 return $true
             }
-            elseif ($logContent -match "Windows Resource Protection found corrupt files and successfully repaired them") {
-                Write-Log "SFC: Found and repaired corrupt files" "SUCCESS"
+            elseif ($logContent -match
+                "Windows Resource Protection found corrupt files and successfully repaired them") {
+                Write-LogEntry "SFC: Found and repaired corrupt files" "SUCCESS"
                 $script:results.SFCResult = "REPAIRED"
                 return $true
             }
-            elseif ($logContent -match "Windows Resource Protection found corrupt files but was unable to fix some of them") {
-                Write-Log "SFC: Found corrupt files that could not be repaired" "ERROR"
+            elseif ($logContent -match
+                "Windows Resource Protection found corrupt files but was unable to fix some of them") {
+                Write-LogEntry "SFC: Found corrupt files that could not be repaired" "ERROR"
                 $script:results.SFCResult = "FAILED - Manual intervention required"
                 return $false
             }
         }
 
-        Write-Log "SFC: Scan completed - Check CBS.log for details" "WARNING"
+        Write-LogEntry "SFC: Scan completed - Check CBS.log for details" "WARNING"
         $script:results.SFCResult = "COMPLETED - Review logs"
         return $true
     }
     catch {
-        Write-Log "SFC: Error during scan - $($_.Exception.Message)" "ERROR"
+        Write-LogEntry "SFC: Error during scan - $($_.Exception.Message)" "ERROR"
         $script:results.SFCResult = "ERROR"
         return $false
     }
 }
 
 function Test-DISM {
-    param([bool]$Repair = $false)
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [bool]$Repair = $false
+    )
 
-    Write-Log "Running DISM Component Store verification..." "INFO"
+    Write-LogEntry "Running DISM Component Store verification..." "INFO"
 
     try {
         # Check Component Store health
-        Write-Log "Checking component store health..." "INFO"
-        $dismCheck = & DISM /Online /Cleanup-Image /CheckHealth 2>&1 | Out-String
+        Write-LogEntry "Checking component store health..." "INFO"
+        $dismCheck = (Invoke-Dism -ArgumentList @('/Online', '/Cleanup-Image', '/CheckHealth')).Output
 
         if ($dismCheck -match "No component store corruption detected") {
-            Write-Log "DISM CheckHealth: No corruption detected" "SUCCESS"
+            Write-LogEntry "DISM CheckHealth: No corruption detected" "SUCCESS"
             $script:results.DISMResult = "PASSED"
             return $true
         }
 
         # Scan for corruption
-        Write-Log "Scanning for component store corruption..." "INFO"
-        $dismScan = & DISM /Online /Cleanup-Image /ScanHealth 2>&1 | Out-String
+        Write-LogEntry "Scanning for component store corruption..." "INFO"
+        $dismScan = (Invoke-Dism -ArgumentList @('/Online', '/Cleanup-Image', '/ScanHealth')).Output
 
         if ($dismScan -match "No component store corruption detected") {
-            Write-Log "DISM ScanHealth: No corruption detected" "SUCCESS"
+            Write-LogEntry "DISM ScanHealth: No corruption detected" "SUCCESS"
             $script:results.DISMResult = "PASSED"
             return $true
         }
 
         if ($Repair -or $AutoRepair) {
-            Write-Log "Attempting to repair component store..." "WARNING"
-            Write-Log "This may take 10-15 minutes..." "WARNING"
-            $dismRepair = & DISM /Online /Cleanup-Image /RestoreHealth 2>&1 | Out-String
+            Write-LogEntry "Attempting to repair component store..." "WARNING"
+            Write-LogEntry "This may take 10-15 minutes..." "WARNING"
 
-            if ($dismRepair -match "The restore operation completed successfully" -or
-                $dismRepair -match "No component store corruption detected") {
-                Write-Log "DISM RestoreHealth: Repair completed successfully" "SUCCESS"
-                $script:results.DISMResult = "REPAIRED"
-                return $true
+            if ($PSCmdlet.ShouldProcess("Windows component store", "Run DISM /RestoreHealth repair")) {
+                $dismRepair = (Invoke-Dism -ArgumentList @('/Online', '/Cleanup-Image', '/RestoreHealth')).Output
+
+                if ($dismRepair -match "The restore operation completed successfully" -or
+                    $dismRepair -match "No component store corruption detected") {
+                    Write-LogEntry "DISM RestoreHealth: Repair completed successfully" "SUCCESS"
+                    $script:results.DISMResult = "REPAIRED"
+                    return $true
+                }
+                else {
+                    Write-LogEntry "DISM RestoreHealth: Repair failed" "ERROR"
+                    $script:results.DISMResult = "FAILED"
+                    return $false
+                }
             }
             else {
-                Write-Log "DISM RestoreHealth: Repair failed" "ERROR"
-                $script:results.DISMResult = "FAILED"
+                Write-LogEntry "DISM repair skipped (-WhatIf or user declined)" "WARNING"
+                $script:results.DISMResult = "CORRUPTION DETECTED"
                 return $false
             }
         }
         else {
-            Write-Log "DISM: Corruption detected - Run with -AutoRepair to fix" "WARNING"
+            Write-LogEntry "DISM: Corruption detected - Run with -AutoRepair to fix" "WARNING"
             $script:results.DISMResult = "CORRUPTION DETECTED"
             return $false
         }
     }
     catch {
-        Write-Log "DISM: Error during scan - $($_.Exception.Message)" "ERROR"
+        Write-LogEntry "DISM: Error during scan - $($_.Exception.Message)" "ERROR"
         $script:results.DISMResult = "ERROR"
         return $false
     }
 }
 
 function Test-DiskHealth {
-    Write-Log "Analyzing disk health..." "INFO"
+    [CmdletBinding()]
+    param()
+
+    Write-LogEntry "Analyzing disk health..." "INFO"
 
     try {
-        $volumes = Get-Volume | Where-Object { $_.DriveLetter -ne $null -and $_.FileSystem -eq "NTFS" }
+        $volumes = Get-Volume | Where-Object { $null -ne $_.DriveLetter -and $_.FileSystem -eq "NTFS" }
 
         foreach ($volume in $volumes) {
             $driveLetter = $volume.DriveLetter
-            Write-Log "Checking drive $driveLetter..." "INFO"
+            Write-LogEntry "Checking drive $driveLetter..." "INFO"
 
             # Check for dirty bit
-            $dirtyBit = & fsutil dirty query "$($driveLetter):" 2>&1
+            $dirtyBit = (Invoke-Fsutil -ArgumentList @('dirty', 'query', "$($driveLetter):")).Output
 
             if ($dirtyBit -match "NOT set") {
-                Write-Log "Drive ${driveLetter}: File system is clean" "SUCCESS"
+                Write-LogEntry "Drive ${driveLetter}: File system is clean" "SUCCESS"
             }
             else {
-                Write-Log "Drive ${driveLetter}: Disk check scheduled on next reboot" "WARNING"
+                Write-LogEntry "Drive ${driveLetter}: Disk check scheduled on next reboot" "WARNING"
                 $script:results.CHKDSKResult += "Drive ${driveLetter}: Requires check on reboot`n"
             }
         }
@@ -196,14 +286,17 @@ function Test-DiskHealth {
         return $true
     }
     catch {
-        Write-Log "Disk Health: Error during check - $($_.Exception.Message)" "ERROR"
+        Write-LogEntry "Disk Health: Error during check - $($_.Exception.Message)" "ERROR"
         $script:results.CHKDSKResult = "ERROR"
         return $false
     }
 }
 
-function Get-CriticalEventLogErrors {
-    Write-Log "Checking Event Logs for critical errors (last 24 hours)..." "INFO"
+function Get-CriticalEventLogError {
+    [CmdletBinding()]
+    param()
+
+    Write-LogEntry "Checking Event Logs for critical errors (last 24 hours)..." "INFO"
 
     try {
         $startTime = (Get-Date).AddDays(-1)
@@ -231,16 +324,16 @@ function Get-CriticalEventLogErrors {
         }
 
         if ($script:results.EventLogErrors.Count -gt 0) {
-            Write-Log "Found $($script:results.EventLogErrors.Count) critical errors in event logs" "WARNING"
+            Write-LogEntry "Found $($script:results.EventLogErrors.Count) critical errors in event logs" "WARNING"
         }
         else {
-            Write-Log "No critical errors found in event logs" "SUCCESS"
+            Write-LogEntry "No critical errors found in event logs" "SUCCESS"
         }
 
         return $true
     }
     catch {
-        Write-Log "Event Log: Error during check - $($_.Exception.Message)" "WARNING"
+        Write-LogEntry "Event Log: Error during check - $($_.Exception.Message)" "WARNING"
         return $false
     }
 }
@@ -257,8 +350,8 @@ function New-IntegrityReport {
     if ([string]::IsNullOrWhiteSpace($reportDir) -or
         $reportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
         $reportDir -match '^(\\\\|//)') {
-        Write-Error "Unsafe report directory: $reportDir. Report directory must be a local absolute path without '..' traversal."
-        exit 1
+        $reason = "Report directory must be a local absolute path without '..' traversal."
+        throw "Unsafe report directory: $reportDir. $reason"
     }
     $reportDir = [System.IO.Path]::GetFullPath($reportDir)
     if (-not (Test-Path -LiteralPath $reportDir -PathType Container)) {
@@ -269,6 +362,21 @@ function New-IntegrityReport {
 
     $reportPath = Join-Path $reportDir "SystemIntegrityReport_$($env:COMPUTERNAME)_${RunTimestamp}_${RunId}.html"
 
+    $sfcResultClass = switch -Regex ($script:results.SFCResult) {
+        'PASSED|REPAIRED' { 'passed'; break }
+        'FAILED' { 'failed'; break }
+        default { 'warning' }
+    }
+    $dismResultClass = switch -Regex ($script:results.DISMResult) {
+        'PASSED|REPAIRED' { 'passed'; break }
+        'FAILED' { 'failed'; break }
+        default { 'warning' }
+    }
+    $chkdskResultClass = switch -Regex ($script:results.CHKDSKResult) {
+        'healthy' { 'passed'; break }
+        default { 'warning' }
+    }
+
     $html = @"
 <!DOCTYPE html>
 <html>
@@ -276,7 +384,8 @@ function New-IntegrityReport {
     <title>System Integrity Report - $($script:results.ServerName)</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .container { background-color: white; padding: 20px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .container { background-color: white; padding: 20px; border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         h1 { color: #333; border-bottom: 2px solid #0078d4; padding-bottom: 10px; }
         h2 { color: #0078d4; margin-top: 20px; }
         .info-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
@@ -292,7 +401,8 @@ function New-IntegrityReport {
     <div class="container">
         <h1>System Integrity Report</h1>
         <table class="info-table">
-            <tr><th>Server Name</th><td>$([System.Net.WebUtility]::HtmlEncode("$($script:results.ServerName)"))</td></tr>
+            <tr><th>Server Name</th><td>$([System.Net.WebUtility]::HtmlEncode(
+                "$($script:results.ServerName)"))</td></tr>
             <tr><th>Scan Date</th><td>$($script:results.ScanDate) | Run ID: $RunId</td></tr>
             <tr><th>OS Version</th><td>$([System.Net.WebUtility]::HtmlEncode("$($script:results.OSVersion)"))</td></tr>
         </table>
@@ -300,9 +410,12 @@ function New-IntegrityReport {
         <h2>Integrity Check Results</h2>
         <table class="info-table">
             <tr><th>Check Type</th><th>Result</th></tr>
-            <tr><td>System File Checker (SFC)</td><td class="$(if($script:results.SFCResult -match 'PASSED|REPAIRED'){'passed'}elseif($script:results.SFCResult -match 'FAILED'){'failed'}else{'warning'})">$([System.Net.WebUtility]::HtmlEncode("$($script:results.SFCResult)"))</td></tr>
-            <tr><td>DISM Component Store</td><td class="$(if($script:results.DISMResult -match 'PASSED|REPAIRED'){'passed'}elseif($script:results.DISMResult -match 'FAILED'){'failed'}else{'warning'})">$([System.Net.WebUtility]::HtmlEncode("$($script:results.DISMResult)"))</td></tr>
-            <tr><td>Disk Health</td><td class="$(if($script:results.CHKDSKResult -match 'healthy'){'passed'}else{'warning'})">$([System.Net.WebUtility]::HtmlEncode("$($script:results.CHKDSKResult)"))</td></tr>
+            <tr><td>System File Checker (SFC)</td><td class="$sfcResultClass">
+                $([System.Net.WebUtility]::HtmlEncode("$($script:results.SFCResult)"))</td></tr>
+            <tr><td>DISM Component Store</td><td class="$dismResultClass">
+                $([System.Net.WebUtility]::HtmlEncode("$($script:results.DISMResult)"))</td></tr>
+            <tr><td>Disk Health</td><td class="$chkdskResultClass">
+                $([System.Net.WebUtility]::HtmlEncode("$($script:results.CHKDSKResult)"))</td></tr>
         </table>
 
         <h2>Critical Event Log Errors (Last 24 Hours)</h2>
@@ -312,7 +425,12 @@ function New-IntegrityReport {
 
     if ($script:results.EventLogErrors.Count -gt 0) {
         foreach ($err in $script:results.EventLogErrors) {
-            $html += "<tr><td>$([System.Net.WebUtility]::HtmlEncode("$($err.Time)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($err.Log)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($err.Source)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($err.EventID)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($err.Message)"))</td></tr>"
+                $cells = "<td>$([System.Net.WebUtility]::HtmlEncode("$($err.Time)"))</td>" +
+                    "<td>$([System.Net.WebUtility]::HtmlEncode("$($err.Log)"))</td>" +
+                    "<td>$([System.Net.WebUtility]::HtmlEncode("$($err.Source)"))</td>"
+                $cells += "<td>$([System.Net.WebUtility]::HtmlEncode("$($err.EventID)"))</td>" +
+                    "<td>$([System.Net.WebUtility]::HtmlEncode("$($err.Message)"))</td>"
+                $html += "<tr>$cells</tr>"
         }
     }
     else {
@@ -329,42 +447,86 @@ function New-IntegrityReport {
     if ($PSCmdlet.ShouldProcess($reportPath, 'Write integrity report')) {
         $html | Out-File -FilePath $reportPath -Encoding UTF8
     }
-    Write-Log "Report generated: $reportPath" "SUCCESS"
+    Write-LogEntry "Report generated: $reportPath" "SUCCESS"
     Write-Host "[+] HTML report saved to: $reportPath" -ForegroundColor Green
 }
 
-# Main execution
-Write-Log "=== System Integrity Check Started ===" "INFO"
-Write-Log "Server: $($script:results.ServerName) | OS: $($script:results.OSVersion)" "INFO"
+function Main {
+    [CmdletBinding(SupportsShouldProcess)]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'diskPassed',
+        Justification = 'Preserved original diagnostic assignment; status derives from SFC/DISM results.')]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', 'eventLogPassed',
+        Justification = 'Preserved original diagnostic assignment; status derives from SFC/DISM results.')]
+    param(
+        [Parameter(Mandatory = $false)]
+        [switch]$QuickScan,
 
-$sfcPassed = Test-SystemFileChecker
+        [Parameter(Mandatory = $false)]
+        [switch]$AutoRepair,
 
-if (-not $QuickScan) {
-    $dismPassed = Test-DISM -Repair $AutoRepair
-    $diskPassed = Test-DiskHealth
-    $eventLogPassed = Get-CriticalEventLogErrors
-}
-else {
-    Write-Log "Quick scan mode - running SFC only" "INFO"
-    $dismPassed = Test-DISM -Repair $false
+        [Parameter(Mandatory = $false)]
+        [switch]$GenerateReport
+    )
+
+    try {
+        Write-LogEntry "=== System Integrity Check Started ===" "HEADER"
+
+        if (-not (Test-AdminPrivilege)) {
+            Write-LogEntry "Administrator privileges are required. Re-run from an elevated PowerShell session." "ERROR"
+            return 1
+        }
+
+        $script:results = @{
+            ServerName = $env:COMPUTERNAME
+            ScanDate = Get-Date
+            OSVersion = (Get-CimInstance -ClassName Win32_OperatingSystem).Caption
+            SFCResult = ""
+            DISMResult = ""
+            CHKDSKResult = ""
+            EventLogErrors = @()
+            OverallStatus = "UNKNOWN"
+        }
+
+        Write-LogEntry "Server: $($script:results.ServerName) | OS: $($script:results.OSVersion)" "INFO"
+
+        $sfcPassed = Test-SystemFileChecker
+
+        if (-not $QuickScan) {
+            $dismPassed = Test-DISM -Repair $AutoRepair
+            $diskPassed = Test-DiskHealth # diagnostic parity with original; status derives from SFC/DISM
+            $eventLogPassed = Get-CriticalEventLogError # diagnostic parity; see overall status below
+        }
+        else {
+            Write-LogEntry "Quick scan mode - running SFC only" "INFO"
+            $dismPassed = Test-DISM -Repair $false
+        }
+
+        # Determine overall status
+        if ($sfcPassed -and $dismPassed) {
+            $script:results.OverallStatus = "HEALTHY"
+            Write-LogEntry "=== Overall Status: HEALTHY ===" "SUCCESS"
+        }
+        elseif ($script:results.SFCResult -match "REPAIRED" -or $script:results.DISMResult -match "REPAIRED") {
+            $script:results.OverallStatus = "REPAIRED"
+            Write-LogEntry "=== Overall Status: ISSUES REPAIRED ===" "SUCCESS"
+        }
+        else {
+            $script:results.OverallStatus = "ATTENTION REQUIRED"
+            Write-LogEntry "=== Overall Status: ATTENTION REQUIRED ===" "WARNING"
+        }
+
+        if ($GenerateReport) {
+            New-IntegrityReport
+        }
+
+        Write-LogEntry "=== System Integrity Check Completed ===" "INFO"
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-# Determine overall status
-if ($sfcPassed -and $dismPassed) {
-    $script:results.OverallStatus = "HEALTHY"
-    Write-Log "=== Overall Status: HEALTHY ===" "SUCCESS"
-}
-elseif ($script:results.SFCResult -match "REPAIRED" -or $script:results.DISMResult -match "REPAIRED") {
-    $script:results.OverallStatus = "REPAIRED"
-    Write-Log "=== Overall Status: ISSUES REPAIRED ===" "SUCCESS"
-}
-else {
-    $script:results.OverallStatus = "ATTENTION REQUIRED"
-    Write-Log "=== Overall Status: ATTENTION REQUIRED ===" "WARNING"
-}
-
-if ($GenerateReport) {
-    New-IntegrityReport
-}
-
-Write-Log "=== System Integrity Check Completed ===" "INFO"
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main @PSBoundParameters) }

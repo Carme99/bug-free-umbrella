@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<test-results xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="nunit_schema_2.5.xsd" name="Pester" total="1" errors="0" failures="1" not-run="10" inconclusive="0" ignored="0" skipped="0" invalid="0" date="2026-08-23" time="21:42:12">
+  <environment platform="Linux" os-version="7.0.0-29-generic" cwd="/home/jack/.openclaw/workspace/projects/bug-free-umbrella" machine-name="lee-lab" clr-version="10.0.10" nunit-version="2.5.8.0" user-domain="" user="jack" />
+  <culture-info current-culture="en-GB" current-uiculture="en-GB" />
+  <test-suite type="TestFixture" name="Pester" executed="True" result="Failure" success="False" time="0.6979" asserts="0" description="Pester">
+    <results>
+      <test-suite type="TestFixture" name="/home/jack/.openclaw/workspace/projects/bug-free-umbrella/Tests/microsoft365/Get-M365UserInfo.Tests.ps1" executed="True" result="Failure" success="False" time="0.6979" asserts="0" description="/home/jack/.openclaw/workspace/projects/bug-free-umbrella/Tests/microsoft365/Get-M365UserInfo.Tests.ps1">
+        <results>
+          <test-suite type="TestFixture" name="Get-M365UserInfo" executed="True" result="Failure" success="False" time="0.4794" asserts="0" description="Get-M365UserInfo">
+            <results>
+              <test-suite type="TestFixture" name="Get-M365UserInfo.Behavior" executed="True" result="Failure" success="False" time="0.3355" asserts="0" description="Get-M365UserInfo.Behavior">
+                <results>
+                  <test-case description="ExportReport mode writes an HTML report file and returns 0" name="Get-M365UserInfo.Behavior.ExportReport mode writes an HTML report file and returns 0" time="0.3049" asserts="0" success="False" result="Failure" executed="True">
+                    <failure>
+                      <message>Expected 0, but got 1.</message>
+                      <stack-trace>at ($out | Where-Object { $_ -is [int] }) | Should -Be 0, /home/jack/.openclaw/workspace/projects/bug-free-umbrella/Tests/microsoft365/Get-M365UserInfo.Tests.ps1:183
+at &lt;ScriptBlock&gt;, /home/jack/.openclaw/workspace/projects/bug-free-umbrella/Tests/microsoft365/Get-M365UserInfo.Tests.ps1:183</stack-trace>
+                    </failure>
+                  </test-case>
+                </results>
+              </test-suite>
+            </results>
+          </test-suite>
+        </results>
+      </test-suite>
+    </results>
+  </test-suite>
+</test-results>

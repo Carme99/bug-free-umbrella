@@ -1,41 +1,47 @@
 ﻿<#
 .SYNOPSIS
-    Generates Azure AD (Entra ID) license assignment and usage report.
+    Generate an Azure AD (Entra ID) license assignment and usage report.
 
 .DESCRIPTION
-    This script analyzes Microsoft 365 licenses for:
-    - Total licenses purchased vs assigned
-    - License consumption by SKU
-    - Users without licenses
-    - Unused licenses
-    - License assignment by group
-    - Service plan details
-    - Cost optimization opportunities
+    Connects to Microsoft Graph, enumerates all subscribed SKUs, and reports purchased versus
+    assigned license counts per SKU with usage percentages and status classification. Can
+    additionally identify enabled members without any assigned license and export the findings
+    to HTML or CSV under the user's Documents\Reports folder. Returns exit code 0 when the
+    report completes and exit code 1 on connection or retrieval failure.
 
 .PARAMETER IncludeServicePlans
-    Include detailed service plan breakdown.
+    Reserved switch retained for interface compatibility; service plan details are not
+    currently broken out beyond the per-SKU summary.
 
 .PARAMETER IdentifyUnassigned
-    Show users without any licenses.
+    Additionally list enabled member users without any assigned licenses.
 
 .PARAMETER ExportHTML
-    Export results to HTML report.
+    Export results to an HTML report file.
 
 .PARAMETER ExportCSV
-    Export results to CSV file.
+    Export results to a CSV file.
 
 .EXAMPLE
-    .\Get-AzureADLicenseReport.ps1
-    Basic license usage report.
+    PS C:\> .\Get-AzureADLicenseReport.ps1
+
+    Runs a basic license usage report against the tenant.
 
 .EXAMPLE
-    .\Get-AzureADLicenseReport.ps1 -IncludeServicePlans -IdentifyUnassigned -ExportHTML
-    Comprehensive license audit with service plans and unassigned users.
+    PS C:\> .\Get-AzureADLicenseReport.ps1 -IdentifyUnassigned -ExportCSV
+
+    Reports license usage, lists unlicensed enabled users, and exports results to CSV.
 
 .NOTES
-    Requires Microsoft Graph PowerShell module
-    Requires Organization.Read.All permission
-    Compatible with Azure AD / Entra ID (Microsoft 365)
+    File Name  : Get-AzureADLicenseReport.ps1
+    Author     : Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version    : 1.0.0
+    Date       : 2026-08-23
+
+    Requires Microsoft Graph PowerShell module.
+    Requires Organization.Read.All permission.
+    Compatible with Azure AD / Entra ID (Microsoft 365).
 #>
 
 [CmdletBinding()]
@@ -53,148 +59,178 @@ param(
     [switch]$ExportCSV
 )
 
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-if ([string]::IsNullOrWhiteSpace($ReportDir) -or
-    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
-    $ReportDir -match '^(\\\\|//)') {
-    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
-    exit 1
-}
-$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
+$ErrorActionPreference = 'Stop'
 
-$ErrorActionPreference = "Stop"
-$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-
-Write-Host "`n=== Microsoft 365 License Report ===" -ForegroundColor Cyan
-Write-Host "Timestamp: $(Get-Date)" -ForegroundColor Gray
-Write-Host ""
-
-# Connect to Microsoft Graph
-try {
-    Write-Host "[*] Connecting to Microsoft Graph..." -ForegroundColor Cyan
-    Connect-MgGraph -Scopes "Organization.Read.All", "User.Read.All" -NoWelcome
-    Write-Host "[+] Connected to Microsoft Graph" -ForegroundColor Green
-}
-catch {
-    Write-Host "[-] Error connecting: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
-}
-
-Write-Host ""
-
-# Get subscribed SKUs
-Write-Host "[*] Retrieving license information..." -ForegroundColor Cyan
-
-try {
-    $skus = Get-MgSubscribedSku -All
-
-    Write-Host "[+] Found $($skus.Count) license SKU(s)" -ForegroundColor Green
-}
-catch {
-    Write-Host "[-] Error retrieving licenses: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
-}
-
-Write-Host ""
-
-# Friendly SKU names
-$skuNames = @{
-    "ENTERPRISEPACK" = "Office 365 E3"
-    "ENTERPRISEPREMIUM" = "Office 365 E5"
-    "EMS" = "Enterprise Mobility + Security E3"
-    "EMSPREMIUM" = "Enterprise Mobility + Security E5"
-    "SPE_E3" = "Microsoft 365 E3"
-    "SPE_E5" = "Microsoft 365 E5"
-    "FLOW_FREE" = "Power Automate Free"
-    "POWER_BI_STANDARD" = "Power BI Free"
-    "TEAMS_EXPLORATORY" = "Microsoft Teams Exploratory"
-    "PROJECTPROFESSIONAL" = "Project Plan 3"
-    "VISIOCLIENT" = "Visio Plan 2"
-}
-
-$results = @()
-$totalPurchased = 0
-$totalAssigned = 0
-$totalUnused = 0
-
-foreach ($sku in $skus) {
-    $skuPart = $sku.SkuPartNumber
-
-    $friendlyName = if ($skuNames.ContainsKey($skuPart)) {
-        $skuNames[$skuPart]
+# Resolve (and create if needed) the Documents\Reports directory used by export switches.
+function Get-ReportDirectory {
+    $reportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+    if ([string]::IsNullOrWhiteSpace($reportDir) -or
+        $reportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+        $reportDir -match '^(\\\\|//)') {
+        throw "Unsafe report path: $reportDir. Report path must be a local absolute path without '..' traversal."
     }
-    else {
-        $skuPart
+    $fullReportDir = [System.IO.Path]::GetFullPath($reportDir)
+    if (-not (Test-Path -LiteralPath $fullReportDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $fullReportDir -Force -ErrorAction Stop | Out-Null
     }
-
-    $purchased = $sku.PrepaidUnits.Enabled
-    $assigned = $sku.ConsumedUnits
-    $unused = $purchased - $assigned
-    $usagePercent = if ($purchased -gt 0) {
-        [math]::Round(($assigned / $purchased) * 100, 2)
-    }
-    else { 0 }
-
-    $totalPurchased += $purchased
-    $totalAssigned += $assigned
-    $totalUnused += $unused
-
-    $result = [PSCustomObject]@{
-        LicenseName = $friendlyName
-        SKU = $skuPart
-        Purchased = $purchased
-        Assigned = $assigned
-        Unused = $unused
-        UsagePercent = $usagePercent
-        Status = if ($unused -eq 0) { "Full" } elseif ($usagePercent -ge 80) { "High" } else { "OK" }
-    }
-
-    $results += $result
+    return $fullReportDir
 }
 
-Write-Host "=== License Summary ===" -ForegroundColor Cyan
-Write-Host "Total Licenses Purchased: $totalPurchased" -ForegroundColor White
-Write-Host "Total Licenses Assigned: $totalAssigned" -ForegroundColor White
-Write-Host "Total Unused Licenses: $totalUnused" -ForegroundColor Yellow
-Write-Host ""
+# Write-Host is intentional throughout: AGENTS.md requires user-facing colored [+] [!] [-] [*] console output.
+function Main {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        [switch]$IncludeServicePlans,
 
-# Show license details
-Write-Host "=== License Details ===" -ForegroundColor Cyan
-$results | Sort-Object Purchased -Descending |
-    Format-Table LicenseName, Purchased, Assigned, Unused, UsagePercent, Status -AutoSize
+        [Parameter(Mandatory = $false)]
+        [switch]$IdentifyUnassigned,
 
-# Identify users without licenses
-if ($IdentifyUnassigned) {
-    Write-Host "`n[*] Checking for unlicensed users..." -ForegroundColor Cyan
+        [Parameter(Mandatory = $false)]
+        [switch]$ExportHTML,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$ExportCSV
+    )
 
     try {
-        $allUsers = Get-MgUser -Filter "userType eq 'Member' and accountEnabled eq true" -All -Property DisplayName, UserPrincipalName, AssignedLicenses
-        $unlicensedUsers = $allUsers | Where-Object { $_.AssignedLicenses.Count -eq 0 }
+        $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
-        Write-Host "[+] Found $($unlicensedUsers.Count) unlicensed enabled user(s)" -ForegroundColor $(if ($unlicensedUsers.Count -gt 0) { "Yellow" } else { "Green" })
+        Write-Host "`n=== Microsoft 365 License Report ===" -ForegroundColor Cyan
+        Write-Host "Timestamp: $(Get-Date)" -ForegroundColor Gray
+        Write-Host ""
 
-        if ($unlicensedUsers.Count -gt 0 -and $unlicensedUsers.Count -le 20) {
-            Write-Host "`n=== Unlicensed Users ===" -ForegroundColor Yellow
-            $unlicensedUsers | Select-Object DisplayName, UserPrincipalName | Format-Table -AutoSize
+        # Connect to Microsoft Graph
+        try {
+            Write-Host "[*] Connecting to Microsoft Graph..." -ForegroundColor Cyan
+            Connect-MgGraph -Scopes "Organization.Read.All", "User.Read.All" -NoWelcome -ErrorAction Stop
+            Write-Host "[+] Connected to Microsoft Graph" -ForegroundColor Green
         }
-        elseif ($unlicensedUsers.Count -gt 20) {
-            Write-Host "`n=== Top 20 Unlicensed Users ===" -ForegroundColor Yellow
-            $unlicensedUsers | Select-Object -First 20 DisplayName, UserPrincipalName | Format-Table -AutoSize
+        catch {
+            Write-Host "[-] Error connecting: $($_.Exception.Message)" -ForegroundColor Red
+            return 1
         }
-    }
-    catch {
-        Write-Host "[-] Error checking unlicensed users: $($_.Exception.Message)" -ForegroundColor Red
-    }
-}
 
-# Export
-if ($ExportHTML) {
-    $htmlPath = "$ReportDir\LicenseReport_$timestamp.html"
+        Write-Host ""
 
-    $html = @"
+        # Get subscribed SKUs
+        Write-Host "[*] Retrieving license information..." -ForegroundColor Cyan
+
+        try {
+            $skus = @(Get-MgSubscribedSku -All -ErrorAction Stop)
+
+            Write-Host "[+] Found $($skus.Count) license SKU(s)" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "[-] Error retrieving licenses: $($_.Exception.Message)" -ForegroundColor Red
+            return 1
+        }
+
+        Write-Host ""
+
+        # Friendly SKU names
+        $skuNames = @{
+            "ENTERPRISEPACK" = "Office 365 E3"
+            "ENTERPRISEPREMIUM" = "Office 365 E5"
+            "EMS" = "Enterprise Mobility + Security E3"
+            "EMSPREMIUM" = "Enterprise Mobility + Security E5"
+            "SPE_E3" = "Microsoft 365 E3"
+            "SPE_E5" = "Microsoft 365 E5"
+            "FLOW_FREE" = "Power Automate Free"
+            "POWER_BI_STANDARD" = "Power BI Free"
+            "TEAMS_EXPLORATORY" = "Microsoft Teams Exploratory"
+            "PROJECTPROFESSIONAL" = "Project Plan 3"
+            "VISIOCLIENT" = "Visio Plan 2"
+        }
+
+        $results = @()
+        $totalPurchased = 0
+        $totalAssigned = 0
+        $totalUnused = 0
+
+        foreach ($sku in $skus) {
+            $skuPart = $sku.SkuPartNumber
+
+            $friendlyName = if ($skuNames.ContainsKey($skuPart)) {
+                $skuNames[$skuPart]
+            }
+            else {
+                $skuPart
+            }
+
+            $purchased = $sku.PrepaidUnits.Enabled
+            $assigned = $sku.ConsumedUnits
+            $unused = $purchased - $assigned
+            $usagePercent = if ($purchased -gt 0) {
+                [math]::Round(($assigned / $purchased) * 100, 2)
+            }
+            else { 0 }
+
+            $totalPurchased += $purchased
+            $totalAssigned += $assigned
+            $totalUnused += $unused
+
+            $status = if ($unused -eq 0) { "Full" } elseif ($usagePercent -ge 80) { "High" } else { "OK" }
+
+            $result = [PSCustomObject]@{
+                LicenseName = $friendlyName
+                SKU = $skuPart
+                Purchased = $purchased
+                Assigned = $assigned
+                Unused = $unused
+                UsagePercent = $usagePercent
+                Status = $status
+            }
+
+            $results += $result
+        }
+
+        Write-Host "=== License Summary ===" -ForegroundColor Cyan
+        Write-Host "Total Licenses Purchased: $totalPurchased" -ForegroundColor White
+        Write-Host "Total Licenses Assigned: $totalAssigned" -ForegroundColor White
+        Write-Host "Total Unused Licenses: $totalUnused" -ForegroundColor Yellow
+        Write-Host ""
+
+        # Show license details
+        Write-Host "=== License Details ===" -ForegroundColor Cyan
+        $results | Sort-Object Purchased -Descending |
+            Format-Table LicenseName, Purchased, Assigned, Unused, UsagePercent, Status -AutoSize
+
+        # Identify users without licenses
+        if ($IdentifyUnassigned) {
+            Write-Host "`n[*] Checking for unlicensed users..." -ForegroundColor Cyan
+
+            try {
+                $allUsers = @(Get-MgUser -Filter "userType eq 'Member' and accountEnabled eq true" -All `
+                    -Property DisplayName, UserPrincipalName, AssignedLicenses -ErrorAction Stop)
+                $unlicensedUsers = @($allUsers | Where-Object { $_.AssignedLicenses.Count -eq 0 })
+
+                $unlicensedColor = if ($unlicensedUsers.Count -gt 0) { "Yellow" } else { "Green" }
+                $unlicensedMsg = "[+] Found $($unlicensedUsers.Count) unlicensed enabled user(s)"
+                Write-Host $unlicensedMsg -ForegroundColor $unlicensedColor
+
+                if ($unlicensedUsers.Count -gt 0 -and $unlicensedUsers.Count -le 20) {
+                    Write-Host "`n=== Unlicensed Users ===" -ForegroundColor Yellow
+                    $unlicensedUsers | Select-Object DisplayName, UserPrincipalName | Format-Table -AutoSize
+                }
+                elseif ($unlicensedUsers.Count -gt 20) {
+                    Write-Host "`n=== Top 20 Unlicensed Users ===" -ForegroundColor Yellow
+                    $unlicensedUsers | Select-Object -First 20 DisplayName, UserPrincipalName | Format-Table -AutoSize
+                }
+            }
+            catch {
+                Write-Host "[-] Error checking unlicensed users: $($_.Exception.Message)" -ForegroundColor Red
+            }
+        }
+
+        # Export
+        if ($ExportHTML) {
+            $reportDir = Get-ReportDirectory
+            $htmlPath = Join-Path $reportDir "LicenseReport_$timestamp.html"
+
+            $overallUsage = [math]::Round(($totalAssigned / $totalPurchased) * 100, 2)
+
+            $html = @"
 <!DOCTYPE html>
 <html>
 <head>
@@ -216,7 +252,7 @@ if ($ExportHTML) {
         <strong>Total Purchased:</strong> $totalPurchased<br>
         <strong>Total Assigned:</strong> $totalAssigned<br>
         <strong>Total Unused:</strong> $totalUnused<br>
-        <strong>Overall Usage:</strong> $([math]::Round(($totalAssigned / $totalPurchased) * 100, 2))%
+        <strong>Overall Usage:</strong> $overallUsage%
     </div>
 
     <h2>License Details</h2>
@@ -224,8 +260,8 @@ if ($ExportHTML) {
         <tr><th>License Name</th><th>Purchased</th><th>Assigned</th><th>Unused</th><th>Usage %</th><th>Status</th></tr>
 "@
 
-    foreach ($result in ($results | Sort-Object Purchased -Descending)) {
-        $html += @"
+            foreach ($result in ($results | Sort-Object Purchased -Descending)) {
+                $html += @"
         <tr>
             <td>$($result.LicenseName)</td>
             <td>$($result.Purchased)</td>
@@ -235,22 +271,31 @@ if ($ExportHTML) {
             <td>$($result.Status)</td>
         </tr>
 "@
+            }
+
+            $html += "</table></body></html>"
+            $html | Out-File -FilePath $htmlPath -Encoding UTF8 -ErrorAction Stop
+            Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+        }
+
+        if ($ExportCSV) {
+            $reportDir = Get-ReportDirectory
+            $csvPath = Join-Path $reportDir "LicenseReport_$timestamp.csv"
+            $results | Export-Csv -Path $csvPath -NoTypeInformation -ErrorAction Stop
+            Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
+        }
+
+        Write-Host "`n[+] Report completed!" -ForegroundColor Green
+
+        Disconnect-MgGraph -ErrorAction SilentlyContinue | Out-Null
+
+        return 0
     }
-
-    $html += "</table></body></html>"
-    $html | Out-File -FilePath $htmlPath -Encoding UTF8
-    Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-if ($ExportCSV) {
-    $csvPath = "$ReportDir\LicenseReport_$timestamp.csv"
-    $results | Export-Csv -Path $csvPath -NoTypeInformation
-    Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
-}
-
-Write-Host "`n[+] Report completed!" -ForegroundColor Green
-
-# Disconnect
-Disconnect-MgGraph | Out-Null
-
-exit 0
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main @PSBoundParameters) }

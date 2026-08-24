@@ -2,7 +2,7 @@
 
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![Release Date](https://img.shields.io/badge/release-2026--08--23-green)
-![Total Scripts](https://img.shields.io/badge/scripts-544-orange)
+![Total Scripts](https://img.shields.io/badge/scripts-539-orange)
 ![License](https://img.shields.io/badge/license-Apache%202.0-red)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
 
@@ -67,7 +67,7 @@ Bug-Free Umbrella historically used **weather-themed codenames** for releases. A
 
 ### Relaunch Scope
 
-- **Unified standard** — all **544 scripts** across 8 domains (automation 6, cloud 16, collaboration 24, data 6, endpoints 429, infrastructure 42, security 16, utilities 5) swept to the standard defined in `docs/RELAUNCH-SPEC.md`.
+- **Unified standard** — all **539 scripts** across 8 domains (automation 6, cloud 15, collaboration 23, data 6, endpoints 426, infrastructure 42, security 16, utilities 5) swept to the standard defined in `docs/RELAUNCH-SPEC.md`.
 - **Per-script test coverage** — every script has a Pester suite under `Tests/`, mirroring the script's repo-relative directory (e.g. `scripts/endpoints/devices/autopatch/V3/detect.ps1` → `Tests/endpoints/devices/autopatch/V3/detect.Tests.ps1`).
 - **Analyzer-clean** — PSScriptAnalyzer reports zero errors across the collection.
 - **Rebrand** — documentation tone moved from whimsical to ops-grade professional; weather-themed codenames dropped from release identity; the module manifest no longer carries `Prerelease` or codename fields. The module name remains `BugFreeUmbrella`.
@@ -1636,7 +1636,7 @@ Comprehensive documentation suite:
 
 | Version | Date | Codename | Type | Major Changes |
 |---------|------|----------|------|---------------|
-| **1.0.0** | 2026-08-23 | — | Relaunch | Clean-slate relaunch: 544 scripts unified to RELAUNCH-SPEC, per-script Pester coverage, analyzer-clean, rebrand |
+| **1.0.0** | 2026-08-23 | — | Relaunch | Clean-slate relaunch: 539 scripts unified to RELAUNCH-SPEC, per-script Pester coverage, analyzer-clean, rebrand |
 | **5.0.0** | 2026-08-23 | 🌪️ Hurricane | Major | PSGallery module, CLI v2, remediation reorg with shims |
 | **4.4.0** | 2026-08-20 | 🌧️ Nimbus | Minor | Catalog + MCP server, CI hardening, quality sweep |
 | **4.3.0** | 2026-08-08 | 🌈 Zephyr | Minor | MS Learn alignment (97 findings), PSSA enforcement gates, 122 issues |

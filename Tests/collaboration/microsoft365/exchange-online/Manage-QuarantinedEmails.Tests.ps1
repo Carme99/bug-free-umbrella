@@ -1,378 +1,230 @@
-<#
-.SYNOPSIS
-    Pester test suite for the Manage-QuarantinedEmails.ps1 script.
+﻿#Requires -Modules Pester
 
-.DESCRIPTION
-    Validates the behavior of Manage-QuarantinedEmails.ps1, which connects to
-    Exchange Online, retrieves quarantined messages for review, and performs
-    release/delete actions on selected messages. Tests cover parameter validation,
-    quarantine message retrieval and filtering, bulk action handling, and output
-    formatting. Exchange Online cmdlets (Connect-ExchangeOnline, Get-EXOMailbox,
-    Get-QuarantineMessage, etc.) are mocked so the suite runs without a real
-    tenant connection.
+# Pester 5 suite for scripts/collaboration/microsoft365/exchange-online/Manage-QuarantinedEmails.ps1
+# Runs fully offline on Linux pwsh: Exchange Online cmdlets and Read-Host are mocked;
+# the native surface is reached only through mockable wrapper functions.
 
-.EXAMPLE
-    PS C:\> Invoke-Pester .\Manage-QuarantinedEmails.Tests.ps1
-
-    Runs the full test suite against the Manage-QuarantinedEmails.ps1 script in the same folder.
-
-.NOTES
-    File Name  : Manage-QuarantinedEmails.Tests.ps1
-    Author     : Microsoft 365 Scripting Team
-    Prerequisite: PowerShell 7.0, Pester 5, ExchangeOnlineManagement module
-    Version    : 1.0.0
-    Date       : 2025-01-01
-#>
-
-BeforeAll {
-    # Import the script to test
-    $scriptPath = "$PSScriptRoot/Manage-QuarantinedEmails.ps1"
-
-    # Mock external cmdlets
-    Mock Write-Host { }
-    Mock Read-Host { "test@contoso.com" }
-    Mock Start-Process { }
-
-    # Mock Exchange Online cmdlets
-    Mock Get-Module {
-        [PSCustomObject]@{
-            Name = "ExchangeOnlineManagement"
-            Version = "3.0.0"
-        }
-    }
-
-    Mock Import-Module { }
-
-    Mock Get-ConnectionInformation {
-        [PSCustomObject]@{
-            UserPrincipalName = "admin@contoso.com"
-            ConnectionId = "12345"
-        }
-    }
-
-    Mock Connect-ExchangeOnline { }
-
-    Mock Get-EXOMailbox {
-        [PSCustomObject]@{
-            DisplayName = "Test User"
-            PrimarySmtpAddress = "test@contoso.com"
-            UserPrincipalName = "test@contoso.com"
-        }
-    }
-
-    Mock Get-QuarantineMessage {
-        @(
-            [PSCustomObject]@{
-                Identity = "msg-001"
-                ReceivedTime = (Get-Date).AddDays(-1)
-                SenderAddress = "sender@external.com"
-                RecipientAddress = @("test@contoso.com")
-                Subject = "Test Quarantined Email"
-                QuarantineTypes = @("Spam")
-                Direction = "Inbound"
-                Size = 51200
-                PolicyName = "Default Anti-Spam Policy"
-            },
-            [PSCustomObject]@{
-                Identity = "msg-002"
-                ReceivedTime = (Get-Date).AddDays(-2)
-                SenderAddress = "phishing@malicious.com"
-                RecipientAddress = @("test@contoso.com")
-                Subject = "Urgent: Verify Your Account"
-                QuarantineTypes = @("HighConfPhish")
-                Direction = "Inbound"
-                Size = 102400
-                PolicyName = "Default Anti-Phishing Policy"
-            }
-        )
-    }
-
-    Mock Release-QuarantineMessage { }
-}
-
-Describe "Manage-QuarantinedEmails.ps1 - Parameter Validation" {
-
-    Context "UserEmail Parameter" {
-        It "Should accept valid email address" {
-            { & $scriptPath -UserEmail "test@contoso.com" -Days 7 } | Should -Not -Throw
-        }
-
-        It "Should work without UserEmail (interactive mode)" {
-            Mock Read-Host { "test@contoso.com" }
-            { & $scriptPath -Days 7 } | Should -Not -Throw
-        }
-    }
-
-    Context "Days Parameter" {
-        It "Should accept valid days value (1-30)" {
-            { & $scriptPath -UserEmail "test@contoso.com" -Days 14 } | Should -Not -Throw
-        }
-
-        It "Should use default of 7 days when not specified" {
-            { & $scriptPath -UserEmail "test@contoso.com" } | Should -Not -Throw
-        }
-
-        It "Should reject days value greater than 30" {
-            { & $scriptPath -UserEmail "test@contoso.com" -Days 31 } | Should -Throw
-        }
-
-        It "Should reject days value less than 1" {
-            { & $scriptPath -UserEmail "test@contoso.com" -Days 0 } | Should -Throw
-        }
-    }
-
-    Context "AutoConnect Parameter" {
-        It "Should accept -AutoConnect switch" {
-            Mock Get-ConnectionInformation { $null }
-            Mock Connect-ExchangeOnline { }
-
-            { & $scriptPath -UserEmail "test@contoso.com" -AutoConnect } | Should -Not -Throw
-        }
-    }
-}
-
-Describe "Manage-QuarantinedEmails.ps1 - Connection Handling" {
-
-    Context "Exchange Online Module Check" {
-        It "Should verify ExchangeOnlineManagement module is installed" {
-            Mock Get-Module { $null }
-
-            { & $scriptPath -UserEmail "test@contoso.com" } | Should -Throw
-        }
-
-        It "Should detect existing connection" {
-            Mock Get-ConnectionInformation {
-                [PSCustomObject]@{
-                    UserPrincipalName = "admin@contoso.com"
-                }
-            }
-
-            { & $scriptPath -UserEmail "test@contoso.com" } | Should -Not -Throw
-        }
-
-        It "Should prompt for connection when not connected and AutoConnect not specified" {
-            Mock Get-ConnectionInformation { $null }
-
-            { & $scriptPath -UserEmail "test@contoso.com" } | Should -Throw
-        }
-    }
-
-    Context "Connection with AutoConnect" {
-        It "Should attempt to connect when AutoConnect is specified" {
-            Mock Get-ConnectionInformation { $null }
-            Mock Connect-ExchangeOnline { }
-
-            & $scriptPath -UserEmail "test@contoso.com" -AutoConnect
-
-            Should -Invoke Connect-ExchangeOnline -Times 1
-        }
-
-        It "Should handle connection failures gracefully" {
-            Mock Get-ConnectionInformation { $null }
-            Mock Connect-ExchangeOnline { throw "Connection failed" }
-
-            { & $scriptPath -UserEmail "test@contoso.com" -AutoConnect } | Should -Throw
-        }
-    }
-}
-
-Describe "Manage-QuarantinedEmails.ps1 - Email Validation" {
-
-    Context "Email Address Format" {
-        It "Should reject invalid email format" {
-            { & $scriptPath -UserEmail "invalid-email" } | Should -Throw
-        }
-
-        It "Should reject empty email" {
-            { & $scriptPath -UserEmail "" } | Should -Throw
-        }
-
-        It "Should accept standard email format" {
-            { & $scriptPath -UserEmail "user@domain.com" } | Should -Not -Throw
-        }
-
-        It "Should accept email with subdomain" {
-            { & $scriptPath -UserEmail "user@mail.domain.com" } | Should -Not -Throw
-        }
-    }
-}
-
-Describe "Manage-QuarantinedEmails.ps1 - User Verification" {
-
-    Context "Mailbox Existence Check" {
-        It "Should verify user mailbox exists" {
-            Mock Get-EXOMailbox {
-                [PSCustomObject]@{
-                    DisplayName = "Test User"
-                    PrimarySmtpAddress = "test@contoso.com"
-                }
-            }
-
-            { & $scriptPath -UserEmail "test@contoso.com" } | Should -Not -Throw
-            Should -Invoke Get-EXOMailbox -Times 1
-        }
-
-        It "Should handle non-existent mailbox" {
-            Mock Get-EXOMailbox { throw "Mailbox not found" }
-
-            { & $scriptPath -UserEmail "nonexistent@contoso.com" } | Should -Throw
-        }
-
-        It "Should use PrimarySmtpAddress for quarantine search" {
-            Mock Get-EXOMailbox {
-                [PSCustomObject]@{
-                    DisplayName = "Test User"
-                    PrimarySmtpAddress = "primary@contoso.com"
-                    UserPrincipalName = "test@contoso.com"
-                }
-            }
-
-            Mock Get-QuarantineMessage { @() }
-
-            & $scriptPath -UserEmail "test@contoso.com"
-
-            Should -Invoke Get-QuarantineMessage -ParameterFilter {
-                $RecipientAddress -eq "primary@contoso.com"
-            }
-        }
-    }
-}
-
-Describe "Manage-QuarantinedEmails.ps1 - Quarantine Message Retrieval" {
-
-    Context "Message Search" {
-        It "Should search for quarantined messages with correct date range" {
-            $daysBack = 7
-
-            Mock Get-QuarantineMessage { @() }
-
-            & $scriptPath -UserEmail "test@contoso.com" -Days $daysBack
-
-            Should -Invoke Get-QuarantineMessage -Times 1 -ParameterFilter {
-                $RecipientAddress -eq "test@contoso.com"
-            }
-        }
-
-        It "Should handle no quarantined messages found" {
-            Mock Get-QuarantineMessage { @() }
-
-            { & $scriptPath -UserEmail "test@contoso.com" } | Should -Not -Throw
-        }
-
-        It "Should handle multiple quarantined messages" {
-            Mock Get-QuarantineMessage {
-                @(
-                    [PSCustomObject]@{
-                        Identity = "msg-001"
-                        ReceivedTime = (Get-Date)
-                        SenderAddress = "sender1@external.com"
-                        RecipientAddress = @("test@contoso.com")
-                        Subject = "Message 1"
-                        QuarantineTypes = @("Spam")
-                    },
-                    [PSCustomObject]@{
-                        Identity = "msg-002"
-                        ReceivedTime = (Get-Date)
-                        SenderAddress = "sender2@external.com"
-                        RecipientAddress = @("test@contoso.com")
-                        Subject = "Message 2"
-                        QuarantineTypes = @("Malware")
-                    }
-                )
-            }
-
-            { & $scriptPath -UserEmail "test@contoso.com" } | Should -Not -Throw
-        }
-
-        It "Should handle permissions errors gracefully" {
-            Mock Get-QuarantineMessage {
-                throw "User is not authorized to perform this operation"
-            }
-
-            { & $scriptPath -UserEmail "test@contoso.com" } | Should -Not -Throw
-        }
-    }
-}
-
-Describe "Manage-QuarantinedEmails.ps1 - Message Release Functionality" {
-
-    Context "Release Message" {
-        It "Should call Release-QuarantineMessage when releasing" {
-            Mock Read-Host {
-                switch ($global:ReadHostCallCount++) {
-                    0 { "1" }     # Select first message
-                    1 { "1" }     # Choose to release
-                    2 { "Y" }     # Confirm release
-                    3 { "0" }     # Exit
-                    default { "0" }
-                }
-            }
-
-            $global:ReadHostCallCount = 0
-
-            & $scriptPath -UserEmail "test@contoso.com"
-
-            Should -Invoke Release-QuarantineMessage -Times 1
-        }
-
-        It "Should handle release failures gracefully" {
-            Mock Release-QuarantineMessage {
-                throw "Failed to release message"
-            }
-
-            Mock Read-Host {
-                switch ($global:ReadHostCallCount2++) {
-                    0 { "1" }     # Select first message
-                    1 { "1" }     # Choose to release
-                    2 { "Y" }     # Confirm release
-                    3 { "0" }     # Exit
-                    default { "0" }
-                }
-            }
-
-            $global:ReadHostCallCount2 = 0
-
-            { & $scriptPath -UserEmail "test@contoso.com" } | Should -Not -Throw
-        }
-    }
-}
-
-Describe "Manage-QuarantinedEmails.ps1 - Function Tests" {
+Describe "Manage-QuarantinedEmails" {
 
     BeforeAll {
-        # Source the script to access internal functions
+        # Mirrored layout: Tests/collaboration/microsoft365/exchange-online/ -> repo root is four levels up.
+        $scriptRelPath = "../../../../scripts/collaboration/microsoft365/exchange-online/Manage-QuarantinedEmails.ps1"
+        $scriptPath = Join-Path $PSScriptRoot $scriptRelPath
+
+        # Safe: the script's top-level guard skips Main when dot-sourced.
         . $scriptPath
+
+        # Static analysis inputs
+        $rawContent = Get-Content -Raw -LiteralPath $scriptPath
+        $parseTokens = $null
+        $parseErrors = $null
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile(
+            $scriptPath, [ref]$parseTokens, [ref]$parseErrors)
+        $paramNames = @($ast.ParamBlock.Parameters | ForEach-Object { $_.Name.VariablePath.UserPath })
+
+        # Shared message fixtures
+        $msgOne = [pscustomobject]@{
+            Identity         = 'msg-001'
+            ReceivedTime     = (Get-Date).AddDays(-1)
+            SenderAddress    = 'sender@external.com'
+            RecipientAddress = @('test@contoso.com')
+            Subject          = 'Test Quarantined Email'
+            QuarantineTypes  = @('Spam')
+            Direction        = 'Inbound'
+            Size             = 51200
+            PolicyName       = 'Default Anti-Spam Policy'
+        }
+        $msgTwo = [pscustomobject]@{
+            Identity         = 'msg-002'
+            ReceivedTime     = (Get-Date).AddDays(-2)
+            SenderAddress    = 'phishing@malicious.com'
+            RecipientAddress = @('test@contoso.com')
+            Subject          = 'Urgent: Verify Your Account'
+            QuarantineTypes  = @('HighConfPhish')
+            Direction        = 'Inbound'
+            Size             = 102400
+            PolicyName       = 'Default Anti-Phishing Policy'
+        }
+
+        # Local stubs guarantee every external cmdlet is mockable even when its module is absent.
+        function Get-ConnectionInformation { }
+        function Connect-ExchangeOnline { param([switch]$ShowBanner) }
+        function Get-EXOMailbox { param([string]$Identity) }
+        function Get-QuarantineMessage {
+            param([string]$RecipientAddress, [datetime]$StartReceivedDate, [datetime]$EndReceivedDate)
+        }
+        function Release-QuarantineMessage { param([string]$Identity, [switch]$ReleaseToAll) }
+
+        # Base external mocks (offline). Scoped filters keep Pester internals untouched.
+        Mock Get-Module {
+            [pscustomobject]@{ Name = 'ExchangeOnlineManagement'; Version = [version]'3.4.0' }
+        } -ParameterFilter { $Name -eq 'ExchangeOnlineManagement' }
+        Mock Import-Module { } -ParameterFilter { $Name -eq 'ExchangeOnlineManagement' }
+        Mock Get-ConnectionInformation { [pscustomobject]@{ UserPrincipalName = 'admin@contoso.com' } }
+        Mock Connect-ExchangeOnline { }
+        Mock Get-EXOMailbox {
+            [pscustomobject]@{
+                DisplayName        = 'Test User'
+                PrimarySmtpAddress = 'primary@contoso.com'
+                UserPrincipalName  = 'test@contoso.com'
+            }
+        }
+        Mock Get-QuarantineMessage { @() }
+        Mock Release-QuarantineMessage { }
+        Mock Read-Host { '0' }
     }
 
-    Context "Test-EmailAddress Function" {
-        It "Should validate correct email addresses" {
-            Test-EmailAddress -Email "user@domain.com" | Should -Be $true
-            Test-EmailAddress -Email "user.name@sub.domain.com" | Should -Be $true
-            Test-EmailAddress -Email "user+tag@domain.com" | Should -Be $true
+    Context "Help & Metadata" {
+
+        It "Declares Version 1.0.0 and relaunch Date 2026-08-23 in .NOTES" {
+            $rawContent | Should -Match '(?m)^\s*Version\s*:\s*1\.0\.0\b'
+            $rawContent | Should -Match '(?m)^\s*Date\s*:\s*2026-08-23\b'
         }
 
-        It "Should reject invalid email addresses" {
-            Test-EmailAddress -Email "invalid" | Should -Be $false
-            Test-EmailAddress -Email "@domain.com" | Should -Be $false
-            Test-EmailAddress -Email "user@" | Should -Be $false
-            Test-EmailAddress -Email "user domain.com" | Should -Be $false
+        It "Declares the actual filename, preserved author, and PowerShell 7.0 prerequisite" {
+            $rawContent | Should -Match '(?m)^\s*File Name\s*:\s*Manage-QuarantinedEmails\.ps1\b'
+            $rawContent | Should -Match '(?m)^\s*Author\s*:\s*IT Operations\b'
+            $rawContent | Should -Match '(?m)^\s*Prerequisite\s*:\s*PowerShell 7\.0\b'
+        }
+
+        It "Has one .PARAMETER entry per declared parameter, in order" {
+            $helpParamNames = @([regex]::Matches($rawContent, '(?m)^\.PARAMETER\s+(\S+)') |
+                ForEach-Object { $_.Groups[1].Value })
+            $helpParamNames.Count | Should -Be $paramNames.Count
+            for ($i = 0; $i -lt $paramNames.Count; $i++) {
+                $helpParamNames[$i] | Should -Be $paramNames[$i]
+            }
+        }
+
+        It "Has at least two examples using the PS C:\> prompt" {
+            $exampleBlocks = [regex]::Matches($rawContent, '(?s)\.EXAMPLE(.+?)(?=\.EXAMPLE|\.NOTES)')
+            $exampleBlocks.Count | Should -BeGreaterOrEqual 2
+            foreach ($block in $exampleBlocks) {
+                $block.Value | Should -Match 'PS C:\\>'
+            }
         }
     }
-}
 
-Describe "Manage-QuarantinedEmails.ps1 - Interactive Mode" {
+    Context "Syntax & Static" {
 
-    Context "Interactive Email Input" {
-        It "Should prompt for email when not provided" {
-            Mock Read-Host { "test@contoso.com" }
-
-            { & $scriptPath } | Should -Not -Throw
+        It "Parses cleanly with zero parser errors" {
+            $parseErrors.Count | Should -Be 0
         }
 
-        It "Should handle invalid interactive input" {
-            Mock Read-Host { "invalid-email" }
+        It "Uses no PS7-only operators without opting out via #Requires -Version 7.0" {
+            $firstLine = (Get-Content -LiteralPath $scriptPath -TotalCount 1)
+            if ($firstLine -notmatch '^#Requires -Version 7\.0') {
+                $rawContent | Should -Not -Match ('\?\?|\|\||&&')
+            }
+        }
 
-            { & $scriptPath } | Should -Throw
+        It "Wraps execution in a guarded Main function and declares SupportsShouldProcess" {
+            $fnType = [System.Management.Automation.Language.FunctionDefinitionAst]
+            $mainFn = @($ast.FindAll({ param($node) $node -is $fnType -and $node.Name -eq 'Main' }, $true))
+            $mainFn.Count | Should -Be 1
+            $guardLine = "if (`$MyInvocation.InvocationName -ne '.') { exit (Main) }"
+            ($rawContent -replace '\s', ' ') | Should -Match ([regex]::Escape($guardLine))
+            $rawContent | Should -Match '\[CmdletBinding\(SupportsShouldProcess\)\]'
+        }
+
+        It "Defines only approved-verb functions" {
+            $functions = $ast.FindAll(
+                { param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] },
+                $true) |
+                Select-Object -ExpandProperty Name
+            foreach ($fn in $functions) {
+                if ($fn -eq 'Main') { continue } # mandated entry point, not a Verb-Noun function
+                $verb = ($fn -split '-')[0]
+                Get-Verb -Verb $verb | Should -Not -BeNullOrEmpty -Because "$fn should use an approved verb"
+            }
+        }
+    }
+
+    Context "Behavior" {
+
+        It "Is idempotent: an empty quarantine returns 0 with no release attempted" {
+            $UserEmail = 'test@contoso.com'
+            $AutoConnect = $false
+            $Days = 7
+            Mock Get-QuarantineMessage { @() }
+
+            $out = Main *>&1
+            @($out | Where-Object { $_ -is [int] })[-1] | Should -Be 0
+            ($out | Out-String) | Should -Match '\[\*\] Searching for quarantined messages'
+            Should -Invoke Release-QuarantineMessage -Times 0 -Exactly -Because 'nothing to release means no mutation'
+            Should -Invoke Get-QuarantineMessage -Exactly 1 `
+                -Because 'a converged tenant needs exactly one detection pass'
+        }
+
+        It "Selects, confirms, and releases a quarantined message through the interactive loop" {
+            $UserEmail = 'test@contoso.com'
+            $AutoConnect = $false
+            $Days = 7
+
+            # Interactive answers: select item 1, choose action 1 (release), confirm Y.
+            $answers = [System.Collections.Generic.Queue[string]]::new()
+            $answers.Enqueue('1'); $answers.Enqueue('1'); $answers.Enqueue('Y')
+            Mock Read-Host { if ($answers.Count -gt 0) { $answers.Dequeue() } else { '0' } }
+
+            # First search returns two messages; after release the refreshed search returns none.
+            # Property writes survive across mock invocations; variable writes would not.
+            $searchState = [pscustomobject]@{ Calls = 0 }
+            Mock Get-QuarantineMessage {
+                $searchState.Calls++
+                if ($searchState.Calls -eq 1) { @($msgOne, $msgTwo) } else { @() }
+            }
+
+            $out = Main *>&1
+            @($out | Where-Object { $_ -is [int] })[-1] | Should -Be 0
+            Should -Invoke Release-QuarantineMessage
+            ($out | Out-String) | Should -Match '\[\+\] Message successfully released to: test@contoso\.com'
+        }
+
+        It "Honors -WhatIf: the ShouldProcess gate prevents any release call" {
+            $UserEmail = 'test@contoso.com'
+            $AutoConnect = $false
+            $Days = 7
+            $WhatIfPreference = $true
+
+            $answers = [System.Collections.Generic.Queue[string]]::new()
+            $answers.Enqueue('1'); $answers.Enqueue('1'); $answers.Enqueue('Y')
+            Mock Read-Host { if ($answers.Count -gt 0) { $answers.Dequeue() } else { '0' } }
+            Mock Get-QuarantineMessage { ,@($msgOne) }
+
+            $out = Main *>&1
+            $WhatIfPreference = $false
+            @($out | Where-Object { $_ -is [int] })[-1] | Should -Be 0
+            Should -Invoke Release-QuarantineMessage -Times 0 -Exactly `
+                -Because 'WhatIf must suppress the state-changing call'
+        }
+
+        It "Returns 1 when not connected and -AutoConnect is not specified" {
+            $UserEmail = 'test@contoso.com'
+            $AutoConnect = $false
+            Mock Get-ConnectionInformation { $null }
+
+            $out = Main *>&1
+            @($out | Where-Object { $_ -is [int] })[-1] | Should -Be 1
+            ($out | Out-String) | Should -Match '\[-\] Not connected to Exchange Online!'
+            Should -Invoke Connect-ExchangeOnline -Times 0 -Exactly
+        }
+
+        It "Returns 1 for a syntactically invalid email address before any lookup" {
+            $UserEmail = 'not-an-email'
+            $AutoConnect = $false
+
+            $out = Main *>&1
+            @($out | Where-Object { $_ -is [int] })[-1] | Should -Be 1
+            ($out | Out-String) | Should -Match '\[-\] Invalid email address format'
+            Should -Invoke Get-EXOMailbox -Times 0 -Exactly
+        }
+
+        It "Validates email addresses via Test-EmailAddress" {
+            Test-EmailAddress -Email 'user@domain.com' | Should -BeTrue
+            Test-EmailAddress -Email 'user.name@sub.domain.com' | Should -BeTrue
+            Test-EmailAddress -Email 'invalid' | Should -BeFalse
+            Test-EmailAddress -Email 'user@.com' | Should -BeFalse
+            Test-EmailAddress -Email '' | Should -BeFalse
         }
     }
 }

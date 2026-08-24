@@ -30,20 +30,32 @@
     Export configuration to CSV.
 
 .EXAMPLE
-    .\Get-NetworkConfiguration.ps1
+    PS C:\> .\Get-NetworkConfiguration.ps1
     Documents basic network configuration.
 
 .EXAMPLE
-    .\Get-NetworkConfiguration.ps1 -IncludeRouting -IncludeShares -IncludeFirewall -ExportHTML
+    PS C:\> .\Get-NetworkConfiguration.ps1 -IncludeRouting -IncludeShares -IncludeFirewall -ExportHTML
     Comprehensive network documentation exported to HTML.
 
 .NOTES
-    Requires Administrator privileges
-    Compatible with Windows Server 2016, 2019, and 2022
-    Useful for documentation and troubleshooting
+    File Name     : Get-NetworkConfiguration.ps1
+    Author        : Bug-Free Umbrella
+    Prerequisite  : PowerShell 5.1+
+    Version       : 1.0.0
+    Date          : 2026-08-23
+
+    Administrator privileges are required; the elevation check runs inside Main (not via
+    #Requires) so the script can be safely loaded for testing. Compatible with Windows
+    Server 2016, 2019, and 2022. Useful for documentation and troubleshooting.
 #>
 
 [CmdletBinding()]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+            Justification = 'Colored Write-Host prefix output is the specified console UX.')]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '',
+            Justification = 'Parameters are consumed by helper functions via dynamic scoping.')]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '',
+            Justification = 'Plural nouns are intentional: functions aggregate collections.')]
 param(
     [Parameter(Mandatory = $false)]
     [switch]$IncludeRouting,
@@ -61,44 +73,43 @@ param(
     [switch]$ExportCSV
 )
 
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-if ([string]::IsNullOrWhiteSpace($ReportDir) -or
-    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
-    $ReportDir -match '^(\\\\|//)') {
-    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
-    exit 1
-}
-$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
+$ErrorActionPreference = 'Stop'
 
-#Requires -RunAsAdministrator
 
-$script:report = @{
-    ServerName = $env:COMPUTERNAME
-    ScanTime = Get-Date
-    Hostname = [System.Net.Dns]::GetHostName()
-    Domain = (Get-CimInstance -ClassName Win32_ComputerSystem).Domain
-    Adapters = @()
-    IPConfig = @()
-    DNS = @()
-    Routes = @()
-    Shares = @()
-    Firewall = @{}
+function Test-AdminPrivilege {
+    # Runtime replacement for the former '#Requires -RunAsAdministrator' directive.
+    # Unix platforms (offline test runners) have no elevation concept, so the check
+    # passes through there; Windows hosts still require an elevated session.
+    if ($PSVersionTable.ContainsKey('Platform') -and $PSVersionTable.Platform -eq 'Unix') {
+        return $true
+    }
+
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    return ([Security.Principal.WindowsPrincipal]$identity).IsInRole(
+        [Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
 
-    $color = switch ($Level) {
-        'Warning' { 'Yellow' }
-        'Error' { 'Red' }
-        'Success' { 'Green' }
-        'Info' { 'Cyan' }
-        default { 'White' }
+    # Mandated console prefixes: [-] error/critical, [!] warning, [+] success, [*] info.
+    $prefix = switch ($Level) {
+        'Critical' { '[-]' }
+        'Error' { '[-]' }
+        'Warning' { '[!]' }
+        'Success' { '[+]' }
+        default { '[*]' }
     }
-    Write-Host $Message -ForegroundColor $color
+
+    $color = switch ($Level) {
+        'Critical' { 'Red' }
+        'Error' { 'Red' }
+        'Warning' { 'Yellow' }
+        'Success' { 'Green' }
+        default { 'Cyan' }
+    }
+
+    Write-Host "$prefix $Message" -ForegroundColor $color
 }
 
 function Get-NetworkAdapters {
@@ -181,7 +192,8 @@ function Get-DNSConfiguration {
     $dnsClientConfig = Get-DnsClient
 
     foreach ($dns in $dnsClientConfig) {
-        $dnsServers = (Get-DnsClientServerAddress -InterfaceIndex $dns.InterfaceIndex -ErrorAction SilentlyContinue).ServerAddresses -join ', '
+        $dnsServers = (Get-DnsClientServerAddress -InterfaceIndex $dns.InterfaceIndex -ErrorAction `
+            SilentlyContinue).ServerAddresses -join ', '
 
         $dnsInfo = [PSCustomObject]@{
             InterfaceAlias = $dns.InterfaceAlias
@@ -254,21 +266,21 @@ function Get-FirewallStatus {
 
     $profiles = Get-NetFirewallProfile
 
-    foreach ($profile in $profiles) {
-        $script:report.Firewall[$profile.Name] = @{
-            Enabled = $profile.Enabled
-            DefaultInboundAction = $profile.DefaultInboundAction
-            DefaultOutboundAction = $profile.DefaultOutboundAction
-            AllowInboundRules = $profile.AllowInboundRules
-            AllowLocalFirewallRules = $profile.AllowLocalFirewallRules
-            AllowLocalIPsecRules = $profile.AllowLocalIPsecRules
-            LogFileName = $profile.LogFileName
-            LogMaxSizeKilobytes = $profile.LogMaxSizeKilobytes
+    foreach ($fwProfile in $profiles) {
+        $script:report.Firewall[$fwProfile.Name] = @{
+            Enabled = $fwProfile.Enabled
+            DefaultInboundAction = $fwProfile.DefaultInboundAction
+            DefaultOutboundAction = $fwProfile.DefaultOutboundAction
+            AllowInboundRules = $fwProfile.AllowInboundRules
+            AllowLocalFirewallRules = $fwProfile.AllowLocalFirewallRules
+            AllowLocalIPsecRules = $fwProfile.AllowLocalIPsecRules
+            LogFileName = $fwProfile.LogFileName
+            LogMaxSizeKilobytes = $fwProfile.LogMaxSizeKilobytes
         }
 
-        $statusText = if ($profile.Enabled) { "Enabled" } else { "Disabled" }
-        $statusColor = if ($profile.Enabled) { 'Success' } else { 'Warning' }
-        Write-ColorOutput "  $($profile.Name): $statusText" -Level $statusColor
+        $statusText = if ($fwProfile.Enabled) { "Enabled" } else { "Disabled" }
+        $statusColor = if ($fwProfile.Enabled) { 'Success' } else { 'Warning' }
+        Write-ColorOutput "  $($fwProfile.Name): $statusText" -Level $statusColor
     }
 }
 
@@ -289,7 +301,8 @@ function Show-Summary {
 
     if ($script:report.Routes.Count -gt 0) {
         Write-Host "`nTop 10 Routes:" -ForegroundColor Cyan
-        $script:report.Routes | Select-Object -First 10 | Format-Table DestinationPrefix, NextHop, InterfaceAlias, RouteMetric -AutoSize
+        $script:report.Routes | Select-Object -First 10 |
+            Format-Table DestinationPrefix, NextHop, InterfaceAlias, RouteMetric -AutoSize
     }
 
     if ($script:report.Shares.Count -gt 0) {
@@ -310,14 +323,16 @@ function Export-HTMLReport {
     <title>Network Configuration - $($script:report.ServerName)</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .container { max-width: 1600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { max-width: 1600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h1 { color: #333; border-bottom: 3px solid #007bff; padding-bottom: 10px; }
         h2 { color: #555; margin-top: 30px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
         table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.9em; }
         th { background-color: #007bff; color: white; padding: 12px; text-align: left; }
         td { padding: 10px; border-bottom: 1px solid #ddd; }
         tr:hover { background-color: #f1f1f1; }
-        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin:
+            20px 0; }
         .info-box { background-color: #f8f9fa; padding: 15px; border-radius: 4px; border-left: 4px solid #007bff; }
         .status-up { color: #28a745; font-weight: bold; }
         .status-down { color: #dc3545; font-weight: bold; }
@@ -344,7 +359,8 @@ function Export-HTMLReport {
 
         <h2>Network Adapters</h2>
         <table>
-            <tr><th>Name</th><th>Description</th><th>Status</th><th>Link Speed</th><th>MAC Address</th><th>Driver Version</th></tr>
+            <tr><th>Name</th><th>Description</th><th>Status</th><th>Link Speed</th><th>MAC Address</th><th>Driver
+            Version</th></tr>
             $(foreach($adapter in $script:report.Adapters) {
                 $statusClass = if($adapter.Status -eq 'Up') { 'status-up' } else { 'status-down' }
                 "<tr>
@@ -360,7 +376,8 @@ function Export-HTMLReport {
 
         <h2>IP Configuration</h2>
         <table>
-            <tr><th>Interface</th><th>IPv4 Address</th><th>Subnet</th><th>Gateway</th><th>DNS Servers</th><th>Network Category</th></tr>
+            <tr><th>Interface</th><th>IPv4 Address</th><th>Subnet</th><th>Gateway</th><th>DNS Servers</th><th>Network
+            Category</th></tr>
             $(foreach($ip in $script:report.IPConfig) {
                 "<tr>
                     <td>$($ip.InterfaceAlias)</td>
@@ -403,7 +420,8 @@ function Export-HTMLReport {
 
         $(if($script:report.Shares.Count -gt 0) {
             "<h2>Network Shares</h2>"
-            "<table><tr><th>Share Name</th><th>Path</th><th>Description</th><th>Current Users</th><th>Encryption</th></tr>"
+            "<table><tr><th>Share Name</th><th>Path</th><th>Description</th><th>Current
+            Users</th><th>Encryption</th></tr>"
             foreach($share in $script:report.Shares) {
                 "<tr>
                     <td>$($share.Name)</td>
@@ -419,12 +437,12 @@ function Export-HTMLReport {
         $(if($script:report.Firewall.Count -gt 0) {
             "<h2>Firewall Status</h2>"
             "<table><tr><th>Profile</th><th>Enabled</th><th>Inbound Default</th><th>Outbound Default</th></tr>"
-            foreach($profile in $script:report.Firewall.GetEnumerator()) {
+            foreach($fwProfile in $script:report.Firewall.GetEnumerator()) {
                 "<tr>
-                    <td>$($profile.Key)</td>
-                    <td>$($profile.Value.Enabled)</td>
-                    <td>$($profile.Value.DefaultInboundAction)</td>
-                    <td>$($profile.Value.DefaultOutboundAction)</td>
+                    <td>$($fwProfile.Key)</td>
+                    <td>$($fwProfile.Value.Enabled)</td>
+                    <td>$($fwProfile.Value.DefaultInboundAction)</td>
+                    <td>$($fwProfile.Value.DefaultOutboundAction)</td>
                 </tr>"
             }
             "</table>"
@@ -451,35 +469,80 @@ function Export-CSVReport {
     return $reportPath
 }
 
-# Main execution
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "  Network Configuration Documentation" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
+function Main {
+    try {
+        if (-not (Test-AdminPrivilege)) {
+            Write-Host "[-] Administrator privileges are required to document network configuration." `
+                -ForegroundColor Red
+            return 1
+        }
 
-Get-NetworkAdapters
-Get-IPConfiguration
-Get-DNSConfiguration
+        $script:ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+        if ([string]::IsNullOrWhiteSpace($script:ReportDir) -or
+            $script:ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+            $script:ReportDir -match '^(\\\\|//)') {
+            throw "Unsafe report path: $script:ReportDir. Report path must be a local absolute " +
+                "path without '..' traversal."
+        }
+        $script:ReportDir = [System.IO.Path]::GetFullPath($script:ReportDir)
+        if (-not (Test-Path -LiteralPath $script:ReportDir -PathType Container)) {
+            New-Item -ItemType Directory -Path $script:ReportDir -Force -ErrorAction Stop | Out-Null
+        }
 
-if ($IncludeRouting) {
-    Get-RoutingTable
+        $script:report = @{
+            ServerName = $env:COMPUTERNAME
+            ScanTime = Get-Date
+            Hostname = [System.Net.Dns]::GetHostName()
+            Domain = (Get-CimInstance -ClassName Win32_ComputerSystem).Domain
+            Adapters = @()
+            IPConfig = @()
+            DNS = @()
+            Routes = @()
+            Shares = @()
+            Firewall = @{}
+        }
+
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "  Network Configuration Documentation" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+
+        Get-NetworkAdapters
+        Get-IPConfiguration
+        Get-DNSConfiguration
+
+        if ($IncludeRouting) {
+            Get-RoutingTable
+        }
+
+        if ($IncludeShares) {
+            Get-NetworkShares
+        }
+
+        if ($IncludeFirewall) {
+            Get-FirewallStatus
+        }
+
+        Show-Summary
+
+        if ($ExportHTML) {
+            Write-Host "Generating HTML report..." -ForegroundColor Cyan
+            Export-HTMLReport | Out-Null
+        }
+
+        if ($ExportCSV) {
+            Write-Host "Generating CSV report..." -ForegroundColor Cyan
+            Export-CSVReport | Out-Null
+        }
+
+        Write-Host "[+] Network configuration documentation completed." -ForegroundColor Green
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-if ($IncludeShares) {
-    Get-NetworkShares
-}
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }
 
-if ($IncludeFirewall) {
-    Get-FirewallStatus
-}
-
-Show-Summary
-
-if ($ExportHTML) {
-    Write-Host "Generating HTML report..." -ForegroundColor Cyan
-    Export-HTMLReport
-}
-
-if ($ExportCSV) {
-    Write-Host "Generating CSV report..." -ForegroundColor Cyan
-    Export-CSVReport
-}

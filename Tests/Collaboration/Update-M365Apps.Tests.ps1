@@ -145,8 +145,8 @@ Describe "Update-M365Apps.ps1 - Script Structure and Quality" {
             $scriptContent | Should -Match 'function Write-InfoMsg'
         }
 
-        It "Should define Cleanup-OldLogs function" {
-            $scriptContent | Should -Match 'function Cleanup-OldLogs'
+        It "Should define Remove-OldLogs function (approved-verb rename of Cleanup-OldLogs)" {
+            $scriptContent | Should -Match 'function Remove-OldLogs'
         }
 
         It "Logging functions should write to log file" {
@@ -172,9 +172,10 @@ Describe "Update-M365Apps.ps1 - Script Structure and Quality" {
         }
 
         It "Should map channel GUIDs to friendly names" {
-            $scriptContent | Should -Match 'Monthly \(Current Channel\)'
-            $scriptContent | Should -Match 'Semi-Annual'
-            $scriptContent | Should -Match 'Beta \(Insider\)'
+            $scriptContent | Should -Match 'Current Channel'
+            $scriptContent | Should -Match 'Monthly Enterprise'
+            $scriptContent | Should -Match 'Semi-Annual Enterprise'
+            $scriptContent | Should -Match 'Beta Channel'
         }
     }
 
@@ -290,7 +291,7 @@ Describe "Update-M365Apps.ps1 - Script Structure and Quality" {
         }
 
         It "Should remove update files after installation" {
-            $scriptContent | Should -Match 'Get-ChildItem.*UpdatesPath.*Remove-Item'
+            $scriptContent | Should -Match 'Get-ChildItem -Path \$script:Config\.UpdatesPath[\s\S]{0,80}Remove-Item'
         }
 
         It "Should calculate folder size before cleanup" {
@@ -341,12 +342,12 @@ Describe "Update-M365Apps.ps1 - Script Structure and Quality" {
     }
 
     Context "Main Execution Flow" {
-        It "Should define Start-M365UpdateManager function" {
-            $scriptContent | Should -Match 'function Start-M365UpdateManager'
+        It "Should define Main function (spec section 3 entry point)" {
+            $scriptContent | Should -Match 'function Main'
         }
 
-        It "Should call Start-M365UpdateManager" {
-            $scriptContent | Should -Match 'Start-M365UpdateManager'
+        It "Should invoke Main only on direct invocation via the dot-source guard" {
+            $scriptContent | Should -Match 'if \(\$MyInvocation\.InvocationName -ne ''\.''\) \{ exit \(Main\) \}'
         }
 
         It "Should initialize logging first" {

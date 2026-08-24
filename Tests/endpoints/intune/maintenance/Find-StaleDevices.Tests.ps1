@@ -1,0 +1,215 @@
+﻿#Requires -Modules Pester
+
+Describe "Find-StaleDevices" {
+    BeforeAll {
+        $scriptPath = Join-Path $PSScriptRoot "../../../../scripts/endpoints/intune/maintenance/Find-StaleDevices.ps1"
+
+        # Static analysis inputs
+        $rawScript = Get-Content -LiteralPath $scriptPath -Raw
+        $bytes = [System.IO.File]::ReadAllBytes($scriptPath)
+        $parseErrors = $null
+
+        # Stub every external command the helper module / Graph SDK would provide,
+        # so Pester can attach mocks even though no module is installed offline.
+        function Connect-IntuneGraph { param([string[]]$Scopes) $true }
+        function Disconnect-IntuneGraph { }
+        function Export-IntuneReportToHTML { param($Data, $Title, $FilePath) }
+        function Export-IntuneReportToCSV { param($Data, $Title, $FilePath) }
+        function Get-MgDeviceManagementManagedDevice { param($All) @() }
+        function Remove-MgDeviceManagementManagedDevice { param($ManagedDeviceId) }
+        function Invoke-MgGraphRequest { param($Method, $Uri) }
+        $scriptAst = [System.Management.Automation.Language.Parser]::ParseFile(
+            $scriptPath, [ref]$null, [ref]$parseErrors)
+
+        # Safe: the script's top-level guard skips Main when dot-sourced.
+        . $scriptPath
+
+        # Mock ALL externals so nothing leaves the machine.
+        # The helper module import is a no-op; Graph cmdlets and report helpers are mocked by name.
+        Mock Import-Module { }
+        Mock Connect-IntuneGraph { $true }
+        Mock Disconnect-IntuneGraph { }
+        Mock Get-MgDeviceManagementManagedDevice { @() }
+        Mock Remove-MgDeviceManagementManagedDevice { }
+        Mock Invoke-MgGraphRequest { }
+        Mock Export-IntuneReportToHTML { }
+        Mock Export-IntuneReportToCSV { }
+        Mock Test-Path { $true }
+        Mock Start-Sleep { }
+        Mock Read-Host { 'YES' }   # safety net: never hang waiting for interactive input
+
+        $now = Get-Date
+        $staleLaptop = [pscustomobject]@{
+            DeviceName = 'STALE-LAPTOP'; UserPrincipalName = 'stale@contoso.com'
+            OperatingSystem = 'Windows'; OsVersion = '10.0.19045'; Manufacturer = 'Dell'; Model = 'Latitude 5440'
+            LastSyncDateTime = $now.AddDays(-200); EnrolledDateTime = $now.AddYears(-2)
+            SerialNumber = 'SN-STALE'; Id = 'device-stale-1'; ComplianceState = 'noncompliant'; ManagementAgent = 'MDM'
+        }
+        $freshDesktop = [pscustomobject]@{
+            DeviceName = 'FRESH-DESKTOP'; UserPrincipalName = 'fresh@contoso.com'
+            OperatingSystem = 'Windows'; OsVersion = '10.0.22631'; Manufacturer = 'HP'; Model = 'EliteDesk'
+            LastSyncDateTime = $now.AddDays(-1); EnrolledDateTime = $now.AddMonths(-6)
+            SerialNumber = 'SN-FRESH'; Id = 'device-fresh-1'; ComplianceState = 'compliant'; ManagementAgent = 'MDM'
+        }
+        $neverSyncedTablet = [pscustomobject]@{
+            DeviceName = 'NEVER-TABLET'; UserPrincipalName = 'never@contoso.com'
+            OperatingSystem = 'iOS'; OsVersion = '17.5'; Manufacturer = 'Apple'; Model = 'iPad'
+            LastSyncDateTime = $null; EnrolledDateTime = $null
+            SerialNumber = 'SN-NEVER'; Id = 'device-never-1'; ComplianceState = 'unknown'; ManagementAgent = 'MDM'
+        }
+    }
+
+    Context "Help & Metadata" {
+        It "Contains all five required .NOTES fields with correct values" {
+            $rawScript | Should -Match '\.NOTES'
+            $rawScript | Should -Match 'File Name:\s*Find-StaleDevices\.ps1'
+            $rawScript | Should -Match 'Author:\s*\S+'
+            $rawScript | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
+            $rawScript | Should -Match 'Version:\s*1\.0\.0'
+            $rawScript | Should -Match 'Date:\s*2026-08-23'
+        }
+
+        It "Has one .PARAMETER entry per declared param, in order" {
+            $declared = $scriptAst.ParamBlock.Parameters.Name.VariablePath.UserPath
+            $documented = [regex]::Matches($rawScript, '(?m)^\s*\.PARAMETER\s+(\S+)') |
+                ForEach-Object { $_.Groups[1].Value }
+            $documented | Should -Be $declared
+        }
+
+        It "Has at least two examples with PS C:\> prompts" {
+            ([regex]::Matches($rawScript, '\.EXAMPLE')).Count | Should -BeGreaterOrEqual 2
+            ([regex]::Matches($rawScript, [regex]::Escape('PS C:\>'))).Count | Should -BeGreaterOrEqual 2
+        }
+
+        It "Declares SupportsShouldProcess because Delete/Retire are destructive" {
+            $rawScript | Should -Match 'SupportsShouldProcess'
+            $rawScript | Should -Match '\$PSCmdlet\.ShouldProcess'
+        }
+
+        It "Is saved as UTF-8 with BOM" {
+            $bytes[0] | Should -Be 0xEF
+            $bytes[1] | Should -Be 0xBB
+            $bytes[2] | Should -Be 0xBF
+        }
+    }
+
+    Context "Syntax & Static" {
+        It "Parses with zero errors" {
+            $parseErrors | Should -BeNullOrEmpty
+        }
+
+        It "Contains no PS7-only operators (no #Requires -Version 7.0 opt-out)" {
+            $rawScript | Should -Not -Match '#Requires\s+-Version'
+            $rawScript | Should -Not -Match '\?\?'
+            $rawScript | Should -Not -Match '&&|\|\|'
+        }
+
+        It "Defines a Main function and the dot-source guard, with exit only in the guard" {
+            $guardLine = 'if ($MyInvocation.InvocationName -ne ''.'') { exit (Main) }'
+            $rawScript | Should -Match ([regex]::Escape($guardLine))
+            ([regex]::Matches($rawScript, '\bexit\b')).Count | Should -Be 1
+        }
+
+        It "Uses only approved verbs for internal functions" {
+            $isFn = { param($node) $node -is [System.Management.Automation.Language.FunctionDefinitionAst] }
+            $functions = $scriptAst.FindAll($isFn, $true) | Select-Object -ExpandProperty Name
+            foreach ($fn in ($functions | Where-Object { $_ -ne 'Main' })) {
+                $verb = ($fn -split '-')[0]
+                (Get-Verb -Verb $verb) | Should -Not -BeNullOrEmpty -Because "$fn must use an approved verb"
+            }
+        }
+    }
+
+    Context "Behavior" {
+        It "Returns 0 in Report mode, flags stale and never-synced devices, and exports both reports" {
+            . $scriptPath -DaysInactive 90 -Action Report
+            Mock Get-MgDeviceManagementManagedDevice { @($staleLaptop, $freshDesktop, $neverSyncedTablet) }
+
+            $out = Main *>&1
+
+            ($out | Where-Object { $_ -is [int] }) | Should -Be 0
+            ($out | Out-String) | Should -Match 'Stale Devices Found:\s+2'
+            Should -Invoke Export-IntuneReportToHTML -Exactly 1
+            Should -Invoke Export-IntuneReportToCSV -Exactly 1
+            Should -Invoke Remove-MgDeviceManagementManagedDevice -Times 0
+            Should -Invoke Invoke-MgGraphRequest -Times 0
+            Should -Invoke Disconnect-IntuneGraph -Exactly 1
+        }
+
+        It "Is idempotent on a converged tenant: no stale devices means return 0 with no exports or actions" {
+            . $scriptPath -DaysInactive 90 -Action Report
+            Mock Get-MgDeviceManagementManagedDevice { @($freshDesktop) }
+
+            $out = Main *>&1
+
+            ($out | Where-Object { $_ -is [int] }) | Should -Be 0
+            ($out | Out-String) | Should -Match '\[\+\] No stale devices found!'
+            Should -Invoke Export-IntuneReportToHTML -Times 0
+            Should -Invoke Export-IntuneReportToCSV -Times 0
+        }
+
+        It "Retires every stale device when -Action Retire -AutoConfirm is passed and returns 0" {
+            . $scriptPath -DaysInactive 90 -Action Retire -AutoConfirm
+            Mock Get-MgDeviceManagementManagedDevice { @($staleLaptop, $neverSyncedTablet) }
+
+            $out = Main *>&1
+
+            ($out | Where-Object { $_ -is [int] }) | Should -Be 0
+            ($out | Out-String) | Should -Match '\[\+\] Retired:'
+            Should -Invoke Invoke-MgGraphRequest -Exactly 2 -Because "one retire POST per stale device"
+            Should -Invoke Remove-MgDeviceManagementManagedDevice -Times 0
+        }
+
+        It "Deletes stale devices via the Graph wrapper when -Action Delete is chosen" {
+            . $scriptPath -DaysInactive 30 -Action Delete -AutoConfirm
+            Mock Get-MgDeviceManagementManagedDevice { @($staleLaptop) }
+
+            $out = Main *>&1
+
+            ($out | Where-Object { $_ -is [int] }) | Should -Be 0
+            ($out | Out-String) | Should -Match '\[\+\] Deleted:'
+            Should -Invoke Remove-MgDeviceManagementManagedDevice -Exactly 1
+        }
+
+        It "-WhatIf gates the destructive action: no device mutations occur and exit stays 0" {
+            . $scriptPath -DaysInactive 30 -Action Delete -AutoConfirm
+            Mock Get-MgDeviceManagementManagedDevice { @($staleLaptop) }
+
+            # Dot-sourced -WhatIf does not persist the preference; set it for Main's dynamic scope.
+            $WhatIfPreference = $true
+            try {
+                $out = Main *>&1
+            }
+            finally {
+                $WhatIfPreference = $false
+            }
+
+            ($out | Where-Object { $_ -is [int] }) | Should -Be 0
+            ($out | Out-String) | Should -Match '\[!\] Action skipped \(WhatIf/Confirm\)\.'
+            Should -Invoke Remove-MgDeviceManagementManagedDevice -Times 0
+            Should -Invoke Invoke-MgGraphRequest -Times 0
+        }
+
+        It "Returns 1 with [-] output when Graph connection fails" {
+            . $scriptPath -DaysInactive 90 -Action Report
+            Mock Connect-IntuneGraph { $false }
+
+            $out = Main *>&1
+
+            ($out | Where-Object { $_ -is [int] }) | Should -Be 1
+            ($out | Out-String) | Should -Match '\[-\]'
+        }
+
+        It "Continues past a failing device action and returns 0 with failure counted" {
+            . $scriptPath -DaysInactive 30 -Action Retire -AutoConfirm
+            Mock Get-MgDeviceManagementManagedDevice { @($staleLaptop, $neverSyncedTablet) }
+            Mock Invoke-MgGraphRequest -ParameterFilter { $Uri -like '*device-stale-1*' } { throw "device gone" }
+
+            $out = Main *>&1
+
+            ($out | Where-Object { $_ -is [int] }) | Should -Be 0
+            ($out | Out-String) | Should -Match '\[-\] Failed: STALE-LAPTOP'
+            ($out | Out-String) | Should -Match 'Failed:\s+1'
+        }
+    }
+}

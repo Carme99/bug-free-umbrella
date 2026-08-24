@@ -426,7 +426,7 @@ Organized by category:
 
 | Metric | Count |
 |--------|-------|
-| **Total Scripts** | 544 |
+| **Total Scripts** | 539 |
 | **Top-Level Domains** | 8 |
 | **Subcategories** | 94 |
 | **Proactive Remediations** | 51 pairs (103 scripts) |

@@ -1,6 +1,6 @@
-<#
+﻿<#
 .SYNOPSIS
-    Checks page file configuration.
+    Check that the page file is present and sensibly configured.
 
 .DESCRIPTION
     Verifies that the page file is properly configured (not disabled) and, for
@@ -14,84 +14,111 @@
     compliant; custom page files are only flagged when their initial size is
     below the -MinRatio floor (default 1.0x RAM).
 
-    See https://learn.microsoft.com/en-us/troubleshoot/windows-client/performance/how-to-determine-the-appropriate-page-file-size-for-64-bit-versions-of-windows
+    Exit codes: 0 = page file properly configured, 1 = issues detected (or an
+    unexpected error occurred). The script changes no system state, so it is
+    safe to re-run at any time (idempotent).
+    Intune Context: SYSTEM.
 
-.NOTES
-    Author: Intune Admin
-    Version: 1.1
-    Intune Context: SYSTEM
-    Exit 0: Page file properly configured
-    Exit 1: Issues detected
+    See https://learn.microsoft.com/en-us/troubleshoot/windows-client/performance/how-to-determine-the-appropriate-page-file-size-for-64-bit-versions-of-windows
 
 .PARAMETER MinRatio
     Minimum initial size of a custom-configured page file, as a ratio of
     physical RAM (default: 1.0). Only applies to explicitly custom page files.
+
+.EXAMPLE
+    PS C:\> .\Test-RemediationCheckPageFileConfiguration.ps1
+
+    Exits 0 when the page file is properly configured; exits 1 when it is
+    disabled or undersized relative to physical RAM.
+
+.EXAMPLE
+    PS C:\> .\Test-RemediationCheckPageFileConfiguration.ps1 -MinRatio 1.5
+
+    Applies the stricter legacy rule of thumb: flags custom page files whose
+    initial size is below 1.5x physical RAM.
+
+.NOTES
+    File Name  : Test-RemediationCheckPageFileConfiguration.ps1
+    Author     : Intune Admin
+    Prerequisite: PowerShell 7.0
+    Version    : 1.0.0
+    Date       : 2026-08-23
 #>
 
+[CmdletBinding()]
 param(
     [double]$MinRatio = 1.0
 )
 
-try {
-    $issues = @()
-    $notes = @()
+$ErrorActionPreference = 'Stop'
 
-    # Get page file configuration
-    $pageFile = Get-WmiObject -Class Win32_PageFileSetting -ErrorAction SilentlyContinue
+function Main {
+    try {
+        $issues = @()
+        $notes = @()
 
-    if (-not $pageFile) {
-        # Check if page file is system-managed
-        $compSys = Get-WmiObject -Class Win32_ComputerSystem
-        if ($compSys.AutomaticManagedPagefile -eq $false) {
-            $issues += "Page file is disabled (not recommended)"
-        }
-    }
-    else {
-        # Explicitly configured (custom) page file - report as informational;
-        # only flag when the initial size is below the configurable ratio.
-        $totalRAM = (Get-WmiObject -Class Win32_ComputerSystem).TotalPhysicalMemory / 1GB
-        $recommendedMin = [math]::Ceiling($totalRAM * $MinRatio) * 1024  # Convert to MB
+        Write-Host "[*] Checking page file configuration..." -ForegroundColor Cyan
 
-        foreach ($pf in $pageFile) {
-            $initialSize = $pf.InitialSize
-            $maximumSize = $pf.MaximumSize
+        # Get page file configuration
+        $pageFile = Get-CimInstance -ClassName Win32_PageFileSetting -ErrorAction SilentlyContinue
 
-            $notes += "Custom page file configured (initial $initialSize MB, maximum $maximumSize MB) - sizing can't be generalized, informational only"
-
-            if ($initialSize -lt $recommendedMin) {
-                $issues += "Custom page file initial size ($initialSize MB) is below the configured minimum ($recommendedMin MB at ${MinRatio}x RAM)"
+        if (-not $pageFile) {
+            # Check if page file is system-managed
+            $compSys = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop
+            if ($compSys.AutomaticManagedPagefile -eq $false) {
+                $issues += "Page file is disabled (not recommended)"
             }
         }
-    }
+        else {
+            # Explicitly configured (custom) page file - report as informational;
+            # only flag when the initial size is below the configurable ratio.
+            $compSys = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop
+            $totalRAM = $compSys.TotalPhysicalMemory / 1GB
+            $recommendedMin = [math]::Ceiling($totalRAM * $MinRatio) * 1024  # Convert to MB
 
-    # Check for page file on system drive
-    $systemDrive = $env:SystemDrive
-    $pageFileExists = Test-Path "$systemDrive\pagefile.sys" -ErrorAction SilentlyContinue
+            foreach ($pf in $pageFile) {
+                $initialSize = $pf.InitialSize
+                $maximumSize = $pf.MaximumSize
 
-    if (-not $pageFileExists) {
-        $compSys = Get-WmiObject -Class Win32_ComputerSystem
-        if ($compSys.AutomaticManagedPagefile -eq $false) {
-            $issues += "Page file not found on system drive"
+                $notes += "Custom page file configured (initial $initialSize MB, maximum $maximumSize MB) - sizing can't be generalized, informational only"
+
+                if ($initialSize -lt $recommendedMin) {
+                    $issues += "Custom page file initial size ($initialSize MB) is below the configured minimum ($recommendedMin MB at ${MinRatio}x RAM)"
+                }
+            }
         }
-    }
 
-    if ($issues.Count -gt 0) {
-        Write-Host "Page file configuration issues:"
-        foreach ($issue in $issues) {
-            Write-Host "  - $issue"
+        # Check for page file on system drive
+        $systemDrive = $env:SystemDrive
+        $pageFileExists = Test-Path "$systemDrive\pagefile.sys" -ErrorAction SilentlyContinue
+
+        if (-not $pageFileExists) {
+            $compSys = Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction Stop
+            if ($compSys.AutomaticManagedPagefile -eq $false) {
+                $issues += "Page file not found on system drive"
+            }
         }
-        exit 1
+
+        if ($issues.Count -gt 0) {
+            Write-Host "[!] Page file configuration issues:" -ForegroundColor Yellow
+            foreach ($issue in $issues) {
+                Write-Host "[!]   - $issue" -ForegroundColor Yellow
+            }
+            return 1
+        }
+
+        foreach ($note in $notes) {
+            Write-Host "[*]   - $note" -ForegroundColor Cyan
+        }
+
+        Write-Host "[+] Page file is properly configured" -ForegroundColor Green
+        return 0
     }
-
-    foreach ($note in $notes) {
-        Write-Host "  - $note"
+    catch {
+        Write-Host "[-] Error checking page file configuration: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
-
-    Write-Host "Page file is properly configured"
-    exit 0
-
 }
-catch {
-    Write-Host "Error checking page file configuration: $_"
-    exit 1
-}
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

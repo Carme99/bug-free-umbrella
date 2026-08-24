@@ -1,72 +1,78 @@
-<#
+﻿<#
 .SYNOPSIS
-    Maintenance window winget update script that only runs during specified hours (V3).
+    Updates PowerShell 7 (winget id Microsoft.PowerShell) only during configured maintenance windows.
 
 .DESCRIPTION
-    This template checks if an app update is available and installs it ONLY during
-    configured maintenance windows. Outside maintenance windows, the script exits without action.
-    It prefers the Microsoft.WinGet.Client PowerShell module (the winget CLI is NOT
-    supported in the SYSTEM context that Intune Proactive Remediations run in) and
-    falls back to the winget.exe CLI only when the module is unavailable.
-
-    V3 ENHANCEMENTS:
-    - Configurable maintenance window (day of week + time range)
-    - Option to force close app during maintenance window
-    - Retry logic with exponential backoff
-    - Better error handling and logging
-    - Pre/post update hooks
-    - Microsoft.WinGet.Client module preferred over the winget.exe CLI (SYSTEM context safe)
-
-.NOTES
-    REQUIRED: Configure winget ID and maintenance window schedule.
-    BEST FOR: Critical apps that should only update during off-hours (e.g., databases, production tools).
-
-.CONFIGURATION
-    1. Set the $ID variable to your winget package ID
-    2. Configure maintenance window settings (days, start/end times)
-    3. Choose whether to force close app during maintenance window
+    Maintenance-window remediation for the PowerShell 7 update pair. The script first checks
+    whether the current day of week and hour fall inside the configured maintenance window
+    (Test-MaintenanceWindow); outside the window it exits 0 without action so Intune never
+    falsely triggers remediation. Inside the window it prefers the Microsoft.WinGet.Client
+    PowerShell module (the winget CLI is NOT supported in the SYSTEM context that Intune
+    Proactive Remediations run in) and falls back to the winget.exe CLI through the
+    Invoke-WingetWithRetry wrapper (exponential backoff between attempts) only when the
+    module is unavailable. When ForceCloseInMaintenanceWindow is enabled, a running pwsh
+    process is force-closed (with one retry) before updating; otherwise the update is skipped.
+    Optional pre/post-update script blocks are executed around the upgrade when defined.
+    Exit codes:
+    - 0: success - updated, already up to date, package not installed, or outside the
+      maintenance window (deliberately compliant so remediation is not retriggered).
+    - 1: failure or skip - app still running with force close disabled, verification failed,
+      or an error occurred.
 
 .EXAMPLE
-    # For your application - only update on weekends between 2-6 AM:
-    $ID = 'Microsoft.PowerShell'
-    $MaintenanceWindowDays = @('Saturday', 'Sunday')
-    $MaintenanceWindowStartHour = 2
-    $MaintenanceWindowEndHour = 6
-    $ForceCloseInMaintenanceWindow = $true
+    PS C:\> .\Invoke-WingetPowerShell7MaintenanceWindow.ps1
+    Updates PowerShell 7 only if the current time is inside the configured maintenance window.
+
+.EXAMPLE
+    PS C:\> .\Invoke-WingetPowerShell7MaintenanceWindow.ps1 -WhatIf
+    Shows which package update would run without performing it; outside the window it exits 0 unchanged.
+
+.NOTES
+    File Name: Invoke-WingetPowerShell7MaintenanceWindow.ps1
+    Author: Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version: 1.0.0
+    Date: 2026-08-23
+    Configure $ID, $MaintenanceWindowDays, $MaintenanceWindowStartHour,
+    $MaintenanceWindowEndHour and optionally $ForceCloseInMaintenanceWindow in the
+    Configuration region of this script before deployment.
 #>
 
+[CmdletBinding(SupportsShouldProcess)]
+
+$ErrorActionPreference = 'Stop'
+
 #region Configuration
-# ===== REQUIRED: Set your winget package ID =====
-$ID = 'Microsoft.PowerShell'  # Example: 'Microsoft.SQLServerManagementStudio', 'OBSProject.OBSStudio'
+$ID = 'Microsoft.PowerShell'
 
-# ===== REQUIRED: Maintenance Window Configuration =====
-# Days when updates are allowed (Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday)
-$MaintenanceWindowDays = @('Saturday', 'Sunday')  # Update only on weekends
-
-# Time range when updates are allowed (24-hour format)
+# Maintenance window: days (day-of-week names) plus a 24-hour start/end hour range.
+$MaintenanceWindowDays = @('Saturday', 'Sunday')
 $MaintenanceWindowStartHour = 2   # 2 AM
 $MaintenanceWindowEndHour = 6     # 6 AM
 
-# ===== OPTIONAL: Basic Settings =====
 $name = 'PowerShell 7'
 $AppProcess = 'pwsh'
 $ForceCloseInMaintenanceWindow = $true     # Force close app if running during maintenance window
 
-# ===== OPTIONAL: Advanced Settings =====
 $MaxRetries = 3                            # Number of retry attempts for winget operations
-$RetryDelaySeconds = 2                     # Initial delay between retries
+$RetryDelaySeconds = 2                     # Initial delay between retries (doubles each attempt)
 $GracePeriodSeconds = 5                    # Time to wait after closing app (if force close enabled)
 $VerifyWaitSeconds = 10                    # Time to wait after update to verify installation
-$EnableLogging = $true                     # Set to $true to enable file logging
+$EnableLogging = $true                     # Set to $false to disable file logging
 $LogPath = "C:\ProgramData\IntuneScripts\Logs\PowerShell7_Maintenance.log"
 
-# ===== OPTIONAL: Hooks for Custom Actions =====
+# Optional hooks for custom actions around the upgrade.
 $PreUpdateScriptBlock = $null              # Script block to run before update
 $PostUpdateScriptBlock = $null             # Script block to run after update
 #endregion
 
 #region Functions
+
 function Write-Log {
+    <#
+    .SYNOPSIS
+        Writes a timestamped message to the console (and optional log file).
+    #>
     param(
         [string]$Message,
         [ValidateSet('Info', 'Warning', 'Error')]
@@ -77,8 +83,8 @@ function Write-Log {
     $logMessage = "[$timestamp] [$Level] $Message"
 
     switch ($Level) {
-        'Error' { Write-Error $Message }
-        'Warning' { Write-Warning $Message }
+        'Error' { Write-Host "[-] $Message" -ForegroundColor Red }
+        'Warning' { Write-Host "[!] $Message" -ForegroundColor Yellow }
         'Info' { Write-Host $Message }
     }
 
@@ -91,27 +97,35 @@ function Write-Log {
             Add-Content -Path $LogPath -Value $logMessage -ErrorAction SilentlyContinue
         }
         catch {
-            Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
+            Write-Verbose "Handled exception: $($_.Exception.Message)"
         }
     }
 }
 
 function Test-MaintenanceWindow {
+    <#
+    .SYNOPSIS
+        Returns $true when the current day and hour are inside the configured maintenance window.
+    #>
     $now = Get-Date
     $currentDay = $now.DayOfWeek.ToString()
     $currentHour = $now.Hour
 
-    Write-Log "Current time: $($now.ToString('yyyy-MM-dd HH:mm:ss')) | Day: $currentDay | Hour: $currentHour" -Level Info
+    $outputMsg = "Current time: $($now.ToString('yyyy-MM-dd HH:mm:ss')) | Day: $currentDay | Hour: $currentHour"
+
+    Write-Log $outputMsg -Level Info
 
     # Check if current day is in maintenance window
     if ($MaintenanceWindowDays -notcontains $currentDay) {
-        Write-Log "Current day ($currentDay) is not in maintenance window. Allowed days: $($MaintenanceWindowDays -join ', ')" -Level Info
+        $allowedDays = $MaintenanceWindowDays -join ", "
+        Write-Log "Current day ($currentDay) is not in maintenance window. Allowed days: $allowedDays" -Level Info
         return $false
     }
 
     # Check if current hour is in maintenance window
     if ($currentHour -lt $MaintenanceWindowStartHour -or $currentHour -ge $MaintenanceWindowEndHour) {
-        Write-Log "Current hour ($currentHour) is outside maintenance window ($MaintenanceWindowStartHour-$MaintenanceWindowEndHour)" -Level Info
+        $windowText = "($MaintenanceWindowStartHour-$MaintenanceWindowEndHour)"
+        Write-Log "Current hour ($currentHour) is outside maintenance window $windowText" -Level Info
         return $false
     }
 
@@ -120,12 +134,17 @@ function Test-MaintenanceWindow {
 }
 
 function Invoke-WingetWithRetry {
+    <#
+    .SYNOPSIS
+        Thin wrapper around the native winget.exe CLI with bounded retries and exponential backoff.
+    #>
     param(
         [string]$Arguments,
         [int]$MaxAttempts = $MaxRetries
     )
 
-    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
+    $wingetPathFilter = 'C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe'
+    $wingetexe = Resolve-Path -Path $wingetPathFilter -ErrorAction Stop
     $wingetPath = if ($wingetexe.Count -gt 1) { $wingetexe[-1].Path } else { $wingetexe.Path }
 
     $attempt = 1
@@ -133,7 +152,8 @@ function Invoke-WingetWithRetry {
 
     while ($attempt -le $MaxAttempts) {
         try {
-            Write-Log "Executing winget command (Attempt $attempt/$MaxAttempts): $wingetPath $Arguments" -Level Info
+            $outputMsg = "Executing winget command (Attempt $attempt/$MaxAttempts): $wingetPath $Arguments"
+            Write-Log $outputMsg -Level Info
 
             $psi = New-Object System.Diagnostics.ProcessStartInfo
             $psi.FileName = $wingetPath
@@ -151,25 +171,31 @@ function Invoke-WingetWithRetry {
             $stderr = $p.StandardError.ReadToEnd()
             $p.WaitForExit()
 
-            # Base success on the process exit code, not on a grep of stdout.
+            # Base success on the process exit code, not on stdout content.
             # Success: 0 (S_OK), 0x8A150014 (no packages found - "not installed" for list),
             # 0x8A150109 (install succeeded, reboot required).
-            # Reference: https://github.com/microsoft/winget-cli/blob/master/doc/windows/package-manager/winget/returnCodes.md
+            # Reference: https://github.com/microsoft/winget-cli/blob/master/doc/
+            # windows/package-manager/winget/returnCodes.md
             if ($p.ExitCode -eq 0 -or $p.ExitCode -eq 0x8A150014 -or $p.ExitCode -eq 0x8A150109) {
-                Write-Log "Winget command succeeded on attempt $attempt (exit code 0x$($p.ExitCode.ToString('X8')))" -Level Info
+                $outputMsg = "Winget command succeeded on attempt $attempt (exit code 0x$($p.ExitCode.ToString('X8')))"
+                Write-Log $outputMsg -Level Info
                 if ($stderr) { Write-Log "Winget stderr: $stderr" -Level Warning }
                 return $stdout
             }
 
-            Write-Log "Winget command exited with code 0x$($p.ExitCode.ToString('X8')) on attempt $attempt" -Level Warning
+            $outputMsg = "Winget command exited with code 0x$($p.ExitCode.ToString('X8')) on attempt $attempt"
+
+            Write-Log $outputMsg -Level Warning
             if ($stderr) { Write-Log "Winget stderr: $stderr" -Level Warning }
         }
         catch {
-            Write-Log "Winget command failed on attempt $attempt : $($_.Exception.Message)" -Level Warning
+            $outputMsg = "Winget command failed on attempt $attempt : $($_.Exception.Message)"
+            Write-Log $outputMsg -Level Warning
         }
 
         if ($attempt -lt $MaxAttempts) {
-            Write-Log "Waiting $delay seconds before retry..." -Level Info
+            $outputMsg = "Waiting $delay seconds before retry..."
+            Write-Log $outputMsg -Level Info
             Start-Sleep -Seconds $delay
             $delay = $delay * 2  # Exponential backoff
         }
@@ -179,146 +205,186 @@ function Invoke-WingetWithRetry {
 
     throw "Winget command failed after $MaxAttempts attempts"
 }
+
+function Close-AppProcessForMaintenance {
+    <#
+    .SYNOPSIS
+        Force-closes the app process during the maintenance window, retrying once if it survives.
+    #>
+    $outputMsg = "$name is running. Force closing during maintenance window..."
+    Write-Log $outputMsg -Level Info
+    $outputMsg = "[*] $name is running. Force closing application during maintenance window..."
+    Write-Host $outputMsg -ForegroundColor Cyan
+
+    Stop-Process -Name "$AppProcess" -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds $GracePeriodSeconds
+
+    # Verify process was closed
+    $process = Get-Process -Name "$AppProcess" -ErrorAction SilentlyContinue
+    if ($process) {
+        $outputMsg = "$name process still running after force close attempt. Retrying..."
+        Write-Log $outputMsg -Level Warning
+        Stop-Process -Name "$AppProcess" -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 2
+    }
+
+    $outputMsg = "$name closed successfully."
+
+    Write-Log $outputMsg -Level Info
+}
+
 #endregion
 
 #region Script
-try {
-    Write-Log "=== Starting winget maintenance window remediation for package: $ID ===" -Level Info
 
-    # Check if we're in maintenance window
-    if (-not (Test-MaintenanceWindow)) {
-        Write-Log "Outside maintenance window. Update will not be performed." -Level Info
-        Write-Host "Outside maintenance window. Updates only run during: $($MaintenanceWindowDays -join ', ') between $MaintenanceWindowStartHour`:00-$MaintenanceWindowEndHour`:00"
-        exit 0  # Don't trigger remediation outside maintenance window
-    }
+function Main {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
 
-    Write-Host "Inside maintenance window. Proceeding with update check..."
+    try {
+        $outputMsg = "=== Starting winget maintenance window remediation for package: $ID ==="
+        Write-Log $outputMsg -Level Info
 
-    # Prefer the Microsoft.WinGet.Client PowerShell module - the winget CLI is NOT supported in
-    # the SYSTEM context (Intune Proactive Remediations run as SYSTEM). Only fall back to the
-    # winget.exe CLI when the module is unavailable.
-    # Reference: https://learn.microsoft.com/en-us/windows/package-manager/winget/troubleshooting
-    if (Get-Module -ListAvailable -Name Microsoft.WinGet.Client) {
-        try { Import-Module Microsoft.WinGet.Client -ErrorAction Stop } catch { Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false }
-        if (Get-Command Get-WinGetPackage -ErrorAction SilentlyContinue) {
-            Write-Log "Using Microsoft.WinGet.Client module" -Level Info
+        # Check if we're in maintenance window
+        if (-not (Test-MaintenanceWindow)) {
+            $outputMsg = "Outside maintenance window. Update will not be performed."
+            Write-Log $outputMsg -Level Info
+                        Write-Host "[*] Outside maintenance window. Updates only run during: $($MaintenanceWindowDays `
+                -join ', ') between $MaintenanceWindowStartHour`:00-$MaintenanceWindowEndHour`:00" `
+                -ForegroundColor Cyan
+            return 0  # Don't trigger remediation outside maintenance window
+        }
 
-            $package = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -ErrorAction SilentlyContinue
+        $outputMsg = "[*] Inside maintenance window. Proceeding with update check..."
 
-            # Auto-detect name if not provided
-            if (-not $name) {
-                $name = if ($package.Name) { $package.Name } else { $ID }
-            }
+        Write-Host $outputMsg -ForegroundColor Cyan
 
-            # Check if package is installed
-            if (-not $package) {
-                Write-Log "$name is not installed on this device." -Level Info
-                Write-Host "$name is not installed on this device."
-                exit 0
-            }
+        # Prefer the Microsoft.WinGet.Client PowerShell module - the winget CLI is NOT supported in
+        # the SYSTEM context (Intune Proactive Remediations run as SYSTEM). Only fall back to the
+        # winget.exe CLI when the module is unavailable.
+        # Reference: https://learn.microsoft.com/en-us/windows/package-manager/winget/troubleshooting
+        if (Get-Module -ListAvailable -Name Microsoft.WinGet.Client) {
+            try { Import-Module Microsoft.WinGet.Client -ErrorAction Stop }
+            catch { Write-Verbose \"Handled exception: $($_.Exception.Message)\" }
+            if (Get-Command Get-WinGetPackage -ErrorAction SilentlyContinue) {
+                $outputMsg = "Using Microsoft.WinGet.Client module"
+                Write-Log $outputMsg -Level Info
 
-            # Auto-detect process name if not provided
-            if (-not $AppProcess) {
-                $AppProcess = ($ID -split '\.')[-1]
-            }
+                $package = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -ErrorAction SilentlyContinue
 
-            # Check if update is available
-            if ($package.IsUpdateAvailable) {
-                $verInstalled = $package.InstalledVersion
-                $verAvailable = $package.AvailableVersions | Select-Object -Last 1
-                Write-Log "Update available for $name | Installed: $verInstalled | Available: $verAvailable" -Level Info
+                # Check if package is installed
+                if (-not $package) {
+                    $outputMsg = "$name is not installed on this device."
+                    Write-Log $outputMsg -Level Info
+                    $outputMsg = "[+] $name is not installed on this device."
+                    Write-Host $outputMsg -ForegroundColor Green
+                    return 0
+                }
 
-                # Handle running processes
-                $process = Get-Process -Name "$AppProcess" -ErrorAction SilentlyContinue
-                if ($process) {
-                    if ($ForceCloseInMaintenanceWindow) {
-                        Write-Log "$name is running. Force closing during maintenance window..." -Level Info
-                        Write-Host "$name is running. Force closing application during maintenance window..."
+                # Check if update is available
+                if ($package.IsUpdateAvailable) {
+                    $verInstalled = $package.InstalledVersion
+                    $verAvailable = $package.AvailableVersions | Select-Object -Last 1
+                    $outputMsg = "Update available for $name | Installed: $verInstalled | Available: $verAvailable"
+                    Write-Log $outputMsg -Level Info
 
-                        Stop-Process -Name "$AppProcess" -Force -ErrorAction SilentlyContinue
-                        Start-Sleep -Seconds $GracePeriodSeconds
-
-                        # Verify process was closed
-                        $process = Get-Process -Name "$AppProcess" -ErrorAction SilentlyContinue
-                        if ($process) {
-                            Write-Log "$name process still running after force close attempt. Retrying..." -Level Warning
-                            Stop-Process -Name "$AppProcess" -Force -ErrorAction SilentlyContinue
-                            Start-Sleep -Seconds 2
+                    # Handle running processes
+                    $process = Get-Process -Name "$AppProcess" -ErrorAction SilentlyContinue
+                    if ($process) {
+                        if ($ForceCloseInMaintenanceWindow) {
+                            Close-AppProcessForMaintenance
                         }
-
-                        Write-Log "$name closed successfully." -Level Info
+                        else {
+                            $outputMsg = "$name is running. Skipping update (force close disabled)."
+                            Write-Log $outputMsg -Level Warning
+                            $outputMsg = "[!] $name is currently running. Skipping update."
+                            Write-Host $outputMsg -ForegroundColor Yellow
+                            return 1
+                        }
                     }
                     else {
-                        Write-Log "$name is running. Skipping update (force close disabled)." -Level Warning
-                        Write-Host "$name is currently running. Skipping update."
-                        exit 1
-                    }
-                }
-                else {
-                    Write-Log "$name is not currently running." -Level Info
-                }
-
-                # Execute pre-update hook if defined
-                if ($PreUpdateScriptBlock) {
-                    Write-Log "Executing pre-update hook..." -Level Info
-                    try {
-                        & $PreUpdateScriptBlock
-                    }
-                    catch {
-                        Write-Log "Pre-update hook failed: $($_.Exception.Message)" -Level Warning
-                    }
-                }
-
-                # Perform upgrade via the module
-                Write-Log "Installing $name update ($verInstalled -> $verAvailable)..." -Level Info
-                Write-Host "Installing $name update..."
-                Update-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -Mode Silent -Force -ErrorAction Stop
-
-                # Wait for installation to complete
-                Write-Log "Waiting $VerifyWaitSeconds seconds for installation to complete..." -Level Info
-                Start-Sleep -Seconds $VerifyWaitSeconds
-
-                # Execute post-update hook if defined
-                if ($PostUpdateScriptBlock) {
-                    Write-Log "Executing post-update hook..." -Level Info
-                    try {
-                        & $PostUpdateScriptBlock
-                    }
-                    catch {
-                        Write-Log "Post-update hook failed: $($_.Exception.Message)" -Level Warning
-                    }
-                }
-
-                # Verify installation
-                Write-Log "Verifying installation..." -Level Info
-                $verifyPackage = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -ErrorAction SilentlyContinue
-
-                if ($verifyPackage) {
-                    $versionInstalled = $verifyPackage.InstalledVersion
-                    Write-Log "$name updated successfully to version $versionInstalled" -Level Info
-                    Write-Host "$name updated successfully to version $versionInstalled"
-
-                    [pscustomobject] @{
-                        Name = $name
-                        PreviousVersion = $verInstalled
-                        InstalledVersion = $versionInstalled
-                        Status = "Updated During Maintenance Window"
-                        MaintenanceWindow = "$($MaintenanceWindowDays -join ', ') $MaintenanceWindowStartHour-$MaintenanceWindowEndHour"
+                        $outputMsg = "$name is not currently running."
+                        Write-Log $outputMsg -Level Info
                     }
 
-                    exit 0
+                    # Execute pre-update hook if defined
+                    if ($PreUpdateScriptBlock) {
+                        $outputMsg = "Executing pre-update hook..."
+                        Write-Log $outputMsg -Level Info
+                        try {
+                            & $PreUpdateScriptBlock
+                        }
+                        catch {
+                            $outputMsg = "Pre-update hook failed: $($_.Exception.Message)"
+                            Write-Log $outputMsg -Level Warning
+                        }
+                    }
+
+                    # Perform upgrade via the module
+                    $outputMsg = "Installing $name update ($verInstalled -> $verAvailable)..."
+                    Write-Log $outputMsg -Level Info
+                    $outputMsg = "[*] Installing $name update..."
+                    Write-Host $outputMsg -ForegroundColor Cyan
+                    if ($PSCmdlet.ShouldProcess($name, "Update package $ID silently during maintenance window")) {
+                        Update-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive `
+                            -Mode Silent -Force -ErrorAction Stop
+                    }
+
+                    # Wait for installation to complete
+                    $outputMsg = "Waiting $VerifyWaitSeconds seconds for installation to complete..."
+                    Write-Log $outputMsg -Level Info
+                    Start-Sleep -Seconds $VerifyWaitSeconds
+
+                    # Execute post-update hook if defined
+                    if ($PostUpdateScriptBlock) {
+                        $outputMsg = "Executing post-update hook..."
+                        Write-Log $outputMsg -Level Info
+                        try {
+                            & $PostUpdateScriptBlock
+                        }
+                        catch {
+                            $outputMsg = "Post-update hook failed: $($_.Exception.Message)"
+                            Write-Log $outputMsg -Level Warning
+                        }
+                    }
+
+                    # Verify installation
+                    $outputMsg = "Verifying installation..."
+                    Write-Log $outputMsg -Level Info
+                    $verifyPackage = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive `
+                        -ErrorAction SilentlyContinue
+
+                    if ($verifyPackage) {
+                        $versionInstalled = $verifyPackage.InstalledVersion
+                        $outputMsg = "$name updated successfully to version $versionInstalled"
+                        Write-Log $outputMsg -Level Info
+                        $outputMsg = "[+] $name updated successfully to version $versionInstalled"
+                        Write-Host $outputMsg -ForegroundColor Green
+
+                        [pscustomobject] @{
+                            Name = $name
+                            PreviousVersion = $verInstalled
+                            InstalledVersion = $versionInstalled
+                            Status = "Updated During Maintenance Window"
+                                                        MaintenanceWindow = "$($MaintenanceWindowDays -join ', ') `
+                                $MaintenanceWindowStartHour-$MaintenanceWindowEndHour"
+                        }
+
+                        return 0
+                    }
+                    $outputMsg = "Failed to verify $name installation after update"
+                    Write-Log $outputMsg -Level Error
+                    $outputMsg = "[-] Failed to verify $name installation after update."
+                    Write-Host $outputMsg -ForegroundColor Red
+                    return 1
                 }
-                else {
-                    Write-Log "Failed to verify $name installation after update" -Level Error
-                    Write-Error "Failed to verify $name installation after update."
-                    exit 1
-                }
-            }
-            else {
+
                 # No update available
                 $versionInstalled = $package.InstalledVersion
-                Write-Log "$name is already up to date (version $versionInstalled)" -Level Info
-                Write-Host "$name is already up to date (version $versionInstalled)"
+                $outputMsg = "$name is already up to date (version $versionInstalled)"
+                Write-Log $outputMsg -Level Info
+                $outputMsg = "[+] $name is already up to date (version $versionInstalled)"
+                Write-Host $outputMsg -ForegroundColor Green
 
                 [pscustomobject] @{
                     Name = $name
@@ -326,171 +392,164 @@ try {
                     Status = "Up to Date"
                 }
 
-                exit 0
+                return 0
             }
         }
-    }
 
-    # Fallback: winget.exe CLI (only reached when the Microsoft.WinGet.Client module is unavailable)
-    Write-Log "Microsoft.WinGet.Client module unavailable, falling back to winget.exe CLI" -Level Warning
+        # Fallback: winget.exe CLI (only reached when the Microsoft.WinGet.Client module is unavailable)
+        $outputMsg = "Microsoft.WinGet.Client module unavailable, falling back to winget.exe CLI"
+        Write-Log $outputMsg -Level Warning
 
-    # Locate winget executable
-    Write-Log "Locating winget executable..." -Level Info
-    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
+        # Get package information (exact ID match) via the wrapper function
+        $packageInfo = Invoke-WingetWithRetry -Arguments "list --exact --id $ID --accept-source-agreements"
 
-    if ($wingetexe.Count -gt 1) {
-        $SystemContext = $wingetexe[-1].Path
-    }
-    else {
-        $SystemContext = $wingetexe.Path
-    }
-
-    New-Alias -Name sysget -Value "$SystemContext" -Force
-    Write-Log "Found winget: $SystemContext" -Level Info
-
-    # Get package information (exact ID match)
-    $packageInfo = Invoke-WingetWithRetry -Arguments "list --exact --id $ID --accept-source-agreements"
-
-    # Auto-detect name if not provided
-    if (-not $name) {
-        $nameMatch = $packageInfo | Select-String -Pattern "^($ID)\s+(.+?)\s+\d"
-        if ($nameMatch) {
-            $name = $nameMatch.Matches[0].Groups[2].Value.Trim()
-        }
-        else {
-            $name = $ID
-        }
-    }
-
-    # Check if package is installed
-    if ($packageInfo -match "No installed package found matching input criteria") {
-        Write-Log "$name is not installed on this device." -Level Info
-        Write-Host "$name is not installed on this device."
-        exit 0
-    }
-
-    # Check if update is available
-    if ($packageInfo -match '\bVersion\s+Available\b') {
-        $verInstalled, $verAvailable = (-split $packageInfo[-1])[-3, -2]
-        Write-Log "Update available for $name | Installed: $verInstalled | Available: $verAvailable" -Level Info
-
-        # Auto-detect process name if not provided
-        if (-not $AppProcess) {
-            $AppProcess = ($ID -split '\.')[-1]
-        }
-
-        # Handle running processes
-        $process = Get-Process -Name "$AppProcess" -ErrorAction SilentlyContinue
-        if ($process) {
-            if ($ForceCloseInMaintenanceWindow) {
-                Write-Log "$name is running. Force closing during maintenance window..." -Level Info
-                Write-Host "$name is running. Force closing application during maintenance window..."
-
-                Stop-Process -Name "$AppProcess" -Force -ErrorAction SilentlyContinue
-                Start-Sleep -Seconds $GracePeriodSeconds
-
-                # Verify process was closed
-                $process = Get-Process -Name "$AppProcess" -ErrorAction SilentlyContinue
-                if ($process) {
-                    Write-Log "$name process still running after force close attempt. Retrying..." -Level Warning
-                    Stop-Process -Name "$AppProcess" -Force -ErrorAction SilentlyContinue
-                    Start-Sleep -Seconds 2
-                }
-
-                Write-Log "$name closed successfully." -Level Info
+        # Auto-detect name if not provided
+        if (-not $name) {
+            $nameMatch = $packageInfo | Select-String -Pattern "^($ID)\s+(.+?)\s+\d"
+            if ($nameMatch) {
+                $name = $nameMatch.Matches[0].Groups[2].Value.Trim()
             }
             else {
-                Write-Log "$name is running. Skipping update (force close disabled)." -Level Warning
-                Write-Host "$name is currently running. Skipping update."
-                exit 1
-            }
-        }
-        else {
-            Write-Log "$name is not currently running." -Level Info
-        }
-
-        # Execute pre-update hook if defined
-        if ($PreUpdateScriptBlock) {
-            Write-Log "Executing pre-update hook..." -Level Info
-            try {
-                & $PreUpdateScriptBlock
-            }
-            catch {
-                Write-Log "Pre-update hook failed: $($_.Exception.Message)" -Level Warning
+                $name = $ID
             }
         }
 
-        # Perform upgrade
-        Write-Log "Installing $name update ($verInstalled -> $verAvailable)..." -Level Info
-        Write-Host "Installing $name update..."
-
-        $upgradeResult = Invoke-WingetWithRetry -Arguments "upgrade -e --id $ID --silent --accept-package-agreements --accept-source-agreements"
-
-        # Wait for installation to complete
-        Write-Log "Waiting $VerifyWaitSeconds seconds for installation to complete..." -Level Info
-        Start-Sleep -Seconds $VerifyWaitSeconds
-
-        # Execute post-update hook if defined
-        if ($PostUpdateScriptBlock) {
-            Write-Log "Executing post-update hook..." -Level Info
-            try {
-                & $PostUpdateScriptBlock
-            }
-            catch {
-                Write-Log "Post-update hook failed: $($_.Exception.Message)" -Level Warning
-            }
+        # Check if package is installed
+        if ($packageInfo -match "No installed package found matching input criteria") {
+            $outputMsg = "$name is not installed on this device."
+            Write-Log $outputMsg -Level Info
+            $outputMsg = "[+] $name is not installed on this device."
+            Write-Host $outputMsg -ForegroundColor Green
+            return 0
         }
 
-        # Verify installation
-        Write-Log "Verifying installation..." -Level Info
-        $verifyInfo = Invoke-WingetWithRetry -Arguments "list --exact --id $ID --accept-source-agreements"
+        # Check if update is available
+        if ($packageInfo -match '\bVersion\s+Available\b') {
+            $verInstalled, $verAvailable = (-split $packageInfo[-1])[-3, -2]
+            $outputMsg = "Update available for $name | Installed: $verInstalled | Available: $verAvailable"
+            Write-Log $outputMsg -Level Info
 
-        if ($verifyInfo -match '\d+(\.\d+)+') {
-            $versionInstalled = (-split $verifyInfo[-1])[-2]
-            Write-Log "$name updated successfully to version $versionInstalled" -Level Info
-            Write-Host "$name updated successfully to version $versionInstalled"
-
-            [pscustomobject] @{
-                Name = $name
-                PreviousVersion = $verInstalled
-                InstalledVersion = $versionInstalled
-                Status = "Updated During Maintenance Window"
-                MaintenanceWindow = "$($MaintenanceWindowDays -join ', ') $MaintenanceWindowStartHour-$MaintenanceWindowEndHour"
+            # Handle running processes
+            $process = Get-Process -Name "$AppProcess" -ErrorAction SilentlyContinue
+            if ($process) {
+                if ($ForceCloseInMaintenanceWindow) {
+                    Close-AppProcessForMaintenance
+                }
+                else {
+                    $outputMsg = "$name is running. Skipping update (force close disabled)."
+                    Write-Log $outputMsg -Level Warning
+                    $outputMsg = "[!] $name is currently running. Skipping update."
+                    Write-Host $outputMsg -ForegroundColor Yellow
+                    return 1
+                }
+            }
+            else {
+                $outputMsg = "$name is not currently running."
+                Write-Log $outputMsg -Level Info
             }
 
-            exit 0
+            # Execute pre-update hook if defined
+            if ($PreUpdateScriptBlock) {
+                $outputMsg = "Executing pre-update hook..."
+                Write-Log $outputMsg -Level Info
+                try {
+                    & $PreUpdateScriptBlock
+                }
+                catch {
+                    $outputMsg = "Pre-update hook failed: $($_.Exception.Message)"
+                    Write-Log $outputMsg -Level Warning
+                }
+            }
+
+            # Perform upgrade via the wrapper function
+            $outputMsg = "Installing $name update ($verInstalled -> $verAvailable)..."
+            Write-Log $outputMsg -Level Info
+            $outputMsg = "[*] Installing $name update..."
+            Write-Host $outputMsg -ForegroundColor Cyan
+            if ($PSCmdlet.ShouldProcess($name, "Update package $ID via winget CLI during maintenance window")) {
+                $upgradeArgs = "upgrade -e --id $ID --silent --accept-package-agreements --accept-source-agreements"
+                Invoke-WingetWithRetry -Arguments $upgradeArgs | Out-Null
+            }
+
+            # Wait for installation to complete
+            $outputMsg = "Waiting $VerifyWaitSeconds seconds for installation to complete..."
+            Write-Log $outputMsg -Level Info
+            Start-Sleep -Seconds $VerifyWaitSeconds
+
+            # Execute post-update hook if defined
+            if ($PostUpdateScriptBlock) {
+                $outputMsg = "Executing post-update hook..."
+                Write-Log $outputMsg -Level Info
+                try {
+                    & $PostUpdateScriptBlock
+                }
+                catch {
+                    $outputMsg = "Post-update hook failed: $($_.Exception.Message)"
+                    Write-Log $outputMsg -Level Warning
+                }
+            }
+
+            # Verify installation
+            $outputMsg = "Verifying installation..."
+            Write-Log $outputMsg -Level Info
+            $verifyInfo = Invoke-WingetWithRetry -Arguments "list --exact --id $ID --accept-source-agreements"
+
+            if ($verifyInfo -match '\d+(\.\d+)+') {
+                $versionInstalled = (-split $verifyInfo[-1])[-2]
+                $outputMsg = "$name updated successfully to version $versionInstalled"
+                Write-Log $outputMsg -Level Info
+                $outputMsg = "[+] $name updated successfully to version $versionInstalled"
+                Write-Host $outputMsg -ForegroundColor Green
+
+                [pscustomobject] @{
+                    Name = $name
+                    PreviousVersion = $verInstalled
+                    InstalledVersion = $versionInstalled
+                    Status = "Updated During Maintenance Window"
+                                        MaintenanceWindow = "$($MaintenanceWindowDays -join ', ') `
+                        $MaintenanceWindowStartHour-$MaintenanceWindowEndHour"
+                }
+
+                return 0
+            }
+            $outputMsg = "Failed to verify $name installation after update"
+            Write-Log $outputMsg -Level Error
+            $outputMsg = "[-] Failed to verify $name installation after update."
+            Write-Host $outputMsg -ForegroundColor Red
+            return 1
         }
-        else {
-            Write-Log "Failed to verify $name installation after update" -Level Error
-            Write-Error "Failed to verify $name installation after update."
-            exit 1
-        }
-    }
-    else {
+
         # No update available
         if ($packageInfo -match '\d+(\.\d+)+') {
             $versionInstalled = (-split $packageInfo[-1])[-2]
-            Write-Log "$name is already up to date (version $versionInstalled)" -Level Info
-            Write-Host "$name is already up to date (version $versionInstalled)"
+            $outputMsg = "$name is already up to date (version $versionInstalled)"
+            Write-Log $outputMsg -Level Info
+            $outputMsg = "[+] $name is already up to date (version $versionInstalled)"
+            Write-Host $outputMsg -ForegroundColor Green
 
             [pscustomobject] @{
                 Name = $name
                 InstalledVersion = $versionInstalled
                 Status = "Up to Date"
             }
-
-            exit 0
         }
-    }
 
+        return 0
+    }
+    catch {
+        $outputMsg = "ERROR: Failed to update $name : $($_.Exception.Message)"
+        Write-Log $outputMsg -Level Error
+        $outputMsg = "[-] Failed to update $name : $($_.Exception.Message)"
+        Write-Host $outputMsg -ForegroundColor Red
+        return 1
+    }
+    finally {
+        $outputMsg = "=== Remediation script completed ==="
+        Write-Log $outputMsg -Level Info
+    }
 }
-catch {
-    $errMsg = $_.Exception.Message
-    Write-Log "ERROR: Failed to update $name : $errMsg" -Level Error
-    Write-Error "Failed to update $name : $errMsg"
-    exit 1
-}
-finally {
-    Write-Log "=== Remediation script completed ===" -Level Info
-}
+
 #endregion
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

@@ -1,111 +1,133 @@
-<#
+﻿<#
 .SYNOPSIS
-    Repairs Windows system file corruption.
+    Repair Windows system file corruption with DISM and SFC.
 
 .DESCRIPTION
-    Runs DISM and SFC to repair corrupted system files and component store.
-    Includes safety checks for disk space and battery status.
+    Runs DISM RestoreHealth and SFC /scannow to repair corrupted system files
+    and the component store, after verifying two safety preconditions: at least
+    10 GB of free space on the system drive and AC power (devices on battery
+    are never repaired).
+    Side effects: DISM and SFC modify the component store and protected system
+    files; a restart may be required to complete repairs. Both repair passes are
+    gated behind -WhatIf/-Confirm via SupportsShouldProcess.
+    The repairs themselves are safe to re-run (idempotent): a converged system
+    reports "no integrity violations" and exits 0 again.
+    Exit codes: 0 = remediation completed, 1 = a safety check failed (insufficient
+    disk space or battery power) or DISM/SFC raised an unexpected error.
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationFixSystemFileCorruption.ps1
+
+    Runs the disk space and power safety checks, then repairs the component
+    store with DISM and system files with SFC.
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationFixSystemFileCorruption.ps1 -WhatIf
+
+    Runs the safety checks but skips both repair passes.
 
 .NOTES
-    Author: Intune Admin
-    Version: 1.1
-    Intune Context: SYSTEM
-    Exit 0: Remediation successful
-    Exit 1: Remediation failed or safety checks failed
-    Note: May require restart to complete. Can take 10-30 minutes.
+    File Name  : Invoke-RemediationFixSystemFileCorruption.ps1
+    Author     : Intune Admin
+    Prerequisite: PowerShell 7.0
+    Version    : 1.0.0
+    Date       : 2026-08-23
+
+    Intune Context: SYSTEM. May require a restart to complete and can take
+    10-30 minutes; detailed results are logged in C:\Windows\Logs\CBS\CBS.log.
 #>
 
-try {
-    # Configuration
-    $minDiskSpaceGB = 10  # Minimum free space required for DISM operation
+[CmdletBinding(SupportsShouldProcess)]
+param()
 
-    $remediationActions = @()
+$ErrorActionPreference = 'Stop'
 
-    # SAFETY CHECK 1: Verify sufficient disk space (DISM needs ~10GB)
-    $systemDrive = Get-Volume -DriveLetter $env:SystemDrive.TrimEnd(':') -ErrorAction SilentlyContinue
-    if ($systemDrive) {
-        $freeSpaceGB = [math]::Round($systemDrive.SizeRemaining / 1GB, 2)
-        Write-Host "System drive free space: $freeSpaceGB GB"
-
-        if ($freeSpaceGB -lt $minDiskSpaceGB) {
-            Write-Host "ERROR: Insufficient disk space for DISM operation"
-            Write-Host "Required: At least ${minDiskSpaceGB}GB free"
-            Write-Host "Available: $freeSpaceGB GB"
-            Write-Host ""
-            Write-Host "Please free up disk space before running system file repairs"
-            exit 1
-        }
-    }
-
-    # SAFETY CHECK 2: Check battery status (don't run on battery for laptops)
-    $battery = Get-CimInstance -ClassName Win32_Battery -ErrorAction SilentlyContinue
-    if ($battery) {
-        # Device has a battery (laptop/tablet)
-        $batteryStatus = $battery.BatteryStatus
-        # BatteryStatus: 1=Discharging, 2=AC, 3=Fully Charged, 4=Low, 5=Critical
-
-        if ($batteryStatus -eq 1 -or $batteryStatus -eq 4 -or $batteryStatus -eq 5) {
-            Write-Host "ERROR: Device is running on battery power"
-            Write-Host "DISM and SFC operations should only run while connected to AC power"
-            Write-Host "Battery Status: $(
-                switch ($batteryStatus) {
-                    1 { 'Discharging' }
-                    4 { 'Low' }
-                    5 { 'Critical' }
-                }
-            )"
-            Write-Host ""
-            Write-Host "Please connect to AC power before running system file repairs"
-            exit 1
-        }
-
-        Write-Host "Battery status: AC connected - safe to proceed"
-    }
-
-    # SAFETY CHECK 3: Warn about execution time
-    Write-Host ""
-    Write-Host "WARNING: This operation may take 10-30 minutes to complete"
-    Write-Host "The system will remain responsive but DISM/SFC are resource-intensive"
-    Write-Host ""
-
-    # Run DISM RestoreHealth
-    Write-Host "Running DISM RestoreHealth (this may take several minutes)..."
-    $dismResult = Dism /Online /Cleanup-Image /RestoreHealth /NoRestart 2>&1
-
-    if ($LASTEXITCODE -eq 0) {
-        $remediationActions += "DISM RestoreHealth completed successfully"
-    }
-    else {
-        $remediationActions += "DISM RestoreHealth completed with warnings (exit code: $LASTEXITCODE)"
-    }
-
-    # Run SFC scan
-    Write-Host "Running System File Checker..."
-    $sfcResult = sfc /scannow 2>&1
-
-    if ($sfcResult -match "did not find any integrity violations") {
-        $remediationActions += "SFC scan completed - no violations found"
-    }
-    elseif ($sfcResult -match "successfully repaired") {
-        $remediationActions += "SFC successfully repaired corrupted files"
-    }
-    else {
-        $remediationActions += "SFC scan completed"
-    }
-
-    Write-Host ""
-    Write-Host "System file corruption remediation completed:"
-    foreach ($action in $remediationActions) {
-        Write-Host "  - $action"
-    }
-    Write-Host ""
-    Write-Host "Note: A system restart may be required to complete repairs"
-    Write-Host "Check C:\Windows\Logs\CBS\CBS.log for detailed results"
-
-    exit 0
-
+function Invoke-Dism {
+    # Thin wrapper around the native Dism.exe executable; mock seam for Pester tests.
+    & Dism.exe @args 2>&1 | Out-Null
+    return $LASTEXITCODE
 }
-catch {
-    Write-Host "Error during system file remediation: $_"
-    exit 1
+
+function Invoke-Sfc {
+    # Thin wrapper around the native sfc.exe executable; mock seam for Pester tests.
+    & sfc.exe @args 2>&1 | Out-Null
+    return $LASTEXITCODE
 }
+
+function Main {
+    # Advanced function so $PSCmdlet (and thus ShouldProcess) resolves inside Main.
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
+    try {
+        Write-Host "[*] Repairing system file corruption (this may take 10-30 minutes)..." -ForegroundColor Cyan
+
+        $minDiskSpaceGB = 10  # Minimum free space required for the DISM operation
+        $actions = @()
+
+        # SAFETY CHECK 1: verify sufficient free disk space for DISM.
+        $driveLetter = 'C'
+        if ($env:SystemDrive) {
+            $driveLetter = $env:SystemDrive.TrimEnd(':')
+        }
+        $systemDrive = Get-Volume -DriveLetter $driveLetter -ErrorAction SilentlyContinue
+        if ($systemDrive) {
+            $freeSpaceGB = [math]::Round($systemDrive.SizeRemaining / 1GB, 2)
+            Write-Host "[*] System drive free space: $freeSpaceGB GB" -ForegroundColor Cyan
+
+            if ($freeSpaceGB -lt $minDiskSpaceGB) {
+                Write-Host "[-] Error repairing system files: insufficient disk space (free: ${freeSpaceGB} GB, required: ${minDiskSpaceGB} GB)" -ForegroundColor Red
+                return 1
+            }
+        }
+
+        # SAFETY CHECK 2: never run DISM/SFC on battery power.
+        # BatteryStatus: 1 = Discharging, 4 = Low, 5 = Critical (all mean: on battery).
+        $battery = Get-CimInstance -ClassName Win32_Battery -ErrorAction SilentlyContinue
+        if ($battery -and $battery.BatteryStatus -in @(1, 4, 5)) {
+            Write-Host "[-] Error repairing system files: device is running on battery power; connect to AC before running repairs" -ForegroundColor Red
+            return 1
+        }
+
+        Write-Host "[!] This operation is resource-intensive; the system remains responsive" -ForegroundColor Yellow
+
+        # DISM component-store repair.
+        if ($PSCmdlet.ShouldProcess('Component Store', 'Run DISM RestoreHealth')) {
+            Write-Host "[*] Running DISM RestoreHealth..." -ForegroundColor Cyan
+            $dismExitCode = Invoke-Dism /Online /Cleanup-Image /RestoreHealth /NoRestart
+            if ($dismExitCode -eq 0) {
+                $actions += 'DISM RestoreHealth completed successfully'
+            }
+            else {
+                Write-Host "[!] DISM RestoreHealth returned exit code $dismExitCode" -ForegroundColor Yellow
+                $actions += "DISM RestoreHealth completed with warnings (exit code $dismExitCode)"
+            }
+        }
+
+        # SFC scan.
+        if ($PSCmdlet.ShouldProcess('System Files', 'Run SFC /scannow')) {
+            Write-Host "[*] Running System File Checker..." -ForegroundColor Cyan
+            $sfcExitCode = Invoke-Sfc /scannow
+            if ($sfcExitCode -eq 0) {
+                $actions += 'SFC scan completed successfully'
+            }
+            else {
+                Write-Host "[!] SFC returned exit code $sfcExitCode" -ForegroundColor Yellow
+                $actions += "SFC scan completed with warnings (exit code $sfcExitCode)"
+            }
+        }
+
+        foreach ($action in $actions) {
+            Write-Host "  - $action" -ForegroundColor Cyan
+        }
+        Write-Host "[+] System file corruption remediation completed; a restart may be required to finish repairs" -ForegroundColor Green
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error repairing system files: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
+}
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

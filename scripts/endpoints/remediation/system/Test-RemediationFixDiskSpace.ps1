@@ -1,45 +1,77 @@
-<#
+﻿<#
 .SYNOPSIS
-    Detect low disk space on fixed drives
+    Detects low free disk space on fixed drives.
 
 .DESCRIPTION
-    Checks all fixed disk volumes for low disk space conditions.
-    Reports non-compliant if any volume has less than the configured
-    percentage or absolute GB threshold remaining.
+    Checks all fixed disk volumes for low disk space conditions and reports every volume that has
+    less than 10 percent free space or less than 10 GB free space remaining.
+    Intended for Intune Proactive Remediations.
+    Exit codes:
+    - 0: compliant - every fixed volume meets both free-space thresholds.
+    - 1: non-compliant - at least one fixed volume is below a threshold, or the check failed.
 
 .NOTES
-    For Intune Proactive Remediations
-    Exit 0 = Compliant (sufficient disk space)
-    Exit 1 = Non-compliant (low disk space detected)
+    File Name: Test-RemediationFixDiskSpace.ps1
+    Author: Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version: 1.0.0
+    Date: 2026-08-23
 
-    Default Thresholds:
-    - Less than 10% free space, OR
-    - Less than 10 GB free space
+.EXAMPLE
+    PS C:\> .\Test-RemediationFixDiskSpace.ps1
+    Lists any low-space volumes and returns 0 when healthy, 1 when remediation is needed.
+
+.EXAMPLE
+    PS C:\> pwsh -NoProfile -File .\Test-RemediationFixDiskSpace.ps1
+    Runs the same detection under the Intune Management Extension SYSTEM context.
 #>
 
 [CmdletBinding()]
-param()
 
-# Configuration - Named constants for clarity
-$DISK_SPACE_WARNING_PERCENT = 10  # Minimum acceptable free space percentage
-$DISK_SPACE_WARNING_GB = 10       # Minimum acceptable free space in GB
+$ErrorActionPreference = 'Stop'
 
-$volumes = Get-Volume | Where-Object { $_.DriveLetter -and $_.DriveType -eq 'Fixed' }
-$issues = @()
+#region Configuration
+$MinFreePercent = 10   # Minimum acceptable free space percentage
+$MinFreeGb = 10        # Minimum acceptable free space in GB
+#endregion
 
-foreach ($vol in $volumes) {
-    $freePercent = ($vol.SizeRemaining / $vol.Size) * 100
-    $freeGB = [math]::Round($vol.SizeRemaining / 1GB, 2)
+#region Functions
 
-    if ($freePercent -lt $DISK_SPACE_WARNING_PERCENT -or $freeGB -lt $DISK_SPACE_WARNING_GB) {
-        $issues += "$($vol.DriveLetter): $freeGB GB free ($([math]::Round($freePercent, 1))%)"
+function Main {
+    try {
+        $outputMsg = "[*] Checking fixed drive free space..."
+        Write-Host $outputMsg -ForegroundColor Cyan
+
+        $volumes = Get-Volume -ErrorAction Stop | Where-Object { $_.DriveLetter -and $_.DriveType -eq 'Fixed' }
+        $issues = @()
+
+        foreach ($vol in $volumes) {
+            $freePercent = ($vol.SizeRemaining / $vol.Size) * 100
+            $freeGb = [math]::Round($vol.SizeRemaining / 1GB, 2)
+
+            if ($freePercent -lt $MinFreePercent -or $freeGb -lt $MinFreeGb) {
+                $issues += "$($vol.DriveLetter): $freeGb GB free ($([math]::Round($freePercent, 1))%)"
+            }
+        }
+
+        if ($issues.Count -gt 0) {
+            $outputMsg = "[!] Low disk space detected: $($issues -join ', ')"
+            Write-Host $outputMsg -ForegroundColor Yellow
+            return 1
+        }
+
+        $outputMsg = "[+] Disk space healthy."
+
+        Write-Host $outputMsg -ForegroundColor Green
+        return 0
+    }
+    catch {
+        $outputMsg = "[-] Error checking disk space: $($_.Exception.Message)"
+        Write-Host $outputMsg -ForegroundColor Red
+        return 1
     }
 }
+#endregion
 
-if ($issues.Count -gt 0) {
-    Write-Host "Low disk space detected: $($issues -join ', ')"
-    exit 1
-}
-
-Write-Host "Disk space healthy"
-exit 0
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

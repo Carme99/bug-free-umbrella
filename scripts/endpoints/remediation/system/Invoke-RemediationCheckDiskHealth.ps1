@@ -1,92 +1,132 @@
-<#
+﻿<#
 .SYNOPSIS
-    Attempts to remediate disk health issues.
+    Run disk health maintenance on fixed drives.
 
 .DESCRIPTION
-    Runs disk maintenance tasks including disk cleanup and error checking.
-    Severe disk failures cannot be fixed and require hardware replacement.
+    Enables the built-in Disk Cleanup items under the VolumeCaches registry key, runs
+    cleanmgr for system files, schedules a chkdsk pass of the system drive for the next
+    reboot and optimizes every fixed volume (trim on SSD, defragment on HDD). Every
+    mutation is gated behind -WhatIf/-Confirm via SupportsShouldProcess. Re-running on an
+    already-maintained device finds no cleanup items, no fixed volumes and nothing to
+    schedule, makes no changes and still exits 0 (idempotent).
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationCheckDiskHealth.ps1
+
+    Runs disk cleanup, schedules a boot-time chkdsk and optimizes all fixed volumes.
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationCheckDiskHealth.ps1 -WhatIf
+
+    Shows which maintenance actions would run without changing anything.
 
 .NOTES
-    Author: Intune Admin
-    Version: 1.0
-    Intune Context: SYSTEM
-    Exit 0: Remediation successful
+    File Name  : Invoke-RemediationCheckDiskHealth.ps1
+    Author     : Intune Admin
+    Prerequisite: PowerShell 7.0
+    Version    : 1.0.0
+    Date       : 2026-08-23
 #>
 
-try {
-    $remediationActions = @()
+[CmdletBinding(SupportsShouldProcess)]
+param()
 
-    # Run disk cleanup for system files on C: drive
+$ErrorActionPreference = 'Stop'
+
+function Invoke-Chkdsk {
+    # Thin wrapper around the native chkdsk.exe executable.
+    # Exists as the mock seam for Pester tests (native commands cannot be mocked).
+    & chkdsk.exe @args 2>&1 | Out-Null
+    return $LASTEXITCODE
+}
+
+function Main {
+    # Advanced function so $PSCmdlet (and thus ShouldProcess) resolves inside Main.
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
     try {
-        Write-Host "Running disk cleanup..."
-        # Configure disk cleanup to run automatically
-        $volumeCachesPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches"
+        Write-Host "[*] Running disk health maintenance..." -ForegroundColor Cyan
 
-        # Enable common cleanup items
+        $remediationActions = @()
+
+        # Enable common cleanup items so cleanmgr /sagerun:1 has something configured.
+        $volumeCachesPath = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VolumeCaches'
         $cleanupItems = @(
-            "Temporary Files",
-            "Temporary Setup Files",
-            "Downloaded Program Files",
-            "Recycle Bin",
-            "Temporary Internet Files"
+            'Temporary Files',
+            'Temporary Setup Files',
+            'Downloaded Program Files',
+            'Recycle Bin',
+            'Temporary Internet Files'
         )
 
+        $configuredItems = @()
         foreach ($item in $cleanupItems) {
-            $itemPath = Join-Path $volumeCachesPath $item
-            if (Test-Path $itemPath) {
-                Set-ItemProperty -Path $itemPath -Name "StateFlags0001" -Value 2 -Type DWord -ErrorAction SilentlyContinue
+            $itemPath = "$volumeCachesPath\$item"
+            if (Test-Path $itemPath -ErrorAction SilentlyContinue) {
+                if ($PSCmdlet.ShouldProcess($itemPath, 'Enable disk cleanup item')) {
+                    New-ItemProperty -Path $itemPath -Name 'StateFlags0001' -Value 2 -PropertyType DWord -Force -ErrorAction SilentlyContinue
+                }
+                $configuredItems += $itemPath
             }
         }
 
-        # Run cleanmgr
-        Start-Process -FilePath "cleanmgr.exe" -ArgumentList "/sagerun:1" -WindowStyle Hidden -Wait -ErrorAction SilentlyContinue
-        $remediationActions += "Executed disk cleanup"
+        # Only invoke cleanmgr when at least one cleanup item was found to configure.
+        if ($configuredItems.Count -gt 0) {
+            if ($PSCmdlet.ShouldProcess('cleanmgr.exe', 'Run disk cleanup for system files')) {
+                Start-Process -FilePath 'cleanmgr.exe' -ArgumentList '/sagerun:1' -WindowStyle Hidden -Wait -ErrorAction SilentlyContinue
+                $remediationActions += 'Executed disk cleanup'
+            }
+        }
+
+        # Schedule a disk check for the next reboot on the system drive.
+        if ($env:SystemDrive) {
+            $systemDrive = $env:SystemDrive
+            Write-Host "[*] Scheduling disk check for $systemDrive on next reboot..." -ForegroundColor Cyan
+            if ($PSCmdlet.ShouldProcess($systemDrive, 'Schedule chkdsk on next reboot')) {
+                $chkdskExitCode = Invoke-Chkdsk $systemDrive /F /R /X
+                if ($chkdskExitCode -ne 0) {
+                    Write-Host "[!] Could not schedule disk check (chkdsk exit code $chkdskExitCode)" -ForegroundColor Yellow
+                }
+                else {
+                    $remediationActions += 'Scheduled disk check for next reboot'
+                }
+            }
+        }
+        else {
+            Write-Host "[!] System drive could not be determined; skipping chkdsk scheduling" -ForegroundColor Yellow
+        }
+
+        # Optimize/defragment drives (SSD = trim, HDD = defrag).
+        $volumes = Get-Volume -ErrorAction SilentlyContinue |
+            Where-Object { $_.DriveType -eq 'Fixed' -and $_.DriveLetter }
+
+        foreach ($volume in $volumes) {
+            if ($PSCmdlet.ShouldProcess("Volume $($volume.DriveLetter):", 'Optimize volume (trim or defrag)')) {
+                Optimize-Volume -DriveLetter $volume.DriveLetter -ErrorAction SilentlyContinue
+                $remediationActions += "Optimized volume $($volume.DriveLetter):"
+            }
+        }
+
+        if ($remediationActions.Count -eq 0) {
+            Write-Host "[+] Already maintained: no disk maintenance actions were necessary" -ForegroundColor Green
+        }
+        else {
+            Write-Host "[+] Disk health remediation completed:" -ForegroundColor Green
+            foreach ($action in $remediationActions) {
+                Write-Host "  - $action"
+            }
+            Write-Host ""
+            Write-Host "[!] Note: Disk errors may require a system restart to fully repair" -ForegroundColor Yellow
+            Write-Host "[!] Hardware failures require physical disk replacement" -ForegroundColor Yellow
+        }
+        return 0
     }
     catch {
-        Write-Host "Warning: Could not complete disk cleanup: $_"
+        Write-Host "[-] Error during disk health remediation: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
-
-    # Schedule disk check for next reboot on system drive
-    try {
-        $systemDrive = $env:SystemDrive
-        Write-Host "Scheduling disk check for $systemDrive on next reboot..."
-        chkdsk $systemDrive /F /R /X 2>&1 | Out-Null
-        $remediationActions += "Scheduled disk check for next reboot"
-    }
-    catch {
-        Write-Host "Warning: Could not schedule disk check: $_"
-    }
-
-    # Optimize/defragment drives (SSD = trim, HDD = defrag)
-    $volumes = Get-Volume -ErrorAction SilentlyContinue | Where-Object { $_.DriveType -eq "Fixed" -and $_.DriveLetter }
-
-    foreach ($volume in $volumes) {
-        try {
-            Optimize-Volume -DriveLetter $volume.DriveLetter -Verbose -ErrorAction SilentlyContinue
-            $remediationActions += "Optimized volume $($volume.DriveLetter):"
-        }
-        catch {
-            Write-Host "Warning: Could not optimize volume $($volume.DriveLetter): $_"
-        }
-    }
-
-    if ($remediationActions.Count -gt 0) {
-        Write-Host "Disk health remediation completed:"
-        foreach ($action in $remediationActions) {
-            Write-Host "  - $action"
-        }
-        Write-Host ""
-        Write-Host "Note: Disk errors may require a system restart to fully repair"
-        Write-Host "Hardware failures require physical disk replacement"
-    }
-    else {
-        Write-Host "No disk maintenance actions were necessary"
-    }
-
-    exit 0
-
 }
-catch {
-    Write-Host "Error during disk health remediation: $_"
-    exit 1
-}
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Creates a cloned virtual machine and an Azure Compute Gallery (ACG) image version from a gold VM.
 
@@ -76,50 +76,46 @@
 .PARAMETER SkipAgentCheck
     Skip the pre-flight check of the source VM's guest agent status.
 
+.PARAMETER SkipCleanup
+    Keep temporary resources for debugging. Not recommended for production.
+
 .PARAMETER SkipPreFlightChecks
     Skip all pre-flight validation checks. Useful for advanced users or CI/CD
     pipelines where validation is performed separately.
 
-.PARAMETER SkipCleanup
-    Keep temporary resources for debugging. Not recommended for production.
-
 .PARAMETER Force
     Run non-interactively without confirmation prompts.
 
-.PARAMETER WhatIf
-    Dry-run mode. Validates configuration and runs pre-flight checks without
-    creating any resources. Useful for testing configurations.
-
 .EXAMPLE
-    .\New-AzureComputeGalleryImage.ps1
+    PS C:\> .\New-AzureComputeGalleryImage.ps1
 
     Auto-discovers JSON configuration files in the script directory and prompts
     for selection. If no JSON files found, runs in interactive mode.
 
 .EXAMPLE
-    .\New-AzureComputeGalleryImage.ps1 -Interactive
+    PS C:\> .\New-AzureComputeGalleryImage.ps1 -Interactive
 
     Runs in interactive mode with guided prompts for all configuration,
     bypassing JSON auto-discovery.
 
 .EXAMPLE
-    .\New-AzureComputeGalleryImage.ps1 -GenerateConfig -ConfigFile ".\my-config.json"
+    PS C:\> .\New-AzureComputeGalleryImage.ps1 -GenerateConfig -ConfigFile ".\my-config.json"
 
     Generates a template configuration file at the specified path.
 
 .EXAMPLE
-    .\New-AzureComputeGalleryImage.ps1 -ConfigFile ".\my-config.json"
+    PS C:\> .\New-AzureComputeGalleryImage.ps1 -ConfigFile ".\my-config.json"
 
     Runs using settings from the specified configuration file.
 
 .EXAMPLE
-    .\New-AzureComputeGalleryImage.ps1 -ConfigFile ".\prod-config.json" -WhatIf
+    PS C:\> .\New-AzureComputeGalleryImage.ps1 -ConfigFile ".\prod-config.json" -WhatIf
 
     Validates the configuration and runs pre-flight checks without creating any
     resources. Perfect for testing before actual execution.
 
 .EXAMPLE
-    .\New-AzureComputeGalleryImage.ps1 -SourceVMName "WIN11-GOLD" -SourceVMResourceGroup "rg-images" `
+    PS C:\> .\New-AzureComputeGalleryImage.ps1 -SourceVMName "WIN11-GOLD" -SourceVMResourceGroup "rg-images" `
         -GalleryName "MyGallery" -GalleryResourceGroup "rg-images" -ImageDefinitionName "Win11-Enterprise" `
         -TenantId "..." -SubscriptionId "..." -Location "East US" -VMSize "Standard_D2s_v3" `
         -VNetName "vnet-prod" -VNetResourceGroup "rg-network" -SubnetName "snet-images"
@@ -127,6 +123,12 @@
     Runs with all parameters specified on command line.
 
 .NOTES
+    File Name: New-AzureComputeGalleryImage.ps1
+    Author: Jack Lee
+    Prerequisite: PowerShell 7.0
+    Version: 1.0.0
+    Date: 2026-08-23
+
     Requirements:
       - Az PowerShell modules (Az.Accounts, Az.Compute, Az.Network, Az.Resources)
       - RBAC permissions to create resources and publish to the gallery
@@ -134,21 +136,22 @@
       - Gallery and image definition must already exist
       - Source VM must have Azure Windows Guest Agent installed
 
-    New in v3.5:
-      - JSON configuration auto-discovery from script directory
+    Key behaviors:
+      - JSON configuration auto-discovery from the script directory
       - Configuration schema validation with detailed error messages
-      - Configuration preview before execution
-      - Pre-flight validation checks (7 checks before resource creation)
-      - Dry-run mode (-WhatIf) for testing without creating resources
-      - Execution time tracking and detailed logging to file
-      - Step-by-step timing breakdowns in final summary
-
-    Author: Jack Lee
-    Version: 3.5
-    Last Updated: 15/01/2026
+      - Dry-run mode (-WhatIf) validates configuration and pre-flight checks
+        without creating any resources
 #>
 
-[CmdletBinding(DefaultParameterSetName = 'Interactive')]
+# PSScriptAnalyzer justifications (RELAUNCH-SPEC DoD #16):
+# - PSAvoidUsingWriteHost: spec section 3 mandates colored console output prefixes via Write-Host.
+# - PSReviewUnusedParameter: script parameters are consumed inside Main via dynamic scoping.
+# - PSUseDeclaredVarsMoreThanAssignments: Azure lookup results are assigned to test existence only.
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseDeclaredVarsMoreThanAssignments', '')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', 'Test-PreFlightChecks')]
+[CmdletBinding(DefaultParameterSetName = 'Interactive', SupportsShouldProcess)]
 param(
     [Parameter(ParameterSetName = 'ConfigFile', Mandatory)]
     [ValidateScript({
@@ -213,14 +216,13 @@ param(
 
     [switch]$SkipPreFlightChecks,
 
-    [switch]$Force,
-
-    [switch]$WhatIf
+    [switch]$Force
 )
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'  # Suppress default progress bars
-$ScriptVersion = "3.5"
+$ScriptVersion = "1.0.0"
+$ParameterSetName = $PSCmdlet.ParameterSetName
 
 # ==========================
 # ASCII Art & Branding
@@ -309,25 +311,25 @@ function Show-Banner {
 # ==========================
 function Write-Success {
     param([string]$Message)
-    Write-Host "✓ " -ForegroundColor Green -NoNewline
+    Write-Host "[+] " -ForegroundColor Green -NoNewline
     Write-Host $Message -ForegroundColor White
 }
 
 function Write-Info {
     param([string]$Message)
-    Write-Host "ℹ " -ForegroundColor Blue -NoNewline
+    Write-Host "[*] " -ForegroundColor Cyan -NoNewline
     Write-Host $Message -ForegroundColor White
 }
 
 function Write-Warning2 {
     param([string]$Message)
-    Write-Host "⚠ " -ForegroundColor Yellow -NoNewline
+    Write-Host "[!] " -ForegroundColor Yellow -NoNewline
     Write-Host $Message -ForegroundColor White
 }
 
 function Write-ErrorMsg {
     param([string]$Message)
-    Write-Host "✗ " -ForegroundColor Red -NoNewline
+    Write-Host "[-] " -ForegroundColor Red -NoNewline
     Write-Host $Message -ForegroundColor White
 }
 
@@ -422,11 +424,11 @@ function New-ConfigTemplate {
 }
 
 function Read-Configuration {
+    [CmdletBinding()]
     param([string]$Path)
 
     if (-not (Test-Path $Path)) {
-        Write-ErrorMsg "Configuration file not found: $Path"
-        exit 1
+        throw "Configuration file not found: $Path"
     }
 
     try {
@@ -434,12 +436,12 @@ function Read-Configuration {
         return $config
     }
     catch {
-        Write-ErrorMsg "Failed to parse configuration file: $($_.Exception.Message)"
-        exit 1
+        throw "Failed to parse configuration file: $($_.Exception.Message)"
     }
 }
 
 function Test-ConfigurationSchema {
+    [CmdletBinding()]
     param([object]$Config)
 
     $requiredFields = @{
@@ -482,6 +484,8 @@ function Test-ConfigurationSchema {
 }
 
 function Show-ConfigPreview {
+    [CmdletBinding()]
+    [OutputType([bool])]
     param(
         [hashtable]$Config,
         [string]$Strategy
@@ -504,12 +508,15 @@ function Show-ConfigPreview {
         $confirm = Read-Host "Use this configuration? (Y/N)"
         if ($confirm -ne 'Y' -and $confirm -ne 'y') {
             Write-Warning2 "Configuration declined"
-            exit 0
+            return $false
         }
     }
+    return $true
 }
 
 function Test-PreFlightChecks {
+    [CmdletBinding()]
+    [OutputType([bool])]
     param([hashtable]$Config)
 
     Write-Header "Pre-Flight Validation"
@@ -530,7 +537,8 @@ function Test-PreFlightChecks {
     # Check 2: Gallery exists
     Write-Host "  [2/7] Checking gallery..." -NoNewline -ForegroundColor Cyan
     try {
-        $gallery = Get-AzGallery -ResourceGroupName $Config.GalleryResourceGroup -Name $Config.GalleryName -ErrorAction Stop
+        $gallery = Get-AzGallery -ResourceGroupName $Config.GalleryResourceGroup `
+            -Name $Config.GalleryName -ErrorAction Stop
         Write-Host " ✓" -ForegroundColor Green
         $checks += @{Name = "Gallery"; Status = "Pass"; Details = "Found" }
     }
@@ -542,7 +550,9 @@ function Test-PreFlightChecks {
     # Check 3: Image Definition exists
     Write-Host "  [3/7] Checking image definition..." -NoNewline -ForegroundColor Cyan
     try {
-        $imageDef = Get-AzGalleryImageDefinition -ResourceGroupName $Config.GalleryResourceGroup -GalleryName $Config.GalleryName -Name $Config.ImageDefinitionName -ErrorAction Stop
+        $imageDef = Get-AzGalleryImageDefinition -ResourceGroupName $Config.GalleryResourceGroup `
+            -GalleryName $Config.GalleryName `
+            -Name $Config.ImageDefinitionName -ErrorAction Stop
         Write-Host " ✓" -ForegroundColor Green
         $checks += @{Name = "Image Definition"; Status = "Pass"; Details = "Found" }
     }
@@ -554,7 +564,8 @@ function Test-PreFlightChecks {
     # Check 4: VNet and Subnet exist
     Write-Host "  [4/7] Checking network..." -NoNewline -ForegroundColor Cyan
     try {
-        $vnet = Get-AzVirtualNetwork -Name $Config.VNetName -ResourceGroupName $Config.VNetResourceGroup -ErrorAction Stop
+        $vnet = Get-AzVirtualNetwork -Name $Config.VNetName `
+            -ResourceGroupName $Config.VNetResourceGroup -ErrorAction Stop
         $subnet = Get-AzVirtualNetworkSubnetConfig -Name $Config.SubnetName -VirtualNetwork $vnet -ErrorAction Stop
         Write-Host " ✓" -ForegroundColor Green
         $checks += @{Name = "Network"; Status = "Pass"; Details = "VNet and Subnet found" }
@@ -582,14 +593,22 @@ function Test-PreFlightChecks {
     try {
         $locationNormalized = $Config.Location.Replace(' ', '').ToLower()
         $vmSizes = Get-AzComputeResourceSku -ErrorAction Stop |
-            Where-Object { $_.ResourceType -eq 'virtualMachines' -and $_.Locations -contains $locationNormalized -and $_.Name -eq $Config.VMSize }
+            Where-Object {
+                $_.ResourceType -eq 'virtualMachines' -and
+                $_.Locations -contains $locationNormalized -and
+                $_.Name -eq $Config.VMSize
+            }
         if ($vmSizes) {
             Write-Host " ✓" -ForegroundColor Green
             $checks += @{Name = "VM Size"; Status = "Pass"; Details = "$($Config.VMSize) available" }
         }
         else {
             Write-Host " ✗" -ForegroundColor Red
-            $checks += @{Name = "VM Size"; Status = "Fail"; Details = "$($Config.VMSize) not available in $($Config.Location)" }
+            $checks += @{
+                Name = "VM Size"
+                Status = "Fail"
+                Details = "$($Config.VMSize) not available in $($Config.Location)"
+            }
         }
     }
     catch {
@@ -600,10 +619,15 @@ function Test-PreFlightChecks {
     # Check 7: Disk encryption status
     Write-Host "  [7/7] Checking disk encryption..." -NoNewline -ForegroundColor Cyan
     try {
-        $vmForEncryption = Get-AzVM -ResourceGroupName $Config.SourceVMResourceGroup -Name $Config.SourceVMName -ErrorAction SilentlyContinue
+        $vmForEncryption = Get-AzVM -ResourceGroupName $Config.SourceVMResourceGroup `
+            -Name $Config.SourceVMName -ErrorAction SilentlyContinue
         if ($vmForEncryption -and $vmForEncryption.StorageProfile.OsDisk.EncryptionSettings.Enabled) {
             Write-Host " ⚠" -ForegroundColor Yellow
-            $checks += @{Name = "Disk Encryption"; Status = "Warning"; Details = "OS disk is encrypted - may cause issues" }
+            $checks += @{
+                Name = "Disk Encryption"
+                Status = "Warning"
+                Details = "OS disk is encrypted - may cause issues"
+            }
         }
         else {
             Write-Host " ✓" -ForegroundColor Green
@@ -645,6 +669,9 @@ function Test-PreFlightChecks {
 }
 
 function Get-InteractiveConfiguration {
+    [CmdletBinding()]
+    param()
+
     Write-Header "Interactive Configuration Wizard"
     Write-Info "Let's gather the information needed to build your Azure Compute Gallery image."
     Write-Host ""
@@ -751,6 +778,7 @@ function Get-InteractiveConfiguration {
 # Azure Authentication
 # ==========================
 function Connect-AzureEnvironment {
+    [CmdletBinding()]
     param(
         [string]$TenantId,
         [string]$SubscriptionId
@@ -848,6 +876,7 @@ function Wait-ForVMAgent {
 # Version Management
 # ==========================
 function Get-NextImageVersion {
+    [CmdletBinding()]
     param(
         [string]$ResourceGroupName,
         [string]$GalleryName,
@@ -888,612 +917,670 @@ function Get-NextImageVersion {
 }
 
 # ==========================
-# Main Execution
+# Logging
 # ==========================
-
-# Handle special parameter sets
-if ($GenerateConfig) {
-    $outputPath = if ($ConfigFile) { $ConfigFile } else { ".\acg-config.json" }
-    New-ConfigTemplate -Path $outputPath
-    exit 0
-}
-
-Show-Banner
-
-# ==========================
-# Execution Time Tracking
-# ==========================
-$scriptStartTime = Get-Date
-$stepTimes = @{}
-
-# Placeholder for log file (created after authentication)
-$logFile = $null
-
-function Write-Log {
+function Write-BuildLog {
+    [CmdletBinding()]
     param([string]$Message, [string]$Level = "INFO")
     if ($logFile) {
         $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
         $logMessage = "[$timestamp] [$Level] $Message"
-        Add-Content -Path $logFile -Value $logMessage
+        Add-Content -Path $logFile -Value $logMessage -ErrorAction Stop
     }
 }
 
-Write-Host ""
-
 # ==========================
-# JSON File Auto-Discovery
+# Main Execution
 # ==========================
-# If no ConfigFile was specified, check for JSON files in the script directory
-if ($PSCmdlet.ParameterSetName -ne 'ConfigFile' -and $PSCmdlet.ParameterSetName -ne 'Explicit') {
-    $jsonFiles = Get-ChildItem -Path $PSScriptRoot -Filter "*.json" -File -ErrorAction SilentlyContinue
-
-    if ($jsonFiles) {
-        Write-Header "Configuration Files Detected"
-        Write-Info "Found $($jsonFiles.Count) JSON configuration file(s) in the script directory:"
-        Write-Host ""
-
-        $index = 1
-        foreach ($file in $jsonFiles) {
-            Write-Host "  [$index] " -NoNewline -ForegroundColor Cyan
-            Write-Host $file.Name -ForegroundColor White
-            $index++
+function Main {
+    [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([int])]
+    param()
+    try {
+        # Handle special parameter sets
+        if ($GenerateConfig) {
+            $outputPath = if ($ConfigFile) { $ConfigFile } else { ".\acg-config.json" }
+            New-ConfigTemplate -Path $outputPath
+            return 0
         }
 
-        Write-Host ""
-        Write-Host "  [0] " -NoNewline -ForegroundColor Cyan
-        Write-Host "Enter configuration manually (Interactive Mode)" -ForegroundColor Gray
+        Show-Banner
+
+        # ==========================
+        # Execution Time Tracking
+        # ==========================
+        $scriptStartTime = Get-Date
+        $stepTimes = @{}
+
+        # Placeholder for log file (created after authentication)
+        $logFile = $null
+
         Write-Host ""
 
-        $selection = Read-Host "Select a configuration file (0-$($jsonFiles.Count))"
+        # ==========================
+        # JSON File Auto-Discovery
+        # ==========================
+        # If no ConfigFile was specified, check for JSON files in the script directory
+        if ($ParameterSetName -ne 'ConfigFile' -and $ParameterSetName -ne 'Explicit') {
+            $jsonFiles = Get-ChildItem -Path $PSScriptRoot -Filter "*.json" -File -ErrorAction SilentlyContinue
 
-        if ($selection -match '^\d+$' -and [int]$selection -gt 0 -and [int]$selection -le $jsonFiles.Count) {
-            $selectedFile = $jsonFiles[[int]$selection - 1]
-            $ConfigFile = $selectedFile.FullName
-            Write-Success "Using configuration file: $($selectedFile.Name)"
-            Write-Host ""
+            if ($jsonFiles) {
+                Write-Header "Configuration Files Detected"
+                Write-Info "Found $($jsonFiles.Count) JSON configuration file(s) in the script directory:"
+                Write-Host ""
+
+                $index = 1
+                foreach ($file in $jsonFiles) {
+                    Write-Host "  [$index] " -NoNewline -ForegroundColor Cyan
+                    Write-Host $file.Name -ForegroundColor White
+                    $index++
+                }
+
+                Write-Host ""
+                Write-Host "  [0] " -NoNewline -ForegroundColor Cyan
+                Write-Host "Enter configuration manually (Interactive Mode)" -ForegroundColor Gray
+                Write-Host ""
+
+                $selection = Read-Host "Select a configuration file (0-$($jsonFiles.Count))"
+
+                if ($selection -match '^\d+$' -and [int]$selection -gt 0 -and [int]$selection -le $jsonFiles.Count) {
+                    $selectedFile = $jsonFiles[[int]$selection - 1]
+                    $ConfigFile = $selectedFile.FullName
+                    Write-Success "Using configuration file: $($selectedFile.Name)"
+                    Write-Host ""
+                }
+                elseif ($selection -eq '0') {
+                    Write-Info "Proceeding with interactive mode"
+                    Write-Host ""
+                }
+                else {
+                    Write-Warning2 "Invalid selection. Proceeding with interactive mode"
+                    Write-Host ""
+                }
+            }
         }
-        elseif ($selection -eq '0') {
-            Write-Info "Proceeding with interactive mode"
-            Write-Host ""
+
+        # Load configuration based on parameter set
+        $config = @{}
+
+        if ($ConfigFile) {
+            Write-Info "Loading configuration from file: $ConfigFile"
+            $configData = Read-Configuration -Path $ConfigFile
+
+            # Validate configuration schema
+            Write-Info "Validating configuration..."
+            $validationErrors = Test-ConfigurationSchema -Config $configData
+            if ($validationErrors) {
+                Write-ErrorMsg "Configuration validation failed:"
+                foreach ($err in $validationErrors) {
+                    Write-Host "  • $err" -ForegroundColor Red
+                }
+                Write-BuildLog "Configuration validation failed: $($validationErrors -join '; ')" "ERROR"
+                return 1
+            }
+            Write-Success "Configuration validated"
+            Write-BuildLog "Configuration validated successfully"
+
+            $config.TenantId = $configData.TenantId
+            $config.SubscriptionId = $configData.SubscriptionId
+            $config.Location = $configData.Location
+            $config.SourceVMName = $configData.SourceVM.Name
+            $config.SourceVMResourceGroup = $configData.SourceVM.ResourceGroup
+            $config.GalleryResourceGroup = $configData.Gallery.ResourceGroup
+            $config.GalleryName = $configData.Gallery.Name
+            $config.ImageDefinitionName = $configData.Gallery.ImageDefinitionName
+            $config.VNetName = $configData.Network.VNetName
+            $config.VNetResourceGroup = $configData.Network.VNetResourceGroup
+            $config.SubnetName = $configData.Network.SubnetName
+            $config.VMSize = $configData.TempVM.Size
+            $VersioningStrategy = $configData.Options.VersioningStrategy
+            $SkipAgentCheck = $configData.Options.SkipAgentCheck
+            $SkipCleanup = $configData.Options.SkipCleanup
+
+            # Show config preview before continuing
+            if (-not (Show-ConfigPreview -Config $config -Strategy $VersioningStrategy)) {
+                Write-BuildLog "Configuration declined by user"
+                return 0
+            }
+
+        }
+        elseif ($ParameterSetName -eq 'Interactive' -or -not $TenantId) {
+            $config = Get-InteractiveConfiguration
+
         }
         else {
-            Write-Warning2 "Invalid selection. Proceeding with interactive mode"
-            Write-Host ""
+            # Explicit parameters
+            $config.TenantId = $TenantId
+            $config.SubscriptionId = $SubscriptionId
+            $config.Location = $Location
+            $config.SourceVMName = $SourceVMName
+            $config.SourceVMResourceGroup = $SourceVMResourceGroup
+            $config.GalleryResourceGroup = $GalleryResourceGroup
+            $config.GalleryName = $GalleryName
+            $config.ImageDefinitionName = $ImageDefinitionName
+            $config.VNetName = $VNetName
+            $config.VNetResourceGroup = $VNetResourceGroup
+            $config.SubnetName = $SubnetName
+            $config.VMSize = $VMSize
         }
-    }
-}
 
-# Load configuration based on parameter set
-$config = @{}
+        # Validate required fields
+        $requiredFields = @(
+            'TenantId', 'SubscriptionId', 'Location', 'SourceVMName', 'SourceVMResourceGroup',
+            'GalleryResourceGroup', 'GalleryName', 'ImageDefinitionName',
+            'VNetName', 'VNetResourceGroup', 'SubnetName', 'VMSize'
+        )
 
-if ($ConfigFile) {
-    Write-Info "Loading configuration from file: $ConfigFile"
-    $configData = Read-Configuration -Path $ConfigFile
-
-    # Validate configuration schema
-    Write-Info "Validating configuration..."
-    $validationErrors = Test-ConfigurationSchema -Config $configData
-    if ($validationErrors) {
-        Write-ErrorMsg "Configuration validation failed:"
-        foreach ($err in $validationErrors) {
-            Write-Host "  • $err" -ForegroundColor Red
+        $missing = $requiredFields | Where-Object { -not $config[$_] }
+        if ($missing) {
+            Write-ErrorMsg "Missing required configuration fields: $($missing -join ', ')"
+            return 1
         }
-        Write-Log "Configuration validation failed: $($validationErrors -join '; ')" "ERROR"
-        exit 1
-    }
-    Write-Success "Configuration validated"
-    Write-Log "Configuration validated successfully"
 
-    $config.TenantId = $configData.TenantId
-    $config.SubscriptionId = $configData.SubscriptionId
-    $config.Location = $configData.Location
-    $config.SourceVMName = $configData.SourceVM.Name
-    $config.SourceVMResourceGroup = $configData.SourceVM.ResourceGroup
-    $config.GalleryResourceGroup = $configData.Gallery.ResourceGroup
-    $config.GalleryName = $configData.Gallery.Name
-    $config.ImageDefinitionName = $configData.Gallery.ImageDefinitionName
-    $config.VNetName = $configData.Network.VNetName
-    $config.VNetResourceGroup = $configData.Network.VNetResourceGroup
-    $config.SubnetName = $configData.Network.SubnetName
-    $config.VMSize = $configData.TempVM.Size
-    $VersioningStrategy = $configData.Options.VersioningStrategy
-    $SkipAgentCheck = $configData.Options.SkipAgentCheck
-    $SkipCleanup = $configData.Options.SkipCleanup
+        # Generate unique temporary resource group name
+        $tempRG = "acg-temp-$(Get-Date -Format 'yyyyMMdd-HHmmss')-$(Get-Random -Maximum 9999)"
 
-    # Show config preview before continuing
-    Show-ConfigPreview -Config $config -Strategy $VersioningStrategy
+        # Summary and confirmation
+        Write-Header "Configuration Summary"
+        Write-Host "Azure Environment:" -ForegroundColor Cyan
+        Write-Host "  Subscription ID : " -NoNewline -ForegroundColor Gray
+        Write-Host $config.SubscriptionId -ForegroundColor White
+        Write-Host "  Location        : " -NoNewline -ForegroundColor Gray
+        Write-Host $config.Location -ForegroundColor White
+        Write-Host ""
+        Write-Host "Source VM:" -ForegroundColor Cyan
+        Write-Host "  Name            : " -NoNewline -ForegroundColor Gray
+        Write-Host $config.SourceVMName -ForegroundColor White
+        Write-Host "  Resource Group  : " -NoNewline -ForegroundColor Gray
+        Write-Host $config.SourceVMResourceGroup -ForegroundColor White
+        Write-Host ""
+        Write-Host "Target Gallery:" -ForegroundColor Cyan
+        Write-Host "  Gallery Name    : " -NoNewline -ForegroundColor Gray
+        Write-Host $config.GalleryName -ForegroundColor White
+        Write-Host "  Image Definition: " -NoNewline -ForegroundColor Gray
+        Write-Host $config.ImageDefinitionName -ForegroundColor White
+        Write-Host "  Resource Group  : " -NoNewline -ForegroundColor Gray
+        Write-Host $config.GalleryResourceGroup -ForegroundColor White
+        Write-Host ""
+        Write-Host "Network:" -ForegroundColor Cyan
+        Write-Host "  VNet            : " -NoNewline -ForegroundColor Gray
+        Write-Host "$($config.VNetName) ($($config.VNetResourceGroup))" -ForegroundColor White
+        Write-Host "  Subnet          : " -NoNewline -ForegroundColor Gray
+        Write-Host $config.SubnetName -ForegroundColor White
+        Write-Host ""
+        Write-Host "Options:" -ForegroundColor Cyan
+        Write-Host "  VM Size         : " -NoNewline -ForegroundColor Gray
+        Write-Host $config.VMSize -ForegroundColor White
+        Write-Host "  Versioning      : " -NoNewline -ForegroundColor Gray
+        Write-Host $VersioningStrategy -ForegroundColor White
+        Write-Host "  Temp RG         : " -NoNewline -ForegroundColor Gray
+        Write-Host $tempRG -ForegroundColor White
+        Write-Host ""
 
-}
-elseif ($PSCmdlet.ParameterSetName -eq 'Interactive' -or -not $TenantId) {
-    $config = Get-InteractiveConfiguration
-
-}
-else {
-    # Explicit parameters
-    $config.TenantId = $TenantId
-    $config.SubscriptionId = $SubscriptionId
-    $config.Location = $Location
-    $config.SourceVMName = $SourceVMName
-    $config.SourceVMResourceGroup = $SourceVMResourceGroup
-    $config.GalleryResourceGroup = $GalleryResourceGroup
-    $config.GalleryName = $GalleryName
-    $config.ImageDefinitionName = $ImageDefinitionName
-    $config.VNetName = $VNetName
-    $config.VNetResourceGroup = $VNetResourceGroup
-    $config.SubnetName = $SubnetName
-    $config.VMSize = $VMSize
-}
-
-# Validate required fields
-$requiredFields = @(
-    'TenantId', 'SubscriptionId', 'Location', 'SourceVMName', 'SourceVMResourceGroup',
-    'GalleryResourceGroup', 'GalleryName', 'ImageDefinitionName',
-    'VNetName', 'VNetResourceGroup', 'SubnetName', 'VMSize'
-)
-
-$missing = $requiredFields | Where-Object { -not $config[$_] }
-if ($missing) {
-    Write-ErrorMsg "Missing required configuration fields: $($missing -join ', ')"
-    exit 1
-}
-
-# Generate unique temporary resource group name
-$tempRG = "acg-temp-$(Get-Date -Format 'yyyyMMdd-HHmmss')-$(Get-Random -Maximum 9999)"
-
-# Summary and confirmation
-Write-Header "Configuration Summary"
-Write-Host "Azure Environment:" -ForegroundColor Cyan
-Write-Host "  Subscription ID : " -NoNewline -ForegroundColor Gray
-Write-Host $config.SubscriptionId -ForegroundColor White
-Write-Host "  Location        : " -NoNewline -ForegroundColor Gray
-Write-Host $config.Location -ForegroundColor White
-Write-Host ""
-Write-Host "Source VM:" -ForegroundColor Cyan
-Write-Host "  Name            : " -NoNewline -ForegroundColor Gray
-Write-Host $config.SourceVMName -ForegroundColor White
-Write-Host "  Resource Group  : " -NoNewline -ForegroundColor Gray
-Write-Host $config.SourceVMResourceGroup -ForegroundColor White
-Write-Host ""
-Write-Host "Target Gallery:" -ForegroundColor Cyan
-Write-Host "  Gallery Name    : " -NoNewline -ForegroundColor Gray
-Write-Host $config.GalleryName -ForegroundColor White
-Write-Host "  Image Definition: " -NoNewline -ForegroundColor Gray
-Write-Host $config.ImageDefinitionName -ForegroundColor White
-Write-Host "  Resource Group  : " -NoNewline -ForegroundColor Gray
-Write-Host $config.GalleryResourceGroup -ForegroundColor White
-Write-Host ""
-Write-Host "Network:" -ForegroundColor Cyan
-Write-Host "  VNet            : " -NoNewline -ForegroundColor Gray
-Write-Host "$($config.VNetName) ($($config.VNetResourceGroup))" -ForegroundColor White
-Write-Host "  Subnet          : " -NoNewline -ForegroundColor Gray
-Write-Host $config.SubnetName -ForegroundColor White
-Write-Host ""
-Write-Host "Options:" -ForegroundColor Cyan
-Write-Host "  VM Size         : " -NoNewline -ForegroundColor Gray
-Write-Host $config.VMSize -ForegroundColor White
-Write-Host "  Versioning      : " -NoNewline -ForegroundColor Gray
-Write-Host $VersioningStrategy -ForegroundColor White
-Write-Host "  Temp RG         : " -NoNewline -ForegroundColor Gray
-Write-Host $tempRG -ForegroundColor White
-Write-Host ""
-
-if (-not $Force) {
-    $confirmation = Read-Host "Proceed with image creation? (Y/N)"
-    if ($confirmation -ne 'Y' -and $confirmation -ne 'y') {
-        Write-Warning2 "Operation cancelled by user"
-        exit 0
-    }
-}
-
-Write-Host ""
-$totalSteps = 12
-$currentStep = 0
-
-# ==========================
-# Step 1: Azure Authentication
-# ==========================
-$currentStep++
-$stepStart = Get-Date
-Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Authenticating to Azure"
-Write-Log "Step $currentStep : Authenticating to Azure"
-if (-not (Connect-AzureEnvironment -TenantId $config.TenantId -SubscriptionId $config.SubscriptionId)) {
-    Write-Log "Authentication failed" "ERROR"
-    exit 1
-}
-$stepTimes["Authentication"] = ((Get-Date) - $stepStart).TotalSeconds
-Write-Log "Authentication completed in $($stepTimes["Authentication"]) seconds"
-
-# ==========================
-# Initialize Logging (After Authentication)
-# ==========================
-$logFile = Join-Path $PSScriptRoot "image-build-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
-Write-Log "Script started"
-Write-Info "Execution log: $logFile"
-
-# ==========================
-# Pre-Flight Validation Checks
-# ==========================
-if (-not $SkipPreFlightChecks) {
-    Write-Host ""
-    Write-Log "Starting pre-flight validation checks"
-    if (-not (Test-PreFlightChecks -Config $config)) {
-        Write-Log "Pre-flight checks failed" "ERROR"
         if (-not $Force) {
-            $continue = Read-Host "Pre-flight checks failed. Continue anyway? (Y/N)"
-            if ($continue -ne 'Y' -and $continue -ne 'y') {
-                Write-Warning2 "Operation cancelled"
-                Write-Log "Operation cancelled by user after pre-flight failure"
-                exit 1
+            $confirmation = Read-Host "Proceed with image creation? (Y/N)"
+            if ($confirmation -ne 'Y' -and $confirmation -ne 'y') {
+                Write-Warning2 "Operation cancelled by user"
+                return 0
             }
-            Write-Log "User chose to continue despite pre-flight failures"
         }
-    }
-    Write-Log "Pre-flight checks completed"
-}
-else {
-    Write-Log "Pre-flight checks skipped by user"
-}
 
-# WhatIf Mode - Exit after validation
-if ($WhatIf) {
-    Write-Host ""
-    Write-Header "Dry-Run Mode (WhatIf)"
-    Write-Success "All validations passed!"
-    Write-Info "The following resources would be created:"
-    Write-Host "  • Temporary RG: " -NoNewline -ForegroundColor Gray
-    Write-Host $tempRG -ForegroundColor Yellow
-    Write-Host "  • Snapshot: " -NoNewline -ForegroundColor Gray
-    Write-Host "$($config.SourceVMName)-snapshot-*" -ForegroundColor Yellow
-    Write-Host "  • Managed Disk: " -NoNewline -ForegroundColor Gray
-    Write-Host "$($config.SourceVMName)-disk-*" -ForegroundColor Yellow
-    Write-Host "  • Clone VM: " -NoNewline -ForegroundColor Gray
-    Write-Host "$($config.SourceVMName)-clone-*" -ForegroundColor Yellow
-    Write-Host "  • Gallery Image Version: " -NoNewline -ForegroundColor Gray
-    $nextVersionPreview = Get-NextImageVersion -ResourceGroupName $config.GalleryResourceGroup -GalleryName $config.GalleryName -ImageDefinitionName $config.ImageDefinitionName -Strategy $VersioningStrategy
-    Write-Host $nextVersionPreview -ForegroundColor Green
-    Write-Host ""
-    Write-Success "Dry-run completed successfully. No resources were created."
-    Write-Log "Dry-run completed successfully"
-    exit 0
-}
+        Write-Host ""
+        $totalSteps = 12
+        $currentStep = 0
 
-# ==========================
-# Step 2: Validate Source VM
-# ==========================
-$currentStep++
-$stepStart = Get-Date
-Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Validating source VM"
-Write-Log "Step $currentStep : Validating source VM"
-$sourceVM = Get-AzVM -ResourceGroupName $config.SourceVMResourceGroup -Name $config.SourceVMName -ErrorAction SilentlyContinue
-if (-not $sourceVM) {
-    Write-ErrorMsg "Source VM '$($config.SourceVMName)' not found in resource group '$($config.SourceVMResourceGroup)'"
-    exit 1
-}
-Write-Success "Source VM found: $($config.SourceVMName)"
+        # ==========================
+        # Step 1: Azure Authentication
+        # ==========================
+        $currentStep++
+        $stepStart = Get-Date
+        Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Authenticating to Azure"
+        Write-BuildLog "Step $currentStep : Authenticating to Azure"
+        if (-not (Connect-AzureEnvironment -TenantId $config.TenantId -SubscriptionId $config.SubscriptionId)) {
+            Write-BuildLog "Authentication failed" "ERROR"
+            return 1
+        }
+        $stepTimes["Authentication"] = ((Get-Date) - $stepStart).TotalSeconds
+        Write-BuildLog "Authentication completed in $($stepTimes["Authentication"]) seconds"
 
-# Check VM power state
-$vmStatus = Get-AzVM -ResourceGroupName $config.SourceVMResourceGroup -Name $config.SourceVMName -Status
-$powerState = ($vmStatus.Statuses | Where-Object Code -Like 'PowerState/*').DisplayStatus
-Write-Info "Source VM power state: $powerState"
+        # ==========================
+        # Initialize Logging (After Authentication)
+        # ==========================
+        $logFile = Join-Path $PSScriptRoot "image-build-$(Get-Date -Format 'yyyyMMdd-HHmmss').log"
+        Write-BuildLog "Script started"
+        Write-Info "Execution log: $logFile"
 
-# Optional agent check (only if VM is running)
-if (-not $SkipAgentCheck -and $powerState -eq 'VM running') {
-    Write-Info "Checking guest agent status on source VM..."
-    $agentStatus = Get-GuestAgentStatus -ResourceGroupName $config.SourceVMResourceGroup -Name $config.SourceVMName
-    if ($agentStatus -eq 'Ready') {
-        Write-Success "Guest agent is ready on source VM"
-    }
-    else {
-        Write-Warning2 "Guest agent status: $agentStatus (continuing anyway)"
-    }
-}
-$stepTimes["Validate Source VM"] = ((Get-Date) - $stepStart).TotalSeconds
-Write-Log "Step $currentStep completed in $($stepTimes["Validate Source VM"]) seconds"
+        # ==========================
+        # Pre-Flight Validation Checks
+        # ==========================
+        if (-not $SkipPreFlightChecks) {
+            Write-Host ""
+            Write-BuildLog "Starting pre-flight validation checks"
+            if (-not (Test-PreFlightChecks -Config $config)) {
+                Write-BuildLog "Pre-flight checks failed" "ERROR"
+                if (-not $Force) {
+                    $continue = Read-Host "Pre-flight checks failed. Continue anyway? (Y/N)"
+                    if ($continue -ne 'Y' -and $continue -ne 'y') {
+                        Write-Warning2 "Operation cancelled"
+                        Write-BuildLog "Operation cancelled by user after pre-flight failure"
+                        return 1
+                    }
+                    Write-BuildLog "User chose to continue despite pre-flight failures"
+                }
+            }
+            Write-BuildLog "Pre-flight checks completed"
+        }
+        else {
+            Write-BuildLog "Pre-flight checks skipped by user"
+        }
 
-# ==========================
-# Step 3: Validate Gallery
-# ==========================
-$currentStep++
-$stepStart = Get-Date
-Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Validating Azure Compute Gallery"
-Write-Log "Step $currentStep : Validating Azure Compute Gallery"
+        # WhatIf Mode - Exit after validation
+        if ($WhatIf) {
+            Write-Host ""
+            Write-Header "Dry-Run Mode (WhatIf)"
+            Write-Success "All validations passed!"
+            Write-Info "The following resources would be created:"
+            Write-Host "  • Temporary RG: " -NoNewline -ForegroundColor Gray
+            Write-Host $tempRG -ForegroundColor Yellow
+            Write-Host "  • Snapshot: " -NoNewline -ForegroundColor Gray
+            Write-Host "$($config.SourceVMName)-snapshot-*" -ForegroundColor Yellow
+            Write-Host "  • Managed Disk: " -NoNewline -ForegroundColor Gray
+            Write-Host "$($config.SourceVMName)-disk-*" -ForegroundColor Yellow
+            Write-Host "  • Clone VM: " -NoNewline -ForegroundColor Gray
+            Write-Host "$($config.SourceVMName)-clone-*" -ForegroundColor Yellow
+            Write-Host "  • Gallery Image Version: " -NoNewline -ForegroundColor Gray
+            $nextVersionPreview = Get-NextImageVersion `
+                -ResourceGroupName $config.GalleryResourceGroup `
+                -GalleryName $config.GalleryName `
+                -ImageDefinitionName $config.ImageDefinitionName `
+                -Strategy $VersioningStrategy
+            Write-Host $nextVersionPreview -ForegroundColor Green
+            Write-Host ""
+            Write-Success "Dry-run completed successfully. No resources were created."
+            Write-BuildLog "Dry-run completed successfully"
+            return 0
+        }
 
-$gallery = Get-AzGallery -ResourceGroupName $config.GalleryResourceGroup -Name $config.GalleryName -ErrorAction SilentlyContinue
-if (-not $gallery) {
-    Write-ErrorMsg "Gallery '$($config.GalleryName)' not found in resource group '$($config.GalleryResourceGroup)'"
-    exit 1
-}
-Write-Success "Gallery found: $($config.GalleryName)"
+        # ==========================
+        # Step 2: Validate Source VM
+        # ==========================
+        $currentStep++
+        $stepStart = Get-Date
+        Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Validating source VM"
+        Write-BuildLog "Step $currentStep : Validating source VM"
+        $sourceVM = Get-AzVM -ResourceGroupName $config.SourceVMResourceGroup `
+                -Name $config.SourceVMName -ErrorAction SilentlyContinue
+        if (-not $sourceVM) {
+            $missingVMRG = $config.SourceVMResourceGroup
+            Write-ErrorMsg "Source VM '$($config.SourceVMName)' not found in resource group '$missingVMRG'"
+            return 1
+        }
+        Write-Success "Source VM found: $($config.SourceVMName)"
 
-$imageDef = Get-AzGalleryImageDefinition `
-    -ResourceGroupName $config.GalleryResourceGroup `
-    -GalleryName $config.GalleryName `
-    -Name $config.ImageDefinitionName `
-    -ErrorAction SilentlyContinue
+        # Check VM power state
+        $vmStatus = Get-AzVM -ResourceGroupName $config.SourceVMResourceGroup `
+            -Name $config.SourceVMName -Status -ErrorAction Stop
+        $powerState = ($vmStatus.Statuses | Where-Object Code -Like 'PowerState/*').DisplayStatus
+        Write-Info "Source VM power state: $powerState"
 
-if (-not $imageDef) {
-    Write-ErrorMsg "Image definition '$($config.ImageDefinitionName)' not found in gallery '$($config.GalleryName)'"
-    exit 1
-}
-Write-Success "Image definition found: $($config.ImageDefinitionName)"
-$stepTimes["Validate Gallery"] = ((Get-Date) - $stepStart).TotalSeconds
-Write-Log "Step $currentStep completed in $($stepTimes["Validate Gallery"]) seconds"
+        # Optional agent check (only if VM is running)
+        if (-not $SkipAgentCheck -and $powerState -eq 'VM running') {
+            Write-Info "Checking guest agent status on source VM..."
+            $agentStatus = Get-GuestAgentStatus `
+                -ResourceGroupName $config.SourceVMResourceGroup -Name $config.SourceVMName
+            if ($agentStatus -eq 'Ready') {
+                Write-Success "Guest agent is ready on source VM"
+            }
+            else {
+                Write-Warning2 "Guest agent status: $agentStatus (continuing anyway)"
+            }
+        }
+        $stepTimes["Validate Source VM"] = ((Get-Date) - $stepStart).TotalSeconds
+        Write-BuildLog "Step $currentStep completed in $($stepTimes["Validate Source VM"]) seconds"
 
-# ==========================
-# Step 4: Calculate Next Version
-# ==========================
-$currentStep++
-$stepStart = Get-Date
-Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Calculating next image version"
-Write-Log "Step $currentStep : Calculating next image version"
+        # ==========================
+        # Step 3: Validate Gallery
+        # ==========================
+        $currentStep++
+        $stepStart = Get-Date
+        Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Validating Azure Compute Gallery"
+        Write-BuildLog "Step $currentStep : Validating Azure Compute Gallery"
 
-$nextVersion = Get-NextImageVersion `
-    -ResourceGroupName $config.GalleryResourceGroup `
-    -GalleryName $config.GalleryName `
-    -ImageDefinitionName $config.ImageDefinitionName `
-    -Strategy $VersioningStrategy
+        $gallery = Get-AzGallery -ResourceGroupName $config.GalleryResourceGroup `
+                -Name $config.GalleryName -ErrorAction SilentlyContinue
+        if (-not $gallery) {
+            $galleryRG = $config.GalleryResourceGroup
+            Write-ErrorMsg "Gallery '$($config.GalleryName)' not found in resource group '$galleryRG'"
+            return 1
+        }
+        Write-Success "Gallery found: $($config.GalleryName)"
 
-Write-Success "Next image version: $nextVersion (strategy: $VersioningStrategy)"
-$stepTimes["Calculate Version"] = ((Get-Date) - $stepStart).TotalSeconds
-Write-Log "Step $currentStep completed in $($stepTimes["Calculate Version"]) seconds"
+        $imageDef = Get-AzGalleryImageDefinition `
+            -ResourceGroupName $config.GalleryResourceGroup `
+            -GalleryName $config.GalleryName `
+            -Name $config.ImageDefinitionName `
+            -ErrorAction SilentlyContinue
 
-# ==========================
-# Step 5: Validate Network
-# ==========================
-$currentStep++
-$stepStart = Get-Date
-Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Validating network configuration"
-Write-Log "Step $currentStep : Validating network configuration"
+        if (-not $imageDef) {
+            $defGallery = $config.GalleryName
+            Write-ErrorMsg "Image definition '$($config.ImageDefinitionName)' not found in gallery '$defGallery'"
+            return 1
+        }
+        Write-Success "Image definition found: $($config.ImageDefinitionName)"
+        $stepTimes["Validate Gallery"] = ((Get-Date) - $stepStart).TotalSeconds
+        Write-BuildLog "Step $currentStep completed in $($stepTimes["Validate Gallery"]) seconds"
 
-$vnet = Get-AzVirtualNetwork -Name $config.VNetName -ResourceGroupName $config.VNetResourceGroup -ErrorAction SilentlyContinue
-if (-not $vnet) {
-    Write-ErrorMsg "VNet '$($config.VNetName)' not found in resource group '$($config.VNetResourceGroup)'"
-    exit 1
-}
+        # ==========================
+        # Step 4: Calculate Next Version
+        # ==========================
+        $currentStep++
+        $stepStart = Get-Date
+        Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Calculating next image version"
+        Write-BuildLog "Step $currentStep : Calculating next image version"
 
-$subnet = Get-AzVirtualNetworkSubnetConfig -Name $config.SubnetName -VirtualNetwork $vnet -ErrorAction SilentlyContinue
-if (-not $subnet) {
-    Write-ErrorMsg "Subnet '$($config.SubnetName)' not found in VNet '$($config.VNetName)'"
-    exit 1
-}
-Write-Success "Network validated: $($config.VNetName)/$($config.SubnetName)"
-$stepTimes["Validate Network"] = ((Get-Date) - $stepStart).TotalSeconds
-Write-Log "Step $currentStep completed in $($stepTimes["Validate Network"]) seconds"
+        $nextVersion = Get-NextImageVersion `
+            -ResourceGroupName $config.GalleryResourceGroup `
+            -GalleryName $config.GalleryName `
+            -ImageDefinitionName $config.ImageDefinitionName `
+            -Strategy $VersioningStrategy
 
-# ==========================
-# Step 6: Create Temporary Resource Group
-# ==========================
-$currentStep++
-$stepStart = Get-Date
-Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Creating temporary resource group"
-Write-Log "Step $currentStep : Creating temporary resource group"
+        Write-Success "Next image version: $nextVersion (strategy: $VersioningStrategy)"
+        $stepTimes["Calculate Version"] = ((Get-Date) - $stepStart).TotalSeconds
+        Write-BuildLog "Step $currentStep completed in $($stepTimes["Calculate Version"]) seconds"
 
-$tempRGObj = New-AzResourceGroup -Name $tempRG -Location $config.Location -Force
-Write-Success "Temporary resource group created: $tempRG"
-$stepTimes["Create Temp RG"] = ((Get-Date) - $stepStart).TotalSeconds
-Write-Log "Step $currentStep completed in $($stepTimes["Create Temp RG"]) seconds"
+        # ==========================
+        # Step 5: Validate Network
+        # ==========================
+        $currentStep++
+        $stepStart = Get-Date
+        Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Validating network configuration"
+        Write-BuildLog "Step $currentStep : Validating network configuration"
 
-# Define temporary resource names
-$snapshotName = "$($config.SourceVMName)-snapshot-v$($nextVersion.Replace('.', '-'))"
-$diskName = "$($config.SourceVMName)-disk-v$($nextVersion.Replace('.', '-'))"
-$cloneVMName = "$($config.SourceVMName)-clone-v$($nextVersion.Replace('.', '-'))"
-$managedImageName = "$($config.SourceVMName)-image-v$($nextVersion.Replace('.', '-'))"
+        $vnet = Get-AzVirtualNetwork -Name $config.VNetName `
+                -ResourceGroupName $config.VNetResourceGroup -ErrorAction SilentlyContinue
+        if (-not $vnet) {
+            Write-ErrorMsg "VNet '$($config.VNetName)' not found in resource group '$($config.VNetResourceGroup)'"
+            return 1
+        }
 
-# ==========================
-# Step 7: Create Snapshot
-# ==========================
-$currentStep++
-$stepStart = Get-Date
-Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Creating snapshot from source OS disk"
-Write-Log "Step $currentStep : Creating snapshot from source OS disk"
+        $subnet = Get-AzVirtualNetworkSubnetConfig -Name $config.SubnetName `
+                -VirtualNetwork $vnet -ErrorAction SilentlyContinue
+        if (-not $subnet) {
+            Write-ErrorMsg "Subnet '$($config.SubnetName)' not found in VNet '$($config.VNetName)'"
+            return 1
+        }
+        Write-Success "Network validated: $($config.VNetName)/$($config.SubnetName)"
+        $stepTimes["Validate Network"] = ((Get-Date) - $stepStart).TotalSeconds
+        Write-BuildLog "Step $currentStep completed in $($stepTimes["Validate Network"]) seconds"
 
-$sourceOSDisk = $sourceVM.StorageProfile.OsDisk.Name
-$sourceDisk = Get-AzDisk -ResourceGroupName $config.SourceVMResourceGroup -DiskName $sourceOSDisk
+        # ==========================
+        # Step 6: Create Temporary Resource Group
+        # ==========================
+        $currentStep++
+        $stepStart = Get-Date
+        Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Creating temporary resource group"
+        Write-BuildLog "Step $currentStep : Creating temporary resource group"
 
-Write-Info "Source OS disk: $sourceOSDisk"
-$snapshotConfig = New-AzSnapshotConfig -SourceUri $sourceDisk.Id -CreateOption Copy -Location $config.Location
-$snapshot = New-AzSnapshot -Snapshot $snapshotConfig -SnapshotName $snapshotName -ResourceGroupName $tempRG
-Write-Success "Snapshot created: $snapshotName"
-$stepTimes["Create Snapshot"] = ((Get-Date) - $stepStart).TotalSeconds
-Write-Log "Step $currentStep completed in $($stepTimes["Create Snapshot"]) seconds"
+        $tempRGObj = New-AzResourceGroup -Name $tempRG -Location $config.Location -Force -ErrorAction Stop
+        Write-Success "Temporary resource group created: $tempRG"
+        $stepTimes["Create Temp RG"] = ((Get-Date) - $stepStart).TotalSeconds
+        Write-BuildLog "Step $currentStep completed in $($stepTimes["Create Temp RG"]) seconds"
 
-# ==========================
-# Step 8: Create Managed Disk
-# ==========================
-$currentStep++
-$stepStart = Get-Date
-Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Creating managed disk from snapshot"
-Write-Log "Step $currentStep : Creating managed disk from snapshot"
+        # Define temporary resource names
+        $snapshotName = "$($config.SourceVMName)-snapshot-v$($nextVersion.Replace('.', '-'))"
+        $diskName = "$($config.SourceVMName)-disk-v$($nextVersion.Replace('.', '-'))"
+        $cloneVMName = "$($config.SourceVMName)-clone-v$($nextVersion.Replace('.', '-'))"
+        $managedImageName = "$($config.SourceVMName)-image-v$($nextVersion.Replace('.', '-'))"
 
-$diskConfig = New-AzDiskConfig -Location $snapshot.Location -SourceResourceId $snapshot.Id -CreateOption Copy
-$disk = New-AzDisk -Disk $diskConfig -ResourceGroupName $tempRG -DiskName $diskName
-Write-Success "Managed disk created: $diskName"
-$stepTimes["Create Disk"] = ((Get-Date) - $stepStart).TotalSeconds
-Write-Log "Step $currentStep completed in $($stepTimes["Create Disk"]) seconds"
+        # ==========================
+        # Step 7: Create Snapshot
+        # ==========================
+        $currentStep++
+        $stepStart = Get-Date
+        Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Creating snapshot from source OS disk"
+        Write-BuildLog "Step $currentStep : Creating snapshot from source OS disk"
 
-# ==========================
-# Step 9: Create Clone VM
-# ==========================
-$currentStep++
-$stepStart = Get-Date
-Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Creating clone VM"
-Write-Log "Step $currentStep : Creating clone VM"
+        $sourceOSDisk = $sourceVM.StorageProfile.OsDisk.Name
+        $sourceDisk = Get-AzDisk -ResourceGroupName $config.SourceVMResourceGroup `
+            -DiskName $sourceOSDisk -ErrorAction Stop
 
-Write-Info "Initializing VM configuration..."
-$vmConfig = New-AzVMConfig -VMName $cloneVMName -VMSize $config.VMSize | Set-AzVMBootDiagnostic -Disable
-$vmConfig = Set-AzVMOSDisk -VM $vmConfig -ManagedDiskId $disk.Id -CreateOption Attach -Windows
+        Write-Info "Source OS disk: $sourceOSDisk"
+        $snapshotConfig = New-AzSnapshotConfig -SourceUri $sourceDisk.Id -CreateOption Copy `
+            -Location $config.Location -ErrorAction Stop
+        $snapshot = New-AzSnapshot -Snapshot $snapshotConfig -SnapshotName $snapshotName `
+            -ResourceGroupName $tempRG -ErrorAction Stop
+        Write-Success "Snapshot created: $snapshotName"
+        $stepTimes["Create Snapshot"] = ((Get-Date) - $stepStart).TotalSeconds
+        Write-BuildLog "Step $currentStep completed in $($stepTimes["Create Snapshot"]) seconds"
 
-Write-Info "Creating network interface..."
-$nicName = "$($cloneVMName.ToLower())-nic"
-$nic = New-AzNetworkInterface -Name $nicName -ResourceGroupName $tempRG -Location $config.Location -SubnetId $subnet.Id
-$vmConfig = Add-AzVMNetworkInterface -VM $vmConfig -Id $nic.Id
+        # ==========================
+        # Step 8: Create Managed Disk
+        # ==========================
+        $currentStep++
+        $stepStart = Get-Date
+        Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Creating managed disk from snapshot"
+        Write-BuildLog "Step $currentStep : Creating managed disk from snapshot"
 
-Write-Info "Provisioning VM (this may take several minutes)..."
-New-AzVM -VM $vmConfig -ResourceGroupName $tempRG -Location $config.Location -DisableBginfoExtension | Out-Null
-Write-Success "Clone VM created: $cloneVMName"
-$stepTimes["Create Clone VM"] = ((Get-Date) - $stepStart).TotalSeconds
-Write-Log "Step $currentStep completed in $($stepTimes["Create Clone VM"]) seconds"
+        $diskConfig = New-AzDiskConfig -Location $snapshot.Location -SourceResourceId $snapshot.Id `
+            -CreateOption Copy -ErrorAction Stop
+        $disk = New-AzDisk -Disk $diskConfig -ResourceGroupName $tempRG -DiskName $diskName -ErrorAction Stop
+        Write-Success "Managed disk created: $diskName"
+        $stepTimes["Create Disk"] = ((Get-Date) - $stepStart).TotalSeconds
+        Write-BuildLog "Step $currentStep completed in $($stepTimes["Create Disk"]) seconds"
 
-# ==========================
-# Step 10: Wait for VM Agent & Run Sysprep
-# ==========================
-$currentStep++
-$stepStart = Get-Date
-Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Waiting for VM agent and running Sysprep"
-Write-Log "Step $currentStep : Waiting for VM agent and running Sysprep"
+        # ==========================
+        # Step 9: Create Clone VM
+        # ==========================
+        $currentStep++
+        $stepStart = Get-Date
+        Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Creating clone VM"
+        Write-BuildLog "Step $currentStep : Creating clone VM"
 
-Write-Info "Waiting for VM agent to be ready..."
-if (-not (Wait-ForVMAgent -ResourceGroupName $tempRG -Name $cloneVMName -TimeoutMinutes 15)) {
-    Write-ErrorMsg "VM agent did not become ready. Check network connectivity and firewall rules."
-    if (-not $SkipCleanup) {
-        Write-Info "Cleaning up temporary resources..."
-        Remove-AzResourceGroup -Name $tempRG -Force | Out-Null
-    }
-    exit 1
-}
+        Write-Info "Initializing VM configuration..."
+        $vmConfig = New-AzVMConfig -VMName $cloneVMName -VMSize $config.VMSize -ErrorAction Stop |
+                Set-AzVMBootDiagnostic -Disable -ErrorAction Stop
+        $vmConfig = Set-AzVMOSDisk -VM $vmConfig -ManagedDiskId $disk.Id `
+            -CreateOption Attach -Windows -ErrorAction Stop
 
-Write-Info "Running Sysprep on clone VM..."
-$sysprepScript = @'
-Start-Process -FilePath "C:\Windows\System32\Sysprep\Sysprep.exe" -ArgumentList "/generalize /oobe /mode:vm /quit" -Wait
+        Write-Info "Creating network interface..."
+        $nicName = "$($cloneVMName.ToLower())-nic"
+        $nic = New-AzNetworkInterface -Name $nicName -ResourceGroupName $tempRG `
+                    -Location $config.Location -SubnetId $subnet.Id -ErrorAction Stop
+        $vmConfig = Add-AzVMNetworkInterface -VM $vmConfig -Id $nic.Id -ErrorAction Stop
+
+        Write-Info "Provisioning VM (this may take several minutes)..."
+        New-AzVM -VM $vmConfig -ResourceGroupName $tempRG -Location $config.Location `
+                    -DisableBginfoExtension -ErrorAction Stop | Out-Null
+        Write-Success "Clone VM created: $cloneVMName"
+        $stepTimes["Create Clone VM"] = ((Get-Date) - $stepStart).TotalSeconds
+        Write-BuildLog "Step $currentStep completed in $($stepTimes["Create Clone VM"]) seconds"
+
+        # ==========================
+        # Step 10: Wait for VM Agent & Run Sysprep
+        # ==========================
+        $currentStep++
+        $stepStart = Get-Date
+        Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Waiting for VM agent and running Sysprep"
+        Write-BuildLog "Step $currentStep : Waiting for VM agent and running Sysprep"
+
+        Write-Info "Waiting for VM agent to be ready..."
+        if (-not (Wait-ForVMAgent -ResourceGroupName $tempRG -Name $cloneVMName -TimeoutMinutes 15)) {
+            Write-ErrorMsg "VM agent did not become ready. Check network connectivity and firewall rules."
+            if (-not $SkipCleanup) {
+                Write-Info "Cleaning up temporary resources..."
+                if ($PSCmdlet.ShouldProcess($tempRG, 'Remove temporary resource group')) {
+                    Remove-AzResourceGroup -Name $tempRG -Force -ErrorAction Stop | Out-Null
+                }
+            }
+            return 1
+        }
+
+        Write-Info "Running Sysprep on clone VM..."
+        $sysprepScript = @'
+Start-Process -FilePath "C:\Windows\System32\Sysprep\Sysprep.exe" `
+    -ArgumentList "/generalize /oobe /mode:vm /quit" -Wait
 '@
 
-try {
-    Invoke-AzVMRunCommand -ResourceGroupName $tempRG -Name $cloneVMName -CommandId 'RunPowerShellScript' -ScriptString $sysprepScript -ErrorAction Stop | Out-Null
-    Write-Success "Sysprep completed successfully"
-}
-catch {
-    Write-ErrorMsg "Sysprep failed: $($_.Exception.Message)"
-    if (-not $SkipCleanup) {
-        Write-Info "Cleaning up temporary resources..."
-        Remove-AzResourceGroup -Name $tempRG -Force | Out-Null
+        try {
+            Invoke-AzVMRunCommand -ResourceGroupName $tempRG -Name $cloneVMName `
+                -CommandId 'RunPowerShellScript' -ScriptString $sysprepScript `
+                -ErrorAction Stop | Out-Null
+            Write-Success "Sysprep completed successfully"
+        }
+        catch {
+            Write-ErrorMsg "Sysprep failed: $($_.Exception.Message)"
+            if (-not $SkipCleanup) {
+                Write-Info "Cleaning up temporary resources..."
+                if ($PSCmdlet.ShouldProcess($tempRG, 'Remove temporary resource group')) {
+                    Remove-AzResourceGroup -Name $tempRG -Force -ErrorAction Stop | Out-Null
+                }
+            }
+            return 1
+        }
+
+        Write-Info "Stopping clone VM..."
+        Stop-AzVM -Name $cloneVMName -ResourceGroupName $tempRG -Force -ErrorAction Stop | Out-Null
+
+        Write-Info "Marking VM as generalized..."
+        Set-AzVM -ResourceGroupName $tempRG -Name $cloneVMName -Generalized -ErrorAction Stop | Out-Null
+        Write-Success "VM generalized successfully"
+        $stepTimes["Sysprep & Generalize"] = ((Get-Date) - $stepStart).TotalSeconds
+        Write-BuildLog "Step $currentStep completed in $($stepTimes["Sysprep & Generalize"]) seconds"
+
+        # ==========================
+        # Step 11: Create Managed Image
+        # ==========================
+        $currentStep++
+        $stepStart = Get-Date
+        Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Creating managed image"
+        Write-BuildLog "Step $currentStep : Creating managed image"
+
+        $vmForGen = Get-AzVM -Name $cloneVMName -ResourceGroupName $tempRG -ErrorAction Stop
+        $imageConfig = New-AzImageConfig -Location $config.Location `
+                    -HyperVGeneration $vmForGen.StorageProfile.OsDisk.HyperVGeneration -ErrorAction Stop
+        $imageConfig = Set-AzImageOsDisk -Image $imageConfig -OsState Generalized -OsType Windows `
+                    -ManagedDiskId $disk.Id -ErrorAction Stop
+        $managedImage = New-AzImage -ImageName $managedImageName -ResourceGroupName $tempRG `
+                    -Image $imageConfig -ErrorAction Stop
+        Write-Success "Managed image created: $managedImageName"
+        $stepTimes["Create Managed Image"] = ((Get-Date) - $stepStart).TotalSeconds
+        Write-BuildLog "Step $currentStep completed in $($stepTimes["Create Managed Image"]) seconds"
+
+        # ==========================
+        # Step 12: Publish to Gallery
+        # ==========================
+        $currentStep++
+        $stepStart = Get-Date
+        Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Publishing to Azure Compute Gallery"
+        Write-BuildLog "Step $currentStep : Publishing to Azure Compute Gallery"
+
+        Write-Info "Creating gallery image version: $nextVersion"
+        Write-Info "This operation may take 10-20 minutes depending on image size..."
+
+        try {
+            New-AzGalleryImageVersion `
+                -ResourceGroupName $config.GalleryResourceGroup `
+                -GalleryName $config.GalleryName `
+                -GalleryImageDefinitionName $config.ImageDefinitionName `
+                -Name $nextVersion `
+                -Location $config.Location `
+                -SourceImageId $managedImage.Id `
+                -ErrorAction Stop | Out-Null
+
+            Write-Success "Gallery image version created: $nextVersion"
+            $stepTimes["Publish to Gallery"] = ((Get-Date) - $stepStart).TotalSeconds
+            Write-BuildLog "Step $currentStep completed in $($stepTimes["Publish to Gallery"]) seconds"
+        }
+        catch {
+            Write-ErrorMsg "Failed to create gallery image version: $($_.Exception.Message)"
+            if (-not $SkipCleanup) {
+                Write-Info "Cleaning up temporary resources..."
+                if ($PSCmdlet.ShouldProcess($tempRG, 'Remove temporary resource group')) {
+                    Remove-AzResourceGroup -Name $tempRG -Force -ErrorAction Stop | Out-Null
+                }
+            }
+            return 1
+        }
+
+        # ==========================
+        # Cleanup
+        # ==========================
+        if (-not $SkipCleanup) {
+            Write-Host ""
+            Write-Header "Cleanup"
+            Write-Info "Removing temporary resource group: $tempRG"
+            if ($PSCmdlet.ShouldProcess($tempRG, 'Remove temporary resource group')) {
+                Remove-AzResourceGroup -Name $tempRG -Force -ErrorAction Stop | Out-Null
+            }
+            Write-Success "Temporary resources cleaned up"
+        }
+        else {
+            Write-Warning2 "Temporary resources kept for debugging: $tempRG"
+        }
+
+        # ==========================
+        # Final Summary
+        # ==========================
+        $scriptEndTime = Get-Date
+        $totalDuration = ($scriptEndTime - $scriptStartTime).TotalMinutes
+
+        Write-Host ""
+        Write-Host "╔══════════════════════════════════════════════════════════╗" -ForegroundColor Green
+        Write-Host "║                                                          ║" -ForegroundColor Green
+        Write-Host "║              ✓ IMAGE CREATION SUCCESSFUL ✓               ║" -ForegroundColor Green
+        Write-Host "║                                                          ║" -ForegroundColor Green
+        Write-Host "╚══════════════════════════════════════════════════════════╝" -ForegroundColor Green
+        Write-Host ""
+
+        Write-Host "Execution Summary:" -ForegroundColor Cyan
+        Write-Host "  Total Duration       : " -NoNewline -ForegroundColor Gray
+        Write-Host "$([math]::Round($totalDuration, 2)) minutes" -ForegroundColor White
+        Write-Host "  Start Time           : " -NoNewline -ForegroundColor Gray
+        Write-Host $scriptStartTime.ToString("yyyy-MM-dd HH:mm:ss") -ForegroundColor White
+        Write-Host "  End Time             : " -NoNewline -ForegroundColor Gray
+        Write-Host $scriptEndTime.ToString("yyyy-MM-dd HH:mm:ss") -ForegroundColor White
+        Write-Host "  Log File             : " -NoNewline -ForegroundColor Gray
+        Write-Host $logFile -ForegroundColor White
+        Write-Host ""
+
+        Write-Host "Gallery Image Details:" -ForegroundColor Cyan
+        Write-Host "  Gallery              : " -NoNewline -ForegroundColor Gray
+        Write-Host $config.GalleryName -ForegroundColor White
+        Write-Host "  Image Definition     : " -NoNewline -ForegroundColor Gray
+        Write-Host $config.ImageDefinitionName -ForegroundColor White
+        Write-Host "  Version              : " -NoNewline -ForegroundColor Gray
+        Write-Host $nextVersion -ForegroundColor Green
+        Write-Host "  Resource Group       : " -NoNewline -ForegroundColor Gray
+        Write-Host $config.GalleryResourceGroup -ForegroundColor White
+        Write-Host ""
+
+        if ($stepTimes.Count -gt 0) {
+            Write-Host "Step Timings:" -ForegroundColor Cyan
+            foreach ($step in $stepTimes.Keys | Sort-Object) {
+                Write-Host "  $step : " -NoNewline -ForegroundColor Gray
+                Write-Host "$([math]::Round($stepTimes[$step], 1))s" -ForegroundColor White
+            }
+            Write-Host ""
+        }
+
+        Write-Host "Next Steps:" -ForegroundColor Cyan
+        Write-Host "  • Use this image to create AVD session hosts" -ForegroundColor Gray
+        Write-Host "  • Deploy VMs from the gallery image" -ForegroundColor Gray
+        Write-Host "  • Configure your host pools to use version: $nextVersion" -ForegroundColor Gray
+        Write-Host ""
+        Write-Success "Script completed successfully!"
+
+        Write-BuildLog "Script completed successfully in $([math]::Round($totalDuration, 2)) minutes"
+        Write-BuildLog "Image version $nextVersion created in gallery $($config.GalleryName)"
+
+        return 0
     }
-    exit 1
-}
-
-Write-Info "Stopping clone VM..."
-Stop-AzVM -Name $cloneVMName -ResourceGroupName $tempRG -Force | Out-Null
-
-Write-Info "Marking VM as generalized..."
-Set-AzVM -ResourceGroupName $tempRG -Name $cloneVMName -Generalized | Out-Null
-Write-Success "VM generalized successfully"
-$stepTimes["Sysprep & Generalize"] = ((Get-Date) - $stepStart).TotalSeconds
-Write-Log "Step $currentStep completed in $($stepTimes["Sysprep & Generalize"]) seconds"
-
-# ==========================
-# Step 11: Create Managed Image
-# ==========================
-$currentStep++
-$stepStart = Get-Date
-Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Creating managed image"
-Write-Log "Step $currentStep : Creating managed image"
-
-$vmForGen = Get-AzVM -Name $cloneVMName -ResourceGroupName $tempRG
-$imageConfig = New-AzImageConfig -Location $config.Location -HyperVGeneration $vmForGen.StorageProfile.OsDisk.HyperVGeneration
-$imageConfig = Set-AzImageOsDisk -Image $imageConfig -OsState Generalized -OsType Windows -ManagedDiskId $disk.Id
-$managedImage = New-AzImage -ImageName $managedImageName -ResourceGroupName $tempRG -Image $imageConfig
-Write-Success "Managed image created: $managedImageName"
-$stepTimes["Create Managed Image"] = ((Get-Date) - $stepStart).TotalSeconds
-Write-Log "Step $currentStep completed in $($stepTimes["Create Managed Image"]) seconds"
-
-# ==========================
-# Step 12: Publish to Gallery
-# ==========================
-$currentStep++
-$stepStart = Get-Date
-Write-Step -Step $currentStep -TotalSteps $totalSteps -Message "Publishing to Azure Compute Gallery"
-Write-Log "Step $currentStep : Publishing to Azure Compute Gallery"
-
-Write-Info "Creating gallery image version: $nextVersion"
-Write-Info "This operation may take 10-20 minutes depending on image size..."
-
-try {
-    New-AzGalleryImageVersion `
-        -ResourceGroupName $config.GalleryResourceGroup `
-        -GalleryName $config.GalleryName `
-        -GalleryImageDefinitionName $config.ImageDefinitionName `
-        -Name $nextVersion `
-        -Location $config.Location `
-        -SourceImageId $managedImage.Id `
-        -ErrorAction Stop | Out-Null
-
-    Write-Success "Gallery image version created: $nextVersion"
-    $stepTimes["Publish to Gallery"] = ((Get-Date) - $stepStart).TotalSeconds
-    Write-Log "Step $currentStep completed in $($stepTimes["Publish to Gallery"]) seconds"
-}
-catch {
-    Write-ErrorMsg "Failed to create gallery image version: $($_.Exception.Message)"
-    if (-not $SkipCleanup) {
-        Write-Info "Cleaning up temporary resources..."
-        Remove-AzResourceGroup -Name $tempRG -Force | Out-Null
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        Write-BuildLog "Unhandled error: $($_.Exception.Message)" "ERROR"
+        return 1
     }
-    exit 1
 }
 
-# ==========================
-# Cleanup
-# ==========================
-if (-not $SkipCleanup) {
-    Write-Host ""
-    Write-Header "Cleanup"
-    Write-Info "Removing temporary resource group: $tempRG"
-    Remove-AzResourceGroup -Name $tempRG -Force | Out-Null
-    Write-Success "Temporary resources cleaned up"
-}
-else {
-    Write-Warning2 "Temporary resources kept for debugging: $tempRG"
-}
-
-# ==========================
-# Final Summary
-# ==========================
-$scriptEndTime = Get-Date
-$totalDuration = ($scriptEndTime - $scriptStartTime).TotalMinutes
-
-Write-Host ""
-Write-Host "╔═══════════════════════════════════════════════════════════════════════════╗" -ForegroundColor Green
-Write-Host "║                                                                           ║" -ForegroundColor Green
-Write-Host "║                     ✓ IMAGE CREATION SUCCESSFUL ✓                         ║" -ForegroundColor Green
-Write-Host "║                                                                           ║" -ForegroundColor Green
-Write-Host "╚═══════════════════════════════════════════════════════════════════════════╝" -ForegroundColor Green
-Write-Host ""
-
-Write-Host "Execution Summary:" -ForegroundColor Cyan
-Write-Host "  Total Duration       : " -NoNewline -ForegroundColor Gray
-Write-Host "$([math]::Round($totalDuration, 2)) minutes" -ForegroundColor White
-Write-Host "  Start Time           : " -NoNewline -ForegroundColor Gray
-Write-Host $scriptStartTime.ToString("yyyy-MM-dd HH:mm:ss") -ForegroundColor White
-Write-Host "  End Time             : " -NoNewline -ForegroundColor Gray
-Write-Host $scriptEndTime.ToString("yyyy-MM-dd HH:mm:ss") -ForegroundColor White
-Write-Host "  Log File             : " -NoNewline -ForegroundColor Gray
-Write-Host $logFile -ForegroundColor White
-Write-Host ""
-
-Write-Host "Gallery Image Details:" -ForegroundColor Cyan
-Write-Host "  Gallery              : " -NoNewline -ForegroundColor Gray
-Write-Host $config.GalleryName -ForegroundColor White
-Write-Host "  Image Definition     : " -NoNewline -ForegroundColor Gray
-Write-Host $config.ImageDefinitionName -ForegroundColor White
-Write-Host "  Version              : " -NoNewline -ForegroundColor Gray
-Write-Host $nextVersion -ForegroundColor Green
-Write-Host "  Resource Group       : " -NoNewline -ForegroundColor Gray
-Write-Host $config.GalleryResourceGroup -ForegroundColor White
-Write-Host ""
-
-if ($stepTimes.Count -gt 0) {
-    Write-Host "Step Timings:" -ForegroundColor Cyan
-    foreach ($step in $stepTimes.Keys | Sort-Object) {
-        Write-Host "  $step : " -NoNewline -ForegroundColor Gray
-        Write-Host "$([math]::Round($stepTimes[$step], 1))s" -ForegroundColor White
-    }
-    Write-Host ""
-}
-
-Write-Host "Next Steps:" -ForegroundColor Cyan
-Write-Host "  • Use this image to create AVD session hosts" -ForegroundColor Gray
-Write-Host "  • Deploy VMs from the gallery image" -ForegroundColor Gray
-Write-Host "  • Configure your host pools to use version: $nextVersion" -ForegroundColor Gray
-Write-Host ""
-Write-Success "Script completed successfully!"
-
-Write-Log "Script completed successfully in $([math]::Round($totalDuration, 2)) minutes"
-Write-Log "Image version $nextVersion created in gallery $($config.GalleryName)"
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

@@ -1,64 +1,59 @@
-<#
+﻿<#
 .SYNOPSIS
     Remediate Adobe Creative Cloud app updates via Remote Update Manager
 
 .DESCRIPTION
-    Runs the Adobe Remote Update Manager (RUM) to install all applicable Adobe Creative Cloud app updates, logs the results, and exits 0 on success. Must run in the SYSTEM context.
+    Intune Proactive Remediation remediation script for Adobe Creative Cloud updates. Runs the Adobe Remote Update
+    Manager (RUM) to install all applicable Adobe Creative Cloud app updates, logs the run to the Intune Management
+    Extension log directory, and reports which apps were updated.
+
+    Idempotent check-then-act: when no updates are applicable RUM reports nothing to install and the script exits 0
+    without changes. Exits 0 on success (including nothing to do) and 1 when the run fails. Must run in the SYSTEM
+    context because RUM requires elevated privileges.
 
 .EXAMPLE
-    ./remediate.ps1
+    PS C:\> .\remediate.ps1
+
+    Installs all applicable Adobe Creative Cloud updates; exits 0 on success or 1 on failure.
+
+.EXAMPLE
+    PS C:\> .\remediate.ps1 -Verbose
+
+    Runs the remediation with verbose preference enabled for richer diagnostics.
 
 .NOTES
     File Name  : remediate.ps1
     Author     : Intune / Proactive Remediations
-    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Prerequisite: PowerShell 5.1+
     Version    : 1.0.0
-    Date       : 2026-08-08
+    Date       : 2026-08-23
+
+    Used in Intune Proactive Remediation "SW-Update_CCApps"; runs as SYSTEM.
+    The update installation itself is delegated to Adobe Remote Update Manager, which owns download and install
+    behaviour.
 #>
 
-<#
-==================================
-|  Remediate-AdobeCCUpdates.ps1  |
-==================================
+[CmdletBinding()]
+param()
 
-Remediates any Adobe Creative Cloud Apps where an update is required, by using Adobe Remote Update Manager (RUM).
+$ErrorActionPreference = 'Stop'
 
-Used in Proactive Remediation "SW-Update_CCApps"
-
-This script must be run in the SYSTEM context (as RUM requires Admin priviledges to successfully run)
----------------------------------------------------------------
-Sample Detection Output from a machine requiring updates:
-
-RemoteUpdateManager version is : 3.0.0.8
-Starting the RemoteUpdateManager...
-
-Following Updates are applicable on the system :
-                (KBRG/13.0.3.693/win64)
-                (ILST/27.4.0.669/win64)
-                (COSY/6.4.0.12/win32)
-                (CCXP/4.14.2.2/win32)
-**************************************************
-RemoteUpdateManager exiting with Return Code (0)
-
----------------------------------------------------------------
-
-#>
-
-#region functions
-#endregion
+# PSScriptAnalyzer: Write-Host with prefix/color output is mandated by docs/RELAUNCH-SPEC.md section 3.
 
 #region Config
-$AppName = "Remediate-CCUpdates"
-$OrgName = "TMBC"
+$AppName = 'Remediate-CCUpdates'
+$OrgName = 'TMBC'
 $LogPath = "$env:ProgramData\Microsoft\IntuneManagementExtension\Logs"
 $LogFile = "$LogPath\$($OrgName)-$($AppName).log"
-# Set the path to the Adobe Remote Update Manager executable
-$ARUMPath = "C:\Program Files (x86)\Common Files\Adobe\OOBE_Enterprise\RemoteUpdateManager\RemoteUpdateManager.exe"
-# Define the search pattern to match in the output
-$updatesinstalled = "Following Updates were successfully installed"
-# Define the regex pattern to match Sap Codes, version numbers, and platforms
-$regexpattern = '\((\w+)\/([\d\.]+)\/(win\d+)\)'
-# Define a hash table of all product names for each Sap Code (sorted by Sap Code)
+
+$rumDir = 'C:\Program Files (x86)\Common Files\Adobe\OOBE_Enterprise\RemoteUpdateManager'
+$script:ARUMPath = "$rumDir\RemoteUpdateManager.exe"
+
+# Search pattern to match in the RUM output and regex for sap codes, versions, and platforms.
+$updatesInstalled = 'Following Updates were successfully installed'
+$regexPattern = '\((\w+)\/([\d\.]+)\/(win\d+)\)'
+
+# Product names for each Sap Code (sap codes obtained from various Internet sources).
 $productNames = @{
     "AAM" = "Application Manager"
     "ACR" = "Camera Raw"
@@ -130,65 +125,55 @@ $productNames = @{
 }
 #endregion
 
-#region Main process
-if (!(Test-Path $LogPath)) { mkdir $LogPath -Force | Out-Null }
+function Invoke-RemoteUpdateManager {
+# Thin wrapper around the native RemoteUpdateManager executable (mock seam for tests).
+    return (& $script:ARUMPath @args 2>&1 | Out-String)
+}
 
-Start-Transcript -Path $LogFile -Force
+function Main {
+    [CmdletBinding()]
+    param()
 
-try {
-    # Run Adobe Remote Update Manager and capture its output
-    $ARUMOutput = (& "$ARUMPath") 2>&1 | Out-String
-	
-    # Use regex to find the app codes, version numbers, and platforms in the text string
-    $discoveries = [regex]::Matches($ARUMOutput, $regexpattern)
-	
-    # Create an array to store the results
-    $results = @()
-	
-    # Loop through the regex matches and add a row to the results array for each app
-    foreach ($discovered in $discoveries) {
-        $SapCode = $discovered.Groups[1].Value
-        $versionNumber = $discovered.Groups[2].Value
-        #$platform = $discovered.Groups[3].Value
-        $productName = $productNames[$SapCode]
+    try {
+        if (-not (Test-Path -Path $LogPath)) {
+            New-Item -Path $LogPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
+        }
+        Start-Transcript -Path $LogFile -Force -ErrorAction Stop
 
-        <#
-		# Add a row to the results array
-		$results += [pscustomobject]@{
-			"Product Name" = $productName
-			"Sap Code" = $SapCode
-			"Version Number" = $versionNumber
-			"Platform Architecture" = $platform
-		}
-		#>
-        $results += "$($productName) ($($SapCode)) (v$($versionNumber))"
+        Write-Host '[*] Running Adobe Remote Update Manager to install applicable updates.' -ForegroundColor Cyan
+        $arumOutput = Invoke-RemoteUpdateManager
+
+# Find the app codes, version numbers, and platforms in the output text.
+        $discoveries = [regex]::Matches($arumOutput, $regexPattern)
+        $results = @()
+        foreach ($discovered in $discoveries) {
+            $sapCode = $discovered.Groups[1].Value
+            $versionNumber = $discovered.Groups[2].Value
+            $productName = $productNames[$sapCode]
+            $results += "$($productName) ($($sapCode)) (v$($versionNumber))"
+        }
+        $resultsString = (($results -join ', ') -replace "`r`n", ', ').Trim()
+
+# Search the output for the successful-install marker.
+        $installedConfirmed = ($null -ne ($arumOutput | Select-String -Pattern $updatesInstalled))
+        if ($installedConfirmed) {
+            Write-Host "[+] Updates were installed: $($resultsString)" -ForegroundColor Green
+            Write-Output ('Updates were successfully installed for the following Adobe Creative Cloud Apps: ' +
+                $resultsString)
+        }
+        else {
+            Write-Output 'No updates are required for Adobe Creative Cloud Apps'
+            Write-Host '[+] No updates were required for Adobe Creative Cloud Apps.' -ForegroundColor Green
+        }
+        return 0
     }
-    
-    # Convert $results array to a string and join each line with a comma (so content can be output in PR results)
-    $resultsstring = (($results -join ", " ) -replace "`r`n", ", ").Trim()
-	
-    # Search the output for the string
-    $ARUMStatus = $ARUMOutput | ForEach-Object { "$_" | Select-String -Pattern $updatesinstalled }
-    if ($ARUMStatus.Matches.Success -eq "True") {
-        # proceed to remediation script
-        Write-Output "$($results.count) updates were successfully installed for the following Adobe Creative Cloud Apps: $($resultsstring)"
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
-    else {
-        # nothing further to do
-        Write-Output "No updates are required for Adobe Creative Cloud Apps"
+    finally {
+        try { Stop-Transcript | Out-Null } catch { Write-Verbose 'No active transcript to stop' }
     }
 }
-catch {
-    $errorMsg = $_.Exception.Message
-}
-finally {
-    if ($errorMsg) {
-        Write-Output "Something went wrong: $errorMsg"
-        Stop-Transcript | Out-Null
-        throw $errorMsg
-    }
-    else {
-        Stop-Transcript | Out-Null
-    }
-}
-#endregion
+
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

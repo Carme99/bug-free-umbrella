@@ -1,6 +1,6 @@
 # BugFreeUmbrella Documentation
 
-> The complete guide to the repository: **544 PowerShell scripts across 8 domains** for enterprise IT automation — Intune, M365, servers, security, cloud, data, and CI/CD.
+> The complete guide to the repository: **539 PowerShell scripts across 8 domains** for enterprise IT automation — Intune, M365, servers, security, cloud, data, and CI/CD.
 
 Documentation lives **with the code** — every page here is versioned, reviewable in PRs, and ships with each release. There is no separate wiki to drift out of date.
 

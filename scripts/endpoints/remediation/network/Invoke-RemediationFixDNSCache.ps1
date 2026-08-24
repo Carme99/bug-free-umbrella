@@ -1,36 +1,67 @@
-<#
+﻿<#
 .SYNOPSIS
-    Flushes DNS cache and resets DNS client to resolve connectivity issues.
+    Flushes the DNS cache and resets the DNS Client service.
 
 .DESCRIPTION
-    This remediation script flushes the DNS cache and resets DNS client settings
-    to resolve DNS resolution problems.
+    Flushes the Windows DNS resolver cache with Clear-DnsClientCache and then resets the DNS
+    Client (Dnscache) service: the service is started when it is not running and restarted when
+    it already is. Flushing the cache and restarting the service change local DNS client state,
+    so both steps honor -WhatIf/-Confirm via SupportsShouldProcess. Exit codes:
+    - 0: DNS cache flushed and DNS Client service reset successfully.
+    - 1: the flush or the service reset failed.
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationFixDNSCache.ps1
+    Flushes the DNS cache and recycles the Dnscache service, exiting 0 on success.
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationFixDNSCache.ps1 -WhatIf
+    Reports what would be flushed and restarted without touching the system.
 
 .NOTES
-    Exit 0: Successfully flushed DNS cache
-    Exit 1: Failed to flush DNS cache
+    File Name: Invoke-RemediationFixDNSCache.ps1
+    Author: Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version: 1.0.0
+    Date: 2026-08-23
 #>
 
-$ErrorActionPreference = "Stop"
+[CmdletBinding(SupportsShouldProcess)]
 
-try {
-    # Flush DNS cache
-    Clear-DnsClientCache
+$ErrorActionPreference = 'Stop'
 
-    # Restart DNS client service if needed
-    $dnsClient = Get-Service -Name "Dnscache" -ErrorAction SilentlyContinue
+function Main {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
 
-    if ($dnsClient.Status -ne "Running") {
-        Start-Service -Name "Dnscache"
+    try {
+        Write-Host "[*] Flushing DNS cache and resetting DNS Client service..." -ForegroundColor Cyan
+
+        if (-not $PSCmdlet.ShouldProcess("DNS client", "Flush DNS cache and reset Dnscache service")) {
+            return 0
+        }
+
+        # Flush DNS cache.
+        Clear-DnsClientCache -ErrorAction Stop
+
+        # Restart DNS client service if needed.
+        $dnsClient = Get-Service -Name "Dnscache" -ErrorAction SilentlyContinue
+
+        if ($dnsClient.Status -ne "Running") {
+            Start-Service -Name "Dnscache" -ErrorAction Stop
+        }
+        else {
+            Restart-Service -Name "Dnscache" -Force -ErrorAction Stop
+        }
+
+        Write-Host "[+] Successfully flushed DNS cache and restarted DNS Client service" -ForegroundColor Green
+        return 0
     }
-    else {
-        Restart-Service -Name "Dnscache" -Force
+    catch {
+        Write-Host "[-] Failed to flush DNS cache: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
+}
 
-    Write-Output "Successfully flushed DNS cache and restarted DNS Client service"
-    exit 0  # Success
-}
-catch {
-    Write-Output "Failed to flush DNS cache: $($_.Exception.Message)"
-    exit 1  # Failure
-}
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

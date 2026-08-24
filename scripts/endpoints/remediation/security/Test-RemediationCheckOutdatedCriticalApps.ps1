@@ -1,39 +1,43 @@
-<#
+﻿<#
 .SYNOPSIS
-    Detects outdated critical applications using winget.
+    Detects outdated security-critical applications using winget.
 
 .DESCRIPTION
     Scans for available updates to security-critical applications (browsers, VPN clients,
-    development tools) using winget. Prioritizes applications that commonly have CVEs
-    and need rapid patching.
-
-    Supports configurable priority lists, retry logic, and optional logging.
-
-.NOTES
-    Author: Bug-Free Umbrella
-    Version: 1.0
-    Intune Context: SYSTEM
-    Exit 0: No critical updates needed
-    Exit 1: Critical updates available - remediation needed
+    development tools) using winget and prioritizes applications that commonly have CVEs
+    and need rapid patching. Supports configurable priority lists, retry logic, and
+    optional logging. This is a read-only detection script: it never installs or modifies
+    anything, so re-running it on a fully patched device converges to exit 0 (idempotent).
+    Exit codes:
+    - 0: compliant - no critical updates needed.
+    - 1: non-compliant - critical updates are available, winget/network is unavailable, or the check failed.
 
 .PARAMETER EnableLogging
-    Enable detailed logging to %TEMP%\WingetUpdateDetection.log
+    Enable detailed logging to %TEMP%\WingetUpdateDetection.log.
 
 .PARAMETER MaxRetries
-    Maximum retry attempts for winget operations (default: 3)
+    Maximum retry attempts for winget operations (default: 3).
 
 .PARAMETER PriorityAppsOnly
-    Only check priority applications (browsers, security tools)
+    Only check priority applications (browsers, security tools).
 
 .EXAMPLE
-    .\detect.ps1
-    Standard detection with default settings
+    PS C:\> .\Test-RemediationCheckOutdatedCriticalApps.ps1
+    Standard detection with default settings; exits 1 when critical updates are available.
 
 .EXAMPLE
-    .\detect.ps1 -EnableLogging $true -PriorityAppsOnly $true
-    Check only priority apps with logging enabled
+    PS C:\> .\Test-RemediationCheckOutdatedCriticalApps.ps1 -EnableLogging $true -PriorityAppsOnly $true
+    Check only priority apps with logging enabled to %TEMP%\WingetUpdateDetection.log.
+
+.NOTES
+    File Name: Test-RemediationCheckOutdatedCriticalApps.ps1
+    Author: Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version: 1.0.0
+    Date: 2026-08-23
 #>
 
+[CmdletBinding()]
 param(
     [bool]$EnableLogging = $false,
 
@@ -42,6 +46,76 @@ param(
 
     [bool]$PriorityAppsOnly = $false
 )
+
+$ErrorActionPreference = 'Stop'
+
+function Main {
+    try {
+        Write-Log "=== Winget Critical App Update Detection Started ==="
+        Write-Log "Priority Apps Only: $PriorityAppsOnly"
+
+        # Validate winget is available
+        if (-not (Test-WingetAvailable)) {
+            Write-Log "Winget is not available on this system" "ERROR"
+            return 1
+        }
+
+        # Check network connectivity
+        if (-not (Test-NetworkConnectivity)) {
+            Write-Log "Network connectivity required for update detection" "ERROR"
+            return 1
+        }
+
+        # Get outdated applications
+        $outdatedApps = Get-OutdatedApps
+
+        if ($outdatedApps.Count -eq 0) {
+            Write-Log "No outdated applications detected" "OK"
+            return 0
+        }
+
+        # Filter for priority apps if configured
+        if ($PriorityAppsOnly) {
+            $criticalUpdates = @($outdatedApps | Where-Object { $_.IsPriority -eq $true })
+        }
+        else {
+            # Include priority and standard apps
+            $appsToCheck = $PriorityApps + $StandardApps
+            $criticalUpdates = @($outdatedApps | Where-Object { $_.Id -in $appsToCheck })
+        }
+
+        if ($criticalUpdates.Count -eq 0) {
+            Write-Log "No critical application updates detected" "OK"
+            Write-Log "($($outdatedApps.Count) non-critical updates available)" "OK"
+            return 0
+        }
+
+        # Log details of critical updates
+        Write-Log "CRITICAL UPDATES DETECTED: $($criticalUpdates.Count) applications"
+        Write-Log ""
+        Write-Log "Applications requiring updates:"
+
+        $priorityCount = @($criticalUpdates | Where-Object { $_.IsPriority }).Count
+        $standardCount = $criticalUpdates.Count - $priorityCount
+
+        foreach ($app in ($criticalUpdates | Sort-Object -Property IsPriority -Descending)) {
+            $priorityTag = if ($app.IsPriority) { "[PRIORITY]" } else { "[STANDARD]" }
+            Write-Log "  $priorityTag $($app.Name) ($($app.Id))"
+            Write-Log "    Current: $($app.CurrentVersion) -> Available: $($app.AvailableVersion)"
+        }
+
+        Write-Log ""
+        Write-Log "Summary: $priorityCount priority, $standardCount standard updates needed"
+        Write-Log "=== Detection Complete - Remediation Required ==="
+
+        return 1
+    }
+    catch {
+        Write-Log "Unexpected error during detection: $($_.Exception.Message)" "ERROR"
+        Write-Log "Stack trace: $($_.ScriptStackTrace)" "ERROR"
+        return 1
+    }
+}
 
 # ========================= CONFIGURATION ========================= #
 
@@ -81,20 +155,28 @@ $StandardApps = @(
     'Microsoft.PowerToys'
 )
 
-$LogPath = "$env:TEMP\WingetUpdateDetection.log"
+# GetTempPath resolves %TEMP% under Windows and stays safe when TEMP is unset.
+$LogPath = Join-Path ([System.IO.Path]::GetTempPath()) 'WingetUpdateDetection.log'
 
 # ========================= LOGGING ========================= #
 
 function Write-Log {
     param([string]$Message, [string]$Level = "INFO")
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$timestamp] [$Level] $Message"
+
+    switch ($Level) {
+        "WARN"  { $prefix = "[!]"; $color = 'Yellow' }
+        "ERROR" { $prefix = "[-]"; $color = 'Red' }
+        "OK"    { $prefix = "[+]"; $color = 'Green' }
+        default { $prefix = "[*]"; $color = 'Cyan' }
+    }
+    $logMessage = "[$timestamp] [$Level] $prefix $Message"
 
     if ($EnableLogging) {
         Add-Content -Path $LogPath -Value $logMessage -ErrorAction SilentlyContinue
     }
 
-    Write-Host $logMessage
+    Write-Host $logMessage -ForegroundColor $color
 }
 
 # ========================= WINGET VALIDATION ========================= #
@@ -106,7 +188,7 @@ function Test-WingetAvailable {
         return $true
     }
     catch {
-        # FIX: Include exception details in log
+        # Include exception details in log
         Write-Log "Winget not found or not accessible: $($_.Exception.Message)" "ERROR"
         return $false
     }
@@ -114,19 +196,27 @@ function Test-WingetAvailable {
 
 function Test-NetworkConnectivity {
     try {
-        $testConnection = Test-NetConnection -ComputerName "www.microsoft.com" -Port 443 -InformationLevel Quiet -WarningAction SilentlyContinue -ErrorAction Stop
+        $testConnection = Test-NetConnection -ComputerName "www.microsoft.com" -Port 443 `
+            -InformationLevel Quiet -WarningAction SilentlyContinue -ErrorAction Stop
         if ($testConnection) {
-            Write-Log "Network connectivity verified"
+            Write-Log "Network connectivity verified" "OK"
             return $true
         }
     }
     catch {
-        Write-Log "Network connectivity check failed: $_" "WARN"
+        Write-Log "Network connectivity check failed: $($_.Exception.Message)" "WARN"
     }
     return $false
 }
 
 # ========================= UPDATE DETECTION ========================= #
+
+function Invoke-Winget {
+    # Thin wrapper for the native winget executable; returns output plus its exit code.
+    param([string[]]$ArgumentList)
+    $output = & winget @ArgumentList 2>&1 | Out-String
+    return [pscustomobject]@{ Output = $output; ExitCode = $LASTEXITCODE }
+}
 
 function Get-OutdatedApps {
     param([int]$RetryCount = 0)
@@ -135,10 +225,11 @@ function Get-OutdatedApps {
 
     try {
         # Run winget list with upgrade filter (explicitly use Microsoft source)
-        $wingetOutput = & winget list --upgrade-available --source winget 2>&1 | Out-String
+        $wingetResult = Invoke-Winget -ArgumentList @('list', '--upgrade-available', '--source', 'winget')
+        $wingetOutput = $wingetResult.Output
 
-        if ($LASTEXITCODE -ne 0 -and $RetryCount -lt ($MaxRetries - 1)) {
-            Write-Log "Winget command failed (exit code: $LASTEXITCODE), retrying..." "WARN"
+        if ($wingetResult.ExitCode -ne 0 -and $RetryCount -lt ($MaxRetries - 1)) {
+            Write-Log "Winget command failed (exit code: $($wingetResult.ExitCode)), retrying..." "WARN"
             Start-Sleep -Seconds ([Math]::Pow(2, $RetryCount))  # Exponential backoff
             return Get-OutdatedApps -RetryCount ($RetryCount + 1)
         }
@@ -168,7 +259,7 @@ function Get-OutdatedApps {
                 $currentVersion = $matches[3].Trim()
                 $availableVersion = $matches[4].Trim()
 
-                # FIX: Defense-in-depth validation at parsing stage
+                # Defense-in-depth validation at parsing stage
                 if ([string]::IsNullOrWhiteSpace($appId) -or -not ($appId -match '\.')) {
                     Write-Log "Regex matched but captured invalid App ID from line: $line" "WARN"
                     $failedParseCount++
@@ -208,22 +299,24 @@ function Get-OutdatedApps {
             $failureRate = [math]::Round(($failedParseCount / [math]::Max($dataLineCount, 1)) * 100, 1)
             Write-Log "Warning: $failedParseCount of $dataLineCount lines failed to parse ($failureRate%)" "WARN"
 
-            # FIX: Exit with error when failure rate is critically high
+            # Exit with error when failure rate is critically high
             if ($failureRate -gt 75) {
-                Write-Log "CRITICAL: Parse failure rate exceeds 75% - winget output format may have changed. This may indicate security updates are not being detected properly." "ERROR"
+                Write-Log ("CRITICAL: Parse failure rate exceeds 75% - winget output format may have " +
+                    "changed. This may indicate security updates are not being detected properly.") "ERROR"
                 return @()  # Return empty array to trigger remediation failure
             }
             elseif ($failureRate -gt 50) {
-                Write-Log "High parse failure rate suggests winget output format may have changed. Consider investigating." "ERROR"
+                Write-Log ("High parse failure rate suggests winget output format may have changed. " +
+                    "Consider investigating.") "ERROR"
             }
         }
 
-        Write-Log "Found $($outdatedApps.Count) total outdated applications"
+        Write-Log "Found $($outdatedApps.Count) total outdated applications" "OK"
         return $outdatedApps
 
     }
     catch {
-        Write-Log "Error detecting updates: $_" "ERROR"
+        Write-Log "Error detecting updates: $($_.Exception.Message)" "ERROR"
         if ($RetryCount -lt ($MaxRetries - 1)) {
             Start-Sleep -Seconds ([Math]::Pow(2, $RetryCount))
             return Get-OutdatedApps -RetryCount ($RetryCount + 1)
@@ -232,71 +325,5 @@ function Get-OutdatedApps {
     }
 }
 
-# ========================= MAIN DETECTION LOGIC ========================= #
-
-try {
-    Write-Log "=== Winget Critical App Update Detection Started ==="
-    Write-Log "Priority Apps Only: $PriorityAppsOnly"
-
-    # Validate winget is available
-    if (-not (Test-WingetAvailable)) {
-        Write-Log "Winget is not available on this system" "ERROR"
-        exit 1
-    }
-
-    # Check network connectivity
-    if (-not (Test-NetworkConnectivity)) {
-        Write-Log "Network connectivity required for update detection" "ERROR"
-        exit 1
-    }
-
-    # Get outdated applications
-    $outdatedApps = Get-OutdatedApps
-
-    if ($outdatedApps.Count -eq 0) {
-        Write-Log "No outdated applications detected"
-        exit 0
-    }
-
-    # Filter for priority apps if configured
-    if ($PriorityAppsOnly) {
-        $criticalUpdates = $outdatedApps | Where-Object { $_.IsPriority -eq $true }
-    }
-    else {
-        # Include priority and standard apps
-        $appsToCheck = $PriorityApps + $StandardApps
-        $criticalUpdates = $outdatedApps | Where-Object { $_.Id -in $appsToCheck }
-    }
-
-    if ($criticalUpdates.Count -eq 0) {
-        Write-Log "No critical application updates detected"
-        Write-Log "($($outdatedApps.Count) non-critical updates available)"
-        exit 0
-    }
-
-    # Log details of critical updates
-    Write-Log "CRITICAL UPDATES DETECTED: $($criticalUpdates.Count) applications"
-    Write-Log ""
-    Write-Log "Applications requiring updates:"
-
-    $priorityCount = ($criticalUpdates | Where-Object { $_.IsPriority }).Count
-    $standardCount = $criticalUpdates.Count - $priorityCount
-
-    foreach ($app in ($criticalUpdates | Sort-Object -Property IsPriority -Descending)) {
-        $priorityTag = if ($app.IsPriority) { "[PRIORITY]" } else { "[STANDARD]" }
-        Write-Log "  $priorityTag $($app.Name) ($($app.Id))"
-        Write-Log "    Current: $($app.CurrentVersion) → Available: $($app.AvailableVersion)"
-    }
-
-    Write-Log ""
-    Write-Log "Summary: $priorityCount priority, $standardCount standard updates needed"
-    Write-Log "=== Detection Complete - Remediation Required ==="
-
-    exit 1
-
-}
-catch {
-    Write-Log "Unexpected error during detection: $_" "ERROR"
-    Write-Log "Stack trace: $($_.ScriptStackTrace)" "ERROR"
-    exit 1
-}
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

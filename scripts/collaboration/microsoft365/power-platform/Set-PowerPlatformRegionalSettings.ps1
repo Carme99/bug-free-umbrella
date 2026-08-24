@@ -3,11 +3,14 @@
     Checks and configures Power Platform environment regional settings.
 
 .DESCRIPTION
-    This script audits and configures Power Platform environment regional settings including:
-    - Environment base language
-    - Currency format
-    - Date/time format
-    - Number format
+    Audits Power Platform environment regional settings (base language and currency) against the
+    required baseline supplied via -BaseLanguage and -CurrencyCode, reporting each environment as
+    compliant or non-compliant. By default the script is audit-only and makes no changes; with
+    -Apply it walks the remediation path for non-compliant environments behind a ShouldProcess
+    gate, so -WhatIf/-Confirm are honored (regional settings are set at environment creation
+    time, so the apply path reports the supported remediation guidance rather than mutating the
+    tenant). Results can be exported to HTML or CSV; the script is idempotent and safe to re-run.
+    Returns exit code 0 on success and exit code 1 on failure.
 
 .PARAMETER EnvironmentName
     Specific environment to configure (e.g., "Default-xxxxx-xxxx").
@@ -34,20 +37,25 @@
     Export results to CSV file.
 
 .EXAMPLE
-    .\Set-PowerPlatformRegionalSettings.ps1 -EnvironmentName "Default-xxxxx" -AuditOnly
-    Checks specific environment's settings.
+    PS C:\> .\Set-PowerPlatformRegionalSettings.ps1 -EnvironmentName "Default-xxxxx" -AuditOnly
+    Checks the specific environment's settings without making changes.
 
 .EXAMPLE
-    .\Set-PowerPlatformRegionalSettings.ps1 -AllEnvironments -Apply
-    Applies settings to all environments.
+    PS C:\> .\Set-PowerPlatformRegionalSettings.ps1 -AllEnvironments -Apply
+    Applies the required settings baseline across all environments (honors -WhatIf/-Confirm).
 
 .NOTES
-    Requires Microsoft.PowerApps.Administration.PowerShell module
-    Requires Power Platform Administrator role
-    Compatible with Power Platform environments
+    File Name   : Set-PowerPlatformRegionalSettings.ps1
+    Author      : Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version     : 1.0.0
+    Date        : 2026-08-23
+
+    Requires the Microsoft.PowerApps.Administration.PowerShell module.
+    Requires the Power Platform Administrator role.
 #>
 
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory = $false)]
     [string]$EnvironmentName,
@@ -65,6 +73,7 @@ param(
     [int]$BaseLanguage = 2057,  # English UK
 
     [Parameter(Mandatory = $false)]
+    [ValidateNotNullOrEmpty()]
     [string]$CurrencyCode = 'GBP',
 
     [Parameter(Mandatory = $false)]
@@ -74,139 +83,171 @@ param(
     [switch]$ExportCSV
 )
 
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-if ([string]::IsNullOrWhiteSpace($ReportDir) -or
-    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
-    $ReportDir -match '^(\\\\|//)') {
-    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
-    exit 1
-}
-$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
+$ErrorActionPreference = 'Stop'
 
-$ErrorActionPreference = "Stop"
-$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+# Thin wrapper around Out-File so callers (and Pester tests) can intercept report
+# writes; Out-File's Encoding argument transformation cannot be mocked directly.
+function Write-ReportTextFile {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
 
-Write-Host "`n=== Power Platform Environment Regional Settings ===" -ForegroundColor Cyan
-Write-Host "Mode: $(if ($Apply) { 'APPLY SETTINGS' } else { 'AUDIT ONLY' })" -ForegroundColor $(if ($Apply) { 'Yellow' } else { 'Green' })
-Write-Host ""
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string]$Content
+    )
 
-# Check for Power Platform module
-try {
-    if (-not (Get-Module -Name Microsoft.PowerApps.Administration.PowerShell -ListAvailable)) {
-        Write-Host "[-] Power Platform Administration module not found!" -ForegroundColor Red
-        Write-Host "[!] Install with: Install-Module -Name Microsoft.PowerApps.Administration.PowerShell" -ForegroundColor Yellow
-        exit 1
-    }
-
-    Import-Module Microsoft.PowerApps.Administration.PowerShell -ErrorAction Stop
-
-    # Add to Power Apps
-    Add-PowerAppsAccount
-    Write-Host "[+] Connected to Power Platform" -ForegroundColor Green
-}
-catch {
-    Write-Host "[-] Error with Power Platform module: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
+    $Content | Out-File -FilePath $Path -Encoding UTF8
 }
 
-Write-Host ""
+function Main {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
 
-# Get environments
-$environments = @()
+    try {
+        $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+        $documentsFolder = [Environment]::GetFolderPath('MyDocuments')
+        if ([string]::IsNullOrWhiteSpace($documentsFolder)) {
+            $documentsFolder = [System.IO.Path]::GetTempPath()
+        }
+        $reportDir = Join-Path $documentsFolder 'Reports'
+        if (-not (Test-Path -LiteralPath $reportDir -PathType Container)) {
+            New-Item -ItemType Directory -Path $reportDir -Force | Out-Null
+        }
 
-if ($AllEnvironments) {
-    Write-Host "[*] Retrieving all environments..." -ForegroundColor Cyan
-    $environments = Get-AdminPowerAppEnvironment
-    Write-Host "[+] Found $($environments.Count) environment(s)" -ForegroundColor Green
-}
-elseif ($EnvironmentName) {
-    Write-Host "[*] Retrieving environment: $EnvironmentName..." -ForegroundColor Cyan
-    $env = Get-AdminPowerAppEnvironment -EnvironmentName $EnvironmentName
-    $environments = @($env)
-    Write-Host "[+] Found environment: $($env.DisplayName)" -ForegroundColor Green
-}
-else {
-    Write-Host "[-] Please specify either -EnvironmentName or -AllEnvironments" -ForegroundColor Red
-    exit 1
-}
+        Write-Host ""
+        Write-Host "=== Power Platform Environment Regional Settings ===" -ForegroundColor Cyan
+        if ($Apply) {
+            Write-Host "[!] Mode: APPLY SETTINGS" -ForegroundColor Yellow
+        }
+        else {
+            Write-Host "[+] Mode: AUDIT ONLY" -ForegroundColor Green
+        }
+        Write-Host ""
 
-Write-Host ""
+        # Check for Power Platform module
+        try {
+            if (-not (Get-Module -Name Microsoft.PowerApps.Administration.PowerShell -ListAvailable)) {
+                throw ("Microsoft.PowerApps.Administration.PowerShell module not found. Install with: " +
+                    "Install-Module -Name Microsoft.PowerApps.Administration.PowerShell")
+            }
 
-# Process environments
-$results = @()
-$compliantCount = 0
-$nonCompliantCount = 0
+            Import-Module Microsoft.PowerApps.Administration.PowerShell -ErrorAction Stop
 
-foreach ($env in $environments) {
-    Write-Host "[*] Processing: $($env.DisplayName)" -ForegroundColor Cyan
+            # Add to Power Apps
+            Add-PowerAppsAccount -ErrorAction Stop
+            Write-Host "[+] Connected to Power Platform" -ForegroundColor Green
+        }
+        catch {
+            Write-Host "[-] Error with Power Platform module: $($_.Exception.Message)" -ForegroundColor Red
+            return 1
+        }
 
-    # Get environment properties
-    $props = $env.Internal.properties
+        Write-Host ""
 
-    $currentLanguage = if ($props.linkedEnvironmentMetadata.baseLanguage) {
-        $props.linkedEnvironmentMetadata.baseLanguage
-    }
-    else { "Not Set" }
+        # Get environments
+        $environments = @()
 
-    $currentCurrency = if ($props.linkedEnvironmentMetadata.currency) {
-        $props.linkedEnvironmentMetadata.currency.code
-    }
-    else { "Not Set" }
+        if ($AllEnvironments) {
+            Write-Host "[*] Retrieving all environments..." -ForegroundColor Cyan
+            $environments = @(Get-AdminPowerAppEnvironment -ErrorAction Stop)
+            Write-Host "[+] Found $($environments.Count) environment(s)" -ForegroundColor Green
+        }
+        elseif ($EnvironmentName) {
+            Write-Host "[*] Retrieving environment: $EnvironmentName..." -ForegroundColor Cyan
+            $env = Get-AdminPowerAppEnvironment -EnvironmentName $EnvironmentName -ErrorAction Stop
+            $environments = @($env)
+            Write-Host "[+] Found environment: $($env.DisplayName)" -ForegroundColor Green
+        }
+        else {
+            Write-Host "[-] Please specify either -EnvironmentName or -AllEnvironments" -ForegroundColor Red
+            return 1
+        }
 
-    $issues = @()
-    if ($currentLanguage -ne $BaseLanguage -and $currentLanguage -ne "Not Set") {
-        $issues += "Base language: $currentLanguage (expected: $BaseLanguage)"
-    }
-    if ($currentCurrency -ne $CurrencyCode -and $currentCurrency -ne "Not Set") {
-        $issues += "Currency: $currentCurrency (expected: $CurrencyCode)"
-    }
+        Write-Host ""
 
-    $isCompliant = $issues.Count -eq 0
+        # Process environments
+        $results = @()
+        $compliantCount = 0
+        $nonCompliantCount = 0
 
-    if ($isCompliant) {
-        $compliantCount++
-        $status = "Compliant"
-        Write-Host "    [+] Compliant" -ForegroundColor Green
-    }
-    else {
-        $nonCompliantCount++
-        $status = "Non-Compliant"
-        Write-Host "    [!] Non-Compliant: $($issues -join '; ')" -ForegroundColor Yellow
-    }
+        foreach ($env in $environments) {
+            Write-Host "[*] Processing: $($env.DisplayName)" -ForegroundColor Cyan
 
-    if ($Apply -and -not $isCompliant) {
-        Write-Host "    [!] Regional settings for Power Platform environments are set at creation time" -ForegroundColor Yellow
-        Write-Host "    [!] To change: Recreate environment with correct settings or contact support" -ForegroundColor Yellow
-    }
+            # Get environment properties
+            $props = $env.Internal.properties
 
-    $result = [PSCustomObject]@{
-        EnvironmentName = $env.DisplayName
-        EnvironmentId = $env.EnvironmentName
-        BaseLanguage = $currentLanguage
-        RequiredLanguage = $BaseLanguage
-        Currency = $currentCurrency
-        RequiredCurrency = $CurrencyCode
-        Status = $status
-        Issues = if ($issues.Count -gt 0) { $issues -join '; ' } else { 'None' }
-    }
+            $currentLanguage = if ($props.linkedEnvironmentMetadata.baseLanguage) {
+                $props.linkedEnvironmentMetadata.baseLanguage
+            }
+            else { "Not Set" }
 
-    $results += $result
-}
+            $currentCurrency = if ($props.linkedEnvironmentMetadata.currency) {
+                $props.linkedEnvironmentMetadata.currency.code
+            }
+            else { "Not Set" }
 
-Write-Host ""
-Write-Host "=== Summary ===" -ForegroundColor Cyan
-Write-Host "Total Environments: $($results.Count)" -ForegroundColor White
-Write-Host "Compliant: $compliantCount" -ForegroundColor Green
-Write-Host "Non-Compliant: $nonCompliantCount" -ForegroundColor Yellow
-Write-Host ""
+            $issues = @()
+            if ($currentLanguage -ne $BaseLanguage -and $currentLanguage -ne "Not Set") {
+                $issues += "Base language: $currentLanguage (expected: $BaseLanguage)"
+            }
+            if ($currentCurrency -ne $CurrencyCode -and $currentCurrency -ne "Not Set") {
+                $issues += "Currency: $currentCurrency (expected: $CurrencyCode)"
+            }
 
-if ($ExportHTML) {
-    $htmlPath = "$ReportDir\PowerPlatformRegionalSettings_$timestamp.html"
+            $isCompliant = $issues.Count -eq 0
 
-    $html = @"
+            if ($isCompliant) {
+                $compliantCount++
+                $status = "Compliant"
+                Write-Host "    [+] Compliant" -ForegroundColor Green
+            }
+            else {
+                $nonCompliantCount++
+                $status = "Non-Compliant"
+                Write-Host "    [!] Non-Compliant: $($issues -join '; ')" -ForegroundColor Yellow
+            }
+
+            if ($Apply -and -not $isCompliant) {
+                if ($PSCmdlet.ShouldProcess($env.DisplayName, 'Apply regional settings')) {
+                    $creationTimeNote = 'Regional settings for Power Platform environments are set at creation time'
+                    $recreateNote = 'To change: Recreate environment with correct settings or contact support'
+                    Write-Host "    [!] $creationTimeNote" -ForegroundColor Yellow
+                    Write-Host "    [!] $recreateNote" -ForegroundColor Yellow
+                }
+            }
+
+            $result = [PSCustomObject]@{
+                EnvironmentName = $env.DisplayName
+                EnvironmentId   = $env.EnvironmentName
+                BaseLanguage    = $currentLanguage
+                RequiredLanguage = $BaseLanguage
+                Currency        = $currentCurrency
+                RequiredCurrency = $CurrencyCode
+                Status          = $status
+                Issues          = if ($issues.Count -gt 0) { $issues -join '; ' } else { 'None' }
+            }
+
+            $results += $result
+        }
+
+        Write-Host ""
+        Write-Host "=== Summary ===" -ForegroundColor Cyan
+        Write-Host "[*] Total Environments: $($results.Count)" -ForegroundColor Cyan
+        Write-Host "[+] Compliant: $compliantCount" -ForegroundColor Green
+        if ($nonCompliantCount -gt 0) {
+            Write-Host "[!] Non-Compliant: $nonCompliantCount" -ForegroundColor Yellow
+        }
+        else {
+            Write-Host "[+] Non-Compliant: $nonCompliantCount" -ForegroundColor Green
+        }
+        Write-Host ""
+
+        if ($ExportHTML) {
+            $htmlPath = Join-Path $reportDir "PowerPlatformRegionalSettings_$timestamp.html"
+
+            $html = @"
 <!DOCTYPE html>
 <html>
 <head>
@@ -233,9 +274,9 @@ if ($ExportHTML) {
         </tr>
 "@
 
-    foreach ($result in $results) {
-        $statusClass = if ($result.Status -eq 'Compliant') { 'compliant' } else { 'non-compliant' }
-        $html += @"
+            foreach ($result in $results) {
+                $statusClass = if ($result.Status -eq 'Compliant') { 'compliant' } else { 'non-compliant' }
+                $html += @"
         <tr>
             <td>$($result.EnvironmentName)</td>
             <td>$($result.BaseLanguage)</td>
@@ -244,18 +285,27 @@ if ($ExportHTML) {
             <td>$($result.Issues)</td>
         </tr>
 "@
+            }
+
+            $html += "</table></body></html>"
+            Write-ReportTextFile -Path $htmlPath -Content $html
+            Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+        }
+
+        if ($ExportCSV) {
+            $csvPath = Join-Path $reportDir "PowerPlatformRegionalSettings_$timestamp.csv"
+            $results | Export-Csv -Path $csvPath -NoTypeInformation
+            Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
+        }
+
+        Write-Host "`n[+] Power Platform regional settings check completed!" -ForegroundColor Green
+        return 0
     }
-
-    $html += "</table></body></html>"
-    $html | Out-File -FilePath $htmlPath -Encoding UTF8
-    Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-if ($ExportCSV) {
-    $csvPath = "$ReportDir\PowerPlatformRegionalSettings_$timestamp.csv"
-    $results | Export-Csv -Path $csvPath -NoTypeInformation
-    Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
-}
-
-Write-Host "`n[+] Power Platform regional settings check completed!" -ForegroundColor Green
-exit 0
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

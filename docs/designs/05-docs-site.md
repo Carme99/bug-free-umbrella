@@ -163,8 +163,8 @@ Example rows:
 
 | Name | Category | Synopsis | Path |
 |------|----------|----------|------|
-| Get-IntuneDevicePrimaryUsers | endpoints/intune/reporting | Gets primary users for Intune-managed devices. | [scripts/endpoints/intune/reporting/Get-IntuneDevicePrimaryUsers.ps1](../scripts/endpoints/intune/reporting/Get-IntuneDevicePrimaryUsers.ps1) |
-| Repair-TeamsCache | endpoints/remediation/teams-cache | Clears Teams cache for all user profiles (SYSTEM-aware). | [scripts/endpoints/remediation/teams-cache/Detect.ps1](../scripts/endpoints/remediation/teams-cache/Detect.ps1) |
+| Get-IntuneDevicePrimaryUsers | endpoints/intune/reporting | Gets primary users for Intune-managed devices. | [scripts/endpoints/intune/reporting/Get-IntuneDevicePrimaryUsers.ps1](../../scripts/endpoints/intune/reporting/Get-IntuneDevicePrimaryUsers.ps1) |
+| Repair-TeamsCache | endpoints/remediation/teams-cache | Clears Teams cache for all user profiles (SYSTEM-aware). | [scripts/endpoints/remediation/system/Test-RemediationFixTeamsCache.ps1](../../scripts/endpoints/remediation/system/Test-RemediationFixTeamsCache.ps1) |
 ```
 
 Footer:
@@ -276,7 +276,7 @@ After write (not in `-Validate`): re-read file, assert it contains `"358"` and `
 Add one row to the **Start Here** table (keep existing 7 rows; this is row 8):
 
 ```markdown
-| 📦 Module | Installable PSGallery module | [Module.md](Module.md) |
+| 📦 Module | Installable PSGallery module | [Module.md](../Module.md) |
 ```
 
 Keep the `📦` emoji to match the `🧰`/`🤖` style. Link is relative `Module.md` (same dir) — lychee-valid.
@@ -284,7 +284,7 @@ Keep the `📦` emoji to match the `🧰`/`🤖` style. Link is relative `Module
 Optionally add a one-line callout directly under the table:
 
 ```markdown
-> **New in 5.0 Hurricane:** `Install-Module BugFreeUmbrella -Scope CurrentUser` — see [Module.md](Module.md) for the full reference (358 functions).
+> **New in 5.0 Hurricane:** `Install-Module BugFreeUmbrella -Scope CurrentUser` — see [Module.md](../Module.md) for the full reference (358 functions).
 ```
 
 Update the mermaid **Documentation Map** to add:
@@ -375,7 +375,7 @@ No module export, no REST, no MCP tool.
 # 📦 BugFreeUmbrella Module
 
 > Installable PowerShell module — 358 functions across 8 domains.
-> Version 5.0.0 · PowerShell 7+ · Apache 2.0 · [CHANGELOG](../CHANGELOG.md)
+> Version 5.0.0 · PowerShell 7+ · Apache 2.0 · [CHANGELOG](../../CHANGELOG.md)
 
 ![Version](https://img.shields.io/badge/version-5.0.0-blue)
 ![PowerShell](https://img.shields.io/badge/PowerShell-7%2B-blue)
@@ -412,13 +412,13 @@ flowchart LR
 
 | Name | Category | Synopsis | Path |
 |------|----------|----------|------|
-| Analyze-BuildPerformance | automation/cicd | Analyzes build performance trends and identifies bottlenecks. | [scripts/automation/cicd/Analyze-BuildPerformance.ps1](../scripts/automation/cicd/Analyze-BuildPerformance.ps1) |
+| Analyze-BuildPerformance | automation/cicd | Analyzes build performance trends and identifies bottlenecks. | [scripts/automation/cicd/Analyze-BuildPerformance.ps1](../../scripts/automation/cicd/Analyze-BuildPerformance.ps1) |
 
 ### endpoints — 243 functions
 
 | Name | Category | Synopsis | Path |
 |------|----------|----------|------|
-| Get-IntuneDevicePrimaryUsers | endpoints/intune/reporting | Gets primary users for Intune-managed devices. | [scripts/endpoints/intune/reporting/Get-IntuneDevicePrimaryUsers.ps1](../scripts/endpoints/intune/reporting/Get-IntuneDevicePrimaryUsers.ps1) |
+| Get-IntuneDevicePrimaryUsers | endpoints/intune/reporting | Gets primary users for Intune-managed devices. | [scripts/endpoints/intune/reporting/Get-IntuneDevicePrimaryUsers.ps1](../../scripts/endpoints/intune/reporting/Get-IntuneDevicePrimaryUsers.ps1) |
 
 *Generated 2026-08-20T00:00:00Z — do not edit. Run `pwsh -File tools/Build-Docs.ps1` to regenerate.*
 ```
@@ -430,7 +430,7 @@ flowchart LR
 ### 9.1 Paths (4 files)
 
 * [ ] `docs/Module.md` exists, starts with `<!-- AUTO-GENERATED`, contains 358 data rows, 8 domain headings, and the three code blocks (Installation / Quick Usage / Publishing) with the required strings.
-* [ ] `docs/README.md` contains `| 📦 Module | Installable PSGallery module | [Module.md](Module.md) |` (exact) and optionally `HUB --> MOD[Module.md]` in its mermaid.
+* [ ] `docs/README.md` contains `| 📦 Module | Installable PSGallery module | [Module.md](../Module.md) |` (exact) and optionally `HUB --> MOD[Module.md]` in its mermaid.
 * [ ] `docs/ARCHITECTURE.md` contains `MOD[Module` in its mermaid and a `Build-Docs.ps1` mention under Documentation Architecture.
 * [ ] `tools/Build-Docs.ps1` exists, is PSSA-clean (0 findings), CRLF+BOM, `[CmdletBinding(SupportsShouldProcess)]`, comment-based help, and implements the 5 steps in §4.2.
 
@@ -526,4 +526,4 @@ Gates like `Build-Catalog.ps1 -Validate` — fail on stale docs.
 
 ---
 
-*End of design — Implementation consumes §3 (Module.md contract), §4 (Build-Docs.ps1 5 steps), §5 (README/ARCHITECTURE deltas), §6 (edge cases), §8 (≥10-line example), §9 (acceptance + verification).*
+*End of design — Implementation consumes §3 (../Module.md contract), §4 (Build-Docs.ps1 5 steps), §5 (README/ARCHITECTURE deltas), §6 (edge cases), §8 (≥10-line example), §9 (acceptance + verification).*

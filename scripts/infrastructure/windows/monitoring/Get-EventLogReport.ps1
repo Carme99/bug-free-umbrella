@@ -37,24 +37,37 @@
     Group events by source provider for pattern analysis.
 
 .EXAMPLE
-    .\Get-EventLogReport.ps1
+    PS C:\> .\Get-EventLogReport.ps1
     Analyzes all logs for errors in the last 24 hours.
 
 .EXAMPLE
-    .\Get-EventLogReport.ps1 -LogName System -Days 7 -Severity Warning -ExportHTML
+    PS C:\> .\Get-EventLogReport.ps1 -LogName System -Days 7 -Severity Warning -ExportHTML
     Analyzes System log for warnings in the last 7 days and exports HTML report.
 
 .EXAMPLE
-    .\Get-EventLogReport.ps1 -LogName Security -Hours 12 -ExportCSV
+    PS C:\> .\Get-EventLogReport.ps1 -LogName Security -Hours 12 -ExportCSV
     Analyzes Security log for the last 12 hours and exports to CSV.
 
 .NOTES
-    Requires Administrator privileges for Security log access
-    Compatible with Windows Server 2016, 2019, and 2022
-    Large time ranges may take several minutes to process
+    File Name     : Get-EventLogReport.ps1
+    Author        : Bug-Free Umbrella
+    Prerequisite  : PowerShell 5.1+
+    Version       : 1.0.0
+    Date          : 2026-08-23
+
+    Administrator privileges are required for Security log access; the elevation check runs
+    inside Main (not via #Requires) so the script can be safely loaded for testing.
+    Compatible with Windows Server 2016, 2019, and 2022. Large time ranges may take
+    several minutes to process.
 #>
 
 [CmdletBinding()]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+            Justification = 'Colored Write-Host prefix output is the specified console UX.')]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '',
+            Justification = 'Parameters are consumed by helper functions via dynamic scoping.')]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '',
+            Justification = 'Plural nouns are intentional: functions aggregate collections.')]
 param(
     [Parameter(Mandatory = $false)]
     [ValidateSet('System', 'Application', 'Security', 'All')]
@@ -83,56 +96,43 @@ param(
     [switch]$GroupBySource
 )
 
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-if ([string]::IsNullOrWhiteSpace($ReportDir) -or
-    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
-    $ReportDir -match '^(\\\\|//)') {
-    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
-    exit 1
-}
-$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
+$ErrorActionPreference = 'Stop'
 
-#Requires -RunAsAdministrator
 
-$script:report = @{
-    ServerName = $env:COMPUTERNAME
-    ScanTime = Get-Date
-    TimeRange = $null
-    Logs = @()
-    Summary = @{
-        TotalEvents = 0
-        CriticalCount = 0
-        ErrorCount = 0
-        WarningCount = 0
+function Test-AdminPrivilege {
+    # Runtime replacement for the former '#Requires -RunAsAdministrator' directive.
+    # Unix platforms (offline test runners) have no elevation concept, so the check
+    # passes through there; Windows hosts still require an elevated session.
+    if ($PSVersionTable.ContainsKey('Platform') -and $PSVersionTable.Platform -eq 'Unix') {
+        return $true
     }
-    TopSources = @()
-    AllEvents = @()
-}
 
-# Determine time range
-if ($Days) {
-    $script:startTime = (Get-Date).AddDays(-$Days)
-    $script:report.TimeRange = "Last $Days days"
-}
-else {
-    $script:startTime = (Get-Date).AddHours(-$Hours)
-    $script:report.TimeRange = "Last $Hours hours"
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    return ([Security.Principal.WindowsPrincipal]$identity).IsInRole(
+        [Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
+
+    # Mandated console prefixes: [-] error/critical, [!] warning, [+] success, [*] info.
+    $prefix = switch ($Level) {
+        'Critical' { '[-]' }
+        'Error' { '[-]' }
+        'Warning' { '[!]' }
+        'Success' { '[+]' }
+        default { '[*]' }
+    }
 
     $color = switch ($Level) {
         'Critical' { 'Red' }
         'Error' { 'Red' }
         'Warning' { 'Yellow' }
         'Success' { 'Green' }
-        default { 'White' }
+        default { 'Cyan' }
     }
-    Write-Host $Message -ForegroundColor $color
+
+    Write-Host "$prefix $Message" -ForegroundColor $color
 }
 
 function Get-SeverityLevel {
@@ -175,24 +175,24 @@ function Get-EventLogAnalysis {
         $events = Get-WinEvent -FilterHashtable $filterHash -MaxEvents $MaxEvents -ErrorAction SilentlyContinue
 
         if ($events) {
-            foreach ($event in $events) {
+            foreach ($evt in $events) {
                 $eventInfo = [PSCustomObject]@{
-                    TimeCreated = $event.TimeCreated
-                    LogName = $event.LogName
-                    Level = $event.Level
-                    LevelDisplayName = $event.LevelDisplayName
-                    Source = $event.ProviderName
-                    EventID = $event.Id
-                    Message = $event.Message
-                    UserName = $event.UserId
-                    Computer = $event.MachineName
+                    TimeCreated = $evt.TimeCreated
+                    LogName = $evt.LogName
+                    Level = $evt.Level
+                    LevelDisplayName = $evt.LevelDisplayName
+                    Source = $evt.ProviderName
+                    EventID = $evt.Id
+                    Message = $evt.Message
+                    UserName = $evt.UserId
+                    Computer = $evt.MachineName
                 }
 
                 $logReport.Events += $eventInfo
                 $script:report.AllEvents += $eventInfo
 
                 # Count by severity
-                switch ($event.Level) {
+                switch ($evt.Level) {
                     1 {
                         $logReport.CriticalCount++
                         $script:report.Summary.CriticalCount++
@@ -208,18 +208,19 @@ function Get-EventLogAnalysis {
                 }
 
                 # Track event sources
-                if ($logReport.TopSources.ContainsKey($event.ProviderName)) {
-                    $logReport.TopSources[$event.ProviderName]++
+                if ($logReport.TopSources.ContainsKey($evt.ProviderName)) {
+                    $logReport.TopSources[$evt.ProviderName]++
                 }
                 else {
-                    $logReport.TopSources[$event.ProviderName] = 1
+                    $logReport.TopSources[$evt.ProviderName] = 1
                 }
             }
 
             $logReport.EventCount = $events.Count
             $script:report.Summary.TotalEvents += $events.Count
 
-            Write-ColorOutput "    Found $($events.Count) events (Critical: $($logReport.CriticalCount), Errors: $($logReport.ErrorCount), Warnings: $($logReport.WarningCount))"
+            Write-ColorOutput ("    Found {0} events (Critical: {1}, Errors: {2}, Warnings: {3})" -f `
+                $events.Count, $logReport.CriticalCount, $logReport.ErrorCount, $logReport.WarningCount)
         }
         else {
             Write-ColorOutput "    No events found" -Level Success
@@ -294,12 +295,12 @@ function Show-Summary {
 
     if ($recentCritical) {
         Write-Host "`nRecent Critical/Error Events:" -ForegroundColor Cyan
-        foreach ($event in $recentCritical) {
-            $levelColor = if ($event.Level -eq 1) { 'Red' } else { 'Yellow' }
-            Write-Host "  [$($event.TimeCreated)] " -NoNewline
-            Write-Host "$($event.LevelDisplayName) " -ForegroundColor $levelColor -NoNewline
-            Write-Host "- $($event.Source) (Event $($event.EventID))"
-            $message = $event.Message
+        foreach ($evt in $recentCritical) {
+            $levelColor = if ($evt.Level -eq 1) { 'Red' } else { 'Yellow' }
+            Write-Host "  [$($evt.TimeCreated)] " -NoNewline
+            Write-Host "$($evt.LevelDisplayName) " -ForegroundColor $levelColor -NoNewline
+            Write-Host "- $($evt.Source) (Event $($evt.EventID))"
+            $message = $evt.Message
             if ($message.Length -gt 100) {
                 $message = $message.Substring(0, 100) + "..."
             }
@@ -320,10 +321,12 @@ function Export-HTMLReport {
     <title>Event Log Report - $($script:report.ServerName)</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .container { max-width: 1400px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { max-width: 1400px; margin: 0 auto; background-color: white; padding: 30px;
+            border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h1 { color: #333; border-bottom: 3px solid #007bff; padding-bottom: 10px; }
         h2 { color: #555; margin-top: 30px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px; margin: 20px 0; }
         .metric { background-color: #f8f9fa; padding: 20px; border-radius: 4px; border-left: 4px solid #007bff; }
         .metric.critical { border-left-color: #dc3545; }
         .metric.error { border-left-color: #fd7e14; }
@@ -356,13 +359,16 @@ function Export-HTMLReport {
                 <div>Total Events</div>
             </div>
             $(if($script:report.Summary.CriticalCount -gt 0) {
-                "<div class='metric critical'><div class='metric-value'>$($script:report.Summary.CriticalCount)</div><div>Critical</div></div>"
+                "<div class='metric critical'><div class='metric-value'>$($script:report.Summary.CriticalCount)" +
+                "</div><div>Critical</div></div>"
             })
             $(if($script:report.Summary.ErrorCount -gt 0) {
-                "<div class='metric error'><div class='metric-value'>$($script:report.Summary.ErrorCount)</div><div>Errors</div></div>"
+                "<div class='metric error'><div class='metric-value'>$($script:report.Summary.ErrorCount)</div>" +
+                "<div>Errors</div></div>"
             })
             $(if($script:report.Summary.WarningCount -gt 0) {
-                "<div class='metric warning'><div class='metric-value'>$($script:report.Summary.WarningCount)</div><div>Warnings</div></div>"
+                "<div class='metric warning'><div class='metric-value'>$($script:report.Summary.WarningCount)</div>" +
+                "<div>Warnings</div></div>"
             })
         </div>
 
@@ -377,22 +383,25 @@ function Export-HTMLReport {
         <h2>Event Details by Log</h2>
         $(foreach($log in $script:report.Logs) {
             "<h3>$($log.LogName) Log</h3>"
-            "<p>Events: $($log.EventCount) | Critical: $($log.CriticalCount) | Errors: $($log.ErrorCount) | Warnings: $($log.WarningCount)</p>"
+            "<p>Events: $($log.EventCount) | Critical: $($log.CriticalCount) | " +
+            "Errors: $($log.ErrorCount) | Warnings: $($log.WarningCount)</p>"
             if($log.Events.Count -gt 0) {
                 "<table><tr><th>Time</th><th>Level</th><th>Source</th><th>Event ID</th><th>Message</th></tr>"
-                foreach($event in ($log.Events | Select-Object -First 100)) {
-                    $levelClass = switch($event.Level) {
+                foreach($evt in ($log.Events | Select-Object -First 100)) {
+                    $levelClass = switch($evt.Level) {
                         1 { 'critical' }
                         2 { 'error' }
                         3 { 'warning' }
                         default { '' }
                     }
-                    $message = $event.Message
+                    $message = $evt.Message
                     if($message.Length -gt 200) {
                         $message = $message.Substring(0, 200) + "..."
                     }
                     $message = [System.Net.WebUtility]::HtmlEncode($message)
-                    "<tr><td>$($event.TimeCreated)</td><td class='$levelClass'>$($event.LevelDisplayName)</td><td>$($event.Source)</td><td>$($event.EventID)</td><td class='event-message' title='$message'>$message</td></tr>"
+                    "<tr><td>$($evt.TimeCreated)</td><td class='$levelClass'>$($evt.LevelDisplayName)</td>" +
+                    "<td>$($evt.Source)</td><td>$($evt.EventID)</td>" +
+                    "<td class='event-message' title='$message'>$message</td></tr>"
                 }
                 "</table>"
             }
@@ -419,34 +428,90 @@ function Export-CSVReport {
     return $reportPath
 }
 
-# Main execution
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "  Event Log Analysis" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Server: $($script:report.ServerName)"
-Write-Host "Time Range: $($script:report.TimeRange)"
-Write-Host "Severity Filter: $Severity"
-Write-Host "Max Events per Log: $MaxEvents"
-Write-Host "`nAnalyzing logs..." -ForegroundColor Cyan
+function Main {
+    try {
+        if (-not (Test-AdminPrivilege)) {
+            Write-Host "[-] Administrator privileges are required to analyze event logs." -ForegroundColor Red
+            return 1
+        }
 
-if ($LogName -eq 'All') {
-    Get-EventLogAnalysis -Log 'System'
-    Get-EventLogAnalysis -Log 'Application'
-    Get-EventLogAnalysis -Log 'Security'
-}
-else {
-    Get-EventLogAnalysis -Log $LogName
+        $script:ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+        if ([string]::IsNullOrWhiteSpace($script:ReportDir) -or
+            $script:ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+            $script:ReportDir -match '^(\\\\|//)') {
+            throw "Unsafe report path: $script:ReportDir. Report path must be a local absolute " +
+                "path without '..' traversal."
+        }
+        $script:ReportDir = [System.IO.Path]::GetFullPath($script:ReportDir)
+        if (-not (Test-Path -LiteralPath $script:ReportDir -PathType Container)) {
+            New-Item -ItemType Directory -Path $script:ReportDir -Force -ErrorAction Stop | Out-Null
+        }
+
+        $script:report = @{
+            ServerName = $env:COMPUTERNAME
+            ScanTime = Get-Date
+            TimeRange = $null
+            Logs = @()
+            Summary = @{
+                TotalEvents = 0
+                CriticalCount = 0
+                ErrorCount = 0
+                WarningCount = 0
+            }
+            TopSources = @()
+            AllEvents = @()
+        }
+
+        # Determine time range
+        if ($Days) {
+            $script:startTime = (Get-Date).AddDays(-$Days)
+            $script:report.TimeRange = "Last $Days days"
+        }
+        else {
+            $script:startTime = (Get-Date).AddHours(-$Hours)
+            $script:report.TimeRange = "Last $Hours hours"
+        }
+
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "  Event Log Analysis" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "Server: $($script:report.ServerName)"
+        Write-Host "Time Range: $($script:report.TimeRange)"
+        Write-Host "Severity Filter: $Severity"
+        Write-Host "Max Events per Log: $MaxEvents"
+        Write-Host "`nAnalyzing logs..." -ForegroundColor Cyan
+
+        if ($LogName -eq 'All') {
+            Get-EventLogAnalysis -Log 'System'
+            Get-EventLogAnalysis -Log 'Application'
+            Get-EventLogAnalysis -Log 'Security'
+        }
+        else {
+            Get-EventLogAnalysis -Log $LogName
+        }
+
+        Get-TopEventSources
+        Show-Summary
+
+        if ($ExportHTML) {
+            Write-Host "Generating HTML report..." -ForegroundColor Cyan
+            Export-HTMLReport | Out-Null
+        }
+
+        if ($ExportCSV) {
+            Write-Host "Generating CSV report..." -ForegroundColor Cyan
+            Export-CSVReport | Out-Null
+        }
+
+        Write-Host "[+] Event log analysis completed." -ForegroundColor Green
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-Get-TopEventSources
-Show-Summary
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }
 
-if ($ExportHTML) {
-    Write-Host "Generating HTML report..." -ForegroundColor Cyan
-    Export-HTMLReport
-}
-
-if ($ExportCSV) {
-    Write-Host "Generating CSV report..." -ForegroundColor Cyan
-    Export-CSVReport
-}

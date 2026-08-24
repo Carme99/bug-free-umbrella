@@ -1,15 +1,17 @@
-<#
+﻿<#
 .SYNOPSIS
     Audits installed software and checks license compliance status.
 
 .DESCRIPTION
     This script inventories all installed software on Windows devices and provides:
     - Complete list of installed applications with versions
-    - License key detection for major applications
+    - License key detection for major applications (Office, Windows)
     - Software installation dates and publishers
-    - Identification of unauthorized or unlicensed software
-    - Duplicate software detection
-    - Export to HTML and CSV formats
+    - Identification of unauthorized or unlicensed software and duplicate installations
+
+    Side effects: none by default (console only); when -OutputFormat requests HTML and/or CSV,
+    report files are written under -OutputPath. Exit codes: 0 = audit completed; 1 = an error
+    occurred (e.g., report write failure).
 
 .PARAMETER OutputFormat
     Specifies the output format: None, HTML, CSV, or All. Default is None (console only).
@@ -24,22 +26,28 @@
     Highlight potentially unlicensed software. Default is $true.
 
 .EXAMPLE
-    .\Get-SoftwareLicenseCompliance.ps1 -OutputFormat HTML -OutputPath "C:\Reports"
+    PS C:\> .\Get-SoftwareLicenseCompliance.ps1 -OutputFormat HTML -OutputPath "C:\Reports"
 
     Generates an HTML inventory report of installed software.
 
 .EXAMPLE
-    .\Get-SoftwareLicenseCompliance.ps1 -CheckLicenseKeys -HighlightUnlicensed
+    PS C:\> .\Get-SoftwareLicenseCompliance.ps1 -CheckLicenseKeys $true -HighlightUnlicensed $true
 
     Audits software with license key detection and highlights unlicensed products.
 
 .NOTES
-    File Name      : Get-SoftwareLicenseCompliance.ps1
-    Requires       : PowerShell 5.1+, Administrator privileges for full key access
-    Version        : 1.0
+    File Name   : Get-SoftwareLicenseCompliance.ps1
+    Author      : Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version     : 1.0.0
+    Date        : 2026-08-23
 #>
 
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess)]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+    Justification = 'Spec-mandated console reporting with [+] / [!] / [-] / [*] prefixes')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '',
+    Justification = 'Script parameters are consumed inside function Main via dynamic scoping')]
 param(
     [Parameter()]
     [ValidateSet('None', 'HTML', 'CSV', 'All')]
@@ -55,178 +63,210 @@ param(
     [bool]$HighlightUnlicensed = $true
 )
 
-Write-Host "=== Software License Compliance Audit ===" -ForegroundColor Cyan
-Write-Host "Scanning installed software..." -ForegroundColor Yellow
+$ErrorActionPreference = 'Stop'
 
-# Initialize results array
-$softwareInventory = @()
+function Main {
+    [CmdletBinding()]
+    param(
+        [ValidateSet('None', 'HTML', 'CSV', 'All')]
+        [string]$OutputFormat = 'None',
 
-# Registry paths for installed software
-$registryPaths = @(
-    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
-    "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*",
-    "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*"
-)
+        [string]$OutputPath = (Get-Location),
 
-# Get installed software from registry
-foreach ($path in $registryPaths) {
+        [bool]$CheckLicenseKeys = $true,
+
+        [bool]$HighlightUnlicensed = $true
+    )
+
     try {
-        $installedSoftware = Get-ItemProperty $path -ErrorAction SilentlyContinue |
-            Where-Object { $_.DisplayName } |
-            Select-Object DisplayName, DisplayVersion, Publisher, InstallDate, InstallLocation, UninstallString
+        Write-Host "[*] === Software License Compliance Audit ===" -ForegroundColor Cyan
+        Write-Host "[*] Scanning installed software..." -ForegroundColor Cyan
 
-        foreach ($app in $installedSoftware) {
-            $licenseKey = "N/A"
-            $licenseStatus = "Unknown"
+        # Initialize results array
+        $softwareInventory = @()
 
-            # Attempt to find license key if enabled
-            if ($CheckLicenseKeys) {
-                $productName = $app.DisplayName
+        # Registry paths for installed software
+        $registryPaths = @(
+            "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
+            "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*",
+            "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*"
+        )
 
-                # Check for Office license
-                if ($productName -match "Microsoft Office|Microsoft 365") {
-                    try {
-                        $officeLicense = Get-CimInstance -Query "SELECT * FROM SoftwareLicensingProduct WHERE ApplicationID = '0ff1ce15-a989-479d-af46-f275c6370663' AND LicenseStatus = 1" -ErrorAction SilentlyContinue
-                        if ($officeLicense) {
-                            $licenseKey = $officeLicense.ProductKeyID
-                            $licenseStatus = "Licensed"
-                        }
-                        else {
-                            $licenseStatus = "Unlicensed"
-                        }
-                    }
-                    catch {
-                        $licenseStatus = "Unknown"
-                    }
-                }
+        # Get installed software from registry
+        foreach ($path in $registryPaths) {
+            try {
+                $installedSoftware = Get-ItemProperty -Path $path -ErrorAction SilentlyContinue |
+                    Where-Object { $_.DisplayName } |
+                    Select-Object DisplayName, DisplayVersion, Publisher, InstallDate, InstallLocation, UninstallString
 
-                # Check for Windows license
-                if ($productName -match "Windows|Microsoft Windows") {
-                    try {
-                        $windowsLicense = Get-CimInstance -Query "SELECT * FROM SoftwareLicensingProduct WHERE ApplicationID = '55c92734-d682-4d71-983e-d6ec3f16059f' AND LicenseStatus = 1" -ErrorAction SilentlyContinue
-                        if ($windowsLicense) {
-                            $licenseKey = $windowsLicense.ProductKeyID
-                            $licenseStatus = "Licensed"
-                        }
-                        else {
-                            $licenseStatus = "Unlicensed"
-                        }
-                    }
-                    catch {
-                        $licenseStatus = "Unknown"
-                    }
-                }
+                foreach ($app in $installedSoftware) {
+                    $licenseKey = "N/A"
+                    $licenseStatus = "Unknown"
 
-                # For other software, check common registry locations
-                if ($licenseKey -eq "N/A" -and $app.DisplayName) {
-                    # Sanitize registry path components to prevent invalid paths (spaces are valid in registry keys)
-                    $safePublisher = $app.Publisher -replace '[\\/:*?"<>|]', '_'
-                    $safeDisplayName = $app.DisplayName -replace '[\\/:*?"<>|]', '_'
+                    # Attempt to find license key if enabled
+                    if ($CheckLicenseKeys) {
+                        $productName = $app.DisplayName
 
-                    $possibleKeyPaths = @(
-                        "HKLM:\SOFTWARE\$safePublisher\$safeDisplayName",
-                        "HKCU:\SOFTWARE\$safePublisher\$safeDisplayName"
-                    )
-
-                    foreach ($keyPath in $possibleKeyPaths) {
-                        try {
-                            if (Test-Path -LiteralPath $keyPath) {
-                                $regProps = Get-ItemProperty -LiteralPath $keyPath -ErrorAction SilentlyContinue
-                                $keyProps = $regProps.PSObject.Properties | Where-Object {
-                                    $_.Name -match "Key|License|Serial|Product.*Key"
+                        # Check for Office license
+                        if ($productName -match "Microsoft Office|Microsoft 365") {
+                            try {
+                                $officeLicense = Get-CimInstance -Query (
+                                    "SELECT * FROM SoftwareLicensingProduct " +
+                                    "WHERE ApplicationID = '0ff1ce15-a989-479d-af46-f275c6370663' " +
+                                    "AND LicenseStatus = 1"
+                                ) -ErrorAction SilentlyContinue
+                                if ($officeLicense) {
+                                    $licenseKey = $officeLicense.ProductKeyID
+                                    $licenseStatus = "Licensed"
                                 }
+                                else {
+                                    $licenseStatus = "Unlicensed"
+                                }
+                            }
+                            catch {
+                                $licenseStatus = "Unknown"
+                            }
+                        }
 
-                                if ($keyProps) {
-                                    $licenseKey = $keyProps[0].Value
-                                    $licenseStatus = if ($licenseKey) { "Licensed" } else { "Unknown" }
-                                    break
+                        # Check for Windows license
+                        if ($productName -match "Windows|Microsoft Windows") {
+                            try {
+                                $windowsLicense = Get-CimInstance -Query (
+                                    "SELECT * FROM SoftwareLicensingProduct " +
+                                    "WHERE ApplicationID = '55c92734-d682-4d71-983e-d6ec3f16059f' " +
+                                    "AND LicenseStatus = 1"
+                                ) -ErrorAction SilentlyContinue
+                                if ($windowsLicense) {
+                                    $licenseKey = $windowsLicense.ProductKeyID
+                                    $licenseStatus = "Licensed"
+                                }
+                                else {
+                                    $licenseStatus = "Unlicensed"
+                                }
+                            }
+                            catch {
+                                $licenseStatus = "Unknown"
+                            }
+                        }
+
+                        # For other software, check common registry locations
+                        if ($licenseKey -eq "N/A" -and $app.DisplayName) {
+                            # Sanitize registry path components to prevent invalid paths (spaces remain valid)
+                            $safePublisher = $app.Publisher -replace '[\\/:*?"<>|]', '_'
+                            $safeDisplayName = $app.DisplayName -replace '[\\/:*?"<>|]', '_'
+
+                            $possibleKeyPaths = @(
+                                "HKLM:\SOFTWARE\$safePublisher\$safeDisplayName",
+                                "HKCU:\SOFTWARE\$safePublisher\$safeDisplayName"
+                            )
+
+                            foreach ($keyPath in $possibleKeyPaths) {
+                                try {
+                                    if (Test-Path -LiteralPath $keyPath) {
+                                        $regProps = Get-ItemProperty -LiteralPath $keyPath -ErrorAction SilentlyContinue
+                                        $keyProps = $regProps.PSObject.Properties | Where-Object {
+                                            $_.Name -match "Key|License|Serial|Product.*Key"
+                                        }
+
+                                        if ($keyProps) {
+                                            $licenseKey = $keyProps[0].Value
+                                            $licenseStatus = if ($licenseKey) { "Licensed" } else { "Unknown" }
+                                            break
+                                        }
+                                    }
+                                }
+                                catch {
+                                    Write-Verbose "Handled exception: $($_.Exception.Message)"
                                 }
                             }
                         }
-                        catch {
-                            Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
+                    }
+
+                    # Parse install date
+                    $installDate = if ($app.InstallDate) {
+                        try {
+                            [datetime]::ParseExact($app.InstallDate, "yyyyMMdd", $null).ToString("yyyy-MM-dd")
                         }
+                        catch {
+                            $app.InstallDate
+                        }
+                    }
+                    else {
+                        "Unknown"
+                    }
+
+                    $softwareInventory += [PSCustomObject]@{
+                        Name = $app.DisplayName
+                        Version = $app.DisplayVersion
+                        Publisher = $app.Publisher
+                        InstallDate = $installDate
+                        InstallLocation = $app.InstallLocation
+                        LicenseKey = $licenseKey
+                        LicenseStatus = $licenseStatus
                     }
                 }
             }
-
-            # Parse install date
-            $installDate = if ($app.InstallDate) {
-                try {
-                    [datetime]::ParseExact($app.InstallDate, "yyyyMMdd", $null).ToString("yyyy-MM-dd")
-                }
-                catch {
-                    $app.InstallDate
-                }
-            }
-            else {
-                "Unknown"
-            }
-
-            $softwareInventory += [PSCustomObject]@{
-                Name = $app.DisplayName
-                Version = $app.DisplayVersion
-                Publisher = $app.Publisher
-                InstallDate = $installDate
-                InstallLocation = $app.InstallLocation
-                LicenseKey = $licenseKey
-                LicenseStatus = $licenseStatus
+            catch {
+                Write-Verbose "Could not access registry path: $path"
             }
         }
-    }
-    catch {
-        Write-Verbose "Could not access registry path: $path"
-    }
-}
 
-# Remove duplicates (same app from different registry locations)
-$softwareInventory = $softwareInventory | Sort-Object Name, Version -Unique
+        # Remove duplicates (same app from different registry locations)
+        $softwareInventory = @($softwareInventory | Sort-Object Name, Version -Unique)
 
-Write-Host "`n=== Software Inventory Results ===" -ForegroundColor Cyan
-Write-Host "Total applications found: $($softwareInventory.Count)" -ForegroundColor Green
+        Write-Host "`n[*] === Software Inventory Results ===" -ForegroundColor Cyan
+        Write-Host "[+] Total applications found: $($softwareInventory.Count)" -ForegroundColor Green
 
-if ($CheckLicenseKeys) {
-    $licensed = ($softwareInventory | Where-Object { $_.LicenseStatus -eq 'Licensed' }).Count
-    $unlicensed = ($softwareInventory | Where-Object { $_.LicenseStatus -eq 'Unlicensed' }).Count
-    $unknown = ($softwareInventory | Where-Object { $_.LicenseStatus -eq 'Unknown' }).Count
+        if ($CheckLicenseKeys) {
+            $licensed = ($softwareInventory | Where-Object { $_.LicenseStatus -eq 'Licensed' }).Count
+            $unlicensed = ($softwareInventory | Where-Object { $_.LicenseStatus -eq 'Unlicensed' }).Count
+            $unknown = ($softwareInventory | Where-Object { $_.LicenseStatus -eq 'Unknown' }).Count
 
-    Write-Host "Licensed software: $licensed" -ForegroundColor Green
-    Write-Host "Unlicensed software: $unlicensed" -ForegroundColor $(if ($unlicensed -gt 0) { 'Red' } else { 'Green' })
-    Write-Host "Unknown license status: $unknown" -ForegroundColor Yellow
-}
+            Write-Host "[+] Licensed software: $licensed" -ForegroundColor Green
+            $unlicPrefix = if ($unlicensed -gt 0) { '[-]' } else { '[+]' }
+            $unlicColor = if ($unlicensed -gt 0) { 'Red' } else { 'Green' }
+            Write-Host "$unlicPrefix Unlicensed software: $unlicensed" -ForegroundColor $unlicColor
+            Write-Host "[!] Unknown license status: $unknown" -ForegroundColor Yellow
+        }
 
-# Display software inventory
-Write-Host "`n=== Top 20 Installed Applications ===" -ForegroundColor Cyan
-$softwareInventory | Select-Object Name, Version, Publisher, LicenseStatus -First 20 | Format-Table -AutoSize
+        # Display software inventory
+        Write-Host "`n[*] === Top 20 Installed Applications ===" -ForegroundColor Cyan
+        $softwareInventory |
+            Select-Object Name, Version, Publisher, LicenseStatus -First 20 |
+            Format-Table -AutoSize | Out-Host
 
-# Identify potentially problematic software
-if ($HighlightUnlicensed) {
-    $unlicensedSoftware = $softwareInventory | Where-Object {
-        $_.LicenseStatus -eq 'Unlicensed' -and $_.Name -match "Microsoft Office|Windows|Adobe|AutoCAD"
-    }
+        # Identify potentially problematic software
+        if ($HighlightUnlicensed) {
+            $unlicensedSoftware = @($softwareInventory | Where-Object {
+                $_.LicenseStatus -eq 'Unlicensed' -and $_.Name -match "Microsoft Office|Windows|Adobe|AutoCAD"
+            })
 
-    if ($unlicensedSoftware) {
-        Write-Host "`n=== WARNING: Potentially Unlicensed Critical Software ===" -ForegroundColor Red
-        $unlicensedSoftware | Format-Table -Property Name, Version, Publisher -AutoSize
-    }
-}
+            if ($unlicensedSoftware.Count -gt 0) {
+                Write-Host "`n[!] === WARNING: Potentially Unlicensed Critical Software ===" -ForegroundColor Red
+                $unlicensedSoftware | Format-Table -Property Name, Version, Publisher -AutoSize | Out-Host
+            }
+        }
 
-# Detect duplicate installations
-$duplicates = $softwareInventory | Group-Object Name | Where-Object { $_.Count -gt 1 }
-if ($duplicates) {
-    Write-Host "`n=== Duplicate Software Installations Detected ===" -ForegroundColor Yellow
-    foreach ($dup in $duplicates) {
-        Write-Host "$($dup.Name) - Installed $($dup.Count) times" -ForegroundColor Yellow
-        $dup.Group | Format-Table -Property Version, InstallDate -AutoSize
-    }
-}
+        # Detect duplicate installations
+        $duplicates = @($softwareInventory | Group-Object Name | Where-Object { $_.Count -gt 1 })
+        if ($duplicates.Count -gt 0) {
+            Write-Host "`n[!] === Duplicate Software Installations Detected ===" -ForegroundColor Yellow
+            foreach ($dup in $duplicates) {
+                Write-Host "[!] $($dup.Name) - Installed $($dup.Count) times" -ForegroundColor Yellow
+                $dup.Group | Format-Table -Property Version, InstallDate -AutoSize | Out-Host
+            }
+        }
 
-# Generate HTML report
-if ($OutputFormat -eq 'HTML' -or $OutputFormat -eq 'All') {
-    $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-    $htmlPath = Join-Path $OutputPath "SoftwareLicenseCompliance_$timestamp.html"
+        # Generate HTML report
+        if ($OutputFormat -eq 'HTML' -or $OutputFormat -eq 'All') {
+            $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+            $htmlPath = Join-Path $OutputPath "SoftwareLicenseCompliance_$timestamp.html"
 
-    $html = @"
+            $licensedCount = ($softwareInventory | Where-Object {$_.LicenseStatus -eq 'Licensed'}).Count
+            $unlicensedCount = ($softwareInventory | Where-Object {$_.LicenseStatus -eq 'Unlicensed'}).Count
+            $unknownCount = ($softwareInventory | Where-Object {$_.LicenseStatus -eq 'Unknown'}).Count
+
+            $html = @"
 <!DOCTYPE html>
 <html>
 <head>
@@ -248,9 +288,9 @@ if ($OutputFormat -eq 'HTML' -or $OutputFormat -eq 'All') {
     <div class="summary">
         <p><strong>Generated:</strong> $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")</p>
         <p><strong>Total Applications:</strong> $($softwareInventory.Count)</p>
-        <p><strong>Licensed:</strong> <span style="color: green;">$(($softwareInventory | Where-Object {$_.LicenseStatus -eq 'Licensed'}).Count)</span></p>
-        <p><strong>Unlicensed:</strong> <span style="color: red;">$(($softwareInventory | Where-Object {$_.LicenseStatus -eq 'Unlicensed'}).Count)</span></p>
-        <p><strong>Unknown Status:</strong> $(($softwareInventory | Where-Object {$_.LicenseStatus -eq 'Unknown'}).Count)</p>
+        <p><strong>Licensed:</strong> <span style="color: green;">$licensedCount</span></p>
+        <p><strong>Unlicensed:</strong> <span style="color: red;">$unlicensedCount</span></p>
+        <p><strong>Unknown Status:</strong> $unknownCount</p>
     </div>
     <table>
         <tr>
@@ -262,41 +302,50 @@ if ($OutputFormat -eq 'HTML' -or $OutputFormat -eq 'All') {
         </tr>
 "@
 
-    foreach ($app in $softwareInventory) {
-        $rowClass = switch ($app.LicenseStatus) {
-            'Licensed' { 'class="licensed"' }
-            'Unlicensed' { 'class="unlicensed"' }
-            default { '' }
-        }
+            foreach ($app in $softwareInventory) {
+                $rowClass = switch ($app.LicenseStatus) {
+                    'Licensed' { 'class="licensed"' }
+                    'Unlicensed' { 'class="unlicensed"' }
+                    default { '' }
+                }
 
-        $html += @"
+                $html += @"
         <tr $rowClass>
-            <td>$($app.Name)</td>
-            <td>$($app.Version)</td>
-            <td>$($app.Publisher)</td>
-            <td>$($app.InstallDate)</td>
-            <td>$($app.LicenseStatus)</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($app.Name)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($app.Version)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($app.Publisher)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($app.InstallDate)"))</td>
+            <td>$([System.Net.WebUtility]::HtmlEncode("$($app.LicenseStatus)"))</td>
         </tr>
 "@
-    }
+            }
 
-    $html += @"
+            $html += @"
     </table>
 </body>
 </html>
 "@
 
-    $html | Out-File -FilePath $htmlPath -Encoding UTF8
-    Write-Host "`nHTML report saved to: $htmlPath" -ForegroundColor Green
+            $html | Out-File -FilePath $htmlPath -Encoding UTF8 -ErrorAction Stop
+            Write-Host "`n[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+        }
+
+        # Generate CSV report
+        if ($OutputFormat -eq 'CSV' -or $OutputFormat -eq 'All') {
+            $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+            $csvPath = Join-Path $OutputPath "SoftwareLicenseCompliance_$timestamp.csv"
+            $softwareInventory | Export-Csv -Path $csvPath -NoTypeInformation -ErrorAction Stop
+            Write-Host "[+] CSV report saved to: $csvPath" -ForegroundColor Green
+        }
+
+        Write-Host "`n[+] Software license compliance audit completed.`n" -ForegroundColor Green
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-# Generate CSV report
-if ($OutputFormat -eq 'CSV' -or $OutputFormat -eq 'All') {
-    $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-    $csvPath = Join-Path $OutputPath "SoftwareLicenseCompliance_$timestamp.csv"
-    $softwareInventory | Export-Csv -Path $csvPath -NoTypeInformation
-    Write-Host "CSV report saved to: $csvPath" -ForegroundColor Green
-}
-
-# Return results
-return $softwareInventory
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

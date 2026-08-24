@@ -1,110 +1,146 @@
-#Requires -RunAsAdministrator
-<#
+﻿<#
 .SYNOPSIS
-    Detect and remove applications that block Windows Sysprep.
+    Detect and remove AppX packages that block Windows Sysprep preparation.
 
 .DESCRIPTION
     This script automatically detects AppX packages that will block Sysprep from running successfully.
-    It identifies apps that are installed for users but not provisioned in the image, then prompts
-    for confirmation before removing them.
+    It identifies apps that are installed for users but not provisioned in the image, then asks for
+    confirmation before removing them.
 
     The script:
-    - Scans for potential Sysprep blockers
+    - Scans for potential Sysprep blockers (check-then-act; converged systems are left untouched)
     - Displays detailed information about detected apps
-    - Asks for confirmation before making changes
-    - Logs all actions to a file
-    - Provides a summary report
+    - Asks for confirmation before making changes (-Force skips the prompt)
+    - Stops services that may lock AppX packages, and always restarts them afterwards
+    - Logs all actions to a file and provides a summary report
+
+    Exit codes: 0 = no blockers found, removal succeeded, or user cancelled; 1 = one or more blockers
+    could not be removed, an unsafe report path was supplied, or a fatal error occurred.
 
 .PARAMETER Force
     Skip confirmation prompts and automatically remove detected blockers.
 
 .PARAMETER LogPath
-    Path where the log file will be created. Defaults to MyDocuments\Reports.
+    Path where the log file will be created. Defaults to a timestamped file under MyDocuments\Reports.
 
 .PARAMETER ExportBlockersList
     Export the list of detected blockers to a CSV file before removal.
 
 .EXAMPLE
-    .\Remove-SysprepBlockers.ps1
+    PS C:\> .\Remove-SysprepBlockers.ps1
     Run the script interactively with confirmation prompts.
 
 .EXAMPLE
-    .\Remove-SysprepBlockers.ps1 -Force
+    PS C:\> .\Remove-SysprepBlockers.ps1 -Force
     Automatically remove all detected blockers without prompting.
 
 .EXAMPLE
-    .\Remove-SysprepBlockers.ps1 -ExportBlockersList
+    PS C:\> .\Remove-SysprepBlockers.ps1 -ExportBlockersList
     Export detected blockers to CSV and prompt for removal.
 
 .NOTES
-    Author: Sysprep Blocker Removal Tool
-    Version: 2.0
-    Requires: Administrator privileges
+    File Name   : Remove-SysprepBlockers.ps1
+    Author      : Sysprep Blocker Removal Tool
+    Prerequisite: PowerShell 7.0
+    Version     : 1.0.0
+    Date        : 2026-08-23
 #>
 
-[CmdletBinding(SupportsShouldProcess = $true)]
+[CmdletBinding(SupportsShouldProcess)]
 param(
-    [Parameter(HelpMessage = "Skip confirmation and remove all blockers automatically")]
+    [Parameter(HelpMessage = 'Skip confirmation and remove all blockers automatically')]
     [switch]$Force,
 
-    [Parameter(HelpMessage = "Path for log file")]
-    [string]$LogPath = (Join-Path (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports') "SysprepBlockerRemoval_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"),
+    [Parameter(HelpMessage = 'Path for log file')]
+    [string]$LogPath,
 
-    [Parameter(HelpMessage = "Export list of blockers to CSV before removal")]
+    [Parameter(HelpMessage = 'Export list of blockers to CSV before removal')]
     [switch]$ExportBlockersList
 )
 
+$ErrorActionPreference = 'Stop'
+
 # ==================== CONFIGURATION ====================
 
-$script:LogPath = $LogPath
-$script:BlockersRemoved = @()
-$script:BlockersFailed = @()
-$script:StartTime = Get-Date
-
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-if ([string]::IsNullOrWhiteSpace($ReportDir) -or
-    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
-    $ReportDir -match '^(\\\\|//)') {
-    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
-    exit 1
-}
-$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
-
 # Services that may lock AppX packages
-$servicesToStop = @('AppXSVC', 'ClipSVC')
-$stoppedServices = @()
-
-# Known system apps that should never be removed
-$msSystemNameWhitelist = '^(?:
-    Microsoft\.(?:AAD|AccountsControl|AsyncTextService|BioEnrollment|CredDialogHost|ECApp|LockApp
-    |MicrosoftEdgeDevToolsClient
-    |NET\.Native(?:\.Framework|\.Runtime)?(?:\.\d+\.\d+)?
-    |Services\.Store\.Engagement
-    |UI\.Xaml(?:\.CBS|\.2\.\d+)?
-    |VCLibs(?:\.140\.00(?:\.UWPDesktop)?)?
-    |Win32WebViewHost
-    |Windows(?:\.Apprep\.ChxApp|\.AssignedAccessLockApp|\.CapturePicker|\.CloudExperienceHost
-             |\.ContentDeliveryManager|\.NarratorQuickStart|\.OOBENetworkCaptivePortal
-             |\.OOBENetworkConnectionFlow|\.ParentalControls|\.PeopleExperienceHost
-             |\.PinningConfirmationDialog|\.PrintQueueActionCenter|\.SecureAssessmentBrowser
-             |\.ShellExperienceHost|\.StartMenuExperienceHost|\.XGpuEjectDialog)
-    |WindowsAppRuntime(?:\..+)?
-    |WindowsClient
-    )
-    |windows\.immersivecontrolpanel
-    |Windows\.PrintDialog
-    |MicrosoftWindows\..+
-)$'
+$script:ServicesToStop = @('AppXSVC', 'ClipSVC')
 
 # Known problematic packages that often block Sysprep
-$explicitOffenders = @(
-    'Microsoft.Winget.Source'
-)
+$script:ExplicitOffenders = @('Microsoft.Winget.Source')
+
+# Known system apps that should never be removed
+$script:MsSystemNameWhitelist =
+    '^(?:' +
+    'Microsoft\.(?:AAD|AccountsControl|AsyncTextService|BioEnrollment|CredDialogHost|ECApp|LockApp|' +
+    'MicrosoftEdgeDevToolsClient|NET\.Native(?:\.Framework|\.Runtime)?(?:\.\d+\.\d+)?|' +
+    'Services\.Store\.Engagement|UI\.Xaml(?:\.CBS|\.2\.\d+)?|VCLibs(?:\.140\.00(?:\.UWPDesktop)?)?|' +
+    'Win32WebViewHost|Windows(?:\.(?:Apprep\.ChxApp|AssignedAccessLockApp|CapturePicker|' +
+    'CloudExperienceHost|ContentDeliveryManager|NarratorQuickStart|OOBENetworkCaptivePortal|' +
+    'OOBENetworkConnectionFlow|ParentalControls|PeopleExperienceHost|PinningConfirmationDialog|' +
+    'PrintQueueActionCenter|SecureAssessmentBrowser|ShellExperienceHost|StartMenuExperienceHost|' +
+    'XGpuEjectDialog))|WindowsAppRuntime(?:\..+)?|WindowsClient)' +
+    '|windows\.immersivecontrolpanel|Windows\.PrintDialog|MicrosoftWindows\..+' +
+    ')$'
+
+# Mutable run state (initialized per run by Initialize-ScriptState)
+$script:StoppedServices = @()
 
 # ==================== FUNCTIONS ====================
+
+function Test-IsAdministrator {
+    <#
+    .SYNOPSIS
+    Returns $true when the current session is elevated.
+    #>
+
+    [CmdletBinding()]
+    param()
+
+    if ($IsWindows) {
+        $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+        return [Security.Principal.WindowsPrincipal]::new($identity).IsInRole(
+            [Security.Principal.WindowsBuiltInRole]::Administrator)
+    }
+
+    return $false
+}
+
+function Initialize-ScriptState {
+    <#
+    .SYNOPSIS
+    Resolves the log path, validates the report directory, and resets run counters.
+    #>
+
+    [CmdletBinding()]
+    param()
+
+    if ([string]::IsNullOrWhiteSpace($LogPath)) {
+        $documentsDir = [Environment]::GetFolderPath('MyDocuments')
+        $script:LogPath = Join-Path (Join-Path $documentsDir 'Reports') `
+            "SysprepBlockerRemoval_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
+    }
+    else {
+        $script:LogPath = $LogPath
+    }
+
+    $script:StartTime = Get-Date
+    $script:BlockersRemoved = @()
+    $script:BlockersFailed = @()
+
+    $reportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+    if ([string]::IsNullOrWhiteSpace($reportDir) -or
+        $reportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+        $reportDir -match '^(\\\\|//)') {
+        throw "Unsafe report path: $reportDir. Report path must be a local absolute path without '..' traversal."
+    }
+
+    $reportDir = [System.IO.Path]::GetFullPath($reportDir)
+    if (-not (Test-Path -LiteralPath $reportDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $reportDir -Force | Out-Null
+    }
+
+    $script:ReportDir = $reportDir
+}
 
 function Write-Log {
     param(
@@ -115,21 +151,18 @@ function Write-Log {
         [string]$Level = 'INFO'
     )
 
-    $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
-    $logMessage = "[$timestamp] [$Level] $Message"
+    $logMessage = "[{0}] [{1}] {2}" -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss'), $Level, $Message
 
     # Write to log file
     Add-Content -Path $script:LogPath -Value $logMessage -ErrorAction SilentlyContinue
 
-    # Write to console with color
-    $color = switch ($Level) {
-        'INFO' { 'White' }
-        'WARNING' { 'Yellow' }
-        'ERROR' { 'Red' }
-        'SUCCESS' { 'Green' }
+    # Write to console with relaunch prefixes and colors
+    switch ($Level) {
+        'SUCCESS' { Write-Host "[+] $Message" -ForegroundColor Green }
+        'WARNING' { Write-Host "[!] $Message" -ForegroundColor Yellow }
+        'ERROR' { Write-Host "[-] $Message" -ForegroundColor Red }
+        default { Write-Host "[*] $Message" -ForegroundColor Cyan }
     }
-
-    Write-Host $logMessage -ForegroundColor $color
 }
 
 function Write-Banner {
@@ -151,13 +184,13 @@ function Stop-AppXServices {
 
     Write-Log -Message "Stopping AppX-related services to prevent file locks..." -Level INFO
 
-    foreach ($serviceName in $servicesToStop) {
+    foreach ($serviceName in $script:ServicesToStop) {
         try {
             $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
             if ($service -and $service.Status -eq 'Running') {
                 if ($PSCmdlet.ShouldProcess($serviceName, 'Stop service')) {
                     Stop-Service -Name $serviceName -Force -ErrorAction Stop
-                    $script:stoppedServices += $serviceName
+                    $script:StoppedServices += $serviceName
                     Write-Log -Message "Stopped service: $serviceName" -Level INFO
                 }
             }
@@ -181,7 +214,7 @@ function Stop-AppXServices {
             }
         }
         catch {
-            Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
+            Write-Verbose "Handled exception: $($_.Exception.Message)"
         }
     }
 }
@@ -195,10 +228,10 @@ function Start-AppXServices {
     [CmdletBinding(SupportsShouldProcess)]
     param()
 
-    if ($script:stoppedServices.Count -gt 0) {
+    if ($script:StoppedServices.Count -gt 0) {
         Write-Log -Message "Restarting stopped services..." -Level INFO
 
-        foreach ($serviceName in ($script:stoppedServices | Select-Object -Unique)) {
+        foreach ($serviceName in ($script:StoppedServices | Select-Object -Unique)) {
             try {
                 if ($PSCmdlet.ShouldProcess($serviceName, 'Start service')) {
                     Start-Service -Name $serviceName -ErrorAction SilentlyContinue
@@ -209,6 +242,8 @@ function Start-AppXServices {
                 Write-Log -Message "Could not restart service $serviceName : $($_.Exception.Message)" -Level WARNING
             }
         }
+
+        $script:StoppedServices = @()
     }
 }
 
@@ -253,11 +288,11 @@ function Get-SysprepBlockers {
         # Not in SystemApps
         ($_.InstallLocation -notlike "$env:WINDIR\SystemApps*") -and
         # Not in system whitelist
-        ($_.Name -notmatch $msSystemNameWhitelist)
+        ($_.Name -notmatch $script:MsSystemNameWhitelist)
     }
 
     # Add explicit known offenders (collect first, then combine for performance)
-    $explicitPackages = foreach ($offender in $explicitOffenders) {
+    $explicitPackages = foreach ($offender in $script:ExplicitOffenders) {
         $package = Get-AppxPackage -AllUsers -Name $offender -ErrorAction SilentlyContinue
         if ($package -and $blockers.Name -notcontains $package.Name) {
             $package
@@ -307,7 +342,7 @@ function Export-BlockersList {
         [array]$Blockers
     )
 
-    $exportPath = Join-Path $ReportDir "SysprepBlockers_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+    $exportPath = Join-Path $script:ReportDir "SysprepBlockers_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 
     try {
         $Blockers | Select-Object Name, PackageFullName, Version, Publisher, InstallLocation, SignatureKind |
@@ -357,7 +392,8 @@ function Remove-AppxPackageEverywhere {
                 }
             }
             catch {
-                Write-Log -Message "Failed to remove package $($pkg.PackageFullName): $($_.Exception.Message)" -Level ERROR
+                Write-Log -Message ("Failed to remove package $($pkg.PackageFullName): " +
+                    "$($_.Exception.Message)") -Level ERROR
             }
         }
     }
@@ -392,7 +428,8 @@ function Get-UserConfirmation {
     Write-Host ("=" * 80) -ForegroundColor Yellow
     Write-Host "  CONFIRMATION REQUIRED" -ForegroundColor Yellow
     Write-Host ("=" * 80) -ForegroundColor Yellow
-    Write-Host "`nThe script will remove $($Blockers.Count) application(s) that may block Sysprep." -ForegroundColor White
+    Write-Host ("`nThe script will remove $($Blockers.Count) application(s) that may " +
+        "block Sysprep.") -ForegroundColor White
     Write-Host "`nThese applications will be removed for ALL users on this system." -ForegroundColor Yellow
     Write-Host "`nDo you want to proceed with removal?" -ForegroundColor White
     Write-Host "  [Y] Yes  [N] No  [L] List packages again  (default is 'N'): " -NoNewline -ForegroundColor Cyan
@@ -420,10 +457,11 @@ function Remove-DetectedBlockers {
             -Status "Processing $($blocker.Name) ($progressCounter of $totalBlockers)" `
             -PercentComplete (($progressCounter / $totalBlockers) * 100)
 
-        Write-Host "`n[$progressCounter/$totalBlockers] Removing: $($blocker.Name)" -ForegroundColor Cyan
+        Write-Host "`n[*] [$progressCounter/$totalBlockers] Removing: $($blocker.Name)" -ForegroundColor Cyan
 
         if ($PSCmdlet.ShouldProcess($blocker.Name, 'Remove Appx package')) {
-            $success = Remove-AppxPackageEverywhere -PackageName $blocker.Name -PackageFullName $blocker.PackageFullName
+            $success = Remove-AppxPackageEverywhere -PackageName $blocker.Name `
+                -PackageFullName $blocker.PackageFullName
 
             if ($success) {
                 $script:BlockersRemoved += $blocker
@@ -445,10 +483,11 @@ function Show-Summary {
     Write-Host "`nOperation completed in $([math]::Round($duration.TotalSeconds, 2)) seconds" -ForegroundColor White
     Write-Host "`nResults:" -ForegroundColor White
     Write-Host "  Successfully removed: $($script:BlockersRemoved.Count)" -ForegroundColor Green
-    Write-Host "  Failed to remove:     $($script:BlockersFailed.Count)" -ForegroundColor $(if ($script:BlockersFailed.Count -gt 0) { 'Red' } else { 'Green' })
+    $failedColor = if ($script:BlockersFailed.Count -gt 0) { 'Red' } else { 'Green' }
+    Write-Host "  Failed to remove:     $($script:BlockersFailed.Count)" -ForegroundColor $failedColor
 
     if ($script:BlockersFailed.Count -gt 0) {
-        Write-Host "`nPackages that could not be removed:" -ForegroundColor Red
+        Write-Host "`n[-] Packages that could not be removed:" -ForegroundColor Red
         $script:BlockersFailed | ForEach-Object {
             Write-Host "  - $($_.Name)" -ForegroundColor Red
         }
@@ -459,15 +498,16 @@ function Show-Summary {
     }
 
     # Run final audit
-    Write-Host "`nRunning final audit..." -ForegroundColor Cyan
-    $remainingBlockers = Get-SysprepBlockers
+    Write-Host "`n[*] Running final audit..." -ForegroundColor Cyan
+    $remainingBlockers = @(Get-SysprepBlockers)
 
     if ($remainingBlockers.Count -eq 0) {
-        Write-Host "`n SUCCESS: No Sysprep blockers detected. System is ready for Sysprep." -ForegroundColor Green -BackgroundColor Black
+        Write-Host "`n[+] SUCCESS: No Sysprep blockers detected. System is ready for Sysprep." -ForegroundColor Green
         Write-Log -Message "System is ready for Sysprep" -Level SUCCESS
     }
     else {
-        Write-Host "`n WARNING: $($remainingBlockers.Count) potential blocker(s) still remain." -ForegroundColor Yellow -BackgroundColor Black
+        Write-Host ("`n[!] WARNING: $($remainingBlockers.Count) potential blocker(s) " +
+            "still remain.") -ForegroundColor Yellow
         Write-Host "`nRemaining packages:" -ForegroundColor Yellow
         $remainingBlockers | ForEach-Object {
             Write-Host "  - $($_.Name)" -ForegroundColor Yellow
@@ -479,91 +519,104 @@ function Show-Summary {
     Write-Host ("=" * 80) -ForegroundColor Cyan
 }
 
-# ==================== MAIN SCRIPT ====================
+# ==================== MAIN ====================
 
-try {
-    # Initialize log
-    Write-Banner "SYSPREP BLOCKER DETECTION AND REMOVAL TOOL"
-    Write-Log -Message "Script started by $env:USERNAME on $env:COMPUTERNAME" -Level INFO
-    Write-Log -Message "PowerShell Version: $($PSVersionTable.PSVersion)" -Level INFO
-    Write-Log -Message "Force mode: $Force" -Level INFO
+function Main {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
 
-    # Detect blockers
-    $blockers = Get-SysprepBlockers
-
-    if ($blockers.Count -eq 0) {
-        Write-Host "`n SUCCESS: No Sysprep blockers detected!" -ForegroundColor Green -BackgroundColor Black
-        Write-Host "`nYour system appears to be ready for Sysprep." -ForegroundColor Green
-        Write-Log -Message "No blockers detected - system ready for Sysprep" -Level SUCCESS
-        exit 0
-    }
-
-    # Show detected blockers
-    Show-BlockerDetails -Blockers $blockers
-
-    # Export if requested
-    if ($ExportBlockersList) {
-        $exportedPath = Export-BlockersList -Blockers $blockers
-        if ($exportedPath) {
-            Write-Host "`nBlockers list has been exported to:" -ForegroundColor Green
-            Write-Host "  $exportedPath" -ForegroundColor Cyan
+    try {
+        if (-not (Test-IsAdministrator)) {
+            Write-Host ('[-] This script requires administrator privileges. ' +
+                'Run from an elevated session.') -ForegroundColor Red
+            return 1
         }
-    }
 
-    # Get confirmation unless -Force is specified
-    if (-not $Force) {
-        do {
-            $confirmation = Get-UserConfirmation -Blockers $blockers
+        Initialize-ScriptState
 
-            switch ($confirmation.ToUpper()) {
-                'Y' {
-                    Write-Log -Message "User confirmed removal of $($blockers.Count) blocker(s)" -Level INFO
-                    $proceedWithRemoval = $true
-                    break
-                }
-                'L' {
-                    Show-BlockerDetails -Blockers $blockers
-                    $proceedWithRemoval = $false
-                    continue
-                }
-                default {
-                    Write-Host "`nOperation cancelled by user." -ForegroundColor Yellow
-                    Write-Log -Message "Operation cancelled by user" -Level INFO
-                    exit 0
-                }
+        Write-Banner "SYSPREP BLOCKER DETECTION AND REMOVAL TOOL"
+        Write-Log -Message "Script started by $env:USERNAME on $env:COMPUTERNAME" -Level INFO
+        Write-Log -Message "PowerShell Version: $($PSVersionTable.PSVersion)" -Level INFO
+        Write-Log -Message "Force mode: $Force" -Level INFO
+
+        # Detect blockers (check-then-act)
+        $blockers = @(Get-SysprepBlockers)
+
+        if ($blockers.Count -eq 0) {
+            Write-Host "`n[+] SUCCESS: No Sysprep blockers detected!" -ForegroundColor Green
+            Write-Host "[+] Your system appears to be ready for Sysprep." -ForegroundColor Green
+            Write-Log -Message "No blockers detected - system ready for Sysprep" -Level SUCCESS
+            return 0
+        }
+
+        # Show detected blockers
+        Show-BlockerDetails -Blockers $blockers
+
+        # Export if requested
+        if ($ExportBlockersList) {
+            $exportedPath = Export-BlockersList -Blockers $blockers
+            if ($exportedPath) {
+                Write-Host "[+] Blockers list has been exported to: $exportedPath" -ForegroundColor Green
             }
-        } while (-not $proceedWithRemoval)
+        }
+
+        # Get confirmation unless -Force is specified
+        if (-not $Force) {
+            $proceedWithRemoval = $false
+            do {
+                $confirmation = Get-UserConfirmation -Blockers $blockers
+
+                switch ($confirmation.ToUpper()) {
+                    'Y' {
+                        Write-Log -Message "User confirmed removal of $($blockers.Count) blocker(s)" -Level INFO
+                        $proceedWithRemoval = $true
+                        break
+                    }
+                    'L' {
+                        Show-BlockerDetails -Blockers $blockers
+                        $proceedWithRemoval = $false
+                        continue
+                    }
+                    default {
+                        Write-Host "[!] Operation cancelled by user." -ForegroundColor Yellow
+                        Write-Log -Message "Operation cancelled by user" -Level INFO
+                        return 0
+                    }
+                }
+            } while (-not $proceedWithRemoval)
+        }
+        else {
+            Write-Log -Message "Force mode enabled - proceeding without confirmation" -Level INFO
+        }
+
+        # Stop services that may lock packages
+        Stop-AppXServices
+
+        # Remove blockers
+        Remove-DetectedBlockers -Blockers $blockers
+
+        # Show summary
+        Show-Summary
+
+        # Exit code based on results
+        if ($script:BlockersFailed.Count -gt 0) {
+            return 1
+        }
+
+        return 0
     }
-    else {
-        Write-Log -Message "Force mode enabled - proceeding without confirmation" -Level INFO
+    catch {
+        Write-Log -Message "FATAL ERROR: $($_.Exception.Message)" -Level ERROR
+        Write-Log -Message "Stack Trace: $($_.ScriptStackTrace)" -Level ERROR
+        Write-Host "`n[-] FATAL ERROR occurred: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "[-] Check log file for details: $script:LogPath" -ForegroundColor Red
+        return 1
     }
-
-    # Stop services that may lock packages
-    Stop-AppXServices
-
-    # Remove blockers
-    Remove-DetectedBlockers -Blockers $blockers
-
-    # Show summary
-    Show-Summary
-
-    # Exit code based on results
-    if ($script:BlockersFailed.Count -gt 0) {
-        exit 1
-    }
-    else {
-        exit 0
+    finally {
+        # Always restart services
+        Start-AppXServices
     }
 }
-catch {
-    Write-Log -Message "FATAL ERROR: $($_.Exception.Message)" -Level ERROR
-    Write-Log -Message "Stack Trace: $($_.ScriptStackTrace)" -Level ERROR
-    Write-Host "`n FATAL ERROR occurred. Check log file for details." -ForegroundColor Red -BackgroundColor Black
-    Write-Host "  $script:LogPath" -ForegroundColor Red
-    exit 2
-}
-finally {
-    # Always restart services
-    Start-AppXServices
-    Write-Log -Message "Script completed" -Level INFO
-}
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

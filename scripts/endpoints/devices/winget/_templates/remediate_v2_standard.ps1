@@ -1,6 +1,6 @@
-<#
+﻿<#
 .SYNOPSIS
-    Standard winget update script that waits for app to close before updating.
+    Standard winget update template that waits for the app to close before updating (V2).
 
 .DESCRIPTION
     This template checks if an app update is available and installs it.
@@ -8,23 +8,43 @@
     It prefers the Microsoft.WinGet.Client PowerShell module (the winget CLI is NOT
     supported in the SYSTEM context that Intune Proactive Remediations run in) and
     falls back to the winget.exe CLI only when the module is unavailable.
-
-.NOTES
-    REQUIRED: Only the winget ID is required. The script will auto-detect app name and process.
-
-.CONFIGURATION
+    Exit codes follow the Intune remediation convention: 0 = updated, already up to date,
+    or not installed; 1 = application running (update skipped) or the upgrade failed.
+    Template note (docs/RELAUNCH-SPEC.md section 6): examples below show placeholder
+    configuration, which makes some help rules inapplicable until placeholders are replaced.
+    Configuration:
     1. Set the $ID variable to your winget package ID
     2. (Optional) Customize $name if you want a specific display name
     3. (Optional) Set $AppProcess if auto-detection doesn't work
 
 .EXAMPLE
-    # For Google Chrome, you only need to set:
-    $ID = 'Google.Chrome'
+    PS C:\> .\remediate_v2_standard.ps1
 
-    # The script will automatically use:
-    # - Name: "Google Chrome" (from winget)
-    # - Process: "chrome" (auto-detected)
+    Runs the template directly against the placeholder configuration; only $ID must be set
+    for real use, for example $ID = 'Google.Chrome'.
+
+.EXAMPLE
+    PS C:\> pwsh -NoProfile -File .\remediate_v2_standard.ps1
+
+    Runs the template in a clean PowerShell process; behavior and exit codes are unchanged.
+
+.NOTES
+    REQUIRED: Only the winget ID is required. The script will auto-detect app name and process.
+    File Name  : remediate_v2_standard.ps1
+    Author     : Bug-Free Umbrella
+    Prerequisite: PowerShell 5.1+
+    Version    : 1.0.0
+    Date       : 2026-08-23
 #>
+
+[CmdletBinding()]
+param()
+
+# PSAvoidUsingWriteHost is intentionally accepted: prefixed, colored console output is the mandated
+# output convention of docs/RELAUNCH-SPEC.md section 3.
+# PSUseOutputTypeCorrectly is intentionally accepted: internal helper functions return plain
+# values (bool/string/object[]) by design; only Main's exit code (int) is a public contract.
+$ErrorActionPreference = 'Stop'
 
 #region Configuration
 # ===== REQUIRED: Set your winget package ID =====
@@ -33,95 +53,112 @@ $ID = 'WINGETID'  # Example: 'Google.Chrome', 'Mozilla.Firefox', 'Adobe.Acrobat.
 # ===== OPTIONAL: Customize these if needed =====
 $name = $null           # Leave as $null to auto-detect from winget, or set manually: 'Google Chrome'
 $AppProcess = $null     # Leave as $null to auto-detect, or set manually: 'chrome'
+$VerifyWaitSeconds = 5  # Time to wait after update before verification (mockable delay)
 #endregion
 
-#region Script - DO NOT MODIFY BELOW THIS LINE
-try {
-    # Prefer the Microsoft.WinGet.Client PowerShell module - the winget CLI is NOT supported in
-    # the SYSTEM context (Intune Proactive Remediations run as SYSTEM). Only fall back to the
-    # winget.exe CLI when the module is unavailable.
-    # Reference: https://learn.microsoft.com/en-us/windows/package-manager/winget/troubleshooting
-    if (Get-Module -ListAvailable -Name Microsoft.WinGet.Client) {
-        try { Import-Module Microsoft.WinGet.Client -ErrorAction Stop } catch { Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false }
-        if (Get-Command Get-WinGetPackage -ErrorAction SilentlyContinue) {
-            $package = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -ErrorAction SilentlyContinue
+function Get-WingetExecutable {
+    # Thin wrapper seam: locates the winget.exe CLI bundled with App Installer; tests mock this function.
+    [CmdletBinding()]
+    param()
 
-            # Auto-detect name if not provided
-            if (-not $name) {
-                $name = if ($package.Name) { $package.Name } else { $ID }
-            }
+    $wingetGlob = 'C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe'
+    $resolved = Resolve-Path -Path $wingetGlob -ErrorAction Stop
+    if (@($resolved).Count -gt 1) {
+        return @($resolved)[-1].Path
+    }
+    return $resolved.Path
+}
 
-            # Check if package is installed
-            if (-not $package) {
-                Write-Host "$name is not installed on this device."
-                exit 0
-            }
+function Invoke-WingetCommand {
+    # Thin wrapper seam: EVERY native winget.exe invocation (the sysget alias target) routes through
+    # this function so Pester can mock the wrapper; the executable is never called elsewhere.
+    # docs/RELAUNCH-SPEC.md section 3: check $LASTEXITCODE and translate non-zero into failure handling.
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string[]]$Arguments
+    )
 
-            # Check if update is available
-            if ($package.IsUpdateAvailable) {
-                $verInstalled = $package.InstalledVersion
-                $verAvailable = $package.AvailableVersions | Select-Object -Last 1
-                Write-Verbose -Verbose "Application update available for $name. Current: $verInstalled, Available: $verAvailable"
+    $wingetPath = Get-WingetExecutable
+    $output = & $wingetPath @Arguments 2>$null
+    $exitCode = $LASTEXITCODE
 
-                # Auto-detect process name if not provided
-                if (-not $AppProcess) {
-                    # Extract process name from package ID (e.g., 'Google.Chrome' -> 'chrome')
-                    $AppProcess = ($ID -split '\.')[-1]
-                }
-
-                # Check if app is running
-                $process = Get-Process -Name "$AppProcess" -ErrorAction SilentlyContinue
-                if ($process) {
-                    Write-Host "$name is currently running. Will try again later."
-                    [pscustomobject] @{
-                        Name = $name
-                        InstalledVersion = $verInstalled
-                        AvailableVersion = $verAvailable
-                        Status = "Skipped - App Running"
-                    }
-                    exit 1
-                }
-
-                # Perform upgrade via the module
-                Write-Host "Installing $name update ($verInstalled -> $verAvailable)..."
-                Update-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -Mode Silent -Force -ErrorAction Stop
-
-                # Verify installation
-                Start-Sleep -Seconds 5
-                $verifyPackage = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -ErrorAction SilentlyContinue
-                if ($verifyPackage) {
-                    $versionInstalled = $verifyPackage.InstalledVersion
-                    Write-Host "$name updated successfully to version $versionInstalled"
-                    [pscustomobject] @{
-                        Name = $name
-                        InstalledVersion = $versionInstalled
-                        Status = "Updated Successfully"
-                    }
-                    exit 0
-                }
-            }
-            else {
-                # No update available
-                $versionInstalled = $package.InstalledVersion
-                Write-Host "$name is already up to date (version $versionInstalled)"
-                [pscustomobject] @{
-                    Name = $name
-                    InstalledVersion = $versionInstalled
-                    Status = "Up to Date"
-                }
-                exit 0
-            }
-        }
+    # Success codes: 0 (S_OK), 0x8A150014 (no installed package found), 0x8A150109 (reboot required).
+    # Reference: https://github.com/microsoft/winget-cli/blob/master/doc/windows/package-manager/winget/returnCodes.md
+    if ($exitCode -ne 0 -and $exitCode -ne 0x8A150014 -and $exitCode -ne 0x8A150109) {
+        throw "winget exited with code 0x$('{0:X8}' -f $exitCode) for arguments: $($Arguments -join ' ')"
     }
 
-    # Fallback: winget.exe CLI (only reached when the Microsoft.WinGet.Client module is unavailable)
-    # Locate winget executable
-    $wingetexe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction Stop
-    $SystemContext = $wingetexe[-1].Path
-    New-Alias -Name sysget -Value "$SystemContext" -Force
+    return @($output)
+}
 
-    # Get package information (exact ID match)
-    $packageInfo = sysget list --exact --id $ID --accept-source-agreements 2>$null
+function Invoke-ModuleRemediation {
+    # Microsoft.WinGet.Client path: the winget CLI is NOT supported in the SYSTEM context that Intune
+    # Proactive Remediations run in.
+    [CmdletBinding()]
+    param()
+
+    $package = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -ErrorAction SilentlyContinue
+
+    # Auto-detect name if not provided
+    if (-not $name) {
+        $name = if ($package -and $package.Name) { $package.Name } else { $ID }
+    }
+
+    # Check if package is installed
+    if (-not $package) {
+        Write-Host "[+] $name is not installed on this device." -ForegroundColor Green
+        return 0
+    }
+
+    # Check if update is available (idempotent converged path)
+    if (-not $package.IsUpdateAvailable) {
+        Write-Host "[+] Already up to date: $name (version $($package.InstalledVersion))." -ForegroundColor Green
+        return 0
+    }
+
+    $verInstalled = $package.InstalledVersion
+    $verAvailable = @($package.AvailableVersions)[-1]
+
+    # Auto-detect process name if not provided
+    if (-not $AppProcess) {
+        # Extract process name from package ID (e.g., 'Google.Chrome' -> 'chrome')
+        $AppProcess = ($ID -split '\.')[-1]
+    }
+
+    # Check if app is running
+    $process = Get-Process -Name $AppProcess -ErrorAction SilentlyContinue
+    if ($process) {
+        Write-Host "[!] $name is currently running. Will try again later." -ForegroundColor Yellow
+        return 1
+    }
+
+    # Perform upgrade via the module
+    Write-Host "[*] Installing $name update ($verInstalled -> $verAvailable)..." -ForegroundColor Cyan
+    Update-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -Mode Silent -Force -ErrorAction Stop
+
+    # Wait for installation to complete (configurable, mockable delay)
+    Start-Sleep -Seconds $VerifyWaitSeconds
+
+    # Verify installation
+    $verifyPackage = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -ErrorAction SilentlyContinue
+    if (-not $verifyPackage) {
+        throw "Failed to verify $name installation after update."
+    }
+
+    Write-Host "[+] $name updated successfully to version $($verifyPackage.InstalledVersion)." -ForegroundColor Green
+    return 0
+}
+
+function Invoke-CliFallbackRemediation {
+    # Fallback path: winget.exe CLI, reached only when the Microsoft.WinGet.Client module is unavailable.
+    [CmdletBinding()]
+    param()
+
+    # Get package information (exact ID match) through the wrapper seam
+    $packageInfo = Invoke-WingetCommand -Arguments @('list', '--exact', '--id', $ID,
+        '--accept-source-agreements')
 
     # Auto-detect name if not provided
     if (-not $name) {
@@ -135,70 +172,82 @@ try {
     }
 
     # Check if package is installed
-    if ($packageInfo -match "No installed package found matching input criteria") {
-        Write-Host "$name is not installed on this device."
-        exit 0
+    if ($packageInfo -match 'No installed package found matching input criteria') {
+        Write-Host "[+] $name is not installed on this device." -ForegroundColor Green
+        return 0
     }
 
-    # Check if update is available
+    # Auto-detect process name if not provided
+    if (-not $AppProcess) {
+        $AppProcess = ($ID -split '\.')[-1]
+    }
+
+    # Check if app is running
+    $process = Get-Process -Name $AppProcess -ErrorAction SilentlyContinue
+    if ($process) {
+        Write-Host "[!] $name is currently running. Will try again later." -ForegroundColor Yellow
+        return 1
+    }
+
+    # Check if update is available (idempotent converged path)
     if ($packageInfo -match '\bVersion\s+Available\b') {
-        $verInstalled, $verAvailable = (-split $packageInfo[-1])[-3, -2]
-        Write-Verbose -Verbose "Application update available for $name. Current: $verInstalled, Available: $verAvailable"
+        $verInstalled, $verAvailable = @(-split $packageInfo[-1])[-3, -2]
+        Write-Host "[*] Installing $name update ($verInstalled -> $verAvailable)..." -ForegroundColor Cyan
 
-        # Auto-detect process name if not provided
-        if (-not $AppProcess) {
-            # Extract process name from package ID (e.g., 'Google.Chrome' -> 'chrome')
-            $AppProcess = ($ID -split '\.')[-1]
-        }
+        $null = Invoke-WingetCommand -Arguments @('upgrade', '-e', '--id', $ID, '--silent',
+            '--accept-package-agreements', '--accept-source-agreements')
 
-        # Check if app is running
-        $process = Get-Process -Name "$AppProcess" -ErrorAction SilentlyContinue
-        if ($process) {
-            Write-Host "$name is currently running. Will try again later."
-            [pscustomobject] @{
-                Name = $name
-                InstalledVersion = $verInstalled
-                AvailableVersion = $verAvailable
-                Status = "Skipped - App Running"
-            }
-            exit 1
-        }
-
-        # Perform upgrade
-        Write-Host "Installing $name update ($verInstalled -> $verAvailable)..."
-        sysget upgrade -e --id $ID --silent --accept-package-agreements --accept-source-agreements
+        # Wait for installation to complete (configurable, mockable delay)
+        Start-Sleep -Seconds $VerifyWaitSeconds
 
         # Verify installation
-        Start-Sleep -Seconds 5
-        $verifyInfo = sysget list --exact --id $ID --accept-source-agreements
+        $verifyInfo = Invoke-WingetCommand -Arguments @('list', '--exact', '--id', $ID,
+            '--accept-source-agreements')
         if ($verifyInfo -match '\d+(\.\d+)+') {
-            $versionInstalled = (-split $verifyInfo[-1])[-2]
-            Write-Host "$name updated successfully to version $versionInstalled"
-            [pscustomobject] @{
-                Name = $name
-                InstalledVersion = $versionInstalled
-                Status = "Updated Successfully"
-            }
-            exit 0
+            $versionInstalled = @(-split $verifyInfo[-1])[-2]
+            Write-Host "[+] $name updated successfully to version $versionInstalled." -ForegroundColor Green
+            return 0
         }
+
+        throw "Failed to verify $name installation after update."
     }
-    else {
-        # No update available
-        if ($packageInfo -match '\d+(\.\d+)+') {
-            $versionInstalled = (-split $packageInfo[-1])[-2]
-            Write-Host "$name is already up to date (version $versionInstalled)"
-            [pscustomobject] @{
-                Name = $name
-                InstalledVersion = $versionInstalled
-                Status = "Up to Date"
+
+    if ($packageInfo -match '\d+(\.\d+)+') {
+        $versionInstalled = @(-split $packageInfo[-1])[-2]
+        Write-Host "[+] Already up to date: $name (version $versionInstalled)." -ForegroundColor Green
+        return 0
+    }
+
+    throw "Unable to determine the winget state of $name."
+}
+
+function Main {
+    try {
+        Write-Host "[*] Starting winget remediation for package $ID..." -ForegroundColor Cyan
+
+        # Prefer the Microsoft.WinGet.Client module - the winget CLI is NOT supported in the SYSTEM
+        # context (Intune Proactive Remediations run as SYSTEM). Only fall back to the winget.exe CLI
+        # when the module is unavailable.
+        # Reference: https://learn.microsoft.com/en-us/windows/package-manager/winget/troubleshooting
+        if (Get-Module -ListAvailable -Name Microsoft.WinGet.Client) {
+            try {
+                Import-Module Microsoft.WinGet.Client -ErrorAction Stop
             }
-            exit 0
+            catch {
+                Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
+            }
+            if (Get-Command Get-WinGetPackage -ErrorAction SilentlyContinue) {
+                return Invoke-ModuleRemediation
+            }
         }
+
+        return Invoke-CliFallbackRemediation
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
 }
-catch {
-    $errMsg = $_.Exception.Message
-    Write-Error "Failed to update $name : $errMsg"
-    exit 1
-}
-#endregion
+
+# Execute only when run as a script; dot-sourcing (Pester tests) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

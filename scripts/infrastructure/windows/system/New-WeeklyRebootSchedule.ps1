@@ -1,18 +1,22 @@
-<#
+﻿<#
 .SYNOPSIS
     Creates a scheduled task to reboot Windows Server on a weekly basis.
 
 .DESCRIPTION
     This script creates a comprehensive weekly reboot schedule for Windows Server by:
-    - Interactively prompting for day of week selection
-    - Accepting time input in 24-hour format
-    - Creating a scheduled task under the SYSTEM account
-    - Configuring the task with appropriate security settings
+    - Interactively prompting for day of week selection (unless -DayOfWeek is supplied)
+    - Accepting time input in 24-hour format (unless -Time is supplied)
+    - Creating a scheduled task under the NT AUTHORITY\SYSTEM account with highest privileges
     - Validating all inputs before task creation
     - Providing detailed logging and error handling
 
-    The scheduled task will execute a system reboot at the specified day and time.
-    The task runs under the NT AUTHORITY\SYSTEM account with highest privileges.
+    Task creation follows a check-then-act pattern: an existing task with the same
+    name is detected first and (with -Force or user confirmation) replaced, so
+    re-running the script is safe. The registration itself is gated by
+    -WhatIf/-Confirm (SupportsShouldProcess).
+
+    Exit codes: 0 = task created (or user cancelled), 1 = fatal error or missing
+    Administrator privileges.
 
 .PARAMETER DayOfWeek
     Optional. The day of the week for the reboot (Monday-Sunday).
@@ -34,30 +38,35 @@
     Optional. Overwrites existing task with the same name without prompting.
 
 .EXAMPLE
-    .\New-WeeklyRebootSchedule.ps1
+    PS C:\> .\New-WeeklyRebootSchedule.ps1
     Runs interactively, prompting for day and time.
 
 .EXAMPLE
-    .\New-WeeklyRebootSchedule.ps1 -DayOfWeek Sunday -Time "03:00"
+    PS C:\> .\New-WeeklyRebootSchedule.ps1 -DayOfWeek Sunday -Time "03:00"
     Creates a weekly reboot scheduled for Sunday at 3:00 AM.
 
 .EXAMPLE
-    .\New-WeeklyRebootSchedule.ps1 -DayOfWeek Saturday -Time "23:30" -RebootDelay 120
+    PS C:\> .\New-WeeklyRebootSchedule.ps1 -DayOfWeek Saturday -Time "23:30" -RebootDelay 120
     Creates a weekly reboot for Saturday at 11:30 PM with 2-minute delay.
 
 .EXAMPLE
-    .\New-WeeklyRebootSchedule.ps1 -DayOfWeek Monday -Time "02:00" -Force
+    PS C:\> .\New-WeeklyRebootSchedule.ps1 -DayOfWeek Monday -Time "02:00" -Force
     Creates/replaces the task for Monday at 2:00 AM without confirmation.
 
 .NOTES
-    Author: System Administrator
-    Requires: Administrator privileges
-    Compatible: Windows Server 2016, 2019, 2022
-    Version: 1.0
-    Last Updated: 2025-12-29
+    File Name:     New-WeeklyRebootSchedule.ps1
+    Author:        System Administrator
+    Prerequisite:  PowerShell 5.1+
+    Version:       1.0.0
+    Date:          2026-08-23
+
+    Requires Administrator privileges on supported operating systems.
+    Compatible with Windows Server 2016, 2019, and 2022.
 #>
 
-[CmdletBinding()]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+    Justification = 'Console remediation tool: prefixed, color-coded host output is the intended user interface.')]
+[CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory = $false)]
     [ValidateSet("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")]
@@ -68,6 +77,7 @@ param(
     [string]$Time,
 
     [Parameter(Mandatory = $false)]
+    [ValidateNotNullOrEmpty()]
     [string]$TaskName = "Weekly Server Reboot",
 
     [Parameter(Mandatory = $false)]
@@ -78,17 +88,25 @@ param(
     [switch]$Force
 )
 
-#Requires -RunAsAdministrator
+$ErrorActionPreference = 'Stop'
 
-# ============================================================================
-# FUNCTIONS
-# ============================================================================
+function Test-AdminPrivilege {
+    [CmdletBinding()]
+    param()
 
-function Write-Log {
-    <#
-    .SYNOPSIS
-        Writes formatted log messages to console with color coding.
-    #>
+    try {
+        $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+        $principal = [System.Security.Principal.WindowsPrincipal]$identity
+        return $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
+    }
+    catch {
+        # Non-Windows platform or unavailable identity APIs.
+        return $false
+    }
+}
+
+function Write-LogEntry {
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
         [string]$Message,
@@ -97,15 +115,20 @@ function Write-Log {
         [ValidateSet("INFO", "SUCCESS", "WARNING", "ERROR")]
         [string]$Type = "INFO"
     )
-
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $prefix = switch ($Type) {
+        "ERROR" { "[-]" }
+        "SUCCESS" { "[+]" }
+        "WARNING" { "[!]" }
+        default { "[*]" }
+    }
     $color = switch ($Type) {
         "ERROR" { "Red" }
         "SUCCESS" { "Green" }
         "WARNING" { "Yellow" }
-        default { "White" }
+        default { "Cyan" }
     }
-    Write-Host "[$timestamp] [$Type] $Message" -ForegroundColor $color
+    Write-Host "[$timestamp] $prefix $Message" -ForegroundColor $color
 }
 
 function Show-Banner {
@@ -113,6 +136,9 @@ function Show-Banner {
     .SYNOPSIS
         Displays script banner and system information.
     #>
+    [CmdletBinding()]
+    param()
+
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "  Weekly Reboot Scheduler for Windows  " -ForegroundColor Cyan
     Write-Host "========================================" -ForegroundColor Cyan
@@ -128,6 +154,9 @@ function Get-DayOfWeekSelection {
     .SYNOPSIS
         Prompts user to select day of week.
     #>
+    [CmdletBinding()]
+    param()
+
     Write-Host "`nPlease select the day of week for the weekly reboot:" -ForegroundColor Yellow
     Write-Host "  1. Monday" -ForegroundColor White
     Write-Host "  2. Tuesday" -ForegroundColor White
@@ -161,6 +190,9 @@ function Get-TimeInput {
     .SYNOPSIS
         Prompts user to enter time in 24-hour format.
     #>
+    [CmdletBinding()]
+    param()
+
     Write-Host "`nPlease enter the time for the weekly reboot (24-hour format):" -ForegroundColor Yellow
     Write-Host "  Examples: 02:00, 23:30, 18:45" -ForegroundColor Gray
 
@@ -177,18 +209,20 @@ function Get-TimeInput {
             return "${hour}:${minute}"
         }
         else {
-            Write-Host "Invalid time format. Please use 24-hour format (HH:mm), e.g., 02:00 or 23:30" -ForegroundColor Red
+            Write-Host "Invalid time format. Use 24-hour format (HH:mm), e.g., 02:00 or 23:30" -ForegroundColor Red
         }
     } while ($true)
 }
 
-function Test-ScheduledTaskExists {
+function Test-ScheduledTaskPresence {
     <#
     .SYNOPSIS
         Checks if a scheduled task exists.
     #>
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
         [string]$Name
     )
 
@@ -209,18 +243,21 @@ function Remove-ExistingTask {
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
         [string]$Name
     )
 
     try {
         if ($PSCmdlet.ShouldProcess($Name, 'Unregister scheduled task')) {
             Unregister-ScheduledTask -TaskName $Name -Confirm:$false -ErrorAction Stop
-            Write-Log "Removed existing scheduled task: $Name" "SUCCESS"
+            Write-LogEntry "Removed existing scheduled task: $Name" "SUCCESS"
             return $true
         }
+
+        return $false
     }
     catch {
-        Write-Log "Failed to remove existing task: $($_.Exception.Message)" "ERROR"
+        Write-LogEntry "Failed to remove existing task: $($_.Exception.Message)" "ERROR"
         return $false
     }
 }
@@ -233,20 +270,24 @@ function New-RebootScheduledTask {
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
         [string]$TaskName,
 
         [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
         [string]$Day,
 
         [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
         [string]$ScheduledTime,
 
         [Parameter(Mandatory = $true)]
+        [ValidateRange(0, 3600)]
         [int]$Delay
     )
 
     try {
-        Write-Log "Creating scheduled task configuration..." "INFO"
+        Write-LogEntry "Creating scheduled task configuration..." "INFO"
 
         # Create task action (shutdown command with delay)
         $actionCmd = "shutdown.exe"
@@ -273,7 +314,7 @@ function New-RebootScheduledTask {
             -RunLevel Highest
 
         # Register the scheduled task
-        Write-Log "Registering scheduled task..." "INFO"
+        Write-LogEntry "Registering scheduled task..." "INFO"
         if ($PSCmdlet.ShouldProcess($TaskName, 'Register weekly reboot scheduled task')) {
             $task = Register-ScheduledTask `
                 -TaskName $TaskName `
@@ -281,14 +322,16 @@ function New-RebootScheduledTask {
                 -Trigger $trigger `
                 -Settings $settings `
                 -Principal $principal `
-                -Description "Automatically reboots the server weekly on $Day at $ScheduledTime. Created by New-WeeklyRebootSchedule.ps1" `
+                -Description "Weekly reboot every $Day at $ScheduledTime. Created by New-WeeklyRebootSchedule.ps1" `
                 -ErrorAction Stop
+
+            return $task
         }
 
-        return $task
+        return $null
     }
     catch {
-        Write-Log "Failed to create scheduled task: $($_.Exception.Message)" "ERROR"
+        Write-LogEntry "Failed to create scheduled task: $($_.Exception.Message)" "ERROR"
         return $null
     }
 }
@@ -298,9 +341,10 @@ function Show-TaskSummary {
     .SYNOPSIS
         Displays a summary of the created scheduled task.
     #>
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
-        [Microsoft.Management.Infrastructure.CimInstance]$Task,
+        $Task,
 
         [Parameter(Mandatory = $true)]
         [string]$Day,
@@ -313,18 +357,18 @@ function Show-TaskSummary {
     )
 
     Write-Host "`n========================================" -ForegroundColor Green
-    Write-Host "  Scheduled Task Created Successfully  " -ForegroundColor Green
+    Write-Host "[+] Scheduled Task Created Successfully  " -ForegroundColor Green
     Write-Host "========================================" -ForegroundColor Green
     Write-Host "Task Name:       $($Task.TaskName)" -ForegroundColor White
-    Write-Host "Schedule:        Every $Day at $ScheduledTime" -ForegroundColor White
+    Write-Host "[*] Schedule:        Every $Day at $ScheduledTime" -ForegroundColor White
     Write-Host "Reboot Delay:    $Delay seconds" -ForegroundColor White
     Write-Host "Run As:          NT AUTHORITY\SYSTEM" -ForegroundColor White
-    Write-Host "State:           $($Task.State)" -ForegroundColor White
+    Write-Host "[*] State:           $($Task.State)" -ForegroundColor White
 
     # Calculate next run time
     $taskInfo = Get-ScheduledTaskInfo -TaskName $Task.TaskName
     if ($taskInfo.NextRunTime) {
-        Write-Host "Next Run:        $($taskInfo.NextRunTime)" -ForegroundColor Cyan
+        Write-Host "[*] Next Run:        $($taskInfo.NextRunTime)" -ForegroundColor Cyan
     }
 
     Write-Host "========================================`n" -ForegroundColor Green
@@ -335,8 +379,10 @@ function Get-UserConfirmation {
     .SYNOPSIS
         Prompts user for confirmation.
     #>
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
+        [ValidateNotNullOrEmpty()]
         [string]$Message
     )
 
@@ -346,117 +392,147 @@ function Get-UserConfirmation {
     return ($response -eq 'Y' -or $response -eq 'y')
 }
 
-# ============================================================================
-# MAIN SCRIPT
-# ============================================================================
+function Main {
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory = $false)]
+        [ValidateSet("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")]
+        [string]$DayOfWeek,
 
-# Display banner
-Show-Banner
+        [Parameter(Mandatory = $false)]
+        [string]$Time,
 
-Write-Log "Starting Weekly Reboot Scheduler configuration..." "INFO"
+        [Parameter(Mandatory = $false)]
+        [string]$TaskName = "Weekly Server Reboot",
 
-# Get day of week (interactive or parameter)
-if ([string]::IsNullOrEmpty($DayOfWeek)) {
-    $DayOfWeek = Get-DayOfWeekSelection
-    Write-Log "Selected day: $DayOfWeek" "INFO"
-}
-else {
-    Write-Log "Using day from parameter: $DayOfWeek" "INFO"
-}
+        [Parameter(Mandatory = $false)]
+        [int]$RebootDelay = 60,
 
-# Get time (interactive or parameter)
-if ([string]::IsNullOrEmpty($Time)) {
-    $Time = Get-TimeInput
-    Write-Log "Selected time: $Time" "INFO"
-}
-else {
-    Write-Log "Using time from parameter: $Time" "INFO"
-}
+        [Parameter(Mandatory = $false)]
+        [switch]$Force
+    )
 
-# Display configuration summary
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "  Configuration Summary" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Task Name:     $TaskName" -ForegroundColor White
-Write-Host "Day:           $DayOfWeek" -ForegroundColor White
-Write-Host "Time:          $Time (24-hour format)" -ForegroundColor White
-Write-Host "Reboot Delay:  $RebootDelay seconds" -ForegroundColor White
-Write-Host "Run As:        NT AUTHORITY\SYSTEM" -ForegroundColor White
-Write-Host "========================================`n" -ForegroundColor Cyan
+    try {
+        Show-Banner
 
-# Check if task already exists
-$taskExists = Test-ScheduledTaskExists -Name $TaskName
+        Write-LogEntry "Starting Weekly Reboot Scheduler configuration..." "INFO"
 
-if ($taskExists) {
-    Write-Log "A scheduled task with the name '$TaskName' already exists." "WARNING"
-
-    if (-not $Force) {
-        $confirmOverwrite = Get-UserConfirmation -Message "Do you want to replace the existing task?"
-        if (-not $confirmOverwrite) {
-            Write-Log "Operation cancelled by user." "INFO"
-            exit 0
+        if (-not (Test-AdminPrivilege)) {
+            Write-LogEntry "Administrator privileges are required. Re-run from an elevated PowerShell session." "ERROR"
+            return 1
         }
-    }
-    else {
-        Write-Log "Force parameter specified - will overwrite existing task." "INFO"
-    }
 
-    # Remove existing task
-    $removed = Remove-ExistingTask -Name $TaskName
-    if (-not $removed) {
-        Write-Log "Cannot proceed - failed to remove existing task." "ERROR"
-        exit 1
+        # Get day of week (interactive or parameter)
+        if ([string]::IsNullOrEmpty($DayOfWeek)) {
+            $DayOfWeek = Get-DayOfWeekSelection
+            Write-LogEntry "Selected day: $DayOfWeek" "INFO"
+        }
+        else {
+            Write-LogEntry "Using day from parameter: $DayOfWeek" "INFO"
+        }
+
+        # Get time (interactive or parameter)
+        if ([string]::IsNullOrEmpty($Time)) {
+            $Time = Get-TimeInput
+            Write-LogEntry "Selected time: $Time" "INFO"
+        }
+        else {
+            Write-LogEntry "Using time from parameter: $Time" "INFO"
+        }
+
+        # Display configuration summary
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "  Configuration Summary" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "Task Name:     $TaskName" -ForegroundColor White
+        Write-Host "Day:           $DayOfWeek" -ForegroundColor White
+        Write-Host "Time:          $Time (24-hour format)" -ForegroundColor White
+        Write-Host "Reboot Delay:  $RebootDelay seconds" -ForegroundColor White
+        Write-Host "Run As:        NT AUTHORITY\SYSTEM" -ForegroundColor White
+        Write-Host "========================================`n" -ForegroundColor Cyan
+
+        # Check if task already exists (check-then-act: converge safely on re-run)
+        $taskExists = Test-ScheduledTaskPresence -Name $TaskName
+
+        if ($taskExists) {
+            Write-LogEntry "A scheduled task with the name '$TaskName' already exists." "WARNING"
+
+            if (-not $Force) {
+                $confirmOverwrite = Get-UserConfirmation -Message "Do you want to replace the existing task?"
+                if (-not $confirmOverwrite) {
+                    Write-LogEntry "Operation cancelled by user." "INFO"
+                    return 0
+                }
+            }
+            else {
+                Write-LogEntry "Force parameter specified - will overwrite existing task." "INFO"
+            }
+
+            # Remove existing task
+            $removed = Remove-ExistingTask -Name $TaskName
+            if (-not $removed) {
+                Write-LogEntry "Cannot proceed - failed to remove existing task." "ERROR"
+                return 1
+            }
+        }
+
+        # Final confirmation (unless Force is specified)
+        if (-not $Force) {
+            $confirmCreate = Get-UserConfirmation -Message "Create the scheduled task with the above configuration?"
+            if (-not $confirmCreate) {
+                Write-LogEntry "Operation cancelled by user." "INFO"
+                return 0
+            }
+        }
+
+        # Create the scheduled task
+        Write-LogEntry "Creating scheduled task for weekly reboot..." "INFO"
+        $createdTask = New-RebootScheduledTask `
+            -TaskName $TaskName `
+            -Day $DayOfWeek `
+            -ScheduledTime $Time `
+            -Delay $RebootDelay
+
+        if ($null -eq $createdTask) {
+            Write-LogEntry "Failed to create scheduled task. Please check the error messages above." "ERROR"
+            return 1
+        }
+
+        # Verify task was created successfully
+        Start-Sleep -Seconds 2
+        $verifyTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+
+        if ($null -eq $verifyTask) {
+            Write-LogEntry "Task creation reported success, but task cannot be found in Task Scheduler." "ERROR"
+            return 1
+        }
+
+        # Display success summary
+        Write-LogEntry "Scheduled task created successfully!" "SUCCESS"
+        Show-TaskSummary -Task $verifyTask -Day $DayOfWeek -ScheduledTime $Time -Delay $RebootDelay
+
+        # Display additional information
+        Write-Host "Additional Information:" -ForegroundColor Cyan
+        Write-Host "  - To view the task: " -NoNewline -ForegroundColor Gray
+        Write-Host "Get-ScheduledTask -TaskName '$TaskName'" -ForegroundColor White
+        Write-Host "  - To disable the task: " -NoNewline -ForegroundColor Gray
+        Write-Host "Disable-ScheduledTask -TaskName '$TaskName'" -ForegroundColor White
+        Write-Host "  - To enable the task: " -NoNewline -ForegroundColor Gray
+        Write-Host "Enable-ScheduledTask -TaskName '$TaskName'" -ForegroundColor White
+        Write-Host "  - To remove the task: " -NoNewline -ForegroundColor Gray
+        Write-Host "Unregister-ScheduledTask -TaskName '$TaskName' -Confirm:`$false" -ForegroundColor White
+        Write-Host "  - To test the reboot: " -NoNewline -ForegroundColor Gray
+        Write-Host "Start-ScheduledTask -TaskName '$TaskName'" -ForegroundColor White
+        Write-Host ""
+
+        Write-LogEntry "Script completed successfully." "SUCCESS"
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
 }
 
-# Final confirmation (unless Force is specified)
-if (-not $Force) {
-    $confirmCreate = Get-UserConfirmation -Message "Create the scheduled task with the above configuration?"
-    if (-not $confirmCreate) {
-        Write-Log "Operation cancelled by user." "INFO"
-        exit 0
-    }
-}
-
-# Create the scheduled task
-Write-Log "Creating scheduled task for weekly reboot..." "INFO"
-$createdTask = New-RebootScheduledTask `
-    -TaskName $TaskName `
-    -Day $DayOfWeek `
-    -ScheduledTime $Time `
-    -Delay $RebootDelay
-
-if ($null -eq $createdTask) {
-    Write-Log "Failed to create scheduled task. Please check the error messages above." "ERROR"
-    exit 1
-}
-
-# Verify task was created successfully
-Start-Sleep -Seconds 2
-$verifyTask = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-
-if ($null -eq $verifyTask) {
-    Write-Log "Task creation reported success, but task cannot be found in Task Scheduler." "ERROR"
-    exit 1
-}
-
-# Display success summary
-Write-Log "Scheduled task created successfully!" "SUCCESS"
-Show-TaskSummary -Task $verifyTask -Day $DayOfWeek -ScheduledTime $Time -Delay $RebootDelay
-
-# Display additional information
-Write-Host "Additional Information:" -ForegroundColor Cyan
-Write-Host "  - To view the task: " -NoNewline -ForegroundColor Gray
-Write-Host "Get-ScheduledTask -TaskName '$TaskName'" -ForegroundColor White
-Write-Host "  - To disable the task: " -NoNewline -ForegroundColor Gray
-Write-Host "Disable-ScheduledTask -TaskName '$TaskName'" -ForegroundColor White
-Write-Host "  - To enable the task: " -NoNewline -ForegroundColor Gray
-Write-Host "Enable-ScheduledTask -TaskName '$TaskName'" -ForegroundColor White
-Write-Host "  - To remove the task: " -NoNewline -ForegroundColor Gray
-Write-Host "Unregister-ScheduledTask -TaskName '$TaskName' -Confirm:`$false" -ForegroundColor White
-Write-Host "  - To test the reboot: " -NoNewline -ForegroundColor Gray
-Write-Host "Start-ScheduledTask -TaskName '$TaskName'" -ForegroundColor White
-Write-Host ""
-
-Write-Log "Script completed successfully." "SUCCESS"
-exit 0
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main @PSBoundParameters) }

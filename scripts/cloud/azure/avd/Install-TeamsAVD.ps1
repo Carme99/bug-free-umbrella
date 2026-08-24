@@ -1,28 +1,35 @@
-#Requires -RunAsAdministrator
+﻿#Requires -Version 7.0
+
 <#
 .SYNOPSIS
     Installs or updates Microsoft Teams and WebView2 for Azure Virtual Desktop (AVD) gold images.
 
 .DESCRIPTION
-    This script configures and installs Microsoft Teams with WebView2 runtime optimized for AVD environments.
-
-    Key features:
-    - Idempotent: Safely runs multiple times, updating existing installations
+    This script installs and configures Microsoft Teams with the WebView2 Runtime, optimized for
+    Azure Virtual Desktop environments. Key features:
+    - Idempotent: safely runs multiple times; a converged system exits 0 with no further changes
     - Configures registry keys for AVD optimizations (IsWVDEnvironment)
-    - Installs WebView2 runtime (required dependency)
-    - Installs Teams bootstrapper for machine-wide deployment
-    - Optionally installs the Remote Desktop WebRTC Redirector Service (recommended
-      for new Teams media optimization fallback, see -InstallWebRtcRedirector)
+    - Installs the WebView2 Runtime (required dependency)
+    - Installs the Teams bootstrapper for machine-wide deployment
+    - Optionally installs the Remote Desktop WebRTC Redirector Service (recommended for new Teams
+      media optimization fallback, see -InstallWebRtcRedirector)
     - Cleans up old per-user Teams installations
     - Prevents users from manually updating Teams
-    - Comprehensive logging and error handling
-    - Validates installations and reports detailed status
-    - Download security validation with Authenticode signatures
+    - Validates downloads with Authenticode signatures before executing them
+    - Comprehensive logging and error handling with detailed status reporting
 
-    The script is designed for:
-    - AVD gold image preparation
-    - Automated deployment via Intune or other management tools
-    - Both fresh installations and updates
+    The script is designed for AVD gold image preparation and automated deployment via Intune or
+    other management tools, supporting both fresh installations and forced updates.
+
+    Destructive operations (stopping Teams processes, removing old per-user installs, registry and
+    policy changes) honor -WhatIf/-Confirm via SupportsShouldProcess. Administrator privileges are
+    required and enforced at runtime.
+
+    Exit codes:
+    - 0 : Success (all requested components installed/configured and verified)
+    - 1 : EULA not accepted, or administrator privileges missing
+    - 3 : Installation failure (download, signature validation, installer error, or fatal error)
+    - 4 : Registry configuration failure
 
 .PARAMETER AcceptEULA
     Accept the Microsoft WebView2 Runtime EULA. Required for silent installation.
@@ -32,7 +39,8 @@
     Skip removal of old per-user Teams installations. Use when user profiles should be preserved.
 
 .PARAMETER LogPath
-    Path where the transcript log will be saved. Defaults to C:\ProgramData\Microsoft\IntuneManagementExtension\Logs
+    Path where the transcript log will be saved. Defaults to
+    C:\ProgramData\Microsoft\IntuneManagementExtension\Logs.
 
 .PARAMETER Force
     Force reinstallation even if current versions are already installed.
@@ -42,54 +50,49 @@
 
 .PARAMETER InstallWebRtcRedirector
     Also download and install the Remote Desktop WebRTC Redirector Service MSI
-    (https://aka.ms/msrdcwebrtcsvc/msi). Recommended for new Teams on AVD so calls
-    can fall back to WebRTC when SlimCore is unavailable. Default: not installed.
+    (https://aka.ms/msrdcwebrtcsvc/msi). Recommended for new Teams on AVD so calls can fall back to
+    WebRTC when SlimCore is unavailable. Default: not installed.
     See https://learn.microsoft.com/en-us/azure/virtual-desktop/teams-on-avd
 
 .EXAMPLE
-    .\Install-TeamsAVD.ps1 -AcceptEULA
-    Install Teams and WebView2 with default settings.
+    PS C:\> .\Install-TeamsAVD.ps1 -AcceptEULA
+    Installs Teams and WebView2 with default settings.
 
 .EXAMPLE
-    .\Install-TeamsAVD.ps1 -AcceptEULA -SkipUserCleanup
-    Install without removing old user-profile Teams installations.
+    PS C:\> .\Install-TeamsAVD.ps1 -AcceptEULA -SkipUserCleanup
+    Installs without removing old user-profile Teams installations.
 
 .EXAMPLE
-    .\Install-TeamsAVD.ps1 -AcceptEULA -Force
-    Force reinstallation even if already installed.
+    PS C:\> .\Install-TeamsAVD.ps1 -AcceptEULA -Force
+    Forces reinstallation even if current versions are already installed.
 
 .EXAMPLE
-    .\Install-TeamsAVD.ps1 -AcceptEULA -InstallWebRtcRedirector
-    Install Teams, WebView2, and the WebRTC Redirector Service.
+    PS C:\> .\Install-TeamsAVD.ps1 -AcceptEULA -InstallWebRtcRedirector -WhatIf
+    Shows what the installation would do, including the WebRTC Redirector, without changing anything.
 
 .NOTES
-    Author: AVD Gold Image Automation
-    Version: 3.0
-    Requires: Administrator privileges (enforced by #Requires directive)
-    Compatible with: Windows 10/11, Windows Server 2019/2022
-
-    Exit Codes:
-    0  - Success (all components installed and verified)
-    1  - EULA not accepted
-    2  - Download failure (network, validation, or security)
-    3  - Installation failure (installer errors)
-    4  - Registry configuration failure
+    File Name    : Install-TeamsAVD.ps1
+    Author       : AVD Gold Image Automation
+    Prerequisite : PowerShell 7.0
+    Version      : 1.0.0
+    Date         : 2026-08-23
 
 .LINK
     https://learn.microsoft.com/en-us/microsoftteams/teams-for-vdi
     https://learn.microsoft.com/en-us/azure/virtual-desktop/teams-on-avd
 #>
 
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess)]
 param(
-    [Parameter(Mandatory = $true, HelpMessage = "Accept WebView2 EULA to proceed with installation")]
+    [Parameter(HelpMessage = "Accept WebView2 EULA to proceed with installation")]
     [switch]$AcceptEULA,
 
     [Parameter(HelpMessage = "Skip cleanup of old per-user Teams installations")]
     [switch]$SkipUserCleanup,
 
     [Parameter(HelpMessage = "Path for transcript log file")]
-    [string]$LogPath = "C:\ProgramData\Microsoft\IntuneManagementExtension\Logs\TeamsAVD_Install_$(Get-Date -Format 'yyyyMMdd_HHmmss').log",
+    [string]$LogPath = "C:\ProgramData\Microsoft\IntuneManagementExtension\Logs\`
+        TeamsAVD_Install_$(Get-Date -Format 'yyyyMMdd_HHmmss').log",
 
     [Parameter(HelpMessage = "Force reinstallation even if already installed")]
     [switch]$Force,
@@ -97,21 +100,13 @@ param(
     [Parameter(HelpMessage = "Skip Authenticode signature verification (use only in trusted environments)")]
     [switch]$SkipSignatureCheck,
 
-    [Parameter(HelpMessage = "Also install the Remote Desktop WebRTC Redirector Service (recommended for new Teams media optimization)")]
+    [Parameter(HelpMessage = "Also install the Remote Desktop WebRTC Redirector Service")]
     [switch]$InstallWebRtcRedirector
 )
 
-# ==================== EARLY VALIDATION ====================
-# Validate EULA acceptance BEFORE starting transcript to save resources
-if (-not $AcceptEULA) {
-    Write-Host "`n[ERROR] You must accept the WebView2 EULA using -AcceptEULA parameter" -ForegroundColor Red
-    Write-Host "[INFO] Review EULA at: https://www.microsoft.com/en-us/legal/terms-of-use`n" -ForegroundColor Cyan
-    exit 1
-}
+$ErrorActionPreference = 'Stop'
 
 # ==================== CONFIGURATION ====================
-
-$ErrorActionPreference = "Stop"
 $script:InstallErrors = @()
 $script:WebView2Url = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
 $script:TeamsBootstrapperUrl = "https://go.microsoft.com/fwlink/?linkid=2243204"
@@ -121,6 +116,7 @@ $script:TempPath = $env:TEMP
 
 # Known successful exit codes for installers (0 = success, 3010 = success but reboot required)
 $script:AcceptableExitCodes = @(0, 3010)
+$script:TempPath = if ($env:TEMP) { $env:TEMP } else { [System.IO.Path]::GetTempPath() }
 
 # Version detection retry configuration
 $script:MaxRetries = 5
@@ -129,23 +125,15 @@ $script:InitialRetryDelay = 2  # seconds
 # ==================== FUNCTIONS ====================
 
 function Write-Banner {
+    [CmdletBinding()]
+    param()
     $banner = @"
 
- ╔══════════════════════════════════════════════════════════════╗
- ║                                                              ║
- ║   ████████╗███████╗ █████╗ ███╗   ███╗███████╗              ║
- ║   ╚══██╔══╝██╔════╝██╔══██╗████╗ ████║██╔════╝              ║
- ║      ██║   █████╗  ███████║██╔████╔██║███████╗              ║
- ║      ██║   ██╔══╝  ██╔══██║██║╚██╔╝██║╚════██║              ║
- ║      ██║   ███████╗██║  ██║██║ ╚═╝ ██║███████║              ║
- ║      ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝     ╚═╝╚══════╝              ║
- ║                                                              ║
- ║        🚀 AVD Gold Image Installer v3.0 🚀                   ║
- ║                                                              ║
- ║  Installing Microsoft Teams + WebView2 for Azure Virtual    ║
- ║  Desktop with production-ready error handling & validation  ║
- ║                                                              ║
- ╚══════════════════════════════════════════════════════════════╝
+ ==============================================================
+   AVD Gold Image Installer v1.0.0
+   Installing Microsoft Teams + WebView2 for Azure Virtual Desktop
+   Production-ready error handling & validation
+ ==============================================================
 
 "@
     Write-Host $banner -ForegroundColor Cyan
@@ -177,15 +165,15 @@ function Write-Log {
         'Warning' { 'Yellow' }
         'Error' { 'Red' }
         'Header' { 'Cyan' }
-        default { 'White' }
+        default { 'Cyan' }
     }
 
     $prefix = switch ($Level) {
-        'Success' { '[✓]' }
-        'Warning' { '[⚠]' }
-        'Error' { '[✗]' }
-        'Header' { '[▶]' }
-        default { '[•]' }
+        'Success' { '[+]' }
+        'Warning' { '[!]' }
+        'Error' { '[-]' }
+        'Header' { '[*]' }
+        default { '[*]' }
     }
 
     $displayMessage = "$prefix $Message"
@@ -194,6 +182,7 @@ function Write-Log {
 }
 
 function Test-FileSignature {
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
         [string]$FilePath
@@ -212,7 +201,7 @@ function Test-FileSignature {
             return $true
         }
         elseif ($signature.Status -eq 'NotSigned') {
-            Write-Log "WARNING: File is not digitally signed" -Level Warning
+            Write-Log "File is not digitally signed" -Level Warning
             Write-Log "File: $FilePath" -Level Warning
             Write-Log "Use -SkipSignatureCheck to bypass (not recommended)" -Level Warning
             return $false
@@ -251,7 +240,8 @@ function Get-TeamsVersion {
     param()
 
     try {
-        $teamsInstalls = Get-ChildItem -Path "C:\Program Files\WindowsApps\" -Directory -Filter "MSTeams_*" -ErrorAction SilentlyContinue
+        $teamsInstalls = Get-ChildItem -Path "C:\Program Files\WindowsApps\" -Directory `
+            -Filter "MSTeams_*" -ErrorAction SilentlyContinue
 
         if ($teamsInstalls) {
             $latestTeams = $teamsInstalls | Sort-Object Name -Descending | Select-Object -First 1
@@ -290,7 +280,8 @@ function Wait-ForVersionDetection {
 
         $retryCount++
         if ($retryCount -lt $script:MaxRetries) {
-            Write-Log "Version not detected yet, retrying in $delay seconds... (Attempt $($retryCount + 1)/$script:MaxRetries)" -Level Warning
+            Write-Log "Version not detected yet, retrying in $delay seconds... `
+                (Attempt $($retryCount + 1)/$script:MaxRetries)" -Level Warning
             $delay = [math]::Min($delay * 2, 30)  # Exponential backoff, max 30 seconds
         }
     }
@@ -304,11 +295,17 @@ function Set-RegistryValue {
     param(
         [string]$Path,
         [string]$Name,
-        [object]$Value,
-        [Microsoft.Win32.RegistryValueKind]$Type = [Microsoft.Win32.RegistryValueKind]::DWord
+        [object]$Value
     )
 
     try {
+        # Idempotency: skip mutation when the desired value is already present
+        $existing = (Get-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue).$Name
+        if ($existing -eq $Value) {
+            Write-Log "Already configured: $Path\$Name = $Value" -Level Success
+            return $true
+        }
+
         # Create path if it doesn't exist
         if (-not (Test-Path $Path)) {
             if ($PSCmdlet.ShouldProcess($Path, 'Create registry path')) {
@@ -319,7 +316,7 @@ function Set-RegistryValue {
 
         # Set the value
         if ($PSCmdlet.ShouldProcess("$Path\$Name", 'Set registry value')) {
-            Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type -Force -ErrorAction Stop
+            Set-ItemProperty -Path $Path -Name $Name -Value $Value -Force -ErrorAction Stop
 
             # Verify the value was set correctly
             $verifyValue = (Get-ItemProperty -Path $Path -Name $Name -ErrorAction Stop).$Name
@@ -355,14 +352,14 @@ function Stop-TeamsProcessGracefully {
 
     Write-Log "Found $($Processes.Count) Teams process(es) for user: $UserName" -Level Warning
 
-    foreach ($process in $Processes) {
+    foreach ($userProcess in $Processes) {
         try {
-            Write-Log "Requesting graceful shutdown of Teams (PID: $($process.Id))..." -Level Info
+            Write-Log "Requesting graceful shutdown of Teams (PID: $($userProcess.Id))..." -Level Info
 
             # Try CloseMainWindow first (graceful shutdown)
-            if ($process.CloseMainWindow()) {
+            if ($userProcess.CloseMainWindow()) {
                 Write-Log "Sent close request to Teams process" -Level Info
-                $waitResult = $process.WaitForExit(10000)  # Wait up to 10 seconds
+                $waitResult = $userProcess.WaitForExit(10000)  # Wait up to 10 seconds
 
                 if ($waitResult) {
                     Write-Log "Teams process closed gracefully" -Level Success
@@ -374,10 +371,10 @@ function Stop-TeamsProcessGracefully {
             }
 
             # If graceful shutdown failed, force kill
-            if ($PSCmdlet.ShouldProcess("Teams process (PID: $($process.Id))", 'Stop process')) {
-                Write-Log "Force terminating Teams process (PID: $($process.Id))" -Level Warning
-                $process.Kill()
-                $process.WaitForExit(5000)
+            if ($PSCmdlet.ShouldProcess("Teams process (PID: $($userProcess.Id))", 'Stop process')) {
+                Write-Log "Force terminating Teams process (PID: $($userProcess.Id))" -Level Warning
+                $userProcess.Kill()
+                $userProcess.WaitForExit(5000)
                 Write-Log "Teams process terminated" -Level Info
             }
         }
@@ -390,9 +387,59 @@ function Stop-TeamsProcessGracefully {
     Start-Sleep -Seconds 2
 }
 
+function Get-UserProfilesList {
+    # Thin wrapper around Get-ChildItem for C:\Users discovery; mock seam for tests.
+    [CmdletBinding()]
+    [OutputType([System.IO.DirectoryInfo])]
+    param()
+
+    return Get-ChildItem "C:\Users" -Directory -ErrorAction SilentlyContinue
+}
+
+function Invoke-InstallerDownload {
+    # Thin wrapper around Invoke-WebRequest for installer downloads; mock seam for tests.
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Uri,
+
+        [Parameter(Mandatory)]
+        [string]$OutFile
+    )
+
+    # PowerShell 7.4 renamed -TimeoutSec to -ConnectionTimeoutSeconds
+    $timeoutParam = if ((Get-Command Invoke-WebRequest).Parameters.ContainsKey('ConnectionTimeoutSeconds')) {
+        @{ ConnectionTimeoutSeconds = 300 }
+    }
+    else {
+        @{ TimeoutSec = 300 }
+    }
+
+    Invoke-WebRequest -Uri $Uri -OutFile $OutFile -UseBasicParsing @timeoutParam -ErrorAction Stop
+}
+
+function Start-InstallerProcess {
+    # Thin wrapper around Start-Process for native installers (MSI packages, bootstrapper EXEs).
+    # Exists as the mock seam for Pester: tests mock this function, never the native executable.
+    [CmdletBinding()]
+    [OutputType([System.Diagnostics.Process])]
+    param(
+        [Parameter(Mandatory)]
+        [string]$FilePath,
+
+        [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
+        [string[]]$ArgumentList
+    )
+
+    return Start-Process -FilePath $FilePath -ArgumentList $ArgumentList -Wait -PassThru -NoNewWindow -ErrorAction Stop
+}
+
 function Install-WebView2Runtime {
+    [CmdletBinding()]
+    param()
     Write-Log ""
-    Write-Log "═══ WebView2 Runtime Installation ═══" -Level Header
+    Write-Log "=== WebView2 Runtime Installation ===" -Level Header
 
     # Check current version
     $currentVersion = Get-WebView2Version
@@ -415,7 +462,7 @@ function Install-WebView2Runtime {
         # Download
         Write-Log "Downloading WebView2 Runtime..." -Level Info
         $ProgressPreference = 'SilentlyContinue'
-        Invoke-WebRequest -Uri $script:WebView2Url -OutFile $installer -UseBasicParsing -TimeoutSec 300
+        Invoke-InstallerDownload -Uri $script:WebView2Url -OutFile $installer
 
         if (-not (Test-Path $installer)) {
             throw "Download failed: File not found at $installer"
@@ -437,13 +484,14 @@ function Install-WebView2Runtime {
         # Install
         Write-Log "Installing WebView2 Runtime (silent mode)..." -Level Info
         $installArgs = @("/silent", "/install")
-        $process = Start-Process -FilePath $installer -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
+        $process = Start-InstallerProcess -FilePath $installer -ArgumentList $installArgs
 
         if ($process.ExitCode -in $script:AcceptableExitCodes) {
             Write-Log "Installer completed with exit code: $($process.ExitCode)" -Level Success
 
             # Verify installation with retry logic
-            $newVersion = Wait-ForVersionDetection -VersionCheck ${function:Get-WebView2Version} -ComponentName "WebView2"
+            $newVersion = Wait-ForVersionDetection -VersionCheck ${function:Get-WebView2Version} `
+                -ComponentName "WebView2"
 
             if ($newVersion) {
                 Write-Log "WebView2 Runtime installation verified" -Level Success
@@ -490,19 +538,19 @@ function Remove-UserTeamsInstalls {
     }
 
     Write-Log ""
-    Write-Log "═══ Cleaning Up User-Profile Teams ═══" -Level Header
+    Write-Log "=== Cleaning Up User-Profile Teams ===" -Level Header
 
-    $userProfiles = Get-ChildItem "C:\Users" -Directory -ErrorAction SilentlyContinue
+    $userProfiles = Get-UserProfilesList
     $removedCount = 0
     $failedCount = 0
 
-    foreach ($profile in $userProfiles) {
+    foreach ($userProfile in $userProfiles) {
         # Skip system profiles
-        if ($profile.Name -in @('Public', 'Default', 'Default User', 'All Users')) {
+        if ($userProfile.Name -in @('Public', 'Default', 'Default User', 'All Users')) {
             continue
         }
 
-        $teamsPath = Join-Path $profile.FullName "AppData\Local\Microsoft\Teams"
+        $teamsPath = Join-Path $userProfile.FullName "AppData\Local\Microsoft\Teams"
 
         if (Test-Path $teamsPath) {
             try {
@@ -511,24 +559,24 @@ function Remove-UserTeamsInstalls {
                     Where-Object { $_.Path -like "$teamsPath*" }
 
                 if ($teamsProcesses) {
-                    Stop-TeamsProcessGracefully -Processes $teamsProcesses -UserName $profile.Name
+                    Stop-TeamsProcessGracefully -Processes $teamsProcesses -UserName $userProfile.Name
                 }
 
                 if ($PSCmdlet.ShouldProcess($teamsPath, 'Remove Teams installation')) {
                     Remove-Item -Path $teamsPath -Recurse -Force -ErrorAction Stop
-                    Write-Log "Removed Teams from user: $($profile.Name)" -Level Success
+                    Write-Log "Removed Teams from user: $($userProfile.Name)" -Level Success
                     $removedCount++
                 }
             }
             catch {
-                Write-Log "Failed to remove Teams for user $($profile.Name): $_" -Level Warning
+                Write-Log "Failed to remove Teams for user $($userProfile.Name): $_" -Level Warning
                 $failedCount++
             }
         }
     }
 
     if ($removedCount -eq 0 -and $failedCount -eq 0) {
-        Write-Log "No old Teams installations found" -Level Info
+        Write-Log "No old Teams installations found" -Level Success
     }
     else {
         Write-Log "Cleanup complete: $removedCount removed, $failedCount failed" -Level Info
@@ -536,8 +584,10 @@ function Remove-UserTeamsInstalls {
 }
 
 function Install-TeamsBootstrapper {
+    [CmdletBinding()]
+    param()
     Write-Log ""
-    Write-Log "═══ Teams Bootstrapper Installation ═══" -Level Header
+    Write-Log "=== Teams Bootstrapper Installation ===" -Level Header
 
     # Check current version
     $currentVersion = Get-TeamsVersion
@@ -560,7 +610,7 @@ function Install-TeamsBootstrapper {
         # Download
         Write-Log "Downloading Teams Bootstrapper..." -Level Info
         $ProgressPreference = 'SilentlyContinue'
-        Invoke-WebRequest -Uri $script:TeamsBootstrapperUrl -OutFile $installer -UseBasicParsing -TimeoutSec 300
+        Invoke-InstallerDownload -Uri $script:TeamsBootstrapperUrl -OutFile $installer
 
         if (-not (Test-Path $installer)) {
             throw "Download failed: File not found at $installer"
@@ -582,7 +632,7 @@ function Install-TeamsBootstrapper {
         # Install machine-wide
         Write-Log "Installing Teams (machine-wide deployment)..." -Level Info
         $installArgs = @("-p")  # -p flag for machine-wide stub
-        $process = Start-Process -FilePath $installer -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
+        $process = Start-InstallerProcess -FilePath $installer -ArgumentList $installArgs
 
         # Teams installer sometimes returns non-zero codes even on success
         if ($process.ExitCode -in $script:AcceptableExitCodes) {
@@ -630,8 +680,10 @@ function Install-TeamsBootstrapper {
 }
 
 function Install-WebRtcRedirectorService {
+    [CmdletBinding()]
+    param()
     Write-Log ""
-    Write-Log "═══ WebRTC Redirector Service Installation ═══" -Level Header
+    Write-Log "=== WebRTC Redirector Service Installation ===" -Level Header
 
     # Check if already installed
     if (Test-Path $script:WebRtcRedirectorInstallPath) {
@@ -646,7 +698,7 @@ function Install-WebRtcRedirectorService {
         # Download
         Write-Log "Downloading WebRTC Redirector Service MSI..." -Level Info
         $ProgressPreference = 'SilentlyContinue'
-        Invoke-WebRequest -Uri $script:WebRtcRedirectorUrl -OutFile $installer -UseBasicParsing -TimeoutSec 300
+        Invoke-InstallerDownload -Uri $script:WebRtcRedirectorUrl -OutFile $installer
 
         if (-not (Test-Path $installer)) {
             throw "Download failed: File not found at $installer"
@@ -665,10 +717,10 @@ function Install-WebRtcRedirectorService {
             throw "Signature verification failed - file may be compromised"
         }
 
-        # Install silently via msiexec
+        # Install silently via the msiexec wrapper
         Write-Log "Installing WebRTC Redirector Service (silent mode)..." -Level Info
         $installArgs = @("/i", "`"$installer`"", "/qn", "/norestart")
-        $process = Start-Process -FilePath "msiexec.exe" -ArgumentList $installArgs -Wait -PassThru -NoNewWindow
+        $process = Start-InstallerProcess -FilePath "msiexec.exe" -ArgumentList $installArgs
 
         if ($process.ExitCode -in $script:AcceptableExitCodes) {
             Write-Log "Installer completed with exit code: $($process.ExitCode)" -Level Success
@@ -714,7 +766,7 @@ function Set-AVDRegistryConfiguration {
     param()
 
     Write-Log ""
-    Write-Log "═══ Configuring AVD Registry Settings ═══" -Level Header
+    Write-Log "=== Configuring AVD Registry Settings ===" -Level Header
 
     $success = $true
 
@@ -761,9 +813,7 @@ function Set-AVDRegistryConfiguration {
 
 function Write-InstallationSummary {
     Write-Log ""
-    Write-Log "╔══════════════════════════════════════════════════════════╗" -Level Header
-    Write-Log "║              INSTALLATION SUMMARY                        ║" -Level Header
-    Write-Log "╚══════════════════════════════════════════════════════════╝" -Level Header
+    Write-Log "=== INSTALLATION SUMMARY ===" -Level Header
     Write-Log ""
     Write-Log "Timestamp: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -Level Info
 
@@ -794,7 +844,8 @@ function Write-InstallationSummary {
     }
 
     # Registry Status
-    $isWVD = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Teams" -Name "IsWVDEnvironment" -ErrorAction SilentlyContinue).IsWVDEnvironment
+    $isWVD = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Teams" -Name "IsWVDEnvironment" `
+            -ErrorAction SilentlyContinue).IsWVDEnvironment
     if ($isWVD -eq 1) {
         Write-Log "AVD Optimizations: ENABLED" -Level Success
     }
@@ -807,7 +858,7 @@ function Write-InstallationSummary {
         Write-Log ""
         Write-Log "Errors Encountered:" -Level Error
         foreach ($err in $script:InstallErrors) {
-            Write-Log "  • $err" -Level Error
+            Write-Log "$err" -Level Error
         }
     }
 
@@ -816,90 +867,99 @@ function Write-InstallationSummary {
     Write-Log ""
 }
 
-# ==================== MAIN EXECUTION ====================
+function Main {
+    [CmdletBinding()]
+    param()
+    $script:InstallErrors = @()
 
-# Create log directory if needed
-$logDir = Split-Path -Path $LogPath -Parent
-if (-not (Test-Path $logDir)) {
-    New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+    try {
+        Write-Banner
+
+        # ---- Early validation: throw/return before doing any work ----
+        if (-not $AcceptEULA) {
+            Write-Host ""
+            Write-Host "[-] You must accept the WebView2 EULA using -AcceptEULA parameter" -ForegroundColor Red
+            Write-Host "[*] Review EULA at: https://www.microsoft.com/en-us/legal/terms-of-use" -ForegroundColor Cyan
+            return 1
+        }
+
+        if ($IsWindows) {
+            $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+            $principal = New-Object Security.Principal.WindowsPrincipal($identity)
+            if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+                Write-Host "[-] Administrator privileges are required to install system components" `
+                    -ForegroundColor Red
+                return 1
+            }
+        }
+
+        # ---- Transcript logging ----
+        $logDir = Split-Path -Path $LogPath -Parent
+        if (-not (Test-Path $logDir)) {
+            $null = New-Item -Path $logDir -ItemType Directory -Force -ErrorAction Stop
+        }
+
+        # Stop any orphaned transcripts, then start ours
+        try { Stop-Transcript | Out-Null } catch { }
+        Start-Transcript -Path $LogPath -Append -ErrorAction Stop
+
+        Write-Log "Script Version: 1.0.0" -Level Info
+        Write-Log "Execution Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -Level Info
+        Write-Log "Log Path: $LogPath" -Level Info
+        Write-Log ""
+
+        Write-Log "EULA accepted, proceeding with installation" -Level Success
+        Write-Log ""
+
+        # Configure registry settings first
+        $registrySuccess = Set-AVDRegistryConfiguration
+
+        # Clean up old user installations
+        Remove-UserTeamsInstalls
+
+        # Install WebView2
+        $webView2Success = Install-WebView2Runtime
+
+        # Install Teams
+        $teamsSuccess = Install-TeamsBootstrapper
+
+        # Install WebRTC Redirector Service (optional, new Teams media optimization fallback)
+        $webrtcSuccess = $true
+        if ($InstallWebRtcRedirector) {
+            $webrtcSuccess = Install-WebRtcRedirectorService
+        }
+
+        # Generate summary
+        Write-InstallationSummary
+
+        # Determine exit code
+        if ($webView2Success -and $teamsSuccess -and $registrySuccess -and $webrtcSuccess) {
+            Write-Log "Installation completed successfully - AVD gold image is ready for user logins" -Level Success
+            $exitCode = 0
+        }
+        elseif (-not $registrySuccess) {
+            Write-Log "Installation completed but registry configuration failed - `
+                Teams may not be optimized for AVD" -Level Warning
+            $exitCode = 4
+        }
+        else {
+            Write-Log "Installation completed with errors - review the log file for details" -Level Error
+            $exitCode = 3
+        }
+
+        Stop-Transcript
+        return $exitCode
+    }
+    catch {
+        Write-Host ""
+        Write-Host "[-] FATAL ERROR: $($_.Exception.Message)" -ForegroundColor Red
+        Write-Host "[-] Stack: $($_.ScriptStackTrace)" -ForegroundColor Red
+        try { Stop-Transcript } catch { }
+        return 3
+    }
 }
 
-# Stop any orphaned transcripts
-try { Stop-Transcript | Out-Null } catch { Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false }
-
-# Start transcript logging
-Start-Transcript -Path $LogPath -Append
-
-try {
-    # Display banner
-    Write-Banner
-
-    Write-Log "Script Version: 3.0" -Level Info
-    Write-Log "Execution Time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" -Level Info
-    Write-Log "Log Path: $LogPath" -Level Info
-    Write-Log ""
-
-    Write-Log "EULA accepted, proceeding with installation" -Level Success
-    Write-Log ""
-
-    # Configure registry settings first
-    $registrySuccess = Set-AVDRegistryConfiguration
-
-    # Clean up old user installations
-    Remove-UserTeamsInstalls
-
-    # Install WebView2
-    $webView2Success = Install-WebView2Runtime
-
-    # Install Teams
-    $teamsSuccess = Install-TeamsBootstrapper
-
-    # Install WebRTC Redirector Service (optional, new Teams media optimization fallback)
-    $webrtcSuccess = $true
-    if ($InstallWebRtcRedirector) {
-        $webrtcSuccess = Install-WebRtcRedirectorService
-    }
-
-    # Generate summary
-    Write-InstallationSummary
-
-    # Determine exit code
-    if ($webView2Success -and $teamsSuccess -and $registrySuccess -and $webrtcSuccess) {
-        Write-Log "╔════════════════════════════════════════════════════════╗" -Level Success
-        Write-Log "║  ✓ Installation completed successfully!               ║" -Level Success
-        Write-Log "║    AVD gold image is ready for user logins            ║" -Level Success
-        Write-Log "╚════════════════════════════════════════════════════════╝" -Level Success
-        Write-Log ""
-        $exitCode = 0
-    }
-    elseif (-not $registrySuccess) {
-        Write-Log "╔════════════════════════════════════════════════════════╗" -Level Warning
-        Write-Log "║  ⚠ Installation completed but registry config failed  ║" -Level Warning
-        Write-Log "║    Teams may not be optimized for AVD                 ║" -Level Warning
-        Write-Log "╚════════════════════════════════════════════════════════╝" -Level Warning
-        Write-Log ""
-        $exitCode = 4
-    }
-    elseif (-not $webView2Success -or -not $teamsSuccess -or -not $webrtcSuccess) {
-        Write-Log "╔════════════════════════════════════════════════════════╗" -Level Error
-        Write-Log "║  ✗ Installation completed with errors                 ║" -Level Error
-        Write-Log "║    Review the log file for details                    ║" -Level Error
-        Write-Log "╚════════════════════════════════════════════════════════╝" -Level Error
-        Write-Log ""
-        $exitCode = 3
-    }
-
-    Stop-Transcript
-    exit $exitCode
-}
-catch {
-    Write-Log ""
-    Write-Log "╔════════════════════════════════════════════════════════╗" -Level Error
-    Write-Log "║  ✗ FATAL ERROR                                         ║" -Level Error
-    Write-Log "╚════════════════════════════════════════════════════════╝" -Level Error
-    Write-Log "Error: $($_.Exception.Message)" -Level Error
-    Write-Log "Stack: $($_.ScriptStackTrace)" -Level Error
-    Write-Log ""
-    Stop-Transcript
-    exit 3
-}
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips
+# execution -- including dot-sources that pass arguments, where InvocationName alone
+# cannot be relied upon under test harnesses.
+if (-not ($MyInvocation.InvocationName -eq '.' -or $MyInvocation.Line -match '^\s*\.\s')) { exit (Main) }

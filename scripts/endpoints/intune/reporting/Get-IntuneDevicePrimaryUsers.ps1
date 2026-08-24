@@ -1,6 +1,6 @@
-<#
+﻿<#
 .SYNOPSIS
-    Resolves Intune Primary Users and friendly hardware specs for one or more devices.
+    Resolve Intune Primary Users and friendly hardware specs for one or more devices.
 
 .DESCRIPTION
     - Accepts device names (comma/newline separated) or an input file (.txt/.csv)
@@ -10,6 +10,12 @@
     - Pulls hardware fields (RAM, storage, model, manufacturer, serial) via a per device GET call
     - Pulls Friendly Model Name from Entra device extensionAttributes (default extensionAttribute1)
     - Exports results to CSV (default Desktop\PrimaryUsers.csv)
+
+    The report is read-only: it never mutates tenant configuration, so re-running it is safe
+    (idempotent).
+    Exit codes:
+    - 0: processing completed (including no usable device names or devices not found).
+    - 1: missing prerequisite module or a terminating error during processing.
 
 .PARAMETER DeviceName
     One or more device names (comma or newline separated) to query
@@ -31,25 +37,32 @@
     Suppress INFO and DEBUG messages
 
 .EXAMPLE
-    .\Get-IntuneDevicePrimaryUsers.ps1 -DeviceName "LTW1010013,LTW1010334"
+    PS C:\> .\Get-IntuneDevicePrimaryUsers.ps1 -DeviceName "LTW1010013,LTW1010334"
+    Resolves primary users and hardware specs for two devices and saves Desktop\PrimaryUsers.csv.
 
 .EXAMPLE
-    .\Get-IntuneDevicePrimaryUsers.ps1 -InputFile "C:\Temp\devices.txt" -OutputPath "C:\Reports\PrimaryUsers.csv"
+    PS C:\> .\Get-IntuneDevicePrimaryUsers.ps1 -InputFile "C:\Temp\devices.txt" `
+        -OutputPath "C:\Reports\PrimaryUsers.csv"
+    Resolves every device listed in the input file and writes the CSV to C:\Reports.
 
 .EXAMPLE
-    .\Get-IntuneDevicePrimaryUsers.ps1 -DeviceName "LTW1010013" -FriendlyModelAttribute "extensionAttribute2"
+    PS C:\> .\Get-IntuneDevicePrimaryUsers.ps1 -DeviceName "LTW1010013" `
+        -FriendlyModelAttribute "extensionAttribute2" -NoExport
+    Resolves one device reading the friendly model from extensionAttribute2, console output only.
 
 .NOTES
-    Requires Microsoft Graph PowerShell SDK
+    File Name   : Get-IntuneDevicePrimaryUsers.ps1
+    Author      : System Administrator
+    Prerequisite: PowerShell 7.0
+    Version     : 1.0.0
+    Date        : 2026-08-23
+
+    Requires the Microsoft Graph PowerShell SDK
     Required Graph Permissions:
         - DeviceManagementManagedDevices.Read.All
         - Directory.Read.All
         - User.Read.All
         - Device.Read.All
-
-    Author: System Administrator
-    Version: 2.0
-    Last Modified: 2026-01-16
 #>
 
 [CmdletBinding()]
@@ -66,9 +79,10 @@ param(
 
     [Parameter(Mandatory = $false)]
     [ValidateSet(
-        "extensionAttribute1", "extensionAttribute2", "extensionAttribute3", "extensionAttribute4", "extensionAttribute5",
-        "extensionAttribute6", "extensionAttribute7", "extensionAttribute8", "extensionAttribute9", "extensionAttribute10",
-        "extensionAttribute11", "extensionAttribute12", "extensionAttribute13", "extensionAttribute14", "extensionAttribute15"
+        "extensionAttribute1", "extensionAttribute2", "extensionAttribute3", "extensionAttribute4",
+        "extensionAttribute5", "extensionAttribute6", "extensionAttribute7", "extensionAttribute8",
+        "extensionAttribute9", "extensionAttribute10", "extensionAttribute11", "extensionAttribute12",
+        "extensionAttribute13", "extensionAttribute14", "extensionAttribute15"
     )]
     [string]$FriendlyModelAttribute = "extensionAttribute1",
 
@@ -79,7 +93,6 @@ param(
     [switch]$Quiet
 )
 
-Set-StrictMode -Version 2.0
 $ErrorActionPreference = "Stop"
 
 #region Helper Functions
@@ -87,8 +100,9 @@ $ErrorActionPreference = "Stop"
 function Write-Log {
     <#
     .SYNOPSIS
-        Writes formatted log messages to console
+        Writes formatted log messages to console using the relaunch output prefixes
     #>
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$Message,
         [ValidateSet("INFO", "WARN", "ERROR", "SUCCESS", "DEBUG")]
@@ -98,19 +112,20 @@ function Write-Log {
     if ($Quiet -and $Level -in @("INFO", "DEBUG")) { return }
 
     switch ($Level) {
-        "INFO" { Write-Host $Message -ForegroundColor Cyan }
+        "INFO" { Write-Host "[*] $Message" -ForegroundColor Cyan }
         "WARN" { Write-Warning $Message }
-        "ERROR" { Write-Host $Message -ForegroundColor Red }
-        "SUCCESS" { Write-Host $Message -ForegroundColor Green }
-        "DEBUG" { Write-Host $Message -ForegroundColor DarkGray }
+        "ERROR" { Write-Host "[-] $Message" -ForegroundColor Red }
+        "SUCCESS" { Write-Host "[+] $Message" -ForegroundColor Green }
+        "DEBUG" { Write-Host "[*] $Message" -ForegroundColor DarkGray }
     }
 }
 
-function Escape-ODataString {
+function Protect-ODataString {
     <#
     .SYNOPSIS
         Escapes single quotes in OData filter strings
     #>
+    [CmdletBinding()]
     param([AllowNull()][string]$Value)
     if ($null -eq $Value) { return $null }
     return ($Value -replace "'", "''")
@@ -121,6 +136,7 @@ function Format-BytesToGB {
     .SYNOPSIS
         Converts bytes to gigabytes with specified decimal precision
     #>
+    [CmdletBinding()]
     param([AllowNull()][double]$Bytes, [int]$Decimals = 0)
     if ($null -eq $Bytes -or $Bytes -le 0) { return $null }
     return [math]::Round(($Bytes / 1GB), $Decimals)
@@ -131,16 +147,18 @@ function Format-Percent {
     .SYNOPSIS
         Calculates percentage with specified decimal precision
     #>
+    [CmdletBinding()]
     param([AllowNull()][double]$Numerator, [AllowNull()][double]$Denominator, [int]$Decimals = 0)
     if ($null -eq $Numerator -or $null -eq $Denominator -or $Denominator -le 0) { return $null }
     return [math]::Round(($Numerator / $Denominator) * 100, $Decimals)
 }
 
-function Normalize-CpuString {
+function Format-CpuString {
     <#
     .SYNOPSIS
         Normalizes CPU name strings for better readability
     #>
+    [CmdletBinding()]
     param([AllowNull()][string]$Value)
     if ([string]::IsNullOrWhiteSpace($Value)) { return $null }
 
@@ -157,6 +175,7 @@ function Resolve-InputTokens {
     .SYNOPSIS
         Resolves device names from various input sources
     #>
+    [CmdletBinding()]
     param(
         [string[]]$DeviceName,
         [string]$InputFile
@@ -246,9 +265,11 @@ function Get-PrimaryUserFromIntuneUsersRelation {
     .SYNOPSIS
         Gets the primary user via the managedDevice/users relationship (beta endpoint)
     #>
+    [CmdletBinding()]
     param([Parameter(Mandatory)][string]$ManagedDeviceId)
 
-    $uri = "https://graph.microsoft.com/beta/deviceManagement/managedDevices/{0}/users?`$select=id,userPrincipalName,displayName" -f $ManagedDeviceId
+    $uri = ("https://graph.microsoft.com/beta/deviceManagement/managedDevices/{0}/users" +
+        "?`$select=id,userPrincipalName,displayName") -f $ManagedDeviceId
 
     try {
         $resp = Invoke-MgGraphRequest -Method GET -Uri $uri -OutputType PSObject -ErrorAction Stop
@@ -267,16 +288,18 @@ function Get-ManagedDeviceMatch {
     .SYNOPSIS
         Finds a managed device by name, ID, or Azure AD Device ID
     #>
+    [CmdletBinding()]
     param([Parameter(Mandatory)][string]$Token)
 
     $selectProps = "id,deviceName,userPrincipalName,azureAdDeviceId,lastSyncDateTime"
-    $safeToken = Escape-ODataString -Value $Token
+    $safeToken = Protect-ODataString -Value $Token
 
     try {
         if ($Token -match $guidRegex) {
             # Try as managed device ID first
             try {
-                $mdById = Get-MgDeviceManagementManagedDevice -ManagedDeviceId $Token -Property $selectProps -ErrorAction Stop
+                $mdById = Get-MgDeviceManagementManagedDevice -ManagedDeviceId $Token `
+                    -Property $selectProps -ErrorAction Stop
                 if ($mdById) { return $mdById }
             }
             catch {
@@ -284,14 +307,16 @@ function Get-ManagedDeviceMatch {
             }
 
             # Try as Azure AD Device ID
-            $md = Get-MgDeviceManagementManagedDevice -Filter "azureAdDeviceId eq '$safeToken'" -Property $selectProps -Top 1 -ErrorAction SilentlyContinue
+            $md = Get-MgDeviceManagementManagedDevice -Filter "azureAdDeviceId eq '$safeToken'" `
+                -Property $selectProps -Top 1 -ErrorAction SilentlyContinue
             if ($md) { return ($md | Select-Object -First 1) }
 
             # Try resolving from Azure AD device to get display name
             $aad = Get-MgDevice -DeviceId $Token -ErrorAction SilentlyContinue
             if ($aad -and $aad.DisplayName) {
-                $safeName = Escape-ODataString -Value $aad.DisplayName
-                $md2 = Get-MgDeviceManagementManagedDevice -Filter "deviceName eq '$safeName'" -Property $selectProps -Top 1 -ErrorAction SilentlyContinue
+                $safeName = Protect-ODataString -Value $aad.DisplayName
+                $md2 = Get-MgDeviceManagementManagedDevice -Filter "deviceName eq '$safeName'" `
+                    -Property $selectProps -Top 1 -ErrorAction SilentlyContinue
                 if ($md2) { return ($md2 | Select-Object -First 1) }
             }
 
@@ -299,7 +324,8 @@ function Get-ManagedDeviceMatch {
         }
         else {
             # Try as device name
-            $md = Get-MgDeviceManagementManagedDevice -Filter "deviceName eq '$safeToken'" -Property $selectProps -Top 1 -ErrorAction SilentlyContinue
+            $md = Get-MgDeviceManagementManagedDevice -Filter "deviceName eq '$safeToken'" `
+                -Property $selectProps -Top 1 -ErrorAction SilentlyContinue
             if ($md) { return ($md | Select-Object -First 1) }
             return $null
         }
@@ -314,6 +340,7 @@ function Get-ManagedDeviceDetails {
     .SYNOPSIS
         Gets detailed hardware and OS information for a managed device
     #>
+    [CmdletBinding()]
     param([Parameter(Mandatory)][string]$ManagedDeviceId)
 
     $select = @(
@@ -324,14 +351,16 @@ function Get-ManagedDeviceDetails {
         "processorArchitecture", "hardwareInformation"
     ) -join ","
 
-    $uri = "https://graph.microsoft.com/beta/deviceManagement/managedDevices/{0}?`$select={1}" -f $ManagedDeviceId, $select
+    $uri = "https://graph.microsoft.com/beta/deviceManagement/managedDevices/{0}?`$select={1}" `
+        -f $ManagedDeviceId, $select
 
     try {
         return (Invoke-MgGraphRequest -Method GET -Uri $uri -OutputType PSObject -ErrorAction Stop)
     }
     catch {
         try {
-            return (Get-MgDeviceManagementManagedDevice -ManagedDeviceId $ManagedDeviceId -Property $select -ErrorAction Stop)
+            return (Get-MgDeviceManagementManagedDevice -ManagedDeviceId $ManagedDeviceId `
+                -Property $select -ErrorAction Stop)
         }
         catch {
             return $null
@@ -344,11 +373,13 @@ function Get-RegisteredOwnerUser {
     .SYNOPSIS
         Gets the registered owner of an Azure AD device
     #>
+    [CmdletBinding()]
     param([Parameter(Mandatory)][string]$DeviceName)
 
-    $safeName = Escape-ODataString -Value $DeviceName
+    $safeName = Protect-ODataString -Value $DeviceName
 
-    $aadMatches = Get-MgDevice -Filter "displayName eq '$safeName'" -Property Id, DisplayName -ErrorAction SilentlyContinue
+    $aadMatches = Get-MgDevice -Filter "displayName eq '$safeName'" `
+        -Property Id, DisplayName -ErrorAction SilentlyContinue
     foreach ($dev in ($aadMatches | ForEach-Object { $_ })) {
 
         $owners = Get-MgDeviceRegisteredOwner -DeviceId $dev.Id -All -ErrorAction SilentlyContinue
@@ -373,12 +404,14 @@ function Resolve-UserDisplayNameFromUpn {
     .SYNOPSIS
         Resolves a user's display name from their UPN
     #>
+    [CmdletBinding()]
     param([Parameter(Mandatory)][string]$UserPrincipalName)
 
-    $safeUpn = Escape-ODataString -Value $UserPrincipalName
+    $safeUpn = Protect-ODataString -Value $UserPrincipalName
 
     try {
-        $u = Get-MgUser -Filter "userPrincipalName eq '$safeUpn'" -ConsistencyLevel eventual -ErrorAction SilentlyContinue
+        $u = Get-MgUser -Filter "userPrincipalName eq '$safeUpn'" `
+            -ConsistencyLevel eventual -ErrorAction SilentlyContinue
         if ($u) { return (($u | Select-Object -First 1).DisplayName) }
     }
     catch {
@@ -393,15 +426,18 @@ function Get-EntraFriendlyModel {
     .SYNOPSIS
         Gets the friendly model name from Entra device extension attributes
     #>
+    [CmdletBinding()]
     param(
         [Parameter(Mandatory)][string]$AzureAdDeviceId,
         [Parameter(Mandatory)][string]$AttributeName
     )
 
-    $safe = Escape-ODataString -Value $AzureAdDeviceId
+    $safe = Protect-ODataString -Value $AzureAdDeviceId
 
     try {
-        $dev = Get-MgDevice -Filter "deviceId eq '$safe'" -Property "id,displayName,deviceId,extensionAttributes" -ConsistencyLevel eventual -ErrorAction SilentlyContinue |
+        $dev = Get-MgDevice -Filter "deviceId eq '$safe'" `
+            -Property "id,displayName,deviceId,extensionAttributes" `
+            -ConsistencyLevel eventual -ErrorAction SilentlyContinue |
             Select-Object -First 1
 
         if (-not $dev) { return $null }
@@ -421,213 +457,235 @@ function Get-EntraFriendlyModel {
 
 #region Main Script
 
-$scopes = @(
-    "DeviceManagementManagedDevices.Read.All",
-    "Directory.Read.All",
-    "User.Read.All",
-    "Device.Read.All"
-)
+function Main {
+    Set-StrictMode -Version 2.0
 
-try {
-    Write-Log "Connecting to Microsoft Graph" "INFO"
-    Connect-MgGraph -Scopes $scopes -NoWelcome | Out-Null
+    $scopes = @(
+        "DeviceManagementManagedDevices.Read.All",
+        "Directory.Read.All",
+        "User.Read.All",
+        "Device.Read.All"
+    )
 
-    $tokens = @(Resolve-InputTokens -DeviceName $DeviceName -InputFile $InputFile)
+    try {
+        if (-not (Get-Module -Name Microsoft.Graph.Authentication -ListAvailable)) {
+            Write-Log "Microsoft.Graph.Authentication module not found!" "ERROR"
+            Write-Log "Install with: Install-Module -Name Microsoft.Graph" "INFO"
+            return 1
+        }
 
-    if (-not $tokens -or $tokens.Count -eq 0) {
-        Write-Log "No usable device names found. Exiting." "WARN"
-        return
-    }
+        Write-Log "Connecting to Microsoft Graph" "INFO"
+        Connect-MgGraph -Scopes $scopes -NoWelcome -ErrorAction Stop | Out-Null
 
-    $results = New-Object System.Collections.Generic.List[object]
-    $i = 0
+        $tokens = @(Resolve-InputTokens -DeviceName $DeviceName -InputFile $InputFile)
 
-    foreach ($token in $tokens) {
-        $i++
-        $pct = [math]::Round(($i / [double]$tokens.Count) * 100, 0)
-        Write-Progress -Activity "Resolving devices" -Status "$i / $($tokens.Count): $token" -PercentComplete $pct
+        if (-not $tokens -or $tokens.Count -eq 0) {
+            Write-Log "No usable device names found. Exiting." "WARN"
+            return 0
+        }
 
-        # Initialize result variables
-        $deviceName = $null
-        $lastSeen = $null
+        $results = New-Object System.Collections.Generic.List[object]
+        $i = 0
 
-        $primaryUserUPN = $null
-        $primaryUserDisplayName = $null
-        $source = $null
+        foreach ($token in $tokens) {
+            $i++
+            $pct = [math]::Round(($i / [double]$tokens.Count) * 100, 0)
+            Write-Progress -Activity "Resolving devices" -Status "$i / $($tokens.Count): $token" -PercentComplete $pct
 
-        $manufacturer = $null
-        $model = $null
-        $serialNumber = $null
-        $os = $null
-        $osVersion = $null
+            # Initialize result variables
+            $deviceName = $null
+            $lastSeen = $null
 
-        $ramGB = $null
-        $storageTotalGB = $null
-        $storageFreeGB = $null
-        $storageFreePct = $null
+            $primaryUserUPN = $null
+            $primaryUserDisplayName = $null
+            $source = $null
 
-        $cpuArch = $null
-        $cpuFriendly = $null
+            $manufacturer = $null
+            $model = $null
+            $serialNumber = $null
+            $os = $null
+            $osVersion = $null
 
-        $friendlyModel = $null
+            $ramGB = $null
+            $storageTotalGB = $null
+            $storageFreeGB = $null
+            $storageFreePct = $null
 
-        try {
-            $mdMatch = Get-ManagedDeviceMatch -Token $token
+            $cpuArch = $null
+            $cpuFriendly = $null
 
-            if ($mdMatch) {
-                $deviceName = $mdMatch.deviceName
+            $friendlyModel = $null
 
-                # Parse last sync date/time
-                if ($mdMatch.lastSyncDateTime) {
-                    try { $lastSeen = ([datetimeoffset]$mdMatch.lastSyncDateTime).ToLocalTime().DateTime }
-                    catch { $lastSeen = $mdMatch.lastSyncDateTime }
-                }
+            try {
+                $mdMatch = Get-ManagedDeviceMatch -Token $token
 
-                # Get detailed device information
-                $md = Get-ManagedDeviceDetails -ManagedDeviceId $mdMatch.id
-                if (-not $md) { $md = $mdMatch }
+                if ($mdMatch) {
+                    $deviceName = $mdMatch.deviceName
 
-                # Extract hardware information
-                $manufacturer = $md.manufacturer
-                $model = $md.model
-                $serialNumber = $md.serialNumber
-                $os = $md.operatingSystem
-                $osVersion = $md.osVersion
+                    # Parse last sync date/time
+                    if ($mdMatch.lastSyncDateTime) {
+                        try { $lastSeen = ([datetimeoffset]$mdMatch.lastSyncDateTime).ToLocalTime().DateTime }
+                        catch { $lastSeen = $mdMatch.lastSyncDateTime }
+                    }
 
-                # Calculate storage metrics
-                $storageTotalGB = Format-BytesToGB -Bytes ([double]$md.totalStorageSpaceInBytes) -Decimals 0
-                $storageFreeGB = Format-BytesToGB -Bytes ([double]$md.freeStorageSpaceInBytes) -Decimals 0
-                $storageFreePct = Format-Percent -Numerator ([double]$md.freeStorageSpaceInBytes) -Denominator ([double]$md.totalStorageSpaceInBytes) -Decimals 0
+                    # Get detailed device information
+                    $md = Get-ManagedDeviceDetails -ManagedDeviceId $mdMatch.id
+                    if (-not $md) { $md = $mdMatch }
 
-                $ramGB = Format-BytesToGB -Bytes ([double]$md.physicalMemoryInBytes) -Decimals 0
+                    # Extract hardware information
+                    $manufacturer = $md.manufacturer
+                    $model = $md.model
+                    $serialNumber = $md.serialNumber
+                    $os = $md.operatingSystem
+                    $osVersion = $md.osVersion
 
-                $cpuArch = $md.processorArchitecture
+                    # Calculate storage metrics
+                    $storageTotalGB = Format-BytesToGB -Bytes ([double]$md.totalStorageSpaceInBytes) -Decimals 0
+                    $storageFreeGB = Format-BytesToGB -Bytes ([double]$md.freeStorageSpaceInBytes) -Decimals 0
+                    $storageFreePct = Format-Percent -Numerator ([double]$md.freeStorageSpaceInBytes) `
+                        -Denominator ([double]$md.totalStorageSpaceInBytes) -Decimals 0
 
-                # Extract CPU information from hardware details
-                if ($md.hardwareInformation) {
-                    $hi = $md.hardwareInformation
+                    $ramGB = Format-BytesToGB -Bytes ([double]$md.physicalMemoryInBytes) -Decimals 0
 
-                    $candidate = $null
-                    if ($hi.processorName) { $candidate = $hi.processorName }
-                    elseif ($hi.processorManufacturer) { $candidate = $hi.processorManufacturer }
+                    $cpuArch = $md.processorArchitecture
 
-                    $cpuFriendly = Normalize-CpuString -Value $candidate
-                }
+                    # Extract CPU information from hardware details
+                    if ($md.hardwareInformation) {
+                        $hi = $md.hardwareInformation
 
-                # Resolve primary user with multiple fallback methods
-                # 1. Try Intune managedDevice/users relation (most accurate)
-                $pu = Get-PrimaryUserFromIntuneUsersRelation -ManagedDeviceId $mdMatch.id
-                if ($pu) {
-                    $primaryUserUPN = $pu.userPrincipalName
-                    $primaryUserDisplayName = $pu.displayName
-                    $source = "Intune managedDevice/users (beta)"
-                }
-                # 2. Fallback to managedDevice.userPrincipalName
-                elseif ($mdMatch.userPrincipalName) {
-                    $primaryUserUPN = $mdMatch.userPrincipalName
-                    $primaryUserDisplayName = Resolve-UserDisplayNameFromUpn -UserPrincipalName $primaryUserUPN
-                    $source = "managedDevice.userPrincipalName"
-                }
+                        $candidate = $null
+                        if ($hi.processorName) { $candidate = $hi.processorName }
+                        elseif ($hi.processorManufacturer) { $candidate = $hi.processorManufacturer }
 
-                # 3. Final fallback to Azure AD registered owner
-                if (-not $primaryUserUPN -and $deviceName) {
-                    $ownerUser = Get-RegisteredOwnerUser -DeviceName $deviceName
-                    if ($ownerUser) {
-                        $primaryUserUPN = $ownerUser.UserPrincipalName
-                        $primaryUserDisplayName = $ownerUser.DisplayName
-                        $source = "Entra ID registeredOwner"
+                        $cpuFriendly = Format-CpuString -Value $candidate
+                    }
+
+                    # Resolve primary user with multiple fallback methods
+                    # 1. Try Intune managedDevice/users relation (most accurate)
+                    $pu = Get-PrimaryUserFromIntuneUsersRelation -ManagedDeviceId $mdMatch.id
+                    if ($pu) {
+                        $primaryUserUPN = $pu.userPrincipalName
+                        $primaryUserDisplayName = $pu.displayName
+                        $source = "Intune managedDevice/users (beta)"
+                    }
+                    # 2. Fallback to managedDevice.userPrincipalName
+                    elseif ($mdMatch.userPrincipalName) {
+                        $primaryUserUPN = $mdMatch.userPrincipalName
+                        $primaryUserDisplayName = Resolve-UserDisplayNameFromUpn -UserPrincipalName $primaryUserUPN
+                        $source = "managedDevice.userPrincipalName"
+                    }
+
+                    # 3. Final fallback to Azure AD registered owner
+                    if (-not $primaryUserUPN -and $deviceName) {
+                        $ownerUser = Get-RegisteredOwnerUser -DeviceName $deviceName
+                        if ($ownerUser) {
+                            $primaryUserUPN = $ownerUser.UserPrincipalName
+                            $primaryUserDisplayName = $ownerUser.DisplayName
+                            $source = "Entra ID registeredOwner"
+                        }
+                    }
+
+                    if (-not $primaryUserUPN) {
+                        $source = "Found in Intune but no user resolved"
+                    }
+
+                    # Get friendly model name from Entra extension attributes
+                    if ($md.azureAdDeviceId) {
+                        $friendlyModel = Get-EntraFriendlyModel -AzureAdDeviceId $md.azureAdDeviceId `
+                            -AttributeName $FriendlyModelAttribute
                     }
                 }
-
-                if (-not $primaryUserUPN) {
-                    $source = "Found in Intune but no user resolved"
+                else {
+                    $deviceName = $token
+                    $source = "Not found in Intune"
                 }
 
-                # Get friendly model name from Entra extension attributes
-                if ($md.azureAdDeviceId) {
-                    $friendlyModel = Get-EntraFriendlyModel -AzureAdDeviceId $md.azureAdDeviceId -AttributeName $FriendlyModelAttribute
-                }
+                # Add result to collection
+                $results.Add([pscustomobject]@{
+                        DeviceName           = $deviceName
+                        LastSeen             = $lastSeen
+
+                        PrimaryUserDisplayName = $primaryUserDisplayName
+                        PrimaryUserUPN       = $primaryUserUPN
+                        Source               = $source
+
+                        FriendlyModel        = $friendlyModel
+                        Manufacturer         = $manufacturer
+                        Model                = $model
+                        SerialNumber         = $serialNumber
+                        OperatingSystem      = $os
+                        OSVersion            = $osVersion
+
+                        CPU                  = $cpuFriendly
+                        CPUArchitecture      = $cpuArch
+
+                        RAM_GB               = $ramGB
+                        StorageTotal_GB      = $storageTotalGB
+                        StorageFree_GB       = $storageFreeGB
+                        StorageFree_Percent  = $storageFreePct
+                    })
             }
-            else {
-                $deviceName = $token
-                $source = "Not found in Intune"
+            catch {
+                # Add error result
+                $results.Add([pscustomobject]@{
+                        DeviceName           = $token
+                        LastSeen             = $null
+
+                        PrimaryUserDisplayName = $null
+                        PrimaryUserUPN       = $null
+                        Source               = "Error: $($_.Exception.Message)"
+
+                        FriendlyModel        = $null
+                        Manufacturer         = $null
+                        Model                = $null
+                        SerialNumber         = $null
+                        OperatingSystem      = $null
+                        OSVersion            = $null
+
+                        CPU                  = $null
+                        CPUArchitecture      = $null
+
+                        RAM_GB               = $null
+                        StorageTotal_GB      = $storageTotalGB
+                        StorageFree_GB       = $storageFreeGB
+                        StorageFree_Percent  = $storageFreePct
+                    })
+            }
+        }
+
+        Write-Progress -Activity "Resolving devices" -Completed
+
+        # Display results
+        $final = $results | Sort-Object DeviceName
+        $final | Format-Table -AutoSize
+
+        # Export to CSV if requested
+        if (-not $NoExport) {
+            $outDir = Split-Path -Path $OutputPath -Parent
+            if ($outDir -and -not (Test-Path -LiteralPath $outDir)) {
+                New-Item -ItemType Directory -Path $outDir -Force | Out-Null
             }
 
-            # Add result to collection
-            $results.Add([pscustomobject]@{
-                    DeviceName = $deviceName
-                    LastSeen = $lastSeen
-
-                    PrimaryUserDisplayName = $primaryUserDisplayName
-                    PrimaryUserUPN = $primaryUserUPN
-                    Source = $source
-
-                    FriendlyModel = $friendlyModel
-                    Manufacturer = $manufacturer
-                    Model = $model
-                    SerialNumber = $serialNumber
-                    OperatingSystem = $os
-                    OSVersion = $osVersion
-
-                    CPU = $cpuFriendly
-                    CPUArchitecture = $cpuArch
-
-                    RAM_GB = $ramGB
-                    StorageTotal_GB = $storageTotalGB
-                    StorageFree_GB = $storageFreeGB
-                    StorageFree_Percent = $storageFreePct
-                })
+            $final | Export-Csv -NoTypeInformation -Encoding UTF8 -Path $OutputPath -ErrorAction Stop
+            Write-Log "Saved to: $OutputPath" "SUCCESS"
         }
-        catch {
-            # Add error result
-            $results.Add([pscustomobject]@{
-                    DeviceName = $token
-                    LastSeen = $null
-
-                    PrimaryUserDisplayName = $null
-                    PrimaryUserUPN = $null
-                    Source = "Error: $($_.Exception.Message)"
-
-                    FriendlyModel = $null
-                    Manufacturer = $null
-                    Model = $null
-                    SerialNumber = $null
-                    OperatingSystem = $null
-                    OSVersion = $null
-
-                    CPU = $null
-                    CPUArchitecture = $null
-
-                    RAM_GB = $null
-                    StorageTotal_GB = $null
-                    StorageFree_GB = $null
-                    StorageFree_Percent = $null
-                })
-        }
-    }
-
-    Write-Progress -Activity "Resolving devices" -Completed
-
-    # Display results
-    $final = $results | Sort-Object DeviceName
-    $final | Format-Table -AutoSize
-
-    # Export to CSV if requested
-    if (-not $NoExport) {
-        $outDir = Split-Path -Path $OutputPath -Parent
-        if ($outDir -and -not (Test-Path -LiteralPath $outDir)) {
-            New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+        else {
+            Write-Log "NoExport specified. Skipping CSV export." "INFO"
         }
 
-        $final | Export-Csv -NoTypeInformation -Encoding UTF8 -Path $OutputPath
-        Write-Log "Saved to: $OutputPath" "SUCCESS"
+        return 0
     }
-    else {
-        Write-Log "NoExport specified. Skipping CSV export." "INFO"
+    catch {
+        Write-Log "Unhandled error: $($_.Exception.Message)" "ERROR"
+        return 1
     }
-}
-finally {
-    try { Disconnect-MgGraph -ErrorAction SilentlyContinue | Out-Null } catch { Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false }
+    finally {
+        try { Disconnect-MgGraph -ErrorAction SilentlyContinue | Out-Null }
+        catch { Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false }
+    }
 }
 
 #endregion
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }
