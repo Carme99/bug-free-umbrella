@@ -1,4 +1,4 @@
-# BugFreeUmbrella
+﻿# BugFreeUmbrella
 
 A collection of **539 PowerShell scripts across 8 technology domains** for enterprise IT automation: Intune endpoint management, M365 administration, Windows server operations, security compliance, Azure/AWS cloud, databases, and CI/CD.
 
@@ -48,17 +48,17 @@ Get-Help .\scripts\endpoints\intune\reporting\Get-DeviceComplianceReport.ps1 -De
 .\scripts\endpoints\intune\reporting\Get-DeviceComplianceReport.ps1
 ```
 
-Prefer copy-paste commands? [docs/RECIPES.md](docs/RECIPES.md) has 80+ task-oriented recipes. Full setup guidance lives in [docs/Getting-Started.md](docs/Getting-Started.md).
+Prefer copy-paste commands? [docs/RECIPES.md](docs/RECIPES.md) has 65 task-oriented recipes. Full setup guidance lives in [docs/Getting-Started.md](docs/Getting-Started.md).
 
 ## What's Inside
 
 ```
 BugFreeUmbrella/
-├── endpoints/       # 429 — Intune, Winget app updates, proactive remediations
+├── endpoints/       # 426 — Intune, Winget app updates, proactive remediations
 ├── infrastructure/  #  42 — Windows servers, Active Directory, networking, IIS
-├── collaboration/   #  24 — Exchange Online, Teams, SharePoint, M365 reporting
+├── collaboration/   #  23 — Exchange Online, Teams, SharePoint, M365 reporting
 ├── security/        #  16 — CIS/NIST/PCI-DSS/HIPAA/SOC2/ISO27001 scanning, hardening
-├── cloud/           #  16 — Azure (incl. AVD), AWS, containers
+├── cloud/           #  15 — Azure (incl. AVD), AWS, containers
 ├── automation/      #   6 — CI/CD pipelines, infrastructure as code
 ├── data/            #   6 — SQL Server, MySQL, PostgreSQL, API health
 └── utilities/       #   5 — general-purpose helpers
@@ -66,9 +66,9 @@ BugFreeUmbrella/
 
 | Capability | Details |
 |-----------|---------|
-| **Intune management** | 26 scripts for compliance reporting, device maintenance, and Graph-based administration |
+| **Intune management** | 25 scripts for compliance reporting, device maintenance, and Graph-based administration |
 | **Proactive remediations** | 51 detect/remediate pairs ready for Intune Proactive Remediations deployment |
-| **Winget app updates** | 35 managed applications (34 full detect/remediate pairs) covering browsers, runtimes, and productivity apps |
+| **Winget app updates** | 35 managed applications (33 full detect/remediate pairs) covering browsers, runtimes, and productivity apps |
 | **Security & compliance** | Multi-framework scanning: CIS, NIST, PCI-DSS, HIPAA, SOC2, ISO27001 |
 | **Cloud automation** | Azure resource monitoring and AVD image builds, AWS EC2/S3 management, Kubernetes health checks |
 | **Server management** | 32 Windows server scripts for health monitoring, patch reporting, and event log analysis |
@@ -108,7 +108,7 @@ Read this before production use:
 | Catalog subcategories | 94 |
 | Proactive remediation pairs | 51 (102 scripts) |
 | Winget-managed applications | 35 |
-| Documentation pages | 30+ |
+| Documentation pages | 45 |
 
 ## AI Integration: MCP Server
 

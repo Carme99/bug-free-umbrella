@@ -1,8 +1,8 @@
-# Bug-Free Umbrella — Architecture
+﻿# Bug-Free Umbrella — Architecture
 
 > How the repository is organized, built, and shipped. 539 PowerShell scripts across 8 technology domains.
 
-**Applies to:** v5.0.0 "Hurricane" (staged, unreleased; latest tagged: v4.4.0 "Nimbus") · **Last verified:** 2026-08-23
+**Applies to:** v1.0.0 "Clean-Slate Relaunch" · **Last verified:** 2026-08-24
 
 ---
 
@@ -89,23 +89,17 @@ flowchart TD
 > **Note:** Pester tests run both locally (`Invoke-Pester` via `Tests/Pester.Config.psd1`) and in CI (`test` job in `validate-powershell.yml`). Coverage is enabled but not gating — low coverage does not fail the pipeline.
 ## 4. Release Process
 
-Releases are CHANGELOG-driven with weather-themed codenames — the version lives only in `CHANGELOG.md`.
+Releases are CHANGELOG-driven — the version lives only in `CHANGELOG.md`. (Pre-relaunch releases used weather-themed codenames; that scheme is retired.)
 
 ```mermaid
 flowchart LR
     F[Feature branch] -->|PR| M[Merge to main]
-    M --> R[Release PR:<br/>chore: release vX.Y.Z Codename<br/>CHANGELOG bump + rename]
+    M --> R[Release PR:<br/>chore: release vX.Y.Z<br/>CHANGELOG bump + rename]
     R --> RT[Tag vX.Y.Z]
     RT --> REL[GitHub Release]
 ```
 
-| Codename | Release Type | Meaning |
-|---|---|---|
-| ☔ Drizzle | Patch | Bug fixes, minor improvements |
-| 🌧️ Shower | Minor | New scripts, small features |
-| ⛈️ Thunderstorm | Major | Significant expansions |
-| 🌪️ Hurricane | Breaking | Major overhauls |
-| 🌈 Rainbow | Quality | Polish, documentation, testing |
+Releases follow [Semantic Versioning](https://semver.org). The pre-relaunch weather-codename scheme (Drizzle/Shower/Thunderstorm/Hurricane/Rainbow) is retired; see the CHANGELOG for historical mapping.
 
 ## 5. Script Conventions
 

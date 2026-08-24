@@ -4,7 +4,7 @@
 
 Documentation lives **with the code** — every page here is versioned, reviewable in PRs, and ships with each release. There is no separate wiki to drift out of date.
 
-**Current release:** [v4.4.0 "Nimbus"](../CHANGELOG.md) · **Docs updated:** 2026-08-23
+**Current release:** [v1.0.0 "Clean-Slate Relaunch"](../CHANGELOG.md) · **Docs updated:** 2026-08-24
 
 ---
 
@@ -49,11 +49,11 @@ flowchart LR
 
 | Domain | Contents | Guides |
 |---|---|---|
-| **endpoints/** (429 scripts) | Intune, Winget updates, proactive remediations, device health | [Intune-Management.md](Intune-Management.md) · [Intune-Sync-Guide.md](Intune-Sync-Guide.md) · [Winget-Updates.md](Winget-Updates.md) · [Proactive-Remediations.md](Proactive-Remediations.md) |
+| **endpoints/** (426 scripts) | Intune, Winget updates, proactive remediations, device health | [Intune-Management.md](Intune-Management.md) · [Intune-Sync-Guide.md](Intune-Sync-Guide.md) · [Winget-Updates.md](Winget-Updates.md) · [Proactive-Remediations.md](Proactive-Remediations.md) |
 | **infrastructure/** (42) | Windows servers, AD, network, virtualization, IIS | [Server-Management.md](Server-Management.md) · [Backup-and-Disaster-Recovery.md](Backup-and-Disaster-Recovery.md) |
 | **security/** (16) | CIS/NIST compliance, hardening, monitoring | [Security-Compliance.md](Security-Compliance.md) · [Security-Troubleshooting.md](Security-Troubleshooting.md) |
-| **collaboration/** (24) | M365, Exchange, Teams, SharePoint | [Microsoft-365-Cloud-Services.md](Microsoft-365-Cloud-Services.md) |
-| **cloud/** (16) | Azure, AVD, AWS, containers | [Azure-Virtual-Desktop.md](Azure-Virtual-Desktop.md) · [Azure-Compute-Gallery-Image-Builder.md](Azure-Compute-Gallery-Image-Builder.md) · [AWS-Guide.md](AWS-Guide.md) |
+| **collaboration/** (23) | M365, Exchange, Teams, SharePoint | [Microsoft-365-Cloud-Services.md](Microsoft-365-Cloud-Services.md) |
+| **cloud/** (15) | Azure, AVD, AWS, containers | [Azure-Virtual-Desktop.md](Azure-Virtual-Desktop.md) · [Azure-Compute-Gallery-Image-Builder.md](Azure-Compute-Gallery-Image-Builder.md) · [AWS-Guide.md](AWS-Guide.md) |
 | **data/** (6) | Databases, APIs | [Database-Administration.md](Database-Administration.md) · [API-Reference.md](API-Reference.md) |
 | **automation/** (6) | CI/CD, IaC | [Workflows.md](Workflows.md) · [Integration-Patterns.md](Integration-Patterns.md) |
 | **utilities/** (5) | General-purpose helpers | Browse via [Script-Catalog.md](Script-Catalog.md) |

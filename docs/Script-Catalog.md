@@ -2,7 +2,7 @@
 
 ![Tier](https://img.shields.io/badge/Tier-1-green) ![Category](https://img.shields.io/badge/Category-Foundation-blue) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen)
 
-> **Catalog is auto-generated from `scripts/.catalog/metadata.json` via `tools/Build-Catalog.ps1` — see [Catalog Automation](Catalog-Automation.md).**
+> **Catalog is auto-generated from `scripts/.catalog/metadata.json` via `tools/Build-Catalog.ps1`** — see [Catalog Automation](Catalog-Automation.md). The generated catalog covers the **356 cataloged scripts** in that metadata file; the `endpoints/devices/winget/` and `endpoints/devices/proactive-remediations/` trees are inventoried separately and are not part of it.
 
 > **Your roadmap to finding exactly what you need, fast!**
 
@@ -17,7 +17,7 @@
 - [Script Index by Category](#script-index-by-category)
 - [Learning Paths](#learning-paths)
 - [Repository Statistics](#repository-statistics)
-- [Latest Updates](#latest-updates-v430-zephyr)
+- [Previous Release Notes (v4.4.0)](#previous-release-notes-v440-nimbus)
 - [Tips for Navigation](#tips-for-navigation)
 - [External Links](#external-links)
 - [Featured Scripts](#featured-scripts)
@@ -261,7 +261,7 @@ START HERE → Main README → Winget Updates Section
 
 #### Security & Compliance (10 scripts)
 **Location:** `scripts/security/compliance/frameworks/`
-- Test-CISBenchmark.ps1 - **NEW v2.0.0! 15+ CIS controls** 🔧 *(Fixed in v3.0.1)*
+- Test-CISBenchmark.ps1 - **15+ CIS controls** 🔧
   - Password policies (6 controls: history, age, length, complexity)
   - Account lockout policies (3 controls: duration, threshold, reset)
   - Audit policies (6+ controls: credential validation, logon, process creation)
@@ -319,7 +319,7 @@ START HERE → Main README → Winget Updates Section
 
 ### 🖱️ Device Management (60+ scripts)
 
-#### Proactive Remediations (51 pairs = 103 scripts)
+#### Proactive Remediations (51 pairs = 102 scripts)
 **Location:** `scripts/endpoints/remediation/` (`system/`, `network/`, `security/`)
 
 Each remediation ships a detection script (`Test-*`) and a remediation script (`Invoke-*`):
@@ -429,16 +429,16 @@ Organized by category:
 | **Total Scripts** | 539 |
 | **Top-Level Domains** | 8 |
 | **Subcategories** | 94 |
-| **Proactive Remediations** | 51 pairs (103 scripts) |
+| **Proactive Remediations** | 51 pairs (102 scripts) |
 | **Winget-Managed Applications** | 35 |
-| **Documentation Files** | 36 |
-| **Latest Release** | [v4.4.0 "Nimbus - Catalog & Intelligence"](../CHANGELOG.md) 🌧️ |
+| **Documentation Files** | 45 |
+| **Latest Release** | [v1.0.0 "Clean-Slate Relaunch"](../CHANGELOG.md) |
 
 ---
 
-## 🌧️ Latest Updates (v4.4.0 "Nimbus")
+## Previous Release Notes (v4.4.0 "Nimbus")
 
-**What's New:**
+**Highlights (historical, pre-relaunch):**
 - 📐 **PSSA Policy Enforcement**: Comment-based help, style rules and ShouldProcess (-WhatIf) are now enforced in CI on every PR; 4,404 style findings fixed across 345 scripts; 56 state-changing functions retrofitted with `SupportsShouldProcess` guards
 - 🎯 **Microsoft Learn Alignment**: 14 dead/misleading MS Learn links fixed; deprecated APIs migrated (`Get-WmiObject`→`Get-CimInstance`, `WebAdministration`→`IISAdministration`, `Send-MailMessage`→`SmtpClient`, SQLPS→`SqlServer`); winget migrated to `Microsoft.WinGet.Client` (81 files)
 - 🛡️ **Endpoint & Remediation Fixes**: Driver block scripts write `DenyDeviceIDs` as the documented REG value; Autopatch `UseWUServer` read at the documented `\AU` path; SYSTEM-context fixes for TeamsCache/TempFiles/BrokenShortcuts/CertificateExpiry/StaleProfiles
@@ -482,7 +482,7 @@ Resolves 122 open issues (#106-#245) via 18 PRs (#228-#245).
 
 ## 🌟 Featured Scripts
 
-### 🆕 Recently Enhanced (v3.7.0 Shower 🌧️)
+### 🆕 Recently Enhanced
 - **Comprehensive Documentation Enhancements**
   - 9 new Tier 3 documentation pages for advanced topics
   - Critical fixes for version inconsistencies and duplicate content

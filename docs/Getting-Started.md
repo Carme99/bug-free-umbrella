@@ -80,7 +80,7 @@ From the repo root:
 pwsh -NoProfile -File ./install.ps1
 ```
 
-This imports the `BugFreeUmbrella` module (v5.0.0, `src/BugFreeUmbrella/`) into your session, prints how many commands it exposes (`Get-BUScript`, `Invoke-BUScript`), and suggests next steps. Re-running is idempotent.
+This imports the `BugFreeUmbrella` module (v1.0.0, `src/BugFreeUmbrella/`) into your session, prints how many commands it exposes (`Get-BUScript`, `Invoke-BUScript`), and suggests next steps. Re-running is idempotent.
 
 ### Launcher CLI v2: `Invoke-Umbrella.ps1`
 

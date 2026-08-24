@@ -16,8 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 📑 Table of Contents
 
 - [🌂 About Our Release Names](#-about-our-release-names)
-- **Latest Releases:**
+- **Latest Release:**
   - [v1.0.0 (2026-08-23) - Clean-Slate Relaunch](#100---2026-08-23---clean-slate-relaunch)
+- **Previous Releases** (historical, pre-relaunch versioning; dates are each release's own):
   - [v5.0.0 (2026-08-23) 🌪️ Hurricane - Platform & Distribution Release](#500---2026-08-23-🌪️-hurricane---platform--distribution-release)
   - [v4.4.0 (2026-08-20) 🌧️ Nimbus - Catalog & Intelligence Release](#440---2026-08-20-🌧️-nimbus---catalog--intelligence-release)
   - [v4.3.0 (2026-08-08) 🌈 Zephyr - Quality & Enforcement Release](#430---2026-08-08-🌈-zephyr---quality--enforcement-release)
