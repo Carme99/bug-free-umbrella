@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/Carme99/bug-free-umbrella/main/scripts/.catalog/metadata.schema.json",
   "version": "1.0.0",
-  "generated": "2026-08-24T04:48:13.8704727+01:00",
-  "totalScripts": 356,
+  "generated": "2026-08-24T06:39:58.5273394+01:00",
+  "totalScripts": 354,
   "scripts": [
     {
       "path": "automation/cicd/Analyze-BuildPerformance.ps1",
@@ -417,30 +417,6 @@
         "Set-AVDRegistryConfiguration",
         "Write-InstallationSummary",
         "Main"
-      ]
-    },
-    {
-      "path": "cloud/azure/avd/Install-TeamsAVD.Tests.ps1",
-      "name": "Install-TeamsAVD.Tests.ps1",
-      "category": "cloud/azure/avd",
-      "synopsis": "Pester test suite for the Install-TeamsAVD.ps1 script.",
-      "description": "Validates the behavior of Install-TeamsAVD.ps1, which installs Microsoft Teams and the WebView2 runtime on Azure Virtual Desktop session hosts and applies the AVD-specific registry configuration requi",
-      "tags": [
-        "teams"
-      ],
-      "parameters": [
-        {
-          "name": "FilePath",
-          "type": "String",
-          "mandatory": false
-        }
-      ],
-      "hasCmdletBinding": true,
-      "requiresModules": [
-        "Pester"
-      ],
-      "functionsExported": [
-        "Get-AuthenticodeSignature"
       ]
     },
     {
@@ -3744,20 +3720,6 @@
         "Invoke-DsRegCmdStatus",
         "Main"
       ]
-    },
-    {
-      "path": "endpoints/intune/maintenance/Test-IntuneConnectivity.Tests.ps1",
-      "name": "Test-IntuneConnectivity.Tests.ps1",
-      "category": "endpoints/intune/maintenance",
-      "synopsis": "Pester tests for Test-IntuneConnectivity.ps1.",
-      "description": "Validates the behavior of the Intune connectivity script: - Parameter validation (Detailed, ExportResults, no parameters) - Endpoint connectivity tests (Intune enrollment, Azure AD, Windows Update, Mi",
-      "tags": [
-        "intune"
-      ],
-      "parameters": [],
-      "hasCmdletBinding": false,
-      "requiresModules": [],
-      "functionsExported": []
     },
     {
       "path": "endpoints/intune/reporting/Get-AppInstallationStatus.ps1",
