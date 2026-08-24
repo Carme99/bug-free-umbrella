@@ -202,8 +202,11 @@ jobs:
           # Unpinned installs drift onto Pester 6.x, which fails whole Describes
           # on control-flow that 5.x tolerates (e.g. escaping break/continue).
           Install-Module -Name Pester -RequiredVersion 5.7.1 -Force -SkipPublisherCheck -Scope CurrentUser
-          $mod = Get-Module -ListAvailable Pester | Sort-Object Version -Descending | Select-Object -First 1
-          Write-Host "Pester version: $($mod.Version)" -ForegroundColor Gray
+          # Runner images ship a newer system-wide Pester (e.g. 5.9.0). Command resolution
+          # picks the highest version across PSModulePath, silently ignoring this pin —
+          # force the pinned version into the session before Invoke-Pester runs.
+          Import-Module Pester -RequiredVersion 5.7.1 -Force
+          Write-Host "Pester session version: $((Get-Module Pester).Version)" -ForegroundColor Gray
 
       - name: Run Pester Tests
         shell: pwsh

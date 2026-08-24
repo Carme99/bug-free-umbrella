@@ -77,7 +77,15 @@ param(
     [string]$OutputFormat = 'HTML', # reserved; JSON template always written (justifies PSReviewUnusedParameter)
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
+    [string]$OutputPath = $(
+        $myDocs = [Environment]::GetFolderPath('MyDocuments')
+        if ([string]::IsNullOrWhiteSpace($myDocs)) {
+            # Profile-less contexts (CI runners, SYSTEM services): MyDocuments resolves
+            # empty; fall back so the default path degrades gracefully instead of crashing.
+            $myDocs = [Environment]::GetFolderPath('UserProfile')
+        }
+        Join-Path $myDocs 'Reports'
+    )
 )
 
 $ErrorActionPreference = 'Stop'

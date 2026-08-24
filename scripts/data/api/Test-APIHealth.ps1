@@ -79,7 +79,15 @@ param(
     [string]$OutputFormat = 'HTML',
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'),
+    [string]$OutputPath = $(
+        $myDocs = [Environment]::GetFolderPath('MyDocuments')
+        if ([string]::IsNullOrWhiteSpace($myDocs)) {
+            # Profile-less contexts (CI runners, SYSTEM services): MyDocuments resolves
+            # empty; fall back so the default path degrades gracefully instead of crashing.
+            $myDocs = [Environment]::GetFolderPath('UserProfile')
+        }
+        Join-Path $myDocs 'Reports'
+    ),
 
     [Parameter(Mandatory = $false)]
     [switch]$RunContinuous,

@@ -17,6 +17,9 @@ Describe "Test-Winget1Password" {
 
         Mock Import-Module { }
         Mock Start-Sleep { }
+        # Unconditional: Test-NetworkConnectivity issues a real ping on runners where ICMP
+        # is blocked - the ~5s timeout exits compliant before any mock seam is reached.
+        Mock Test-Connection { $true }
     }
 
 

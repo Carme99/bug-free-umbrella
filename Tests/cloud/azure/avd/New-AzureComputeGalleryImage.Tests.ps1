@@ -26,7 +26,7 @@ Describe "New-AzureComputeGalleryImage" {
         # Safe: the script's top-level guard skips Main when dot-sourced.
         . $scriptPath
 
-        # The Az module is not installed offline: create resolvable stubs so Pester can mock them.
+        # Create resolvable stubs so Pester can attach mocks whether or not a real Az module exists.
         foreach ($azCommand in @(
                 'Connect-AzAccount', 'Get-AzContext', 'Get-AzVM', 'Get-AzGallery',
                 'Get-AzGalleryImageDefinition', 'Get-AzGalleryImageVersion', 'Get-AzVirtualNetwork',
@@ -35,11 +35,12 @@ Describe "New-AzureComputeGalleryImage" {
                 'New-AzVMConfig', 'Set-AzVMBootDiagnostic', 'Set-AzVMOSDisk', 'New-AzNetworkInterface',
                 'Add-AzVMNetworkInterface', 'New-AzVM', 'Invoke-AzVMRunCommand', 'Stop-AzVM',
                 'Set-AzVM', 'New-AzImageConfig', 'Set-AzImageOsDisk', 'New-AzImage',
-                'New-AzGalleryImageVersion', 'Remove-AzResourceGroup'
+                'New-AzGalleryImageVersion', 'Remove-AzResourceGroup',
+                'Get-AzSubscription', 'Get-AzComputeResourceSku'
             )) {
-            if (-not (Get-Command $azCommand -ErrorAction SilentlyContinue)) {
-                . ([scriptblock]::Create("function global:$azCommand { }"))
-            }
+            # Unconditional: module-probe guards resolve differently per environment
+            # (runner images ship the real Az module), leaving seams unstubbed there.
+            . ([scriptblock]::Create("function global:$azCommand { }"))
         }
 
         Mock Connect-AzAccount { }
@@ -88,6 +89,8 @@ Describe "New-AzureComputeGalleryImage" {
         Mock New-AzImage { [pscustomobject]@{ Id = 'image-id' } }
         Mock New-AzGalleryImageVersion { [pscustomobject]@{ } }
         Mock Remove-AzResourceGroup { [pscustomobject]@{ } }
+        Mock Get-AzSubscription { [pscustomobject]@{ Id = 'sub-id'; State = 'Enabled' } }
+        Mock Get-AzComputeResourceSku { @() }
         Mock Add-Content { }   # keep file logging inert during tests
 
         $script:vmStub = [pscustomobject]@{

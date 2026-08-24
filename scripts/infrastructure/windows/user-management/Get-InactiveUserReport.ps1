@@ -130,7 +130,13 @@ function Main {
         $cutoffDate = (Get-Date).AddDays(-$DaysInactive)
 
         # Reports directory (internal output location)
-        $ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+        $myDocs = [Environment]::GetFolderPath('MyDocuments')
+        if ([string]::IsNullOrWhiteSpace($myDocs)) {
+            # Profile-less contexts (CI runners, SYSTEM services): MyDocuments resolves empty;
+            # fall back so report writing degrades gracefully instead of crashing.
+            $myDocs = [Environment]::GetFolderPath('UserProfile')
+        }
+        $ReportDir = Join-Path $myDocs 'Reports'
         # Validate report directory: reject '..' traversal and UNC remote paths before resolution
         if ([string]::IsNullOrWhiteSpace($ReportDir) -or
             $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or

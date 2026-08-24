@@ -436,7 +436,13 @@ function Main {
             return 1
         }
 
-        $script:ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+        $myDocs = [Environment]::GetFolderPath('MyDocuments')
+        if ([string]::IsNullOrWhiteSpace($myDocs)) {
+            # Profile-less contexts (CI runners, SYSTEM services): MyDocuments resolves empty;
+            # fall back so report writing degrades gracefully instead of crashing.
+            $myDocs = [Environment]::GetFolderPath('UserProfile')
+        }
+        $script:ReportDir = Join-Path $myDocs 'Reports'
         if ([string]::IsNullOrWhiteSpace($script:ReportDir) -or
             $script:ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
             $script:ReportDir -match '^(\\\\|//)') {
