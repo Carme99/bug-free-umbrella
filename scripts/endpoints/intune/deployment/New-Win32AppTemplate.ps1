@@ -1,48 +1,42 @@
-<#
+﻿<#
 .SYNOPSIS
-    Generates a Win32 app deployment template with all necessary files and documentation.
-
+    Generates a complete Win32 app deployment template with all necessary files and documentation.
 .DESCRIPTION
-    This script creates a complete deployment package template for Win32 apps in Intune,
-    including:
-    - Detection script
-    - Requirement script
-    - Installation script (if needed)
-    - Uninstall script (if needed)
-    - Deployment documentation
-    - README with instructions
+    Creates a ready-to-use deployment package template for Win32 apps in Intune, including
+    a detection script tailored to the chosen -DetectionType, a requirements check script,
+    and a README with step-by-step deployment instructions.
 
-    Perfect for standardizing app deployments and onboarding new admins.
-
+    Use this to standardize app deployments and onboard new admins; generated files are
+    written to -OutputFolder and are safe to regenerate (existing files are overwritten).
 .PARAMETER AppName
-    Name of the application.
-
+    Name of the application. Prompts interactively when omitted.
 .PARAMETER InstallCommand
-    Installation command line.
-
+    Installation command line. Prompts interactively when omitted.
 .PARAMETER UninstallCommand
-    Uninstallation command line.
-
+    Uninstallation command line. Prompts interactively when omitted; may be empty to skip.
 .PARAMETER DetectionType
-    Type of detection: Registry, File, MSI, or Script (default: Registry).
-
+    Type of detection to generate: Registry, File, MSI, or Script. Default: Registry.
 .PARAMETER OutputFolder
-    Where to save the template (default: Desktop\Win32AppTemplates).
-
+    Where to save the template. Default: Desktop\Win32AppTemplates\<AppName>.
 .EXAMPLE
-    .\New-Win32AppTemplate.ps1 -AppName "7-Zip" -InstallCommand "7z-x64.exe /S" -DetectionType "Registry"
-    Creates a complete deployment template for 7-Zip.
-
+    PS C:\> .\New-Win32AppTemplate.ps1 -AppName "7-Zip" -InstallCommand "7z-x64.exe /S" -DetectionType "Registry"
+    Creates a complete deployment template for 7-Zip using registry-based detection.
 .EXAMPLE
-    .\New-Win32AppTemplate.ps1
-    Interactive mode - prompts for all required information.
-
+    PS C:\> .\New-Win32AppTemplate.ps1 -AppName "Google Chrome" -InstallCommand "chrome_installer.exe /S" `
+        -UninstallCommand "chrome_installer.exe /X" -DetectionType "File" -OutputFolder "D:\Templates\Chrome"
+    Creates a file-based template with explicit install/uninstall commands at a custom location.
 .NOTES
-    No Graph API connection needed - this is a local template generator
-    Output files are ready to use with Intune Win32 app deployment
+    File Name   : New-Win32AppTemplate.ps1
+    Author      : Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version     : 1.0.0
+    Date        : 2026-08-23
+
+    No Graph API connection needed - this is a local template generator.
+    Output files are ready to use with Intune Win32 app deployment.
 #>
 
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory = $false)]
     [string]$AppName,
@@ -61,63 +55,20 @@ param(
     [string]$OutputFolder
 )
 
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "Win32 App Deployment Template Generator" -ForegroundColor Cyan
-Write-Host "========================================`n" -ForegroundColor Cyan
+$ErrorActionPreference = 'Stop'
 
-# Interactive mode if parameters not provided
-if (-not $AppName) {
-    $AppName = Read-Host "Enter application name (e.g., '7-Zip', 'Google Chrome')"
-}
+function Get-DetectionScriptContent {
+    # Builds the detection script body for the selected detection type.
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('Registry', 'File', 'MSI', 'Script')]
+        [string]$Type
+    )
 
-if (-not $InstallCommand) {
-    Write-Host "`nEnter installation command (e.g., 'setup.exe /S', 'msiexec /i app.msi /qn')" -ForegroundColor Yellow
-    $InstallCommand = Read-Host "Install command"
-}
-
-if (-not $UninstallCommand) {
-    Write-Host "`nEnter uninstallation command (or press Enter to skip)" -ForegroundColor Yellow
-    $UninstallCommand = Read-Host "Uninstall command"
-}
-
-if (-not $DetectionType) {
-    Write-Host "`nSelect detection method:" -ForegroundColor Yellow
-    Write-Host "1. Registry key/value" -ForegroundColor Gray
-    Write-Host "2. File or folder exists" -ForegroundColor Gray
-    Write-Host "3. MSI product code" -ForegroundColor Gray
-    Write-Host "4. Custom PowerShell script" -ForegroundColor Gray
-
-    $choice = Read-Host "Enter choice (1-4)"
-    $DetectionType = switch ($choice) {
-        "1" { "Registry" }
-        "2" { "File" }
-        "3" { "MSI" }
-        "4" { "Script" }
-        default { "Registry" }
-    }
-}
-
-# Set output folder
-if (-not $OutputFolder) {
-    $appNameClean = $AppName -replace '[\\/:*?"<>|]', '_'
-    $OutputFolder = Join-Path $env:USERPROFILE "Desktop\Win32AppTemplates\$appNameClean"
-}
-
-# Create output folder
-if (-not (Test-Path $OutputFolder)) {
-    New-Item -Path $OutputFolder -ItemType Directory -Force | Out-Null
-}
-
-Write-Host "`n✓ App Name: $AppName" -ForegroundColor Green
-Write-Host "✓ Detection Type: $DetectionType" -ForegroundColor Green
-Write-Host "✓ Output Folder: $OutputFolder" -ForegroundColor Green
-
-# Generate Detection Script based on type
-$detectionScript = ""
-
-switch ($DetectionType) {
-    "Registry" {
-        $detectionScript = @"
+    switch ($Type) {
+        "Registry" {
+            $detectionScript = @"
 <#
 .SYNOPSIS
     Detection script for $AppName (Registry-based)
@@ -163,10 +114,10 @@ catch {
     exit 1  # Not detected
 }
 "@
-    }
+        }
 
-    "File" {
-        $detectionScript = @"
+        "File" {
+            $detectionScript = @"
 <#
 .SYNOPSIS
     Detection script for $AppName (File-based)
@@ -212,10 +163,10 @@ catch {
     exit 1  # Not detected
 }
 "@
-    }
+        }
 
-    "MSI" {
-        $detectionScript = @"
+        "MSI" {
+            $detectionScript = @"
 <#
 .SYNOPSIS
     Detection script for $AppName (MSI-based)
@@ -259,10 +210,10 @@ catch {
     exit 1  # Not detected
 }
 "@
-    }
+        }
 
-    "Script" {
-        $detectionScript = @"
+        "Script" {
+            $detectionScript = @"
 <#
 .SYNOPSIS
     Detection script for $AppName (Custom logic)
@@ -297,11 +248,18 @@ catch {
     exit 1  # Not detected
 }
 "@
+        }
     }
+
+    return $detectionScript
 }
 
-# Generate Requirement Script
-$requirementScript = @"
+function Get-RequirementScriptContent {
+    # Builds the requirement check script body.
+    [CmdletBinding()]
+    param()
+
+    return @"
 <#
 .SYNOPSIS
     Requirement script for $AppName
@@ -355,9 +313,14 @@ catch {
     exit 1  # Requirements not met (error)
 }
 "@
+}
 
-# Generate README
-$readmeContent = @"
+function Get-ReadmeContent {
+    # Builds the deployment README markdown.
+    [CmdletBinding()]
+    param()
+
+    return @"
 # Win32 App Deployment: $AppName
 
 **Generated:** $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
@@ -407,7 +370,11 @@ This package contains all files needed to deploy **$AppName** as a Win32 app in 
 $InstallCommand
 ``````
 
-$(if ($UninstallCommand) { "**Uninstall command:**" + "`n" + '``````' + "`n" + $UninstallCommand + "`n" + '``````' } else { "**Uninstall command:** (Configure based on your app)" })
+$(if ($UninstallCommand) {
+    "**Uninstall command:**" + "`n" + '``````' + "`n" + $UninstallCommand + "`n" + '``````'
+} else {
+    "**Uninstall command:** (Configure based on your app)"
+})
 
 **Install behavior:** System
 **Device restart behavior:** Determine behavior based on return codes
@@ -436,8 +403,10 @@ Use the included **requirements.ps1** script, OR configure manually:
 
 **Option B: Manual Detection ($DetectionType)**
 $(switch ($DetectionType) {
-    "Registry" { "- Type: Registry`n- Path: [Configure based on your app]`n- Value name: DisplayVersion (or similar)`n- Detection method: Key exists OR Value equals X" }
-    "File" { "- Type: File or folder`n- Path: C:\Program Files\$AppName\app.exe`n- Detection method: File or folder exists" }
+    "Registry" { "- Type: Registry`n- Path: [Configure based on your app]`n" +
+        "- Value name: DisplayVersion (or similar)`n- Detection method: Key exists OR Value equals X" }
+    "File" { "- Type: File or folder`n- Path: C:\Program Files\$AppName\app.exe`n" +
+        "- Detection method: File or folder exists" }
     "MSI" { "- Type: MSI`n- MSI product code: [Get from MSI properties]" }
     "Script" { "- Use the provided detection.ps1 script with your custom logic" }
 })
@@ -532,43 +501,120 @@ Edit **requirements.ps1** to add:
 
 - **Intune Win32 App Management:** https://learn.microsoft.com/en-us/mem/intune/apps/apps-win32-app-management
 - **Win32 Content Prep Tool:** https://github.com/Microsoft/Microsoft-Win32-Content-Prep-Tool
-- **Troubleshooting:** https://learn.microsoft.com/en-us/troubleshoot/mem/intune/app-management/troubleshoot-win32-app-install
+- **Troubleshooting:**
+  https://learn.microsoft.com/en-us/troubleshoot/mem/intune/app-management/troubleshoot-win32-app-install
 
 ---
 
 **Generated by:** New-Win32AppTemplate.ps1
 **Toolkit:** Intune Management Scripts
 "@
+}
 
-# Save files
-$detectionPath = Join-Path $OutputFolder "detection.ps1"
-$requirementPath = Join-Path $OutputFolder "requirements.ps1"
-$readmePath = Join-Path $OutputFolder "README.md"
+function Main {
+    # Justification: Write-Host with colors is mandated by the relaunch output-prefix standard.
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '')]
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
 
-$detectionScript | Out-File -FilePath $detectionPath -Encoding UTF8 -Force
-$requirementScript | Out-File -FilePath $requirementPath -Encoding UTF8 -Force
-$readmeContent | Out-File -FilePath $readmePath -Encoding UTF8 -Force
+    try {
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "Win32 App Deployment Template Generator" -ForegroundColor Cyan
+        Write-Host "========================================`n" -ForegroundColor Cyan
 
-Write-Host "`n✓ Detection script: $detectionPath" -ForegroundColor Green
-Write-Host "✓ Requirement script: $requirementPath" -ForegroundColor Green
-Write-Host "✓ README: $readmePath" -ForegroundColor Green
+        # Interactive mode if parameters not provided
+        if (-not $AppName) {
+            $AppName = Read-Host "Enter application name (e.g., '7-Zip', 'Google Chrome')"
+        }
 
-# Summary
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "TEMPLATE GENERATED!" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
+        if (-not $InstallCommand) {
+            Write-Host "`nEnter installation command (e.g., 'setup.exe /S', 'msiexec /i app.msi /qn')" `
+                -ForegroundColor Yellow
+            $InstallCommand = Read-Host "Install command"
+        }
 
-Write-Host "`nNext Steps:" -ForegroundColor Yellow
-Write-Host "1. Review and customize detection.ps1 for your app" -ForegroundColor White
-Write-Host "2. Review and customize requirements.ps1" -ForegroundColor White
-Write-Host "3. Package your installer with IntuneWinAppUtil.exe" -ForegroundColor White
-Write-Host "4. Upload to Intune and configure settings" -ForegroundColor White
-Write-Host "5. Follow README.md for detailed deployment instructions" -ForegroundColor White
+        if (-not $UninstallCommand) {
+            Write-Host "`nEnter uninstallation command (or press Enter to skip)" -ForegroundColor Yellow
+            $UninstallCommand = Read-Host "Uninstall command"
+        }
 
-Write-Host "`nFiles Location: $OutputFolder" -ForegroundColor Cyan
+        if ([string]::IsNullOrWhiteSpace($AppName)) {
+            throw "AppName is required. Provide -AppName or respond to the interactive prompt."
+        }
 
-# Open folder
-Write-Host "`nOpening template folder..." -ForegroundColor Cyan
-Start-Process $OutputFolder
+        # Set output folder
+        if (-not $OutputFolder) {
+            $appNameClean = $AppName -replace '[\\/:*?"<>|]', '_'
+            $OutputFolder = Join-Path $env:USERPROFILE "Desktop\Win32AppTemplates\$appNameClean"
+        }
 
-Write-Host "`n✓ Win32 app template created successfully!" -ForegroundColor Green
+        # Create output folder
+        if (-not (Test-Path -LiteralPath $OutputFolder)) {
+            if ($PSCmdlet.ShouldProcess($OutputFolder, 'Create template output folder')) {
+                New-Item -Path $OutputFolder -ItemType Directory -Force -ErrorAction Stop | Out-Null
+            }
+        }
+
+        Write-Host "`n[+] App Name: $($AppName)" -ForegroundColor Green
+        Write-Host "[+] Detection Type: $($DetectionType)" -ForegroundColor Green
+        Write-Host "[+] Output Folder: $($OutputFolder)" -ForegroundColor Green
+
+        # Generate content
+        $detectionScript = Get-DetectionScriptContent -Type $DetectionType -ErrorAction Stop
+        $requirementScript = Get-RequirementScriptContent -ErrorAction Stop
+        $readmeContent = Get-ReadmeContent -ErrorAction Stop
+
+        # Save files
+        $detectionPath = Join-Path $OutputFolder "detection.ps1"
+        $requirementPath = Join-Path $OutputFolder "requirements.ps1"
+        $readmePath = Join-Path $OutputFolder "README.md"
+
+        if ($PSCmdlet.ShouldProcess($detectionPath, 'Write detection script')) {
+            $detectionScript | Out-File -FilePath $detectionPath -Encoding UTF8 -Force -ErrorAction Stop
+            Write-Host "[+] Detection script: $detectionPath" -ForegroundColor Green
+        }
+
+        if ($PSCmdlet.ShouldProcess($requirementPath, 'Write requirement script')) {
+            $requirementScript | Out-File -FilePath $requirementPath -Encoding UTF8 -Force -ErrorAction Stop
+            Write-Host "[+] Requirement script: $requirementPath" -ForegroundColor Green
+        }
+
+        if ($PSCmdlet.ShouldProcess($readmePath, 'Write README')) {
+            $readmeContent | Out-File -FilePath $readmePath -Encoding UTF8 -Force -ErrorAction Stop
+            Write-Host "[+] README: $readmePath" -ForegroundColor Green
+        }
+
+        # Summary
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "TEMPLATE GENERATED!" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+
+        Write-Host "`nNext Steps:" -ForegroundColor Yellow
+        Write-Host "1. Review and customize detection.ps1 for your app" -ForegroundColor White
+        Write-Host "2. Review and customize requirements.ps1" -ForegroundColor White
+        Write-Host "3. Package your installer with IntuneWinAppUtil.exe" -ForegroundColor White
+        Write-Host "4. Upload to Intune and configure settings" -ForegroundColor White
+        Write-Host "5. Follow README.md for detailed deployment instructions" -ForegroundColor White
+
+        Write-Host "`nFiles Location: $($OutputFolder)" -ForegroundColor Cyan
+
+        # Open folder
+        Write-Host "`n[*] Opening template folder..." -ForegroundColor Cyan
+        try {
+            Start-Process -FilePath $OutputFolder -ErrorAction Stop
+        }
+        catch {
+            Write-Host "[!] Could not open template folder: $($_.Exception.Message)" -ForegroundColor Yellow
+        }
+
+        Write-Host "`n[+] Win32 app template created successfully!" -ForegroundColor Green
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
+}
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

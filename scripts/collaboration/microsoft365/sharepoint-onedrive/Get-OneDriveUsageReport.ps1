@@ -3,13 +3,13 @@
     Generates OneDrive for Business usage and storage report.
 
 .DESCRIPTION
-    This script analyzes OneDrive usage for:
-    - Storage usage per user
-    - File counts and sharing statistics
-    - Inactive OneDrive sites
-    - Users approaching storage quotas
-    - External sharing configuration
-    - Site collection details
+    Analyzes OneDrive for Business usage via the Microsoft Graph reports API, covering storage
+    usage per user, file counts and sharing statistics, inactive OneDrive sites, users
+    approaching their storage quotas (flagged at -StorageWarningThreshold percent), and external
+    sharing/site collection details. A summary plus top-10 tables are printed to the console and
+    results can be exported to HTML or CSV. The script is read-only and idempotent: it never
+    mutates tenant configuration and is safe to re-run. Returns exit code 0 on success and exit
+    code 1 on failure (missing prerequisites, connection errors, or retrieval errors).
 
 .PARAMETER StorageWarningThreshold
     Percentage of quota used to trigger warning (default: 80).
@@ -24,25 +24,32 @@
     Export results to CSV file.
 
 .EXAMPLE
-    .\Get-OneDriveUsageReport.ps1
-    Basic OneDrive usage report.
+    PS C:\> .\Get-OneDriveUsageReport.ps1
+    Basic OneDrive usage report printed to the console.
 
 .EXAMPLE
-    .\Get-OneDriveUsageReport.ps1 -StorageWarningThreshold 90 -InactivityDays 180 -ExportHTML
-    Detailed report with custom thresholds.
+    PS C:\> .\Get-OneDriveUsageReport.ps1 -StorageWarningThreshold 90 -InactivityDays 180 -ExportCSV
+    Detailed report with custom thresholds exported as CSV.
 
 .NOTES
-    Requires SharePoint Online PowerShell module and Microsoft Graph
-    Requires SharePoint Administrator or Global Reader role
-    Compatible with SharePoint Online (Microsoft 365)
+    File Name   : Get-OneDriveUsageReport.ps1
+    Author      : Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version     : 1.0.0
+    Date        : 2026-08-23
+
+    Requires the SharePoint Online PowerShell module and Microsoft Graph.
+    Requires a SharePoint Administrator or Global Reader role.
 #>
 
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
+    [ValidateRange(1, 100)]
     [int]$StorageWarningThreshold = 80,
 
     [Parameter(Mandatory = $false)]
+    [ValidateRange(1, [int]::MaxValue)]
     [int]$InactivityDays = 90,
 
     [Parameter(Mandatory = $false)]
@@ -52,159 +59,179 @@ param(
     [switch]$ExportCSV
 )
 
-$ErrorActionPreference = "Stop"
-$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+$ErrorActionPreference = 'Stop'
+
+# Thin wrapper around Out-File so callers (and Pester tests) can intercept report
+# writes; Out-File's Encoding argument transformation cannot be mocked directly.
+function Write-ReportTextFile {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path,
+
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string]$Content
+    )
+
+    $Content | Out-File -FilePath $Path -Encoding UTF8
 }
 
-Write-Host "`n=== OneDrive for Business Usage Report ===" -ForegroundColor Cyan
-Write-Host "Storage Warning Threshold: $StorageWarningThreshold%" -ForegroundColor Yellow
-Write-Host "Timestamp: $(Get-Date)" -ForegroundColor Gray
-Write-Host ""
+function Main {
+    try {
+        $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+        $documentsFolder = [Environment]::GetFolderPath('MyDocuments')
+        if ([string]::IsNullOrWhiteSpace($documentsFolder)) {
+            $documentsFolder = [System.IO.Path]::GetTempPath()
+        }
+        $reportDir = Join-Path $documentsFolder 'Reports'
+        if (-not (Test-Path -LiteralPath $reportDir -PathType Container)) {
+            New-Item -ItemType Directory -Path $reportDir -Force | Out-Null
+        }
 
-# Check for required modules
-try {
-    if (-not (Get-Module -Name Microsoft.Online.SharePoint.PowerShell -ListAvailable)) {
-        Write-Host "[-] SharePoint Online module not found!" -ForegroundColor Red
-        Write-Host "[!] Install with: Install-Module -Name Microsoft.Online.SharePoint.PowerShell" -ForegroundColor Yellow
-        exit 1
-    }
+        Write-Host ""
+        Write-Host "=== OneDrive for Business Usage Report ===" -ForegroundColor Cyan
+        Write-Host "[!] Storage Warning Threshold: $StorageWarningThreshold%" -ForegroundColor Yellow
+        Write-Host "[*] Timestamp: $(Get-Date)" -ForegroundColor Cyan
+        Write-Host ""
 
-    if (-not (Get-Module -Name Microsoft.Graph -ListAvailable)) {
-        Write-Host "[-] Microsoft Graph module not found!" -ForegroundColor Red
-        Write-Host "[!] Install with: Install-Module -Name Microsoft.Graph" -ForegroundColor Yellow
-        exit 1
-    }
+        # Check for required modules
+        if (-not (Get-Module -Name Microsoft.Online.SharePoint.PowerShell -ListAvailable)) {
+            Write-Host "[-] SharePoint Online module not found!" -ForegroundColor Red
+            $installHint = 'Install-Module -Name Microsoft.Online.SharePoint.PowerShell'
+            Write-Host "[!] Install with: $installHint" -ForegroundColor Yellow
+            return 1
+        }
 
-    # Connect to Microsoft Graph for usage data
-    Write-Host "[*] Connecting to Microsoft Graph..." -ForegroundColor Cyan
-    Connect-MgGraph -Scopes "Reports.Read.All" -NoWelcome
+        if (-not (Get-Module -Name Microsoft.Graph -ListAvailable)) {
+            Write-Host "[-] Microsoft Graph module not found!" -ForegroundColor Red
+            Write-Host "[!] Install with: Install-Module -Name Microsoft.Graph" -ForegroundColor Yellow
+            return 1
+        }
 
-    Write-Host "[+] Connected to Microsoft Graph" -ForegroundColor Green
-}
-catch {
-    Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
-}
+        # Connect to Microsoft Graph for usage data
+        Write-Host "[*] Connecting to Microsoft Graph..." -ForegroundColor Cyan
+        Connect-MgGraph -Scopes "Reports.Read.All" -NoWelcome -ErrorAction Stop
+        Write-Host "[+] Connected to Microsoft Graph" -ForegroundColor Green
 
-Write-Host ""
+        # Get OneDrive usage report from Graph
+        Write-Host "[*] Retrieving OneDrive usage data..." -ForegroundColor Cyan
 
-# Get OneDrive usage report from Graph
-Write-Host "[*] Retrieving OneDrive usage data..." -ForegroundColor Cyan
+        # Get OneDrive usage details
+        $tempCsv = Join-Path ([System.IO.Path]::GetTempPath()) 'onedrive_usage.csv'
+        Get-MgReportOneDriveUsageAccountDetail -Period D30 -OutFile $tempCsv -ErrorAction Stop
+        $usageData = @(Import-Csv -Path $tempCsv)
 
-try {
-    # Get OneDrive usage details
-    $oneDriveUsage = Get-MgReportOneDriveUsageAccountDetail -Period D30 -OutFile "$env:TEMP\onedrive_usage.csv"
-    $usageData = Import-Csv "$env:TEMP\onedrive_usage.csv"
+        Write-Host "[+] Found $($usageData.Count) OneDrive site(s)" -ForegroundColor Green
 
-    Write-Host "[+] Found $($usageData.Count) OneDrive site(s)" -ForegroundColor Green
-}
-catch {
-    Write-Host "[-] Error retrieving usage data: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
-}
+        $results = @()
+        $storageWarnings = 0
+        $inactiveSites = 0
+        $totalStorageGB = 0
+        $inactivityThreshold = (Get-Date).AddDays(-$InactivityDays)
 
-Write-Host ""
+        foreach ($site in $usageData) {
+            # Parse storage values
+            $storageUsedGB = [math]::Round($site.'Storage Used (Byte)' / 1GB, 2)
+            $storageQuotaGB = [math]::Round($site.'Storage Allocated (Byte)' / 1GB, 2)
 
-$results = @()
-$storageWarnings = 0
-$inactiveSites = 0
-$totalStorageGB = 0
-$inactivityThreshold = (Get-Date).AddDays(-$InactivityDays)
+            $totalStorageGB += $storageUsedGB
 
-foreach ($site in $usageData) {
-    # Parse storage values
-    $storageUsedGB = [math]::Round($site.'Storage Used (Byte)' / 1GB, 2)
-    $storageQuotaGB = [math]::Round($site.'Storage Allocated (Byte)' / 1GB, 2)
+            # Calculate percentage
+            $storagePercent = if ($storageQuotaGB -gt 0) {
+                [math]::Round(($storageUsedGB / $storageQuotaGB) * 100, 2)
+            }
+            else { 0 }
 
-    $totalStorageGB += $storageUsedGB
+            # Check for warnings
+            $status = "OK"
+            if ($storagePercent -ge $StorageWarningThreshold) {
+                $storageWarnings++
+                $status = "Warning"
+            }
 
-    # Calculate percentage
-    $storagePercent = if ($storageQuotaGB -gt 0) {
-        [math]::Round(($storageUsedGB / $storageQuotaGB) * 100, 2)
-    }
-    else { 0 }
+            # Check inactivity
+            $lastActivityDate = if ($site.'Last Activity Date') {
+                [DateTime]::Parse($site.'Last Activity Date')
+            }
+            else { $null }
 
-    # Check for warnings
-    $status = "OK"
-    if ($storagePercent -ge $StorageWarningThreshold) {
-        $storageWarnings++
-        $status = "Warning"
-    }
+            $isInactive = $false
+            if ($lastActivityDate -and $lastActivityDate -lt $inactivityThreshold) {
+                $isInactive = $true
+                $inactiveSites++
+            }
+            elseif (-not $lastActivityDate) {
+                $isInactive = $true
+                $inactiveSites++
+            }
 
-    # Check inactivity
-    $lastActivityDate = if ($site.'Last Activity Date') {
-        [DateTime]::Parse($site.'Last Activity Date')
-    }
-    else { $null }
+            $result = [PSCustomObject]@{
+                Owner             = $site.'Owner Display Name'
+                OwnerUPN          = $site.'Owner Principal Name'
+                SiteURL           = $site.'Site URL'
+                StorageUsedGB     = $storageUsedGB
+                StorageQuotaGB    = $storageQuotaGB
+                StoragePercent    = $storagePercent
+                FileCount         = $site.'File Count'
+                ActiveFileCount   = $site.'Active File Count'
+                LastActivityDate  = $lastActivityDate
+                IsInactive        = $isInactive
+                IsDeleted         = $site.'Is Deleted'
+                Status            = $status
+            }
 
-    $isInactive = $false
-    if ($lastActivityDate -and $lastActivityDate -lt $inactivityThreshold) {
-        $isInactive = $true
-        $inactiveSites++
-    }
-    elseif (-not $lastActivityDate) {
-        $isInactive = $true
-        $inactiveSites++
-    }
+            $results += $result
+        }
 
-    $result = [PSCustomObject]@{
-        Owner = $site.'Owner Display Name'
-        OwnerUPN = $site.'Owner Principal Name'
-        SiteURL = $site.'Site URL'
-        StorageUsedGB = $storageUsedGB
-        StorageQuotaGB = $storageQuotaGB
-        StoragePercent = $storagePercent
-        FileCount = $site.'File Count'
-        ActiveFileCount = $site.'Active File Count'
-        LastActivityDate = $lastActivityDate
-        IsInactive = $isInactive
-        IsDeleted = $site.'Is Deleted'
-        Status = $status
-    }
+        # Clean up temp file
+        Remove-Item $tempCsv -Force -ErrorAction SilentlyContinue
 
-    $results += $result
-}
+        Write-Host ""
+        Write-Host "=== Summary ===" -ForegroundColor Cyan
+        Write-Host "[*] Total OneDrive Sites: $($results.Count)" -ForegroundColor Cyan
+        Write-Host "[*] Total Storage Used: $([math]::Round($totalStorageGB, 2)) GB" -ForegroundColor Cyan
+        if ($storageWarnings -gt 0) {
+            Write-Host "[!] Storage Warnings (> $StorageWarningThreshold%): $storageWarnings" -ForegroundColor Yellow
+        }
+        else {
+            Write-Host "[+] Storage Warnings (> $StorageWarningThreshold%): $storageWarnings" -ForegroundColor Green
+        }
+        if ($inactiveSites -gt 0) {
+            Write-Host "[!] Inactive Sites (> $InactivityDays days): $inactiveSites" -ForegroundColor Yellow
+        }
+        else {
+            Write-Host "[+] Inactive Sites (> $InactivityDays days): $inactiveSites" -ForegroundColor Green
+        }
+        Write-Host ""
 
-# Clean up temp file
-Remove-Item "$env:TEMP\onedrive_usage.csv" -Force -ErrorAction SilentlyContinue
+        # Show top storage users
+        Write-Host "=== Top 10 Storage Users ===" -ForegroundColor Cyan
+        $results | Sort-Object StorageUsedGB -Descending |
+            Select-Object -First 10 Owner, StorageUsedGB, StoragePercent, FileCount |
+            Format-Table -AutoSize
 
-Write-Host "=== Summary ===" -ForegroundColor Cyan
-Write-Host "Total OneDrive Sites: $($results.Count)" -ForegroundColor White
-Write-Host "Total Storage Used: $([math]::Round($totalStorageGB, 2)) GB" -ForegroundColor White
-Write-Host "Storage Warnings (>$StorageWarningThreshold%): $storageWarnings" -ForegroundColor Yellow
-Write-Host "Inactive Sites (>$InactivityDays days): $inactiveSites" -ForegroundColor Yellow
-Write-Host ""
+        # Show storage warnings
+        if ($storageWarnings -gt 0) {
+            Write-Host "=== Storage Warnings ===" -ForegroundColor Yellow
+            $results | Where-Object { $_.Status -eq "Warning" } |
+                Select-Object -First 10 Owner, StorageUsedGB, StorageQuotaGB, StoragePercent |
+                Format-Table -AutoSize
+        }
 
-# Show top storage users
-Write-Host "=== Top 10 Storage Users ===" -ForegroundColor Cyan
-$results | Sort-Object StorageUsedGB -Descending |
-    Select-Object -First 10 Owner, StorageUsedGB, StoragePercent, FileCount |
-    Format-Table -AutoSize
+        # Show inactive sites
+        if ($inactiveSites -gt 0) {
+            Write-Host "=== Inactive OneDrive Sites ===" -ForegroundColor Yellow
+            $results | Where-Object { $_.IsInactive -eq $true } |
+                Select-Object -First 10 Owner, LastActivityDate, StorageUsedGB |
+                Format-Table -AutoSize
+        }
 
-# Show storage warnings
-if ($storageWarnings -gt 0) {
-    Write-Host "`n=== Storage Warnings ===" -ForegroundColor Yellow
-    $results | Where-Object { $_.Status -eq "Warning" } |
-        Select-Object -First 10 Owner, StorageUsedGB, StorageQuotaGB, StoragePercent |
-        Format-Table -AutoSize
-}
+        # Export
+        if ($ExportHTML) {
+            $htmlPath = Join-Path $reportDir "OneDriveUsageReport_$timestamp.html"
 
-# Show inactive sites
-if ($inactiveSites -gt 0) {
-    Write-Host "`n=== Inactive OneDrive Sites ===" -ForegroundColor Yellow
-    $results | Where-Object { $_.IsInactive -eq $true } |
-        Select-Object -First 10 Owner, LastActivityDate, StorageUsedGB |
-        Format-Table -AutoSize
-}
-
-# Export
-if ($ExportHTML) {
-    $htmlPath = (Join-Path $ReportDir "OneDriveUsageReport_$timestamp.html")
-
-    $html = @"
+            $html = @"
 <!DOCTYPE html>
 <html>
 <head>
@@ -243,9 +270,9 @@ if ($ExportHTML) {
         </tr>
 "@
 
-    foreach ($result in ($results | Sort-Object StorageUsedGB -Descending)) {
-        $rowClass = if ($result.Status -eq "Warning") { "warning" } else { "" }
-        $html += @"
+            foreach ($result in ($results | Sort-Object StorageUsedGB -Descending)) {
+                $rowClass = if ($result.Status -eq "Warning") { "warning" } else { "" }
+                $html += @"
         <tr class="$rowClass">
             <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Owner)"))</td>
             <td>$([System.Net.WebUtility]::HtmlEncode("$($result.StorageUsedGB)"))</td>
@@ -256,22 +283,31 @@ if ($ExportHTML) {
             <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Status)"))</td>
         </tr>
 "@
+            }
+
+            $html += "</table></body></html>"
+            Write-ReportTextFile -Path $htmlPath -Content $html
+            Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+        }
+
+        if ($ExportCSV) {
+            $csvPath = Join-Path $reportDir "OneDriveUsageReport_$timestamp.csv"
+            $results | Export-Csv -Path $csvPath -NoTypeInformation
+            Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
+        }
+
+        Write-Host "`n[+] Report completed!" -ForegroundColor Green
+
+        # Disconnect
+        Disconnect-MgGraph -ErrorAction SilentlyContinue | Out-Null
+
+        return 0
     }
-
-    $html += "</table></body></html>"
-    $html | Out-File -FilePath $htmlPath -Encoding UTF8
-    Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-if ($ExportCSV) {
-    $csvPath = (Join-Path $ReportDir "OneDriveUsageReport_$timestamp.csv")
-    $results | Export-Csv -Path $csvPath -NoTypeInformation
-    Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
-}
-
-Write-Host "`n[+] Report completed!" -ForegroundColor Green
-
-# Disconnect
-Disconnect-MgGraph | Out-Null
-
-exit 0
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

@@ -1,19 +1,18 @@
-<#
+﻿<#
 .SYNOPSIS
-    TEMPLATE: winget-managed application update compliance report (SAMPLE DATA).
+    Generates a winget-managed application update compliance report using SAMPLE data.
 
 .DESCRIPTION
-    This is a FORMATTING TEMPLATE for a winget application compliance report.
-    It does NOT query real winget inventory - the sample data below is generated
-    with Get-Random and is provided ONLY so you can preview the report layout.
-
-    To build a real report you must first collect per-device winget inventory
-    (e.g. via Intune proactive remediations writing to custom attributes or
-    Log Analytics), then replace Get-SampleComplianceData with a query against
-    that data source.
-
-    Output files are suffixed -SAMPLE so they cannot be mistaken for real
+    This is a FORMATTING TEMPLATE for a winget application compliance report. It does NOT
+    query real winget inventory - the sample data is generated with Get-Random and provided
+    ONLY so you can preview the report layout. To build a real report you must first collect
+    per-device winget inventory (e.g. via Intune proactive remediations writing to custom
+    attributes or Log Analytics), then replace Get-SampleComplianceData with a query against
+    that data source. Output files are suffixed -SAMPLE so they cannot be mistaken for real
     compliance data.
+    Exit codes:
+    - 0: the sample compliance report was generated successfully.
+    - 1: the Graph connection or report generation failed.
 
 .PARAMETER TenantId
     Azure AD Tenant ID (optional if already connected).
@@ -34,21 +33,25 @@
     Limit to top N devices (for testing).
 
 .EXAMPLE
-    .\Get-WingetUpdateCompliance.ps1 -ExportHTML
-    Generates compliance report for all devices and exports to HTML.
+    PS C:\> .\Get-WingetUpdateCompliance.ps1 -ExportHTML
+    Generates the sample compliance report for all devices and exports it to HTML.
 
 .EXAMPLE
-    .\Get-WingetUpdateCompliance.ps1 -ApplicationFilter "*Chrome*" -ExportCSV
-    Reports on Chrome update compliance across all devices.
+    PS C:\> .\Get-WingetUpdateCompliance.ps1 -ApplicationFilter "*Chrome*" -ExportCSV
+    Reports on Chrome update compliance across all devices and exports CSV.
 
 .EXAMPLE
-    .\Get-WingetUpdateCompliance.ps1 -Top 50 -IncludeUpToDate
+    PS C:\> .\Get-WingetUpdateCompliance.ps1 -Top 50 -IncludeUpToDate
     Tests with first 50 devices, including up-to-date apps.
 
 .NOTES
-    Requires Microsoft.Graph PowerShell module
-    Requires permissions: DeviceManagementManagedDevices.Read.All
-    This script relies on Intune custom inventory data
+    File Name: Get-WingetUpdateCompliance.ps1
+    Author: Intune Admin
+    Prerequisite: PowerShell 7.0
+    Version: 1.0.0
+    Date: 2026-08-23
+    Permissions: DeviceManagementManagedDevices.Read.All
+    This script relies on Intune custom inventory data for real compliance reporting.
 #>
 
 [CmdletBinding()]
@@ -72,29 +75,7 @@ param(
     [int]$Top
 )
 
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-if ([string]::IsNullOrWhiteSpace($ReportDir) -or
-    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
-    $ReportDir -match '^(\\\\|//)') {
-    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
-    exit 1
-}
-$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
-
-#Requires -Modules Microsoft.Graph.Authentication, Microsoft.Graph.DeviceManagement
-
-$script:report = @{
-    ScanTime = Get-Date
-    TotalDevices = 0
-    TotalApps = 0
-    OutdatedApps = 0
-    UpToDateApps = 0
-    Applications = @()
-    DeviceSummary = @()
-}
+$ErrorActionPreference = 'Stop'
 
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
@@ -108,34 +89,28 @@ function Write-ColorOutput {
 }
 
 function Connect-GraphAPI {
-    Write-Host "Connecting to Microsoft Graph..." -ForegroundColor Cyan
+    Write-Host "[*] Connecting to Microsoft Graph..." -ForegroundColor Cyan
 
-    try {
-        $context = Get-MgContext
-        if (-not $context) {
-            $params = @{
-                Scopes = @(
-                    "DeviceManagementManagedDevices.Read.All",
-                    "DeviceManagementConfiguration.Read.All"
-                )
-            }
-            if ($TenantId) { $params.TenantId = $TenantId }
+    $context = Get-MgContext
+    if (-not $context) {
+        $params = @{
+            Scopes = @(
+                "DeviceManagementManagedDevices.Read.All",
+                "DeviceManagementConfiguration.Read.All"
+            )
+        }
+        if ($TenantId) { $params.TenantId = $TenantId }
 
-            Connect-MgGraph @params
-            Write-ColorOutput "  Connected successfully" -Level Success
-        }
-        else {
-            Write-ColorOutput "  Already connected to tenant: $($context.TenantId)" -Level Success
-        }
+        Connect-MgGraph @params -ErrorAction Stop
+        Write-ColorOutput "[+] Connected successfully" -Level Success
     }
-    catch {
-        Write-ColorOutput "  Failed to connect: $($_.Exception.Message)" -Level Error
-        exit 1
+    else {
+        Write-ColorOutput "[+] Already connected to tenant: $($context.TenantId)" -Level Success
     }
 }
 
 function Get-DeviceWingetData {
-    Write-Host "`nQuerying Intune devices..." -ForegroundColor Cyan
+    Write-Host "`n[*] Querying Intune devices..." -ForegroundColor Cyan
 
     try {
         $filter = "operatingSystem eq 'Windows'"
@@ -149,35 +124,35 @@ function Get-DeviceWingetData {
             $params.Top = $Top
         }
 
-        $devices = Get-MgDeviceManagementManagedDevice @params
-        $script:report.TotalDevices = $devices.Count
+        $devices = Get-MgDeviceManagementManagedDevice @params -ErrorAction Stop
+        $script:report.TotalDevices = @($devices).Count
 
-        Write-ColorOutput "  Found $($devices.Count) Windows devices" -Level Success
+        Write-ColorOutput "[+] Found $(@($devices).Count) Windows devices" -Level Success
 
         # NOTE: This is a simplified version. In production, you would:
         # 1. Use Intune custom compliance/detection scripts to collect winget data
         # 2. Store data in device custom attributes or Log Analytics
         # 3. Query that data here
 
-        Write-ColorOutput "`n  Note: Full implementation requires custom inventory collection" -Level Warning
+        Write-ColorOutput "[!] Note: Full implementation requires custom inventory collection" -Level Warning
         Write-ColorOutput "  This script provides the framework for winget compliance reporting" -Level Info
 
         return $devices
     }
     catch {
-        Write-ColorOutput "  Error querying devices: $($_.Exception.Message)" -Level Error
+        Write-ColorOutput "[-] Error querying devices: $($_.Exception.Message)" -Level Error
         return @()
     }
 }
 
 function Get-SampleComplianceData {
     # SAMPLE DATA - NOT REAL COMPLIANCE DATA
-    Write-Host "`n⚠ ⚠ ⚠  WARNING: SAMPLE DATA  ⚠ ⚠ ⚠" -ForegroundColor Red
-    Write-Host "  This report contains FABRICATED sample data (Get-Random) for" -ForegroundColor Red
-    Write-Host "  formatting/preview purposes ONLY. It is NOT real compliance data." -ForegroundColor Red
-    Write-Host "  Do NOT use this output for decisions, reporting, or audits." -ForegroundColor Red
-    Write-Host "  Replace Get-SampleComplianceData with a real inventory query before use." -ForegroundColor Red
-    Write-Host "`nGenerating sample compliance data..." -ForegroundColor Yellow
+    Write-Host "[!] WARNING: SAMPLE DATA" -ForegroundColor Yellow
+    Write-Host "  This report contains FABRICATED sample data (Get-Random) for" -ForegroundColor Yellow
+    Write-Host "  formatting/preview purposes ONLY. It is NOT real compliance data." -ForegroundColor Yellow
+    Write-Host "  Do NOT use this output for decisions, reporting, or audits." -ForegroundColor Yellow
+    Write-Host "  Replace Get-SampleComplianceData with a real inventory query before use." -ForegroundColor Yellow
+    Write-Host "`n[*] Generating sample compliance data..." -ForegroundColor Yellow
     Write-Host "  (In production, this would query actual device inventory)" -ForegroundColor Gray
 
     $sampleApps = @(
@@ -221,24 +196,25 @@ function Get-SampleComplianceData {
 function Show-Summary {
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "  Winget Update Compliance Summary" -ForegroundColor Cyan
-    Write-Host "  (SAMPLE DATA - FORMATTING PREVIEW ONLY)" -ForegroundColor Red
+    Write-Host "  [!] SAMPLE DATA - FORMATTING PREVIEW ONLY" -ForegroundColor Yellow
     Write-Host "========================================" -ForegroundColor Cyan
     Write-Host "Scan Time: $($script:report.ScanTime)"
     Write-Host "Total Devices Scanned: $($script:report.TotalDevices)"
     Write-Host "Total Applications: $($script:report.TotalApps)"
-    Write-ColorOutput "Outdated Applications: $($script:report.OutdatedApps)" -Level Warning
-    Write-ColorOutput "Up-to-Date Applications: $($script:report.UpToDateApps)" -Level Success
+    Write-ColorOutput "[!] Outdated Applications: $($script:report.OutdatedApps)" -Level Warning
+    Write-ColorOutput "[+] Up-to-Date Applications: $($script:report.UpToDateApps)" -Level Success
 
     if ($script:report.Applications.Count -gt 0) {
-        Write-Host "`nApplication Update Status:" -ForegroundColor Cyan
-        $script:report.Applications | Format-Table ApplicationName, InstalledVersion, AvailableVersion, Status, DeviceCount, OutdatedCount -AutoSize
+        Write-Host "`n[*] Application Update Status:" -ForegroundColor Cyan
+        $script:report.Applications | Format-Table ApplicationName, InstalledVersion,
+            AvailableVersion, Status, DeviceCount, OutdatedCount -AutoSize
     }
 
     Write-Host "`n========================================`n" -ForegroundColor Cyan
 }
 
 function Export-HTMLReport {
-    $reportPath = "$ReportDir\WingetCompliance_SAMPLE_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+    $reportPath = Join-Path $ReportDir "WingetCompliance_SAMPLE_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
 
     $html = @"
 <!DOCTYPE html>
@@ -247,10 +223,13 @@ function Export-HTMLReport {
     <title>Winget Update Compliance Report (SAMPLE)</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .container { max-width: 1400px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { max-width: 1400px; margin: 0 auto; background-color: white;
+            padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h1 { color: #333; border-bottom: 3px solid #007bff; padding-bottom: 10px; }
-        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
-        .metric { background-color: #f8f9fa; padding: 20px; border-radius: 4px; border-left: 4px solid #007bff; text-align: center; }
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px; margin: 20px 0; }
+        .metric { background-color: #f8f9fa; padding: 20px; border-radius: 4px;
+            border-left: 4px solid #007bff; text-align: center; }
         .metric.warning { border-left-color: #ffc107; }
         .metric.success { border-left-color: #28a745; }
         .metric-value { font-size: 2em; font-weight: bold; color: #007bff; }
@@ -269,7 +248,7 @@ function Export-HTMLReport {
     <div class="container">
         <h1>Winget Update Compliance Report (SAMPLE)</h1>
         <p><strong>Generated:</strong> $($script:report.ScanTime)</p>
-        <p style="color:#dc3545;font-weight:bold">⚠ SAMPLE DATA - formatting preview only. Not real compliance data.</p>
+        <p style="color:#dc3545;font-weight:bold">SAMPLE DATA - formatting preview only. Not real compliance data.</p>
 
         <div class="summary">
             <div class="metric">
@@ -315,50 +294,96 @@ function Export-HTMLReport {
 
         <div class="footer">
             Report generated by Get-WingetUpdateCompliance.ps1<br>
-            <strong>Note:</strong> This report uses sample data. Full implementation requires custom inventory collection via Intune.
+            <strong>Note:</strong> This report uses sample data. Full implementation requires
+                custom inventory collection via Intune.
         </div>
     </div>
 </body>
 </html>
 "@
 
-    $html | Out-File -FilePath $reportPath -Encoding UTF8
-    Write-ColorOutput "`nHTML report exported to: $reportPath" -Level Success
+    $html | Out-File -FilePath $reportPath -Encoding ([System.Text.Encoding]::UTF8) -ErrorAction Stop
+    Write-ColorOutput "[+] HTML report exported to: $reportPath" -Level Success
 }
 
 function Export-CSVReport {
-    $reportPath = "$ReportDir\WingetCompliance_SAMPLE_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+    $reportPath = Join-Path $ReportDir "WingetCompliance_SAMPLE_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
 
-    $script:report.Applications | Export-Csv -Path $reportPath -NoTypeInformation -Encoding UTF8
-    Write-ColorOutput "CSV report exported to: $reportPath" -Level Success
+    $csvParams = @{
+        Path = $reportPath
+        NoTypeInformation = $true
+        Encoding = [System.Text.Encoding]::UTF8
+        ErrorAction = 'Stop'
+    }
+    $script:report.Applications | Export-Csv @csvParams
+    Write-ColorOutput "[+] CSV report exported to: $reportPath" -Level Success
 }
 
-# Main execution
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "  Winget Update Compliance Reporter" -ForegroundColor Cyan
-Write-Host "  TEMPLATE - OUTPUTS SAMPLE DATA ONLY" -ForegroundColor Yellow
-Write-Host "========================================`n" -ForegroundColor Cyan
+function Main {
+    try {
+        # Per-run report state (reset on every invocation).
+        $script:report = @{
+            ScanTime = Get-Date
+            TotalDevices = 0
+            TotalApps = 0
+            OutdatedApps = 0
+            UpToDateApps = 0
+            Applications = @()
+            DeviceSummary = @()
+        }
 
-Connect-GraphAPI
-Get-DeviceWingetData
+        # Report output directory with traversal safety checks.
+        $ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+        if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+            $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+            $ReportDir -match '^(\\\\|//)') {
+            throw "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
+        }
+        $ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+        if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+            New-Item -ItemType Directory -Path $ReportDir -Force -ErrorAction Stop | Out-Null
+        }
 
-# Generate sample data (replace with actual inventory query in production)
-Get-SampleComplianceData
+        Import-Module Microsoft.Graph.Authentication -ErrorAction Stop
+        Import-Module Microsoft.Graph.DeviceManagement -ErrorAction Stop
 
-Show-Summary
+        Write-Host "`n[*] Winget Update Compliance Reporter" -ForegroundColor Cyan
+        Write-Host "[!] TEMPLATE - OUTPUTS SAMPLE DATA ONLY" -ForegroundColor Yellow
+        Write-Host "`n========================================`n" -ForegroundColor Cyan
 
-if ($ExportHTML) {
-    Write-Host "Generating HTML report..." -ForegroundColor Cyan
-    Export-HTMLReport
+        Connect-GraphAPI
+
+        # Generate sample data (replace with actual inventory query in production)
+        Get-DeviceWingetData | Out-Null
+        Get-SampleComplianceData
+
+        Show-Summary
+
+        if ($ExportHTML) {
+            Write-Host "[*] Generating HTML report..." -ForegroundColor Cyan
+            Export-HTMLReport
+        }
+
+        if ($ExportCSV) {
+            Write-Host "[*] Generating CSV report..." -ForegroundColor Cyan
+            Export-CSVReport
+        }
+
+        Write-Host "[!] This script is a TEMPLATE and outputs SAMPLE DATA for formatting purposes only." `
+            -ForegroundColor Yellow
+        Write-Host "  Do not use these numbers for decisions, reporting, or audits." -ForegroundColor Yellow
+        Write-Host "  For real compliance data, implement custom inventory collection via Intune" `
+            -ForegroundColor Yellow
+        Write-Host "  proactive remediations and replace Get-SampleComplianceData with a real query." `
+            -ForegroundColor Yellow
+        Write-Host "`n[+] Winget update compliance sample report completed." -ForegroundColor Green
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error generating winget update compliance report: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-if ($ExportCSV) {
-    Write-Host "Generating CSV report..." -ForegroundColor Cyan
-    Export-CSVReport
-}
-
-Write-Host "⚠ This script is a TEMPLATE and outputs SAMPLE DATA for formatting purposes only." -ForegroundColor Red
-Write-Host "  Do not use these numbers for decisions, reporting, or audits." -ForegroundColor Red
-Write-Host "  For real compliance data, implement custom inventory collection via Intune" -ForegroundColor Yellow
-Write-Host "  proactive remediations and replace Get-SampleComplianceData with a real query." -ForegroundColor Yellow
-Write-Host "`n========================================`n" -ForegroundColor Cyan
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

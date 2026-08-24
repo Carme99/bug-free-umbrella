@@ -1,44 +1,46 @@
-<#
+﻿<#
 .SYNOPSIS
-    Checks the status of antivirus and endpoint protection on Windows devices.
+    Check antivirus and endpoint protection status on Windows devices and report protection gaps.
 
 .DESCRIPTION
-    This script provides comprehensive antivirus and endpoint protection status including:
-    - Windows Defender/Microsoft Defender status
-    - Third-party antivirus detection
-    - Real-time protection status
-    - Signature/definition update status
-    - Scan history and last scan time
-    - Threat detection history
-    - Firewall status
-    - Export to HTML and CSV formats
+    Queries Microsoft Defender via Get-MpComputerStatus, third-party antivirus products via the
+    SecurityCenter2 CIM namespace, known antivirus service names, and Windows Firewall profile state.
+    - Detects disabled real-time protection, outdated signatures, and stale scans
+    - Optionally enumerates third-party antivirus products and decodes their product state
+    - Exports HTML and/or CSV reports when -OutputFormat requests them
+    Side effects: writes report files into -OutputPath when -OutputFormat is HTML, CSV, or All.
+    Exit codes: 0 = no protection issues found; 1 = one or more issues detected or a fatal error.
 
 .PARAMETER OutputFormat
-    Specifies the output format: None, HTML, CSV, or All. Default is None (console only).
+    Output format for the generated report: None (console only), HTML, CSV, or All. Default is None.
 
 .PARAMETER OutputPath
-    Path to save the output file(s). Default is current directory.
+    Directory where report files are written when -OutputFormat requests a report.
+    Default is the current location.
 
 .PARAMETER CheckThirdParty
-    Check for third-party antivirus software. Default is $true.
+    When $true (default), also probes SecurityCenter2 and known antivirus service names
+    for third-party products.
 
 .EXAMPLE
-    .\Get-AntivirusStatus.ps1 -OutputFormat HTML -OutputPath "C:\Reports"
+    PS C:\> .\Get-AntivirusStatus.ps1 -OutputFormat HTML -OutputPath "C:\Reports"
 
-    Generates an HTML report of antivirus status.
+    Generates an HTML report of antivirus status in C:\Reports; returns 1 if issues were found.
 
 .EXAMPLE
-    .\Get-AntivirusStatus.ps1 -CheckThirdParty
+    PS C:\> .\Get-AntivirusStatus.ps1
 
-    Checks both Windows Defender and third-party antivirus solutions.
+    Checks Windows Defender, third-party antivirus solutions, and firewall status in the console only.
 
 .NOTES
-    File Name      : Get-AntivirusStatus.ps1
-    Requires       : PowerShell 5.1+, Administrator privileges recommended
-    Version        : 1.0
+    File Name   : Get-AntivirusStatus.ps1
+    Author      : Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version     : 1.0.0
+    Date        : 2026-08-23
 #>
 
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter()]
     [ValidateSet('None', 'HTML', 'CSV', 'All')]
@@ -51,242 +53,274 @@ param(
     [bool]$CheckThirdParty = $true
 )
 
-Write-Host "=== Antivirus & Endpoint Protection Status ===" -ForegroundColor Cyan
+# PSSA note: remaining warnings are intentional/false positives:
+# - PSAvoidUsingWriteHost: colored [prefix] console reporting via Write-Host is
+#   mandated by the relaunch output standard.
+# - PSReviewUnusedParameter: parameters are consumed inside Main (PSSA cannot see
+#   through the wrapper).
+# - PSShouldProcess on Main: it deliberately uses the script-level CmdletBinding
+#   SupportsShouldProcess binding's $PSCmdlet.
+$ErrorActionPreference = 'Stop'
 
-# Initialize results
-$avStatus = @{
-    ComputerName = $env:COMPUTERNAME
-    ScanTime = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
-    WindowsDefender = @{}
-    ThirdPartyAV = @()
-    Firewall = @{}
-    OverallStatus = "Unknown"
-    Issues = @()
-}
+function Main {
+    try {
+        Write-Host "[*] === Antivirus & Endpoint Protection Status ===" -ForegroundColor Cyan
 
-#region Windows Defender Status
-Write-Host "`nChecking Windows Defender status..." -ForegroundColor Yellow
-
-try {
-    # Get Windows Defender status using Get-MpComputerStatus
-    $defenderStatus = Get-MpComputerStatus -ErrorAction SilentlyContinue
-
-    if ($defenderStatus) {
-        $avStatus.WindowsDefender = @{
-            Enabled = $defenderStatus.AntivirusEnabled
-            RealTimeProtectionEnabled = $defenderStatus.RealTimeProtectionEnabled
-            BehaviorMonitorEnabled = $defenderStatus.BehaviorMonitorEnabled
-            IoavProtectionEnabled = $defenderStatus.IoavProtectionEnabled
-            OnAccessProtectionEnabled = $defenderStatus.OnAccessProtectionEnabled
-            AntivirusSignatureVersion = $defenderStatus.AntivirusSignatureVersion
-            AntivirusSignatureAge = $defenderStatus.AntivirusSignatureAge
-            AntivirusSignatureLastUpdated = $defenderStatus.AntivirusSignatureLastUpdated
-            QuickScanAge = $defenderStatus.QuickScanAge
-            FullScanAge = $defenderStatus.FullScanAge
-            QuickScanEndTime = $defenderStatus.QuickScanEndTime
-            FullScanEndTime = $defenderStatus.FullScanEndTime
+        # Initialize results
+        $avStatus = @{
+            ComputerName    = $env:COMPUTERNAME
+            ScanTime        = (Get-Date).ToString("yyyy-MM-dd HH:mm:ss")
+            WindowsDefender = @{}
+            ThirdPartyAV    = @()
+            Firewall        = @{}
+            OverallStatus   = "Unknown"
+            Issues          = @()
         }
 
-        # Check for issues
-        if (-not $defenderStatus.AntivirusEnabled) {
-            $avStatus.Issues += "Windows Defender is DISABLED"
-        }
-        if (-not $defenderStatus.RealTimeProtectionEnabled) {
-            $avStatus.Issues += "Real-Time Protection is DISABLED"
-        }
-        if ($defenderStatus.AntivirusSignatureAge -gt 7) {
-            $avStatus.Issues += "Antivirus signatures are OUTDATED ($($defenderStatus.AntivirusSignatureAge) days old)"
-        }
-        if ($defenderStatus.QuickScanAge -gt 7) {
-            $avStatus.Issues += "Quick scan hasn't run in $($defenderStatus.QuickScanAge) days"
-        }
+        #region Windows Defender Status
+        Write-Host "[*] Checking Windows Defender status..." -ForegroundColor Yellow
 
-        # Get threat history
         try {
-            $threats = @(Get-MpThreatDetection -ErrorAction SilentlyContinue | Select-Object -First 10)
-            # Get-MpThreatDetection does not expose ThreatName; resolve names via
-            # Get-MpThreat keyed by ThreatID (cache the lookup).
-            $threatLookup = @{}
-            if ($threats.Count -gt 0) {
-                Get-MpThreat -ErrorAction SilentlyContinue | ForEach-Object { $threatLookup[$_.ThreatID] = $_.ThreatName }
+            # Get Windows Defender status using Get-MpComputerStatus
+            $defenderStatus = Get-MpComputerStatus -ErrorAction SilentlyContinue
+
+            if ($defenderStatus) {
+                $avStatus.WindowsDefender = @{
+                    Enabled                     = $defenderStatus.AntivirusEnabled
+                    RealTimeProtectionEnabled   = $defenderStatus.RealTimeProtectionEnabled
+                    BehaviorMonitorEnabled      = $defenderStatus.BehaviorMonitorEnabled
+                    IoavProtectionEnabled       = $defenderStatus.IoavProtectionEnabled
+                    OnAccessProtectionEnabled   = $defenderStatus.OnAccessProtectionEnabled
+                    AntivirusSignatureVersion   = $defenderStatus.AntivirusSignatureVersion
+                    AntivirusSignatureAge       = $defenderStatus.AntivirusSignatureAge
+                    AntivirusSignatureLastUpdated = $defenderStatus.AntivirusSignatureLastUpdated
+                    QuickScanAge                = $defenderStatus.QuickScanAge
+                    FullScanAge                 = $defenderStatus.FullScanAge
+                    QuickScanEndTime            = $defenderStatus.QuickScanEndTime
+                    FullScanEndTime             = $defenderStatus.FullScanEndTime
+                }
+
+                # Check for issues
+                if (-not $defenderStatus.AntivirusEnabled) {
+                    $avStatus.Issues += "Windows Defender is DISABLED"
+                }
+                if (-not $defenderStatus.RealTimeProtectionEnabled) {
+                    $avStatus.Issues += "Real-Time Protection is DISABLED"
+                }
+                if ($defenderStatus.AntivirusSignatureAge -gt 7) {
+                    $sigAgeDays = $defenderStatus.AntivirusSignatureAge
+                    $avStatus.Issues += "Antivirus signatures are OUTDATED ($sigAgeDays days old)"
+                }
+                if ($defenderStatus.QuickScanAge -gt 7) {
+                    $avStatus.Issues += "Quick scan hasn't run in $($defenderStatus.QuickScanAge) days"
+                }
+
+                # Get threat history
+                try {
+                    $threats = @(Get-MpThreatDetection -ErrorAction SilentlyContinue | Select-Object -First 10)
+                    # Get-MpThreatDetection does not expose ThreatName; resolve names via
+                    # Get-MpThreat keyed by ThreatID (cache the lookup).
+                    $threatLookup = @{}
+                    if ($threats.Count -gt 0) {
+                        Get-MpThreat -ErrorAction SilentlyContinue | ForEach-Object {
+                            $threatLookup[$_.ThreatID] = $_.ThreatName
+                        }
+                    }
+                    $avStatus.WindowsDefender.RecentThreats = $threats.Count
+                    $avStatus.WindowsDefender.ThreatHistory = @($threats | ForEach-Object {
+                        $threatName = "Unknown (ThreatID $($_.ThreatID))"
+                        if ($threatLookup.ContainsKey($_.ThreatID)) {
+                            $threatName = $threatLookup[$_.ThreatID]
+                        }
+                        [PSCustomObject]@{
+                            ThreatName    = $threatName
+                            DetectionTime = $_.InitialDetectionTime
+                            ActionSuccess = $_.ActionSuccess
+                        }
+                    })
+                }
+                catch {
+                    $avStatus.WindowsDefender.RecentThreats = 0
+                }
             }
-            $avStatus.WindowsDefender.RecentThreats = $threats.Count
-            $avStatus.WindowsDefender.ThreatHistory = $threats | ForEach-Object {
-                [PSCustomObject]@{
-                    ThreatName = if ($threatLookup.ContainsKey($_.ThreatID)) { $threatLookup[$_.ThreatID] } else { "Unknown (ThreatID $($_.ThreatID))" }
-                    DetectionTime = $_.InitialDetectionTime
-                    ActionSuccess = $_.ActionSuccess
+            else {
+                $avStatus.WindowsDefender.Enabled = $false
+                $avStatus.Issues += "Could not retrieve Windows Defender status"
+            }
+        }
+        catch {
+            $avStatus.WindowsDefender.Error = $_.Exception.Message
+            $avStatus.Issues += "Error checking Windows Defender: $($_.Exception.Message)"
+        }
+        #endregion
+
+        #region Third-Party Antivirus Detection
+        if ($CheckThirdParty) {
+            Write-Host "[*] Checking for third-party antivirus software..." -ForegroundColor Yellow
+
+            try {
+                # Check using Windows Security Center (Windows 10/11)
+                $namespace = "root\SecurityCenter2"
+                $avProducts = Get-CimInstance -Namespace $namespace `
+                    -ClassName AntiVirusProduct -ErrorAction SilentlyContinue
+
+                if ($avProducts) {
+                    foreach ($av in $avProducts) {
+                        # Decode product state
+                        $hexState = [Convert]::ToString($av.productState, 16).PadLeft(6, '0')
+                        $realTimeProtection = $hexState.Substring(2, 2)
+                        $definition = $hexState.Substring(4, 2)
+
+                        $isEnabled = $realTimeProtection -in @('10', '11')
+                        $isUpdated = $definition -in @('00')
+
+                        $avStatus.ThirdPartyAV += [PSCustomObject]@{
+                            Name                       = $av.displayName
+                            InstanceGuid               = $av.instanceGuid
+                            PathToSignedProductExe     = $av.pathToSignedProductExe
+                            PathToSignedReportingExe   = $av.pathToSignedReportingExe
+                            ProductState               = $av.productState
+                            Enabled                    = $isEnabled
+                            DefinitionsUpToDate        = $isUpdated
+                            Timestamp                  = $av.timestamp
+                        }
+
+                        if (-not $isEnabled) {
+                            $avStatus.Issues += "$($av.displayName) is installed but DISABLED"
+                        }
+                        if (-not $isUpdated) {
+                            $avStatus.Issues += "$($av.displayName) definitions are OUTDATED"
+                        }
+                    }
+                }
+            }
+            catch {
+                Write-Verbose "Could not query Security Center: $($_.Exception.Message)"
+            }
+
+            # Also check common antivirus services
+            $commonAVServices = @(
+                'McAfeeFramework', 'McShield', 'McAfeeEngineService',  # McAfee
+                'SavService', 'SAVAdminService',  # Sophos
+                'avp', 'AVP18.0.0',  # Kaspersky
+                'TrueService', 'TrueAPI',  # TrendMicro
+                'VSSERV', 'avast! Antivirus',  # Avast/AVG
+                'NortonSecurity', 'NS'  # Norton/Symantec
+            )
+
+            foreach ($serviceName in $commonAVServices) {
+                $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
+                if ($service) {
+                    Write-Host "[*] Found AV service: $($service.DisplayName) - Status: $($service.Status)"  `
+                        -ForegroundColor Cyan
+                }
+            }
+        }
+        #endregion
+
+        #region Firewall Status
+        Write-Host "[*] Checking Windows Firewall status..." -ForegroundColor Yellow
+
+        try {
+            $firewallProfiles = Get-NetFirewallProfile -ErrorAction SilentlyContinue
+
+            $avStatus.Firewall = @{
+                Domain  = ($firewallProfiles | Where-Object { $_.Name -eq 'Domain' }).Enabled
+                Private = ($firewallProfiles | Where-Object { $_.Name -eq 'Private' }).Enabled
+                Public  = ($firewallProfiles | Where-Object { $_.Name -eq 'Public' }).Enabled
+            }
+
+            foreach ($fwProfile in $firewallProfiles) {
+                if (-not $fwProfile.Enabled) {
+                    $avStatus.Issues += "Windows Firewall is DISABLED for $($fwProfile.Name) profile"
                 }
             }
         }
         catch {
-            $avStatus.WindowsDefender.RecentThreats = 0
+            $avStatus.Firewall.Error = $_.Exception.Message
+            $avStatus.Issues += "Error checking firewall status"
         }
-    }
-    else {
-        $avStatus.WindowsDefender.Enabled = $false
-        $avStatus.Issues += "Could not retrieve Windows Defender status"
-    }
-}
-catch {
-    $avStatus.WindowsDefender.Error = $_.Exception.Message
-    $avStatus.Issues += "Error checking Windows Defender: $($_.Exception.Message)"
-}
-#endregion
+        #endregion
 
-#region Third-Party Antivirus Detection
-if ($CheckThirdParty) {
-    Write-Host "Checking for third-party antivirus software..." -ForegroundColor Yellow
+        # Determine overall status
+        if ($avStatus.Issues.Count -eq 0) {
+            $avStatus.OverallStatus = "Protected"
+            $statusColor = "Green"
+        }
+        elseif ($avStatus.Issues.Count -le 2) {
+            $avStatus.OverallStatus = "Warning"
+            $statusColor = "Yellow"
+        }
+        else {
+            $avStatus.OverallStatus = "At Risk"
+            $statusColor = "Red"
+        }
 
-    try {
-        # Check using Windows Security Center (Windows 10/11)
-        $namespace = "root\SecurityCenter2"
-        $avProducts = Get-CimInstance -Namespace $namespace -ClassName AntiVirusProduct -ErrorAction SilentlyContinue
+        #region Display Results
+        Write-Host "[*] === Antivirus Status Summary ===" -ForegroundColor Cyan
+        Write-Host "Overall Status: $($avStatus.OverallStatus)" -ForegroundColor $statusColor
 
-        if ($avProducts) {
-            foreach ($av in $avProducts) {
-                # Decode product state
-                $hexState = [Convert]::ToString($av.productState, 16).PadLeft(6, '0')
-                $provider = $hexState.Substring(0, 2)
-                $realTimeProtection = $hexState.Substring(2, 2)
-                $definition = $hexState.Substring(4, 2)
+        $wd = $avStatus.WindowsDefender
+        $enabledColor = if ($wd.Enabled) { 'Green' } else { 'Red' }
+        $rtpColor = if ($wd.RealTimeProtectionEnabled) { 'Green' } else { 'Red' }
+        $sigAgeColor = if ($wd.AntivirusSignatureAge -le 7) { 'Green' } else { 'Yellow' }
 
-                $isEnabled = $realTimeProtection -in @('10', '11')
-                $isUpdated = $definition -in @('00')
+        Write-Host "[*] Windows Defender:" -ForegroundColor Cyan
+        Write-Host "  Enabled: $($wd.Enabled)" -ForegroundColor $enabledColor
+        Write-Host "  Real-Time Protection: $($wd.RealTimeProtectionEnabled)" -ForegroundColor $rtpColor
+        Write-Host "  Signature Version: $($wd.AntivirusSignatureVersion)"
+        Write-Host "  Signature Age: $($wd.AntivirusSignatureAge) days" -ForegroundColor $sigAgeColor
+        Write-Host "  Last Quick Scan: $($wd.QuickScanEndTime)"
+        Write-Host "  Last Full Scan: $($wd.FullScanEndTime)"
 
-                $avStatus.ThirdPartyAV += [PSCustomObject]@{
-                    Name = $av.displayName
-                    InstanceGuid = $av.instanceGuid
-                    PathToSignedProductExe = $av.pathToSignedProductExe
-                    PathToSignedReportingExe = $av.pathToSignedReportingExe
-                    ProductState = $av.productState
-                    Enabled = $isEnabled
-                    DefinitionsUpToDate = $isUpdated
-                    Timestamp = $av.timestamp
-                }
-
-                if (-not $isEnabled) {
-                    $avStatus.Issues += "$($av.displayName) is installed but DISABLED"
-                }
-                if (-not $isUpdated) {
-                    $avStatus.Issues += "$($av.displayName) definitions are OUTDATED"
-                }
+        if ($avStatus.ThirdPartyAV.Count -gt 0) {
+            Write-Host "[*] Third-Party Antivirus:" -ForegroundColor Cyan
+            foreach ($av in $avStatus.ThirdPartyAV) {
+                Write-Host "  $($av.Name) - Enabled: $($av.Enabled), Updated: $($av.DefinitionsUpToDate)"  `
+                    -ForegroundColor Cyan
             }
         }
-    }
-    catch {
-        Write-Verbose "Could not query Security Center: $($_.Exception.Message)"
-    }
 
-    # Also check common antivirus services
-    $commonAVServices = @(
-        'McAfeeFramework', 'McShield', 'McAfeeEngineService',  # McAfee
-        'SavService', 'SAVAdminService',  # Sophos
-        'avp', 'AVP18.0.0',  # Kaspersky
-        'TrueService', 'TrueAPI',  # TrendMicro
-        'VSSERV', 'avast! Antivirus',  # Avast/AVG
-        'NortonSecurity', 'NS'  # Norton/Symantec
-    )
+        $fw = $avStatus.Firewall
+        $domainColor = if ($fw.Domain) { 'Green' } else { 'Red' }
+        $privateColor = if ($fw.Private) { 'Green' } else { 'Red' }
+        $publicColor = if ($fw.Public) { 'Green' } else { 'Red' }
 
-    foreach ($serviceName in $commonAVServices) {
-        $service = Get-Service -Name $serviceName -ErrorAction SilentlyContinue
-        if ($service) {
-            Write-Host "Found AV service: $($service.DisplayName) - Status: $($service.Status)" -ForegroundColor Cyan
+        Write-Host "[*] Windows Firewall:" -ForegroundColor Cyan
+        Write-Host "  Domain Profile: $($fw.Domain)" -ForegroundColor $domainColor
+        Write-Host "  Private Profile: $($fw.Private)" -ForegroundColor $privateColor
+        Write-Host "  Public Profile: $($fw.Public)" -ForegroundColor $publicColor
+
+        if ($avStatus.Issues.Count -gt 0) {
+            Write-Host "[-] === Issues Found ===" -ForegroundColor Red
+            $avStatus.Issues | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
         }
-    }
-}
-#endregion
-
-#region Firewall Status
-Write-Host "Checking Windows Firewall status..." -ForegroundColor Yellow
-
-try {
-    $firewallProfiles = Get-NetFirewallProfile -ErrorAction SilentlyContinue
-
-    $avStatus.Firewall = @{
-        Domain = ($firewallProfiles | Where-Object { $_.Name -eq 'Domain' }).Enabled
-        Private = ($firewallProfiles | Where-Object { $_.Name -eq 'Private' }).Enabled
-        Public = ($firewallProfiles | Where-Object { $_.Name -eq 'Public' }).Enabled
-    }
-
-    foreach ($profile in $firewallProfiles) {
-        if (-not $profile.Enabled) {
-            $avStatus.Issues += "Windows Firewall is DISABLED for $($profile.Name) profile"
+        else {
+            Write-Host "[+] No issues found. System is properly protected." -ForegroundColor Green
         }
-    }
-}
-catch {
-    $avStatus.Firewall.Error = $_.Exception.Message
-    $avStatus.Issues += "Error checking firewall status"
-}
-#endregion
+        #endregion
 
-# Determine overall status
-if ($avStatus.Issues.Count -eq 0) {
-    $avStatus.OverallStatus = "Protected"
-    $statusColor = "Green"
-}
-elseif ($avStatus.Issues.Count -le 2) {
-    $avStatus.OverallStatus = "Warning"
-    $statusColor = "Yellow"
-}
-else {
-    $avStatus.OverallStatus = "At Risk"
-    $statusColor = "Red"
-}
+        #region Generate Reports
+        if ($OutputFormat -eq 'HTML' -or $OutputFormat -eq 'All') {
+            if ($PSCmdlet.ShouldProcess($OutputPath, "Write antivirus status HTML report")) {
+                $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+                $htmlPath = Join-Path $OutputPath "AntivirusStatus_$timestamp.html"
 
-#region Display Results
-Write-Host "`n=== Antivirus Status Summary ===" -ForegroundColor Cyan
-Write-Host "Overall Status: $($avStatus.OverallStatus)" -ForegroundColor $statusColor
-Write-Host "`nWindows Defender:" -ForegroundColor Cyan
-Write-Host "  Enabled: $($avStatus.WindowsDefender.Enabled)" -ForegroundColor $(if ($avStatus.WindowsDefender.Enabled) { 'Green' } else { 'Red' })
-Write-Host "  Real-Time Protection: $($avStatus.WindowsDefender.RealTimeProtectionEnabled)" -ForegroundColor $(if ($avStatus.WindowsDefender.RealTimeProtectionEnabled) { 'Green' } else { 'Red' })
-Write-Host "  Signature Version: $($avStatus.WindowsDefender.AntivirusSignatureVersion)"
-Write-Host "  Signature Age: $($avStatus.WindowsDefender.AntivirusSignatureAge) days" -ForegroundColor $(if ($avStatus.WindowsDefender.AntivirusSignatureAge -le 7) { 'Green' } else { 'Yellow' })
-Write-Host "  Last Quick Scan: $($avStatus.WindowsDefender.QuickScanEndTime)"
-Write-Host "  Last Full Scan: $($avStatus.WindowsDefender.FullScanEndTime)"
+                $statusColorHtml = switch ($avStatus.OverallStatus) {
+                    'Protected' { 'green' }
+                    'Warning' { 'orange' }
+                    'At Risk' { 'red' }
+                    default { 'gray' }
+                }
 
-if ($avStatus.ThirdPartyAV.Count -gt 0) {
-    Write-Host "`nThird-Party Antivirus:" -ForegroundColor Cyan
-    foreach ($av in $avStatus.ThirdPartyAV) {
-        Write-Host "  $($av.Name) - Enabled: $($av.Enabled), Updated: $($av.DefinitionsUpToDate)" -ForegroundColor Cyan
-    }
-}
+                $issuesHtml = if ($avStatus.Issues.Count -gt 0) {
+                    "<ul>" + ($avStatus.Issues | ForEach-Object { "<li style='color: red;'>$_</li>" }) + "</ul>"
+                }
+                else {
+                    "<p style='color: green;'>No issues found.</p>"
+                }
 
-Write-Host "`nWindows Firewall:" -ForegroundColor Cyan
-Write-Host "  Domain Profile: $($avStatus.Firewall.Domain)" -ForegroundColor $(if ($avStatus.Firewall.Domain) { 'Green' } else { 'Red' })
-Write-Host "  Private Profile: $($avStatus.Firewall.Private)" -ForegroundColor $(if ($avStatus.Firewall.Private) { 'Green' } else { 'Red' })
-Write-Host "  Public Profile: $($avStatus.Firewall.Public)" -ForegroundColor $(if ($avStatus.Firewall.Public) { 'Green' } else { 'Red' })
-
-if ($avStatus.Issues.Count -gt 0) {
-    Write-Host "`n=== Issues Found ===" -ForegroundColor Red
-    $avStatus.Issues | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
-}
-else {
-    Write-Host "`nNo issues found. System is properly protected." -ForegroundColor Green
-}
-#endregion
-
-#region Generate Reports
-if ($OutputFormat -eq 'HTML' -or $OutputFormat -eq 'All') {
-    $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-    $htmlPath = Join-Path $OutputPath "AntivirusStatus_$timestamp.html"
-
-    $statusColorHtml = switch ($avStatus.OverallStatus) {
-        'Protected' { 'green' }
-        'Warning' { 'orange' }
-        'At Risk' { 'red' }
-        default { 'gray' }
-    }
-
-    $issuesHtml = if ($avStatus.Issues.Count -gt 0) {
-        "<ul>" + ($avStatus.Issues | ForEach-Object { "<li style='color: red;'>$_</li>" }) + "</ul>"
-    }
-    else {
-        "<p style='color: green;'>No issues found.</p>"
-    }
-
-    $html = @"
+                $html = @"
 <!DOCTYPE html>
 <html>
 <head>
@@ -294,7 +328,8 @@ if ($OutputFormat -eq 'HTML' -or $OutputFormat -eq 'All') {
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         h1 { color: #333; }
-        .status-box { padding: 15px; border-left: 6px solid $statusColorHtml; background-color: #f9f9f9; margin: 20px 0; }
+        .status-box { padding: 15px; border-left: 6px solid $statusColorHtml;
+            background-color: #f9f9f9; margin: 20px 0; }
         table { border-collapse: collapse; width: 100%; margin-top: 20px; }
         th { background-color: #4CAF50; color: white; padding: 12px; text-align: left; }
         td { border: 1px solid #ddd; padding: 8px; }
@@ -304,26 +339,62 @@ if ($OutputFormat -eq 'HTML' -or $OutputFormat -eq 'All') {
     </style>
 </head>
 <body>
-    <h1>Antivirus & Endpoint Protection Status Report</h1>
+    <h1>Antivirus &amp; Endpoint Protection Status Report</h1>
     <div class="status-box">
         <p><strong>Computer Name:</strong> $($avStatus.ComputerName)</p>
         <p><strong>Scan Time:</strong> $($avStatus.ScanTime)</p>
-        <p><strong>Overall Status:</strong> <span style="color: $statusColorHtml; font-size: 1.2em; font-weight: bold;">$($avStatus.OverallStatus)</span></p>
+        <p><strong>Overall Status:</strong>
+            <span style="color: $statusColorHtml;
+                font-size: 1.2em; font-weight: bold;">$($avStatus.OverallStatus)</span>
+        </p>
     </div>
     <h2>Windows Defender Status</h2>
     <table>
-        <tr><td><strong>Enabled</strong></td><td class="$(if ($avStatus.WindowsDefender.Enabled) {'good'} else {'bad'})">$($avStatus.WindowsDefender.Enabled)</td></tr>
-        <tr><td><strong>Real-Time Protection</strong></td><td class="$(if ($avStatus.WindowsDefender.RealTimeProtectionEnabled) {'good'} else {'bad'})">$($avStatus.WindowsDefender.RealTimeProtectionEnabled)</td></tr>
-        <tr><td><strong>Signature Version</strong></td><td>$($avStatus.WindowsDefender.AntivirusSignatureVersion)</td></tr>
-        <tr><td><strong>Signature Age (days)</strong></td><td class="$(if ($avStatus.WindowsDefender.AntivirusSignatureAge -le 7) {'good'} else {'bad'})">$($avStatus.WindowsDefender.AntivirusSignatureAge)</td></tr>
-        <tr><td><strong>Last Quick Scan</strong></td><td>$($avStatus.WindowsDefender.QuickScanEndTime)</td></tr>
-        <tr><td><strong>Last Full Scan</strong></td><td>$($avStatus.WindowsDefender.FullScanEndTime)</td></tr>
+        <tr>
+            <td><strong>Enabled</strong></td>
+            <td class="$(if ($wd.Enabled) {'good'} else {'bad'})">
+                $($wd.Enabled)
+            </td>
+        </tr>
+        <tr>
+            <td><strong>Real-Time Protection</strong></td>
+            <td class="$(if ($wd.RealTimeProtectionEnabled) {'good'} else {'bad'})">
+                $($wd.RealTimeProtectionEnabled)
+            </td>
+        </tr>
+        <tr>
+            <td><strong>Signature Version</strong></td>
+            <td>$($wd.AntivirusSignatureVersion)</td>
+        </tr>
+        <tr>
+            <td><strong>Signature Age (days)</strong></td>
+            <td class="$(if ($wd.AntivirusSignatureAge -le 7) {'good'} else {'bad'})">
+                $($wd.AntivirusSignatureAge)
+            </td>
+        </tr>
+        <tr>
+            <td><strong>Last Quick Scan</strong></td>
+            <td>$($wd.QuickScanEndTime)</td>
+        </tr>
+        <tr>
+            <td><strong>Last Full Scan</strong></td>
+            <td>$($wd.FullScanEndTime)</td>
+        </tr>
     </table>
     <h2>Windows Firewall Status</h2>
     <table>
-        <tr><td><strong>Domain Profile</strong></td><td class="$(if ($avStatus.Firewall.Domain) {'good'} else {'bad'})">$($avStatus.Firewall.Domain)</td></tr>
-        <tr><td><strong>Private Profile</strong></td><td class="$(if ($avStatus.Firewall.Private) {'good'} else {'bad'})">$($avStatus.Firewall.Private)</td></tr>
-        <tr><td><strong>Public Profile</strong></td><td class="$(if ($avStatus.Firewall.Public) {'good'} else {'bad'})">$($avStatus.Firewall.Public)</td></tr>
+        <tr>
+            <td><strong>Domain Profile</strong></td>
+            <td class="$(if ($fw.Domain) {'good'} else {'bad'})">$($fw.Domain)</td>
+        </tr>
+        <tr>
+            <td><strong>Private Profile</strong></td>
+            <td class="$(if ($fw.Private) {'good'} else {'bad'})">$($fw.Private)</td>
+        </tr>
+        <tr>
+            <td><strong>Public Profile</strong></td>
+            <td class="$(if ($fw.Public) {'good'} else {'bad'})">$($fw.Public)</td>
+        </tr>
     </table>
     <h2>Issues Found</h2>
     $issuesHtml
@@ -331,32 +402,52 @@ if ($OutputFormat -eq 'HTML' -or $OutputFormat -eq 'All') {
 </html>
 "@
 
-    $html | Out-File -FilePath $htmlPath -Encoding UTF8
-    Write-Host "`nHTML report saved to: $htmlPath" -ForegroundColor Green
-}
+                $html | Out-File -FilePath $htmlPath -Encoding UTF8 -ErrorAction Stop
+                Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+            }
+        }
 
-if ($OutputFormat -eq 'CSV' -or $OutputFormat -eq 'All') {
-    $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-    $csvPath = Join-Path $OutputPath "AntivirusStatus_$timestamp.csv"
+        if ($OutputFormat -eq 'CSV' -or $OutputFormat -eq 'All') {
+            if ($PSCmdlet.ShouldProcess($OutputPath, "Write antivirus status CSV report")) {
+                $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+                $csvPath = Join-Path $OutputPath "AntivirusStatus_$timestamp.csv"
 
-    $csvData = [PSCustomObject]@{
-        ComputerName = $avStatus.ComputerName
-        ScanTime = $avStatus.ScanTime
-        OverallStatus = $avStatus.OverallStatus
-        DefenderEnabled = $avStatus.WindowsDefender.Enabled
-        RealTimeProtectionEnabled = $avStatus.WindowsDefender.RealTimeProtectionEnabled
-        SignatureAge = $avStatus.WindowsDefender.AntivirusSignatureAge
-        QuickScanAge = $avStatus.WindowsDefender.QuickScanAge
-        FirewallDomain = $avStatus.Firewall.Domain
-        FirewallPrivate = $avStatus.Firewall.Private
-        FirewallPublic = $avStatus.Firewall.Public
-        IssuesCount = $avStatus.Issues.Count
-        Issues = ($avStatus.Issues -join '; ')
+                $csvData = [PSCustomObject]@{
+                    ComputerName              = $avStatus.ComputerName
+                    ScanTime                  = $avStatus.ScanTime
+                    OverallStatus             = $avStatus.OverallStatus
+                    DefenderEnabled           = $wd.Enabled
+                    RealTimeProtectionEnabled = $wd.RealTimeProtectionEnabled
+                    SignatureAge              = $wd.AntivirusSignatureAge
+                    QuickScanAge              = $wd.QuickScanAge
+                    FirewallDomain            = $fw.Domain
+                    FirewallPrivate           = $fw.Private
+                    FirewallPublic            = $fw.Public
+                    IssuesCount               = $avStatus.Issues.Count
+                    Issues                    = ($avStatus.Issues -join '; ')
+                }
+
+                $csvData | Export-Csv -Path $csvPath -NoTypeInformation -ErrorAction Stop
+                Write-Host "[+] CSV report saved to: $csvPath" -ForegroundColor Green
+            }
+        }
+        #endregion
+
+        # Exit code contract: 0 = no issues, 1 = issues detected
+        if ($avStatus.Issues.Count -gt 0) {
+            Write-Host "[!] Antivirus status check completed with $($avStatus.Issues.Count) issue(s) found."  `
+            -ForegroundColor Yellow
+            return 1
+        }
+
+        Write-Host "[+] Antivirus status check completed. System is properly protected." -ForegroundColor Green
+        return 0
     }
-
-    $csvData | Export-Csv -Path $csvPath -NoTypeInformation
-    Write-Host "CSV report saved to: $csvPath" -ForegroundColor Green
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
-#endregion
 
-return $avStatus
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

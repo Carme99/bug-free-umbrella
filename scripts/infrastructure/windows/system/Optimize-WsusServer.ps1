@@ -1,6 +1,5 @@
-#Requires -Version 5.1
-#Requires -Modules SqlServer, UpdateServices, IISAdministration
-#Requires -RunAsAdministrator
+﻿#Requires -Version 5.1
+
 
 <#
 .SYNOPSIS
@@ -54,11 +53,14 @@
     SQL Server instance for WSUS database. If not specified, auto-detects from WSUS configuration or defaults to WID.
 
 .NOTES
-    Version:        2.0.0
+    File Name:      Optimize-WsusServer.ps1
     Author:         Modernized by Carme99 for 2025
+    Prerequisite:   PowerShell 5.1+
+    Version:        1.0.0
+    Date:           2026-08-23
     Original:       Austin Warren (awarre/Optimize-WsusServer v1.2.1)
                     https://github.com/awarre/Optimize-WsusServer
-    Last Updated:   2025-01-09
+    Last Updated:   2026-08-23
 
     Requirements:
     - Windows Server 2016 or later
@@ -68,18 +70,20 @@
     - Administrator privileges
 
 .EXAMPLE
-    .\Optimize-WsusServer.ps1 -Interactive
+    PS C:\> .\Optimize-WsusServer.ps1 -Interactive
     Launches the interactive configuration wizard.
 
 .EXAMPLE
-    .\Optimize-WsusServer.ps1 -OptimizeServer -OptimizeDatabase
+    PS C:\> .\Optimize-WsusServer.ps1 -OptimizeServer -OptimizeDatabase
     Runs server and database optimization using saved configuration.
 
 .EXAMPLE
-    .\Optimize-WsusServer.ps1 -DeepClean -ConfigFile "C:\Custom\config.json"
+    PS C:\> .\Optimize-WsusServer.ps1 -DeepClean -ConfigFile "C:\Custom\config.json"
     Runs deep clean using a custom configuration file.
 #>
 
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+    Justification = 'Console maintenance tool: prefixed, color-coded host output is the intended user interface.')]
 [CmdletBinding(SupportsShouldProcess = $true)]
 param (
     [Parameter()]
@@ -125,6 +129,8 @@ param (
     [Parameter()]
     [string]$SqlServerInstance
 )
+
+$ErrorActionPreference = 'Stop'
 
 #region Configuration
 
@@ -257,7 +263,7 @@ $script:DefaultConfig = @{
 
 #region Logging Functions
 
-function Write-Log {
+function Write-LogEntry {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -286,10 +292,10 @@ function Write-Log {
     # Write to console unless suppressed
     if (-not $NoConsole) {
         switch ($Level) {
-            'Info' { Write-Host $logMessage -ForegroundColor Cyan }
-            'Warning' { Write-Warning $Message }
-            'Error' { Write-Host $logMessage -ForegroundColor Red }
-            'Success' { Write-Host $logMessage -ForegroundColor Green }
+            'Info' { Write-Host "[$timestamp] [*] $Message" -ForegroundColor Cyan }
+            'Warning' { Write-Host "[$timestamp] [!] $Message" -ForegroundColor Yellow }
+            'Error' { Write-Host "[$timestamp] [-] $Message" -ForegroundColor Red }
+            'Success' { Write-Host "[$timestamp] [+] $Message" -ForegroundColor Green }
         }
     }
 }
@@ -366,7 +372,7 @@ function Test-SafePath {
         return $resolved
     }
     catch {
-        Write-Log "Path validation failed for '$Path': $_" -Level Error
+        Write-LogEntry "Path validation failed for '$Path': $_" -Level Error
         throw
     }
 }
@@ -422,7 +428,7 @@ function Get-SafeXmlDocument {
         return $xmlDoc
     }
     catch {
-        Write-Log "Failed to load XML document from '$Path': $_" -Level Error
+        Write-LogEntry "Failed to load XML document from '$Path': $_" -Level Error
         throw
     }
 }
@@ -436,21 +442,22 @@ function Get-WsusSqlInstance {
         $wsusSetupKey = "HKLM:\SOFTWARE\Microsoft\Update Services\Server\Setup"
 
         if (Test-Path $wsusSetupKey) {
-            $sqlInstance = (Get-ItemProperty -Path $wsusSetupKey -Name "SqlServerName" -ErrorAction SilentlyContinue).SqlServerName
+            $sqlInstance = (Get-ItemProperty -Path $wsusSetupKey -Name "SqlServerName" `
+                -ErrorAction SilentlyContinue).SqlServerName
 
             if (-not [string]::IsNullOrEmpty($sqlInstance)) {
-                Write-Log "Detected SQL Server instance from WSUS configuration: $sqlInstance" -Level Info
+                Write-LogEntry "Detected SQL Server instance from WSUS configuration: $sqlInstance" -Level Info
                 return $sqlInstance
             }
         }
 
         # Default to Windows Internal Database (WID)
         $widInstance = "\\.\pipe\MICROSOFT##WID\tsql\query"
-        Write-Log "Using default Windows Internal Database (WID): $widInstance" -Level Info
+        Write-LogEntry "Using default Windows Internal Database (WID): $widInstance" -Level Info
         return $widInstance
     }
     catch {
-        Write-Log "Failed to detect SQL instance, using WID default: $_" -Level Warning
+        Write-LogEntry "Failed to detect SQL instance, using WID default: $_" -Level Warning
         return "\\.\pipe\MICROSOFT##WID\tsql\query"
     }
 }
@@ -468,18 +475,18 @@ function Get-WsusConfig {
     if (Test-Path -Path $Path) {
         try {
             $config = Get-Content -Path $Path -Raw | ConvertFrom-Json
-            Write-Log "Configuration loaded from: $Path" -Level Info
+            Write-LogEntry "Configuration loaded from: $Path" -Level Info
 
             # Convert PSCustomObject to hashtable recursively
             return ConvertTo-Hashtable $config
         }
         catch {
-            Write-Log "Failed to load configuration from $Path. Using defaults. Error: $_" -Level Warning
+            Write-LogEntry "Failed to load configuration from $Path. Using defaults. Error: $_" -Level Warning
             return Copy-HashtableDeep $script:DefaultConfig
         }
     }
     else {
-        Write-Log "Configuration file not found. Using defaults." -Level Info
+        Write-LogEntry "Configuration file not found. Using defaults." -Level Info
         return Copy-HashtableDeep $script:DefaultConfig
     }
 }
@@ -501,11 +508,11 @@ function Save-WsusConfig {
 
         $Config.LastUpdated = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
         $Config | ConvertTo-Json -Depth 10 | Set-Content -Path $Path -Force
-        Write-Log "Configuration saved to: $Path" -Level Success
+        Write-LogEntry "Configuration saved to: $Path" -Level Success
         return $true
     }
     catch {
-        Write-Log "Failed to save configuration: $_" -Level Error
+        Write-LogEntry "Failed to save configuration: $_" -Level Error
         return $false
     }
 }
@@ -614,17 +621,18 @@ function Show-Menu {
 
     for ($i = 0; $i -lt $Options.Count; $i++) {
         $prefix = if ($i -eq $DefaultSelection) { ">" } else { " " }
-        Write-Host "$prefix [$($i + 1)] $($Options[$i])" -ForegroundColor $(if ($i -eq $DefaultSelection) { "Green" } else { "White" })
+        $optionColor = if ($i -eq $DefaultSelection) { "Green" } else { "White" }
+        Write-Host "$prefix [$($i + 1)] $($Options[$i])" -ForegroundColor $optionColor
     }
 
     do {
-        $input = Read-Host "`nSelect option (1-$($Options.Count))"
-        if ([string]::IsNullOrWhiteSpace($input)) {
+        $menuInput = Read-Host "`nSelect option (1-$($Options.Count))"
+        if ([string]::IsNullOrWhiteSpace($menuInput)) {
             return $DefaultSelection
         }
-    } while (-not ($input -match '^\d+$' -and [int]$input -ge 1 -and [int]$input -le $Options.Count))
+    } while (-not ($menuInput -match '^\d+$' -and [int]$menuInput -ge 1 -and [int]$menuInput -le $Options.Count))
 
-    return ([int]$input - 1)
+    return ([int]$menuInput - 1)
 }
 
 function Confirm-Choice {
@@ -633,7 +641,6 @@ function Confirm-Choice {
         [bool]$DefaultYes = $true
     )
 
-    $defaultChar = if ($DefaultYes) { "Y" } else { "N" }
     $prompt = if ($DefaultYes) { "[Y/n]" } else { "[y/N]" }
 
     $response = Read-Host "$Message $prompt"
@@ -651,7 +658,7 @@ function Start-InteractiveWizard {
 
     Show-Banner
 
-    Write-Host "This wizard will help you configure WSUS optimization and create scheduled tasks.`n" -ForegroundColor Cyan
+    Write-Host "This wizard configures WSUS optimization and creates scheduled tasks.`n" -ForegroundColor Cyan
 
     # Load existing config or create new
     $config = Get-WsusConfig
@@ -669,7 +676,8 @@ function Start-InteractiveWizard {
 
         if (Confirm-Choice -Message "`nModify the list of obsolete products?" -DefaultYes $false) {
             # Allow user to add custom products
-            Write-Host "Enter additional products to remove (one per line, blank line to finish):" -ForegroundColor Yellow
+            Write-Host "Enter additional products to remove (one per line, blank line to finish):" `
+                -ForegroundColor Yellow
             $customProducts = @()
             do {
                 $product = Read-Host "Product"
@@ -686,11 +694,13 @@ function Start-InteractiveWizard {
             } while (-not [string]::IsNullOrWhiteSpace($product))
 
             if ($customProducts.Count -gt 0) {
-                $config.DeepClean.UnneededProductTitles = $config.DeepClean.UnneededProductTitles + $customProducts | Select-Object -Unique
+                $config.DeepClean.UnneededProductTitles =
+                    ($config.DeepClean.UnneededProductTitles + $customProducts | Select-Object -Unique)
             }
         }
 
-        $config.DeepClean.RemoveDrivers = Confirm-Choice -Message "Remove all drivers during deep clean?" -DefaultYes $true
+        $config.DeepClean.RemoveDrivers =
+            Confirm-Choice -Message "Remove all drivers during deep clean?" -DefaultYes $true
         $config.DeepClean.DeclineSuperseded = Confirm-Choice -Message "Decline superseded updates?" -DefaultYes $true
     }
 
@@ -705,7 +715,8 @@ function Start-InteractiveWizard {
     Write-Host "  - Database bloat" -ForegroundColor DarkGray
     Write-Host "`nMost environments manage drivers through other methods (SCCM, WDS, etc.)" -ForegroundColor Yellow
 
-    $config.Features.DisableDriverSync = Confirm-Choice -Message "`nDisable driver synchronization? (Recommended)" -DefaultYes $true
+    $config.Features.DisableDriverSync =
+        Confirm-Choice -Message "`nDisable driver synchronization? (Recommended)" -DefaultYes $true
 
     # Section 3: Scheduled Tasks
     Write-Host "`n" + ("=" * 70) -ForegroundColor Magenta
@@ -756,7 +767,8 @@ function Start-InteractiveWizard {
 
     # Monthly task
     Write-Host "`n--- MONTHLY DEEP CLEAN ---" -ForegroundColor Cyan
-    $config.ScheduledTasks.Monthly.Enabled = Confirm-Choice -Message "Create monthly deep clean task?" -DefaultYes $false
+    $config.ScheduledTasks.Monthly.Enabled =
+        Confirm-Choice -Message "Create monthly deep clean task?" -DefaultYes $false
 
     if ($config.ScheduledTasks.Monthly.Enabled) {
         do {
@@ -783,7 +795,8 @@ function Start-InteractiveWizard {
     Write-Host "SECTION 4: ADVANCED OPTIONS" -ForegroundColor Magenta
     Write-Host ("=" * 70) -ForegroundColor Magenta
 
-    $config.Features.CreateCustomIndexes = Confirm-Choice -Message "Create custom database indexes? (Improves performance)" -DefaultYes $true
+    $config.Features.CreateCustomIndexes =
+        Confirm-Choice -Message "Create custom database indexes? (Improves performance)" -DefaultYes $true
     $config.Logging.VerboseLogging = Confirm-Choice -Message "Enable verbose logging?" -DefaultYes $false
 
     do {
@@ -813,9 +826,19 @@ function Start-InteractiveWizard {
     Write-Host "  Custom Indexes: $($config.Features.CreateCustomIndexes)" -ForegroundColor White
 
     Write-Host "`nScheduled Tasks:" -ForegroundColor Yellow
-    Write-Host "  Daily Task: $($config.ScheduledTasks.Daily.Enabled) $(if ($config.ScheduledTasks.Daily.Enabled) { "at $($config.ScheduledTasks.Daily.Time)" })" -ForegroundColor White
-    Write-Host "  Weekly Task: $($config.ScheduledTasks.Weekly.Enabled) $(if ($config.ScheduledTasks.Weekly.Enabled) { "on $($config.ScheduledTasks.Weekly.DayOfWeek) at $($config.ScheduledTasks.Weekly.Time)" })" -ForegroundColor White
-    Write-Host "  Monthly Task: $($config.ScheduledTasks.Monthly.Enabled) $(if ($config.ScheduledTasks.Monthly.Enabled) { "on day $($config.ScheduledTasks.Monthly.Day) at $($config.ScheduledTasks.Monthly.Time)" })" -ForegroundColor White
+    $dailyDetail = ""
+    if ($config.ScheduledTasks.Daily.Enabled) { $dailyDetail = "at $($config.ScheduledTasks.Daily.Time)" }
+    $weeklyDetail = ""
+    if ($config.ScheduledTasks.Weekly.Enabled) {
+        $weeklyDetail = "on $($config.ScheduledTasks.Weekly.DayOfWeek) at $($config.ScheduledTasks.Weekly.Time)"
+    }
+    $monthlyDetail = ""
+    if ($config.ScheduledTasks.Monthly.Enabled) {
+        $monthlyDetail = "on day $($config.ScheduledTasks.Monthly.Day) at $($config.ScheduledTasks.Monthly.Time)"
+    }
+    Write-Host "  Daily Task: $($config.ScheduledTasks.Daily.Enabled) $dailyDetail" -ForegroundColor White
+    Write-Host "  Weekly Task: $($config.ScheduledTasks.Weekly.Enabled) $weeklyDetail" -ForegroundColor White
+    Write-Host "  Monthly Task: $($config.ScheduledTasks.Monthly.Enabled) $monthlyDetail" -ForegroundColor White
 
     Write-Host "`nLogging:" -ForegroundColor Yellow
     Write-Host "  Verbose: $($config.Logging.VerboseLogging)" -ForegroundColor White
@@ -829,7 +852,7 @@ function Start-InteractiveWizard {
 
             # Offer to create tasks now
             if (Confirm-Choice -Message "Create scheduled tasks now?" -DefaultYes $true) {
-                New-WsusScheduledTasks -Config $config
+                New-WsusScheduledTask -Config $config
             }
 
             # Offer to run initial optimization
@@ -849,7 +872,7 @@ function Start-InteractiveWizard {
                 }
 
                 if (Confirm-Choice -Message "Run server optimization?" -DefaultYes $true) {
-                    Optimize-WsusUpdates -Config $config
+                    Optimize-WsusUpdate -Config $config
                 }
 
                 if (Confirm-Choice -Message "Check IIS configuration?" -DefaultYes $true) {
@@ -877,11 +900,11 @@ function Get-WsusServerInstance {
     try {
         [reflection.assembly]::LoadWithPartialName("Microsoft.UpdateServices.Administration") | Out-Null
         $wsusServer = [Microsoft.UpdateServices.Administration.AdminProxy]::GetUpdateServer()
-        Write-Log "Connected to WSUS server: $($wsusServer.Name)" -Level Info
+        Write-LogEntry "Connected to WSUS server: $($wsusServer.Name)" -Level Info
         return $wsusServer
     }
     catch {
-        Write-Log "Failed to connect to WSUS server: $_" -Level Error
+        Write-LogEntry "Failed to connect to WSUS server: $_" -Level Error
         throw
     }
 }
@@ -923,7 +946,7 @@ function Get-WsusIISConfig {
         return $config
     }
     catch {
-        Write-Log "Failed to retrieve IIS configuration: $_" -Level Error
+        Write-LogEntry "Failed to retrieve IIS configuration: $_" -Level Error
         return $null
     }
 }
@@ -934,12 +957,12 @@ function Test-WsusIISConfig {
         [hashtable]$Config
     )
 
-    Write-Log "Checking WSUS IIS configuration..." -Level Info
+    Write-LogEntry "Checking WSUS IIS configuration..." -Level Info
 
     $currentConfig = Get-WsusIISConfig
 
     if ($null -eq $currentConfig) {
-        Write-Log "Unable to retrieve current IIS configuration" -Level Error
+        Write-LogEntry "Unable to retrieve current IIS configuration" -Level Error
         return
     }
 
@@ -962,11 +985,11 @@ function Test-WsusIISConfig {
     }
 
     if ($issues.Count -eq 0) {
-        Write-Log "IIS configuration is optimal" -Level Success
+        Write-LogEntry "IIS configuration is optimal" -Level Success
     }
     else {
-        Write-Log "Found $($issues.Count) IIS configuration issues:" -Level Warning
-        $issues | Format-Table -AutoSize | Out-String | ForEach-Object { Write-Log $_ -Level Warning }
+        Write-LogEntry "Found $($issues.Count) IIS configuration issues:" -Level Warning
+        $issues | Format-Table -AutoSize | Out-String | ForEach-Object { Write-LogEntry $_ -Level Warning }
 
         if ($PSCmdlet.ShouldProcess("WSUS IIS Configuration", "Apply recommended settings")) {
             Set-WsusIISConfig -RecommendedSettings $recommendedSettings
@@ -985,7 +1008,7 @@ function Set-WsusIISConfig {
     }
 
     try {
-        Write-Log "Applying recommended IIS settings..." -Level Info
+        Write-LogEntry "Applying recommended IIS settings..." -Level Info
 
         # App pool settings
         $serverManager = Get-IISServerManager
@@ -1004,7 +1027,7 @@ function Set-WsusIISConfig {
             # Backup web.config
             $backupPath = "$webConfigPath.backup-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
             Copy-Item -Path $webConfigPath -Destination $backupPath -Force
-            Write-Log "Web.config backed up to: $backupPath" -Level Info
+            Write-LogEntry "Web.config backed up to: $backupPath" -Level Info
 
             # Load XML safely to prevent XXE attacks
             $webConfig = Get-SafeXmlDocument -Path $webConfigPath
@@ -1015,21 +1038,23 @@ function Set-WsusIISConfig {
                 $webConfig.configuration.'system.web'.AppendChild($httpRuntime) | Out-Null
             }
 
-            $webConfig.configuration.'system.web'.httpRuntime.SetAttribute("maxRequestLength", $RecommendedSettings.ClientMaxRequestLength)
-            $webConfig.configuration.'system.web'.httpRuntime.SetAttribute("executionTimeout", $RecommendedSettings.ClientExecutionTimeout)
+            $webConfig.configuration.'system.web'.httpRuntime.SetAttribute("maxRequestLength", `
+                $RecommendedSettings.ClientMaxRequestLength)
+            $webConfig.configuration.'system.web'.httpRuntime.SetAttribute("executionTimeout", `
+                $RecommendedSettings.ClientExecutionTimeout)
 
             $webConfig.Save($webConfigPath)
-            Write-Log "Web.config updated successfully" -Level Success
+            Write-LogEntry "Web.config updated successfully" -Level Success
         }
 
         # Restart app pool (IISAdministration equivalent of Restart-WebAppPool)
         (Get-IISAppPool -Name "WsusPool").Recycle()
-        Write-Log "WSUS App Pool restarted" -Level Success
+        Write-LogEntry "WSUS App Pool restarted" -Level Success
 
-        Write-Log "IIS configuration updated successfully" -Level Success
+        Write-LogEntry "IIS configuration updated successfully" -Level Success
     }
     catch {
-        Write-Log "Failed to update IIS configuration: $_" -Level Error
+        Write-LogEntry "Failed to update IIS configuration: $_" -Level Error
         throw
     }
 }
@@ -1149,12 +1174,14 @@ FETCH NEXT FROM IndexCursor INTO @schemaname, @tablename, @indexname, @fragmenta
 
 WHILE @@FETCH_STATUS = 0
 BEGIN
-    SET @msg = 'Rebuilding index [' + @indexname + '] on [' + @schemaname + '].[' + @tablename + '] (Fragmentation: ' + CAST(@fragmentation AS varchar(10)) + '%)'
+    SET @msg = 'Rebuilding index [' + @indexname + '] on [' + @schemaname + '].[' + @tablename + ']'
+    SET @msg = @msg + ' (Fragmentation: ' + CAST(@fragmentation AS varchar(10)) + '%)'
     PRINT @msg
 
     DECLARE @sql nvarchar(1000)
     -- Use QUOTENAME() to prevent SQL injection
-    SET @sql = 'ALTER INDEX ' + QUOTENAME(@indexname) + ' ON ' + QUOTENAME(@schemaname) + '.' + QUOTENAME(@tablename) + ' REBUILD WITH (ONLINE = OFF)'
+    SET @sql = 'ALTER INDEX ' + QUOTENAME(@indexname) + ' ON ' + QUOTENAME(@schemaname)
+    SET @sql = @sql + '.' + QUOTENAME(@tablename) + ' REBUILD WITH (ONLINE = OFF)'
 
     BEGIN TRY
         EXEC sp_executesql @sql
@@ -1210,18 +1237,18 @@ function Initialize-WsusDatabase {
             $SqlInstance = Get-WsusSqlInstance
         }
 
-        Write-Log "Creating custom database indexes on SQL instance: $SqlInstance" -Level Info
+        Write-LogEntry "Creating custom database indexes on SQL instance: $SqlInstance" -Level Info
 
         $result = Invoke-Sqlcmd -Query $script:CreateCustomIndexesSQL -ServerInstance $SqlInstance -Verbose
 
         if ($result) {
-            $result | ForEach-Object { Write-Log $_ -Level Info }
+            $result | ForEach-Object { Write-LogEntry $_ -Level Info }
         }
 
-        Write-Log "Custom indexes created successfully" -Level Success
+        Write-LogEntry "Custom indexes created successfully" -Level Success
     }
     catch {
-        Write-Log "Failed to create custom indexes: $_" -Level Error
+        Write-LogEntry "Failed to create custom indexes: $_" -Level Error
         throw
     }
 }
@@ -1251,21 +1278,22 @@ function Optimize-WsusDatabase {
             }
         }
 
-        Write-Log "Starting WSUS database optimization on SQL instance: $SqlInstance" -Level Info
+        Write-LogEntry "Starting WSUS database optimization on SQL instance: $SqlInstance" -Level Info
         Write-Progress-Custom -Activity "WSUS Database Optimization" -Status "Running optimization scripts..."
 
-        $result = Invoke-Sqlcmd -Query $script:OptimizeDatabaseSQL -ServerInstance $SqlInstance -QueryTimeout 7200 -Verbose
+        $result = Invoke-Sqlcmd -Query $script:OptimizeDatabaseSQL -ServerInstance $SqlInstance `
+            -QueryTimeout 7200 -Verbose
 
         if ($result) {
-            $result | ForEach-Object { Write-Log $_ -Level Info }
+            $result | ForEach-Object { Write-LogEntry $_ -Level Info }
         }
 
         Write-Progress-Custom -Activity "WSUS Database Optimization" -Completed
-        Write-Log "Database optimization completed successfully" -Level Success
+        Write-LogEntry "Database optimization completed successfully" -Level Success
     }
     catch {
         Write-Progress-Custom -Activity "WSUS Database Optimization" -Completed
-        Write-Log "Database optimization failed: $_" -Level Error
+        Write-LogEntry "Database optimization failed: $_" -Level Error
         throw
     }
 }
@@ -1274,8 +1302,10 @@ function Optimize-WsusDatabase {
 
 #region Update Cleanup Functions
 
-function Optimize-WsusUpdates {
+function Optimize-WsusUpdate {
     [CmdletBinding(SupportsShouldProcess = $true)]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'Config',
+        Justification = 'Kept for call-site compatibility with the other optimization functions.')]
     param(
         [hashtable]$Config
     )
@@ -1285,7 +1315,7 @@ function Optimize-WsusUpdates {
     }
 
     try {
-        Write-Log "Starting WSUS server cleanup..." -Level Info
+        Write-LogEntry "Starting WSUS server cleanup..." -Level Info
 
         $wsusServer = Get-WsusServerInstance
 
@@ -1306,8 +1336,9 @@ function Optimize-WsusUpdates {
             $currentTask++
             $percentComplete = [int](($currentTask / $totalTasks) * 100)
 
-            Write-Progress-Custom -Activity "WSUS Server Cleanup" -Status "Processing: $($task.Name)" -PercentComplete $percentComplete
-            Write-Log "Cleaning up: $($task.Name)..." -Level Info
+            Write-Progress-Custom -Activity "WSUS Server Cleanup" -Status "Processing: $($task.Name)" `
+                -PercentComplete $percentComplete
+            Write-LogEntry "Cleaning up: $($task.Name)..." -Level Info
 
             try {
                 $params = @{
@@ -1316,19 +1347,19 @@ function Optimize-WsusUpdates {
                 }
 
                 Invoke-WsusServerCleanup @params | Out-Null
-                Write-Log "  Completed: $($task.Name)" -Level Success
+                Write-LogEntry "  Completed: $($task.Name)" -Level Success
             }
             catch {
-                Write-Log "  Failed: $($task.Name) - $_" -Level Warning
+                Write-LogEntry "  Failed: $($task.Name) - $_" -Level Warning
             }
         }
 
         Write-Progress-Custom -Activity "WSUS Server Cleanup" -Completed
-        Write-Log "WSUS server cleanup completed" -Level Success
+        Write-LogEntry "WSUS server cleanup completed" -Level Success
     }
     catch {
         Write-Progress-Custom -Activity "WSUS Server Cleanup" -Completed
-        Write-Log "WSUS server cleanup failed: $_" -Level Error
+        Write-LogEntry "WSUS server cleanup failed: $_" -Level Error
         throw
     }
 }
@@ -1340,7 +1371,7 @@ function Invoke-DeepClean {
     )
 
     if (-not $Config.DeepClean.Enabled) {
-        Write-Log "Deep clean is disabled in configuration" -Level Warning
+        Write-LogEntry "Deep clean is disabled in configuration" -Level Warning
         return
     }
 
@@ -1349,39 +1380,41 @@ function Invoke-DeepClean {
     }
 
     try {
-        Write-Log "Starting WSUS deep clean..." -Level Info
+        Write-LogEntry "Starting WSUS deep clean..." -Level Info
 
         $wsusServer = Get-WsusServerInstance
         $totalDeclined = 0
 
         # Decline updates by product title
         if ($Config.DeepClean.UnneededProductTitles.Count -gt 0) {
-            Write-Log "Removing updates for obsolete products..." -Level Info
-            $totalDeclined += Remove-UpdatesByProduct -WsusServer $wsusServer -ProductTitles $Config.DeepClean.UnneededProductTitles
+            Write-LogEntry "Removing updates for obsolete products..." -Level Info
+            $totalDeclined += Remove-UpdatesByProduct -WsusServer $wsusServer `
+                -ProductTitles $Config.DeepClean.UnneededProductTitles
         }
 
         # Decline updates by title
         if ($Config.DeepClean.UnneededUpdateTitles.Count -gt 0) {
-            Write-Log "Removing updates with obsolete titles..." -Level Info
-            $totalDeclined += Remove-UpdatesByTitle -WsusServer $wsusServer -UpdateTitles $Config.DeepClean.UnneededUpdateTitles
+            Write-LogEntry "Removing updates with obsolete titles..." -Level Info
+            $totalDeclined += Remove-UpdatesByTitle -WsusServer $wsusServer `
+                -UpdateTitles $Config.DeepClean.UnneededUpdateTitles
         }
 
         # Remove drivers
         if ($Config.DeepClean.RemoveDrivers) {
-            Write-Log "Removing driver updates..." -Level Info
-            $totalDeclined += Remove-DriverUpdates -WsusServer $wsusServer
+            Write-LogEntry "Removing driver updates..." -Level Info
+            $totalDeclined += Remove-DriverUpdate -WsusServer $wsusServer
         }
 
         # Decline superseded updates
         if ($Config.DeepClean.DeclineSuperseded) {
-            Write-Log "Declining superseded updates..." -Level Info
-            $totalDeclined += Invoke-DeclineSupersededUpdates -WsusServer $wsusServer
+            Write-LogEntry "Declining superseded updates..." -Level Info
+            $totalDeclined += Invoke-DeclineSupersededUpdate -WsusServer $wsusServer
         }
 
-        Write-Log "Deep clean completed. Total updates declined: $totalDeclined" -Level Success
+        Write-LogEntry "Deep clean completed. Total updates declined: $totalDeclined" -Level Success
     }
     catch {
-        Write-Log "Deep clean failed: $_" -Level Error
+        Write-LogEntry "Deep clean failed: $_" -Level Error
         throw
     }
 }
@@ -1404,13 +1437,17 @@ function Remove-UpdatesByProduct {
         $currentProduct++
         $percentComplete = [int](($currentProduct / $totalProducts) * 100)
 
-        Write-Progress-Custom -Activity "Removing Product Updates" -Status "Processing: $productTitle" -PercentComplete $percentComplete
+        Write-Progress-Custom -Activity "Removing Product Updates" -Status "Processing: $productTitle" `
+            -PercentComplete $percentComplete
 
         try {
             $scope = New-Object Microsoft.UpdateServices.Administration.UpdateScope
             # Avoid ApprovedStates.Any when enumerating (MS Learn performance guidance);
             # cover every non-declined state - declined updates are skipped below anyway.
-            $scope.ApprovedStates = [Microsoft.UpdateServices.Administration.ApprovedStates]::LatestRevisionApproved -bor [Microsoft.UpdateServices.Administration.ApprovedStates]::NotApproved -bor [Microsoft.UpdateServices.Administration.ApprovedStates]::HasStaleUpdateApprovals
+            $approvedStates = [Microsoft.UpdateServices.Administration.ApprovedStates]::LatestRevisionApproved -bor
+                [Microsoft.UpdateServices.Administration.ApprovedStates]::NotApproved -bor
+                [Microsoft.UpdateServices.Administration.ApprovedStates]::HasStaleUpdateApprovals
+            $scope.ApprovedStates = $approvedStates
 
             # Query in per-year arrival-date batches so GetUpdates never loads the
             # entire catalog into memory at once (OOM protection on large servers).
@@ -1435,10 +1472,10 @@ function Remove-UpdatesByProduct {
                 $productUpdateCount += $updates.Count
             }
 
-            Write-Log "  Declined $productUpdateCount updates for: $productTitle" -Level Info
+            Write-LogEntry "  Declined $productUpdateCount updates for: $productTitle" -Level Info
         }
         catch {
-            Write-Log "  Error processing $productTitle : $_" -Level Warning
+            Write-LogEntry "  Error processing $productTitle : $_" -Level Warning
         }
     }
 
@@ -1464,7 +1501,10 @@ function Remove-UpdatesByTitle {
         $scope = New-Object Microsoft.UpdateServices.Administration.UpdateScope
         # Avoid ApprovedStates.Any when enumerating (MS Learn performance guidance);
         # cover every non-declined state - declined updates are skipped below anyway.
-        $scope.ApprovedStates = [Microsoft.UpdateServices.Administration.ApprovedStates]::LatestRevisionApproved -bor [Microsoft.UpdateServices.Administration.ApprovedStates]::NotApproved -bor [Microsoft.UpdateServices.Administration.ApprovedStates]::HasStaleUpdateApprovals
+        $approvedStates = [Microsoft.UpdateServices.Administration.ApprovedStates]::LatestRevisionApproved -bor
+            [Microsoft.UpdateServices.Administration.ApprovedStates]::NotApproved -bor
+            [Microsoft.UpdateServices.Administration.ApprovedStates]::HasStaleUpdateApprovals
+        $scope.ApprovedStates = $approvedStates
 
         # Query in per-year arrival-date batches so GetUpdates never loads the
         # entire catalog into memory at once (OOM protection on large servers).
@@ -1483,7 +1523,8 @@ function Remove-UpdatesByTitle {
 
                 if ($currentUpdate % 100 -eq 0) {
                     $percentComplete = [int](($currentUpdate / $totalUpdates) * 100)
-                    Write-Progress-Custom -Activity "Removing Updates by Title" -Status "Checking update $currentUpdate of $totalUpdates" -PercentComplete $percentComplete
+                    Write-Progress-Custom -Activity "Removing Updates by Title" `
+                        -Status "Checking update $currentUpdate of $totalUpdates" -PercentComplete $percentComplete
                 }
 
                 foreach ($titlePattern in $UpdateTitles) {
@@ -1491,7 +1532,7 @@ function Remove-UpdatesByTitle {
                         if ($PSCmdlet.ShouldProcess($update.Title, 'Decline update')) {
                             $update.Decline()
                             $declinedCount++
-                            Write-Log "  Declined: $($update.Title)" -Level Info -NoConsole
+                            Write-LogEntry "  Declined: $($update.Title)" -Level Info -NoConsole
                         }
                         break
                     }
@@ -1500,7 +1541,7 @@ function Remove-UpdatesByTitle {
         }
     }
     catch {
-        Write-Log "Error removing updates by title: $_" -Level Error
+        Write-LogEntry "Error removing updates by title: $_" -Level Error
     }
     finally {
         Write-Progress-Custom -Activity "Removing Updates by Title" -Completed
@@ -1509,7 +1550,7 @@ function Remove-UpdatesByTitle {
     return $declinedCount
 }
 
-function Remove-DriverUpdates {
+function Remove-DriverUpdate {
     [CmdletBinding(SupportsShouldProcess)]
     param(
         [Parameter(Mandatory = $true)]
@@ -1524,7 +1565,10 @@ function Remove-DriverUpdates {
         $scope = New-Object Microsoft.UpdateServices.Administration.UpdateScope
         # Avoid ApprovedStates.Any when enumerating (MS Learn performance guidance);
         # cover every non-declined state - declined updates are skipped below anyway.
-        $scope.ApprovedStates = [Microsoft.UpdateServices.Administration.ApprovedStates]::LatestRevisionApproved -bor [Microsoft.UpdateServices.Administration.ApprovedStates]::NotApproved -bor [Microsoft.UpdateServices.Administration.ApprovedStates]::HasStaleUpdateApprovals
+        $approvedStates = [Microsoft.UpdateServices.Administration.ApprovedStates]::LatestRevisionApproved -bor
+            [Microsoft.UpdateServices.Administration.ApprovedStates]::NotApproved -bor
+            [Microsoft.UpdateServices.Administration.ApprovedStates]::HasStaleUpdateApprovals
+        $scope.ApprovedStates = $approvedStates
         $scope.Classifications = $WsusServer.GetUpdateClassifications() | Where-Object { $_.Title -eq "Drivers" }
 
         # Query in per-year arrival-date batches so GetUpdates never loads the
@@ -1544,7 +1588,8 @@ function Remove-DriverUpdates {
 
                 if ($currentUpdate % 50 -eq 0) {
                     $percentComplete = [int](($currentUpdate / $totalUpdates) * 100)
-                    Write-Progress-Custom -Activity "Removing Driver Updates" -Status "Processing driver $currentUpdate of $totalUpdates" -PercentComplete $percentComplete
+                    Write-Progress-Custom -Activity "Removing Driver Updates" `
+                        -Status "Processing driver $currentUpdate of $totalUpdates" -PercentComplete $percentComplete
                 }
 
                 if (-not $update.IsDeclined) {
@@ -1557,18 +1602,18 @@ function Remove-DriverUpdates {
         }
 
         Write-Progress-Custom -Activity "Removing Driver Updates" -Completed
-        Write-Log "Found $totalUpdates driver updates" -Level Info
-        Write-Log "Declined $declinedCount driver updates" -Level Info
+        Write-LogEntry "Found $totalUpdates driver updates" -Level Info
+        Write-LogEntry "Declined $declinedCount driver updates" -Level Info
     }
     catch {
         Write-Progress-Custom -Activity "Removing Driver Updates" -Completed
-        Write-Log "Error removing driver updates: $_" -Level Error
+        Write-LogEntry "Error removing driver updates: $_" -Level Error
     }
 
     return $declinedCount
 }
 
-function Invoke-DeclineSupersededUpdates {
+function Invoke-DeclineSupersededUpdate {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]
@@ -1593,7 +1638,8 @@ function Invoke-DeclineSupersededUpdates {
 
             if ($currentUpdate % 100 -eq 0) {
                 $percentComplete = [int](($currentUpdate / $totalUpdates) * 100)
-                Write-Progress-Custom -Activity "Declining Superseded Updates" -Status "Checking update $currentUpdate of $totalUpdates" -PercentComplete $percentComplete
+                Write-Progress-Custom -Activity "Declining Superseded Updates" `
+                    -Status "Checking update $currentUpdate of $totalUpdates" -PercentComplete $percentComplete
             }
 
             $supersedingUpdates = $update.GetRelatedUpdates("UpdatesThatSupersedeThisUpdate")
@@ -1616,11 +1662,11 @@ function Invoke-DeclineSupersededUpdates {
         }
 
         Write-Progress-Custom -Activity "Declining Superseded Updates" -Completed
-        Write-Log "Declined $declinedCount superseded updates" -Level Info
+        Write-LogEntry "Declined $declinedCount superseded updates" -Level Info
     }
     catch {
         Write-Progress-Custom -Activity "Declining Superseded Updates" -Completed
-        Write-Log "Error declining superseded updates: $_" -Level Error
+        Write-LogEntry "Error declining superseded updates: $_" -Level Error
     }
 
     return $declinedCount
@@ -1635,17 +1681,18 @@ function Disable-WsusDriverSync {
     }
 
     try {
-        Write-Log "Disabling WSUS driver synchronization..." -Level Info
+        Write-LogEntry "Disabling WSUS driver synchronization..." -Level Info
 
-        Get-WsusClassification | Where-Object { $_.Classification.Title -in @("Drivers", "Driver Sets") } | ForEach-Object {
+        Get-WsusClassification | Where-Object { $_.Classification.Title -in @("Drivers", "Driver Sets") } |
+            ForEach-Object {
             Set-WsusClassification -Classification $_ -Disable
-            Write-Log "  Disabled: $($_.Classification.Title)" -Level Info
+            Write-LogEntry "  Disabled: $($_.Classification.Title)" -Level Info
         }
 
-        Write-Log "Driver synchronization disabled successfully" -Level Success
+        Write-LogEntry "Driver synchronization disabled successfully" -Level Success
     }
     catch {
-        Write-Log "Failed to disable driver synchronization: $_" -Level Error
+        Write-LogEntry "Failed to disable driver synchronization: $_" -Level Error
         throw
     }
 }
@@ -1654,7 +1701,7 @@ function Disable-WsusDriverSync {
 
 #region Scheduled Task Functions
 
-function New-WsusScheduledTasks {
+function New-WsusScheduledTask {
     [CmdletBinding(SupportsShouldProcess = $true)]
     param(
         [Parameter(Mandatory = $true)]
@@ -1664,7 +1711,7 @@ function New-WsusScheduledTasks {
     $scriptPath = $PSCommandPath
 
     if ([string]::IsNullOrWhiteSpace($scriptPath)) {
-        Write-Log "Cannot determine script path. Tasks will not be created." -Level Error
+        Write-LogEntry "Cannot determine script path. Tasks will not be created." -Level Error
         return
     }
 
@@ -1706,12 +1753,14 @@ function New-WsusDailyTask {
         $validatedConfigPath = Test-SafePath -Path $script:ConfigFile
 
         # Build argument string with validated paths
-        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$validatedScriptPath`" -OptimizeServer -DeclineSupersededUpdates -ConfigFile `"$validatedConfigPath`""
+        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$validatedScriptPath`"" +
+            " -OptimizeServer -DeclineSupersededUpdates -ConfigFile `"$validatedConfigPath`""
 
         $action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument $arguments
         $trigger = New-ScheduledTaskTrigger -Daily -At $time
         $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
-        $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+        $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries `
+            -DontStopIfGoingOnBatteries -StartWhenAvailable
 
         # Remove existing task if it exists
         $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
@@ -1722,13 +1771,15 @@ function New-WsusDailyTask {
         }
 
         if ($PSCmdlet.ShouldProcess($taskName, 'Register daily WSUS optimization scheduled task')) {
-            Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description "Daily WSUS server optimization and superseded update cleanup" | Out-Null
+            Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger `
+                -Principal $principal -Settings $settings `
+                -Description "Daily WSUS server optimization and superseded update cleanup" | Out-Null
 
-            Write-Log "Daily task created: $taskName at $time" -Level Success
+            Write-LogEntry "Daily task created: $taskName at $time" -Level Success
         }
     }
     catch {
-        Write-Log "Failed to create daily task: $_" -Level Error
+        Write-LogEntry "Failed to create daily task: $_" -Level Error
     }
 }
 
@@ -1748,12 +1799,14 @@ function New-WsusWeeklyTask {
         $validatedScriptPath = Test-SafePath -Path $ScriptPath -MustExist
         $validatedConfigPath = Test-SafePath -Path $script:ConfigFile
 
-        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$validatedScriptPath`" -OptimizeDatabase -CheckConfig -ConfigFile `"$validatedConfigPath`""
+        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$validatedScriptPath`"" +
+            " -OptimizeDatabase -CheckConfig -ConfigFile `"$validatedConfigPath`""
 
         $action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument $arguments
         $trigger = New-ScheduledTaskTrigger -Weekly -DaysOfWeek $dayOfWeek -At $time
         $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
-        $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+        $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries `
+            -DontStopIfGoingOnBatteries -StartWhenAvailable
 
         $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         if ($existingTask) {
@@ -1763,13 +1816,15 @@ function New-WsusWeeklyTask {
         }
 
         if ($PSCmdlet.ShouldProcess($taskName, 'Register weekly WSUS optimization scheduled task')) {
-            Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description "Weekly WSUS database optimization and IIS configuration check" | Out-Null
+            Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger `
+                -Principal $principal -Settings $settings `
+                -Description "Weekly WSUS database optimization and IIS configuration check" | Out-Null
 
-            Write-Log "Weekly task created: $taskName on $dayOfWeek at $time" -Level Success
+            Write-LogEntry "Weekly task created: $taskName on $dayOfWeek at $time" -Level Success
         }
     }
     catch {
-        Write-Log "Failed to create weekly task: $_" -Level Error
+        Write-LogEntry "Failed to create weekly task: $_" -Level Error
     }
 }
 
@@ -1789,7 +1844,8 @@ function New-WsusMonthlyTask {
         $validatedScriptPath = Test-SafePath -Path $ScriptPath -MustExist
         $validatedConfigPath = Test-SafePath -Path $script:ConfigFile
 
-        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$validatedScriptPath`" -DeepClean -ConfigFile `"$validatedConfigPath`""
+        $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$validatedScriptPath`"" +
+            " -DeepClean -ConfigFile `"$validatedConfigPath`""
 
         $action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument $arguments
 
@@ -1802,7 +1858,8 @@ function New-WsusMonthlyTask {
         $trigger.Enabled = $true
 
         $principal = New-ScheduledTaskPrincipal -UserId "SYSTEM" -LogonType ServiceAccount -RunLevel Highest
-        $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+        $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries `
+            -DontStopIfGoingOnBatteries -StartWhenAvailable
 
         $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
         if ($existingTask) {
@@ -1811,85 +1868,157 @@ function New-WsusMonthlyTask {
             }
         }
 
-        $task = New-ScheduledTask -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description "Monthly WSUS deep clean of obsolete updates"
+        $task = New-ScheduledTask -Action $action -Trigger $trigger -Principal $principal `
+            -Settings $settings -Description "Monthly WSUS deep clean of obsolete updates"
         if ($PSCmdlet.ShouldProcess($taskName, 'Register monthly WSUS deep clean scheduled task')) {
             Register-ScheduledTask -TaskName $taskName -InputObject $task | Out-Null
         }
 
-        Write-Log "Monthly task created: $taskName on day $day at $time" -Level Success
+        Write-LogEntry "Monthly task created: $taskName on day $day at $time" -Level Success
     }
     catch {
-        Write-Log "Failed to create monthly task: $_" -Level Error
+        Write-LogEntry "Failed to create monthly task: $_" -Level Error
     }
 }
 
 #endregion
 
-#region Main Execution
+function Test-AdminPrivilege {
+    [CmdletBinding()]
+    param()
 
-# Initialize logging
-$script:LogPath = $LogPath
-
-Write-Log "========================================" -Level Info
-Write-Log "WSUS Optimization Script v2.0.0" -Level Info
-Write-Log "========================================" -Level Info
-
-# Load configuration
-$config = Get-WsusConfig -Path $ConfigFile
-
-# Process command line switches
-if ($Interactive) {
-    Start-InteractiveWizard
-}
-elseif ($CreateTasks) {
-    New-WsusScheduledTasks -Config $config
-}
-else {
-    # Run requested operations
-    $operationsRun = $false
-
-    if ($DisableDrivers) {
-        Disable-WsusDriverSync
-        $operationsRun = $true
+    try {
+        $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
+        $principal = [System.Security.Principal.WindowsPrincipal]$identity
+        return $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
     }
-
-    if ($CheckConfig) {
-        Test-WsusIISConfig -Config $config
-        $operationsRun = $true
+    catch {
+        # Non-Windows platform or unavailable identity APIs.
+        return $false
     }
+}
 
-    if ($OptimizeDatabase) {
-        if ($config.Features.CreateCustomIndexes) {
-            Initialize-WsusDatabase
+function Main {
+    [CmdletBinding(SupportsShouldProcess)]
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'SqlServerInstance',
+        Justification = 'Accepted for CLI compatibility; SQL instance auto-detects from WSUS configuration or WID.')]
+    param (
+        [Parameter()]
+        [switch]$Interactive,
+
+        [Parameter()]
+        [string]$ConfigFile = "C:\Scripts\WSUS\wsus-config.json",
+
+        [Parameter()]
+        [switch]$DeclineSupersededUpdates,
+
+        [Parameter()]
+        [switch]$DeepClean,
+
+        [Parameter()]
+        [switch]$DisableDrivers,
+
+        [Parameter()]
+        [switch]$CheckConfig,
+
+        [Parameter()]
+        [switch]$OptimizeServer,
+
+        [Parameter()]
+        [switch]$OptimizeDatabase,
+
+        [Parameter()]
+        [switch]$CreateTasks,
+
+        [Parameter()]
+        [string]$LogPath = "C:\Scripts\WSUS\Logs\wsus-optimization.log",
+
+        [Parameter()]
+        [string]$SqlServerInstance
+    )
+
+    try {
+        if (-not (Test-AdminPrivilege)) {
+            Write-LogEntry ("Administrator privileges are required. Re-run from an " +
+                "elevated PowerShell session.") -Level Error
+            return 1
         }
-        Optimize-WsusDatabase -Config $config
-        $operationsRun = $true
-    }
 
-    if ($OptimizeServer) {
-        Optimize-WsusUpdates -Config $config
-        $operationsRun = $true
-    }
+        # Initialize logging
+        $script:LogPath = $LogPath
+        $script:ConfigFile = $ConfigFile
 
-    if ($DeclineSupersededUpdates) {
-        $wsusServer = Get-WsusServerInstance
-        Invoke-DeclineSupersededUpdates -WsusServer $wsusServer
-        $operationsRun = $true
-    }
+        Write-LogEntry "========================================" -Level Info
+        Write-LogEntry "WSUS Optimization Script v1.0.0" -Level Info
+        Write-LogEntry "========================================" -Level Info
 
-    if ($DeepClean) {
-        Invoke-DeepClean -Config $config
-        $operationsRun = $true
-    }
+        # Load configuration
+        $config = Get-WsusConfig -Path $ConfigFile
 
-    if (-not $operationsRun) {
-        Write-Host "`nNo operations specified. Use -Interactive for guided setup or see Get-Help for available options.`n" -ForegroundColor Yellow
-        Get-Help $PSCommandPath -Detailed
+        # Process command line switches
+        if ($Interactive) {
+            Start-InteractiveWizard
+        }
+        elseif ($CreateTasks) {
+            New-WsusScheduledTask -Config $config
+        }
+        else {
+            # Run requested operations
+            $operationsRun = $false
+
+            if ($DisableDrivers) {
+                Disable-WsusDriverSync
+                $operationsRun = $true
+            }
+
+            if ($CheckConfig) {
+                Test-WsusIISConfig -Config $config
+                $operationsRun = $true
+            }
+
+            if ($OptimizeDatabase) {
+                if ($config.Features.CreateCustomIndexes) {
+                    Initialize-WsusDatabase
+                }
+                Optimize-WsusDatabase -Config $config
+                $operationsRun = $true
+            }
+
+            if ($OptimizeServer) {
+                Optimize-WsusUpdate -Config $config
+                $operationsRun = $true
+            }
+
+            if ($DeclineSupersededUpdates) {
+                $wsusServer = Get-WsusServerInstance
+                Invoke-DeclineSupersededUpdate -WsusServer $wsusServer
+                $operationsRun = $true
+            }
+
+            if ($DeepClean) {
+                Invoke-DeepClean -Config $config
+                $operationsRun = $true
+            }
+
+            if (-not $operationsRun) {
+                Write-Host ("[!] No operations specified. Use -Interactive for guided setup " +
+                    "or see Get-Help for available options.`n") -ForegroundColor Yellow
+                Get-Help $PSCommandPath -Detailed
+            }
+        }
+
+        Write-LogEntry "========================================" -Level Info
+        Write-LogEntry "Script execution completed" -Level Info
+        Write-LogEntry "========================================" -Level Info
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
 }
 
-Write-Log "========================================" -Level Info
-Write-Log "Script execution completed" -Level Info
-Write-Log "========================================" -Level Info
-
 #endregion
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main @PSBoundParameters) }

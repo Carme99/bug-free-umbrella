@@ -1,69 +1,87 @@
-<#
+﻿<#
 .SYNOPSIS
-    M365 Apps Update Manager
+    Check for, download, and install Microsoft 365 Apps updates via the Office Deployment Tool.
 
 .DESCRIPTION
-    Checks for M365 Apps installation, detects available updates, downloads them locally,
-    and optionally installs them. Designed for environments without Microsoft AutoUpdate.
+    Checks for a Click-to-Run M365 Apps installation, detects available updates for the configured
+    channel from the Office configuration service, downloads them locally, and optionally installs
+    them. Designed for environments without Microsoft AutoUpdate.
 
-.NOTES
-    Requires: Administrator privileges
-    ODT Path: C:\AVD\M365Apps\setup.exe
-    Install Config: C:\AVD\M365Apps\install.xml
-    Paths are derived from -InstallPath (default: C:\AVD\M365Apps)
+    The script is check-then-act and idempotent: when the installed build already matches the latest
+    published build it reports success without downloading or installing anything. Interactive
+    prompts gate every mutation, and all mutations additionally honor -WhatIf/-Confirm.
+
+    Exit codes: 0 = up to date, update flow completed (or was declined/cancelled by the user);
+    1 = prerequisites failed or an unexpected error occurred.
 
 .PARAMETER InstallPath
-    Base directory for the M365 Apps update files (ODT setup.exe, configuration
-    XMLs, OfficeUpdates folder, and Logs folder). Default: C:\AVD\M365Apps
+    Base directory for the M365 Apps update files (ODT setup.exe, configuration XMLs, OfficeUpdates
+    folder, and Logs folder). Default: C:\AVD\M365Apps
+
+.EXAMPLE
+    PS C:\> .\Update-M365Apps.ps1
+    Run the update manager against the default C:\AVD\M365Apps layout.
+
+.EXAMPLE
+    PS C:\> .\Update-M365Apps.ps1 -InstallPath "D:\ODT\M365Apps"
+    Run the update manager against an alternate ODT directory.
+
+.NOTES
+    File Name   : Update-M365Apps.ps1
+    Author      : Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version     : 1.0.0
+    Date        : 2026-08-23
 #>
 
-#Requires -RunAsAdministrator
-
+[CmdletBinding(SupportsShouldProcess)]
 param(
-    [string]$InstallPath = "C:\AVD\M365Apps"
+    [Parameter(HelpMessage = 'Base directory for ODT files, configs, updates, and logs')]
+    [ValidateNotNullOrEmpty()]
+    [string]$InstallPath = 'C:\AVD\M365Apps'
 )
+
+$ErrorActionPreference = 'Stop'
 
 # Configuration
 $script:Config = @{
-    ODTPath = Join-Path $InstallPath "setup.exe"
-    InstallXMLPath = Join-Path $InstallPath "install.xml"
-    DownloadXMLPath = Join-Path $InstallPath "download.xml"
-    UpdatesPath = Join-Path $InstallPath "OfficeUpdates"
-    LogPath = Join-Path $InstallPath "Logs"
-    MaxLogAge = 30  # Days to keep logs
-    Channel = "Current"
-    OfficeVersionURL = "https://clients.config.office.net/releases/v1.0/OfficeReleases"
+    ODTPath          = [IO.Path]::Combine($InstallPath, 'setup.exe')
+    InstallXMLPath   = [IO.Path]::Combine($InstallPath, 'install.xml')
+    DownloadXMLPath  = [IO.Path]::Combine($InstallPath, 'download.xml')
+    UpdatesPath      = [IO.Path]::Combine($InstallPath, 'OfficeUpdates')
+    LogPath          = [IO.Path]::Combine($InstallPath, 'Logs')
+    MaxLogAge        = 30  # Days to keep logs
+    Channel          = 'Current'
+    OfficeVersionURL = 'https://clients.config.office.net/releases/v1.0/OfficeReleases'
 }
 
 # Initialize
-$ErrorActionPreference = "Stop"
 $script:LogFile = $null
 
 #region Logging Functions
-function Initialize-Logging {
+function Start-Logging {
     if (!(Test-Path $script:Config.LogPath)) {
         New-Item -ItemType Directory -Path $script:Config.LogPath -Force | Out-Null
     }
 
-    $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-    $script:LogFile = Join-Path $script:Config.LogPath "M365Update_$timestamp.log"
+    $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+    $script:LogFile = [IO.Path]::Combine($script:Config.LogPath, "M365Update_$timestamp.log")
 
-    Write-Log "=== M365 Apps Update Manager Started ===" -Color Cyan
-    Write-Log "Script version: 1.0"
+    Write-Log '=== M365 Apps Update Manager Started ===' -Color Cyan
+    Write-Log 'Script version: 1.0.0'
     Write-Log "Execution time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')"
     Write-Log "User: $env:USERNAME on $env:COMPUTERNAME"
-    Write-Log ""
+    Write-Log ''
 }
 
 function Write-Log {
     param(
         [string]$Message,
-        [string]$Color = "White",
+        [string]$Color = 'White',
         [switch]$NoNewLine
     )
 
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$timestamp] $Message"
+    $logMessage = "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] $Message"
 
     # Write to console with color
     if ($NoNewLine) {
@@ -75,52 +93,75 @@ function Write-Log {
 
     # Write to log file
     if ($script:LogFile) {
-        Add-Content -Path $script:LogFile -Value $logMessage
+        Add-Content -Path $script:LogFile -Value $logMessage -ErrorAction SilentlyContinue
     }
 }
 
 function Write-Success {
     param([string]$Message)
-    Write-Log "[OK] $Message" -Color Green
+    Write-Log "[+] $Message" -Color Green
 }
 
 function Write-ErrorMsg {
     param([string]$Message)
-    Write-Log "[ERROR] $Message" -Color Red
+    Write-Log "[-] $Message" -Color Red
 }
 
 function Write-WarningMsg {
     param([string]$Message)
-    Write-Log "[WARNING] $Message" -Color Yellow
+    Write-Log "[!] $Message" -Color Yellow
 }
 
 function Write-InfoMsg {
     param([string]$Message)
-    Write-Log "[INFO] $Message" -Color Cyan
+    Write-Log "[*] $Message" -Color Cyan
 }
 
 function Write-ProgressMsg {
     param([string]$Message)
-    Write-Log "[*] $Message" -Color Gray
+    Write-Log "[*] $Message" -Color Cyan
 }
 
-function Cleanup-OldLogs {
-    Write-ProgressMsg "Cleaning up old log files..."
+function Remove-OldLogs {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
+    Write-ProgressMsg 'Cleaning up old log files...'
     $cutoffDate = (Get-Date).AddDays(-$script:Config.MaxLogAge)
 
-    Get-ChildItem -Path $script:Config.LogPath -Filter "M365Update_*.log" |
+    Get-ChildItem -Path $script:Config.LogPath -Filter 'M365Update_*.log' -ErrorAction SilentlyContinue |
         Where-Object { $_.LastWriteTime -lt $cutoffDate } |
         ForEach-Object {
-            Remove-Item $_.FullName -Force
-            Write-ProgressMsg "Removed old log: $($_.Name)"
+            if ($PSCmdlet.ShouldProcess($_.FullName, 'Delete old log file')) {
+                Remove-Item $_.FullName -Force -ErrorAction Stop
+                Write-ProgressMsg "Removed old log: $($_.Name)"
+            }
         }
 }
 #endregion
 
 #region Helper Functions
+function Test-Elevation {
+    <#
+    .SYNOPSIS
+    Returns $true when the current session is elevated.
+    #>
+
+    [CmdletBinding()]
+    param()
+
+    if ($IsWindows) {
+        $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+        return [Security.Principal.WindowsPrincipal]::new($identity).IsInRole(
+            [Security.Principal.WindowsBuiltInRole]::Administrator)
+    }
+
+    return $false
+}
+
 function Test-Prerequisites {
-    Write-Log ""
-    Write-Log "Checking prerequisites..." -Color Yellow
+    Write-Log ''
+    Write-Log 'Checking prerequisites...' -Color Yellow
 
     # Check if ODT exists
     if (!(Test-Path $script:Config.ODTPath)) {
@@ -146,13 +187,14 @@ function Test-Prerequisites {
     }
 
     # Check internet connectivity
-    Write-ProgressMsg "Testing internet connectivity..."
+    Write-ProgressMsg 'Testing internet connectivity...'
     try {
-        $null = Invoke-WebRequest -Uri "https://clients.config.office.net" -UseBasicParsing -TimeoutSec 10
-        Write-Success "Internet connectivity verified"
+        $null = Invoke-WebRequest -Uri 'https://clients.config.office.net' -UseBasicParsing `
+            -TimeoutSec 10 -ErrorAction Stop
+        Write-Success 'Internet connectivity verified'
     }
     catch {
-        Write-ErrorMsg "No internet connectivity detected. Cannot check for updates."
+        Write-ErrorMsg 'No internet connectivity detected. Cannot check for updates.'
         return $false
     }
 
@@ -182,23 +224,23 @@ function Get-ChannelFriendlyName {
 }
 
 function Get-InstalledOfficeInfo {
-    Write-Log ""
-    Write-Log "Checking for installed M365 Apps..." -Color Yellow
+    Write-Log ''
+    Write-Log 'Checking for installed M365 Apps...' -Color Yellow
 
     # Check registry for Office installations
     $registryPaths = @(
-        "HKLM:\SOFTWARE\Microsoft\Office\ClickToRun\Configuration",
-        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Office\ClickToRun\Configuration"
+        'HKLM:\SOFTWARE\Microsoft\Office\ClickToRun\Configuration',
+        'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Office\ClickToRun\Configuration'
     )
 
     foreach ($path in $registryPaths) {
-        if (Test-Path $path) {
+        if (Test-Path -LiteralPath $path -ErrorAction SilentlyContinue) {
             try {
                 $versionInfo = Get-ItemProperty -Path $path -ErrorAction SilentlyContinue
 
                 if ($versionInfo -and $versionInfo.VersionToReport) {
                     # Extract channel GUID from UpdateChannel or CDNBaseUrl
-                    $channelGuid = ""
+                    $channelGuid = ''
                     if ($versionInfo.UpdateChannel -match '([a-f0-9-]{36})') {
                         $channelGuid = $matches[1]
                     }
@@ -209,18 +251,18 @@ function Get-InstalledOfficeInfo {
                     $channelFriendlyName = Get-ChannelFriendlyName -ChannelGuid $channelGuid
 
                     $info = @{
-                        Installed = $true
-                        Version = $versionInfo.VersionToReport
+                        Installed    = $true
+                        Version      = $versionInfo.VersionToReport
                         BuildVersion = $versionInfo.VersionToReport
-                        Platform = $versionInfo.Platform
-                        Channel = $channelGuid
-                        ChannelName = $channelFriendlyName
-                        ProductName = $versionInfo.ProductReleaseIds
+                        Platform     = $versionInfo.Platform
+                        Channel      = $channelGuid
+                        ChannelName  = $channelFriendlyName
+                        ProductName  = $versionInfo.ProductReleaseIds
                         UpdateChannel = $versionInfo.UpdateChannel
-                        InstallPath = $versionInfo.InstallationPath
+                        InstallPath  = $versionInfo.InstallationPath
                     }
 
-                    Write-Success "M365 Apps detected!"
+                    Write-Success 'M365 Apps detected!'
                     Write-Log "  Product: $($info.ProductName)" -Color Cyan
                     Write-Log "  Version: $($info.Version)" -Color Cyan
                     Write-Log "  Platform: $($info.Platform)" -Color Cyan
@@ -236,21 +278,22 @@ function Get-InstalledOfficeInfo {
         }
     }
 
-    Write-WarningMsg "M365 Apps not detected on this system"
+    Write-WarningMsg 'M365 Apps not detected on this system'
     return @{ Installed = $false }
 }
 
 function Get-LatestOfficeVersion {
     param([string]$ChannelGuid)
 
-    Write-ProgressMsg "Querying Microsoft for latest Office build..."
+    Write-ProgressMsg 'Querying Microsoft for latest Office build...'
 
     try {
-        $response = Invoke-RestMethod -Uri $script:Config.OfficeVersionURL -UseBasicParsing
+        $response = Invoke-RestMethod -Uri $script:Config.OfficeVersionURL -UseBasicParsing `
+            -TimeoutSec 30 -ErrorAction Stop
 
         # Map common channel GUIDs to channel IDs
         $channelMap = @{
-            '492350f6-3a01-4f97-b9c0-c7c6ddf67d60' = 'Current'          # Current Channel
+            '492350f6-3a01-4f97-b9c0-c7c6ddf67d60' = 'Current'           # Current Channel
             '64256afe-f5d9-4f86-8936-8840a6a4f5be' = 'CurrentPreview'    # Current Channel (Preview)
             '55336b82-a18d-4dd6-b5f6-9e5095c314a6' = 'MonthlyEnterprise' # Monthly Enterprise Channel
             '7ffbc6bf-bc32-4f92-8982-f9dd17fd3114' = 'SemiAnnual'        # Semi-Annual Enterprise Channel
@@ -265,7 +308,7 @@ function Get-LatestOfficeVersion {
 
         if (!$targetChannelId) {
             # Default to Current channel if GUID not found
-            Write-ProgressMsg "Unknown channel GUID, defaulting to Current Channel"
+            Write-ProgressMsg 'Unknown channel GUID, defaulting to Current Channel'
             $targetChannelId = 'Current'
         }
 
@@ -331,14 +374,40 @@ function Compare-OfficeVersions {
     return $false  # Versions are equal
 }
 
+function Invoke-OdtSetup {
+    <#
+    .SYNOPSIS
+    Thin wrapper around the native Office Deployment Tool executable.
+
+    .DESCRIPTION
+    All native setup.exe invocations MUST go through this wrapper so tests can mock it by name.
+    Returns the process exit code.
+    #>
+
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateSet('download', 'configure')]
+        [string]$Mode,
+
+        [Parameter(Mandatory)]
+        [string]$ConfigurationPath
+    )
+
+    $arguments = '/{0} "{1}"' -f $Mode, $ConfigurationPath
+    $process = Start-Process -FilePath $script:Config.ODTPath -ArgumentList $arguments `
+        -Wait -PassThru -NoNewWindow
+    return $process.ExitCode
+}
+
 function New-DownloadConfiguration {
     [CmdletBinding(SupportsShouldProcess)]
     param()
 
-    Write-ProgressMsg "Creating download configuration XML..."
+    Write-ProgressMsg 'Creating download configuration XML...'
 
     # Read the install XML and modify it for download-only mode
-    [xml]$installXml = Get-Content $script:Config.InstallXMLPath
+    [xml]$installXml = Get-Content -Path $script:Config.InstallXMLPath -ErrorAction Stop
 
     # Clone the configuration
     [xml]$downloadXml = $installXml.Clone()
@@ -350,7 +419,7 @@ function New-DownloadConfiguration {
         $addNode.SourcePath = $script:Config.UpdatesPath
 
         # Remove RemoveMSI element for download-only
-        $removeMSI = $downloadXml.Configuration.SelectSingleNode("//RemoveMSI")
+        $removeMSI = $downloadXml.Configuration.SelectSingleNode('//RemoveMSI')
         if ($removeMSI) {
             $null = $downloadXml.Configuration.RemoveChild($removeMSI)
         }
@@ -366,21 +435,20 @@ function New-DownloadConfiguration {
 }
 
 function Invoke-OfficeDownload {
-    Write-Log ""
-    Write-Log "Downloading Office updates..." -Color Yellow
+    Write-Log ''
+    Write-Log 'Downloading Office updates...' -Color Yellow
 
     try {
-        $arguments = "/download `"$($script:Config.DownloadXMLPath)`""
-        Write-ProgressMsg "Executing: $($script:Config.ODTPath) $arguments"
+        Write-ProgressMsg "Executing: $($script:Config.ODTPath) /download `"$($script:Config.DownloadXMLPath)`""
 
-        $process = Start-Process -FilePath $script:Config.ODTPath -ArgumentList $arguments -Wait -PassThru -NoNewWindow
+        $exitCode = Invoke-OdtSetup -Mode 'download' -ConfigurationPath $script:Config.DownloadXMLPath
 
-        if ($process.ExitCode -eq 0) {
-            Write-Success "Download completed successfully"
+        if ($exitCode -eq 0) {
+            Write-Success 'Download completed successfully'
             return $true
         }
         else {
-            Write-ErrorMsg "Download failed with exit code: $($process.ExitCode)"
+            Write-ErrorMsg "Download failed with exit code: $exitCode"
             return $false
         }
     }
@@ -393,24 +461,23 @@ function Invoke-OfficeDownload {
 function Invoke-OfficeInstall {
     param([bool]$IsUpdate = $true)
 
-    $action = if ($IsUpdate) { "Installing updates" } else { "Installing M365 Apps" }
-    Write-Log ""
+    $action = if ($IsUpdate) { 'Installing updates' } else { 'Installing M365 Apps' }
+    Write-Log ''
     Write-Log "$action..." -Color Yellow
 
     try {
-        $arguments = "/configure `"$($script:Config.InstallXMLPath)`""
-        Write-ProgressMsg "Executing: $($script:Config.ODTPath) $arguments"
+        Write-ProgressMsg "Executing: $($script:Config.ODTPath) /configure `"$($script:Config.InstallXMLPath)`""
 
-        Write-WarningMsg "This may take several minutes. Office applications will be closed automatically."
+        Write-WarningMsg 'This may take several minutes. Office applications will be closed automatically.'
 
-        $process = Start-Process -FilePath $script:Config.ODTPath -ArgumentList $arguments -Wait -PassThru -NoNewWindow
+        $exitCode = Invoke-OdtSetup -Mode 'configure' -ConfigurationPath $script:Config.InstallXMLPath
 
-        if ($process.ExitCode -eq 0) {
+        if ($exitCode -eq 0) {
             Write-Success "$action completed successfully!"
             return $true
         }
         else {
-            Write-ErrorMsg "$action failed with exit code: $($process.ExitCode)"
+            Write-ErrorMsg "$action failed with exit code: $exitCode"
             return $false
         }
     }
@@ -421,67 +488,67 @@ function Invoke-OfficeInstall {
 }
 
 function Show-Banner {
-    Write-Host ""
-    Write-Host "=======================================================" -ForegroundColor Cyan
-    Write-Host "        M365 Apps Update Manager" -ForegroundColor White
-    Write-Host "=======================================================" -ForegroundColor Cyan
-    Write-Host ""
+    Write-Host ''
+    Write-Host '=======================================================' -ForegroundColor Cyan
+    Write-Host '        M365 Apps Update Manager' -ForegroundColor White
+    Write-Host '=======================================================' -ForegroundColor Cyan
+    Write-Host ''
 }
 
 function Get-UserConfirmation {
     param(
         [string]$Message,
-        [string]$DefaultChoice = "Y"
+        [string]$DefaultChoice = 'Y'
     )
 
-    $choices = if ($DefaultChoice -eq "Y") { "[Y/n]" } else { "[y/N]" }
+    $choices = if ($DefaultChoice -eq 'Y') { '[Y/n]' } else { '[y/N]' }
     Write-Host "$Message $choices " -ForegroundColor Yellow -NoNewline
 
     $response = Read-Host
 
     if ([string]::IsNullOrWhiteSpace($response)) {
-        return $DefaultChoice -eq "Y"
+        return $DefaultChoice -eq 'Y'
     }
 
     return $response -match '^[Yy]'
 }
 
 function Get-ChannelSelection {
-    Write-Log ""
-    Write-Log "Available Update Channels:" -Color Cyan
-    Write-Log ""
+    Write-Log ''
+    Write-Log 'Available Update Channels:' -Color Cyan
+    Write-Log ''
 
     # Define channels with descriptions
     $channels = @(
         @{
-            Number = 1
-            Name = "Current Channel"
-            Guid = "492350f6-3a01-4f97-b9c0-c7c6ddf67d60"
-            Description = "Latest features monthly. Recommended for most users."
+            Number      = 1
+            Name        = 'Current Channel'
+            Guid        = '492350f6-3a01-4f97-b9c0-c7c6ddf67d60'
+            Description = 'Latest features monthly. Recommended for most users.'
         },
         @{
-            Number = 2
-            Name = "Monthly Enterprise Channel"
-            Guid = "55336b82-a18d-4dd6-b5f6-9e5095c314a6"
-            Description = "Monthly updates, validated for enterprise. More predictable."
+            Number      = 2
+            Name        = 'Monthly Enterprise Channel'
+            Guid        = '55336b82-a18d-4dd6-b5f6-9e5095c314a6'
+            Description = 'Monthly updates, validated for enterprise. More predictable.'
         },
         @{
-            Number = 3
-            Name = "Semi-Annual Enterprise Channel (Preview)"
-            Guid = "b8f9b850-328d-4355-9145-c59439a0c4cf"
-            Description = "Preview of Semi-Annual updates. For testing."
+            Number      = 3
+            Name        = 'Semi-Annual Enterprise Channel (Preview)'
+            Guid        = 'b8f9b850-328d-4355-9145-c59439a0c4cf'
+            Description = 'Preview of Semi-Annual updates. For testing.'
         },
         @{
-            Number = 4
-            Name = "Semi-Annual Enterprise Channel"
-            Guid = "7ffbc6bf-bc32-4f92-8982-f9dd17fd3114"
-            Description = "Updates twice yearly. Most stable for enterprise."
+            Number      = 4
+            Name        = 'Semi-Annual Enterprise Channel'
+            Guid        = '7ffbc6bf-bc32-4f92-8982-f9dd17fd3114'
+            Description = 'Updates twice yearly. Most stable for enterprise.'
         },
         @{
-            Number = 5
-            Name = "Beta (Insider)"
-            Guid = "5440fd1f-7ecb-4221-8110-145efaa6372f"
-            Description = "Cutting edge features. May be unstable."
+            Number      = 5
+            Name        = 'Beta (Insider)'
+            Guid        = '5440fd1f-7ecb-4221-8110-145efaa6372f'
+            Description = 'Cutting edge features. May be unstable.'
         }
     )
 
@@ -491,8 +558,8 @@ function Get-ChannelSelection {
         Write-Host "      $($channel.Description)" -ForegroundColor Gray
     }
 
-    Write-Log ""
-    Write-Host "Select channel [1-5] or press Enter to keep current: " -ForegroundColor Yellow -NoNewline
+    Write-Log ''
+    Write-Host 'Select channel [1-5] or press Enter to keep current: ' -ForegroundColor Yellow -NoNewline
     $selection = Read-Host
 
     if ([string]::IsNullOrWhiteSpace($selection)) {
@@ -505,7 +572,7 @@ function Get-ChannelSelection {
         return $selectedChannel
     }
     else {
-        Write-WarningMsg "Invalid selection. Keeping current channel."
+        Write-WarningMsg 'Invalid selection. Keeping current channel.'
         return $null
     }
 }
@@ -517,22 +584,22 @@ function Set-OfficeUpdateChannel {
         [string]$ChannelName
     )
 
-    Write-Log ""
+    Write-Log ''
     Write-Log "Changing update channel to: $ChannelName" -Color Yellow
 
     try {
         # Update registry settings
-        $regPath = "HKLM:\SOFTWARE\Microsoft\Office\ClickToRun\Configuration"
+        $regPath = 'HKLM:\SOFTWARE\Microsoft\Office\ClickToRun\Configuration'
 
         if ($PSCmdlet.ShouldProcess($regPath, 'Change Office update channel')) {
             $newCDNUrl = "http://officecdn.microsoft.com/pr/$ChannelGuid"
 
-            Set-ItemProperty -Path $regPath -Name "CDNBaseUrl" -Value $newCDNUrl -ErrorAction Stop
-            Set-ItemProperty -Path $regPath -Name "UpdateChannel" -Value $newCDNUrl -ErrorAction Stop
+            Set-ItemProperty -Path $regPath -Name 'CDNBaseUrl' -Value $newCDNUrl -ErrorAction Stop
+            Set-ItemProperty -Path $regPath -Name 'UpdateChannel' -Value $newCDNUrl -ErrorAction Stop
 
-            Write-Success "Update channel changed successfully!"
-            Write-InfoMsg "Channel will take effect on next update check."
-            Write-InfoMsg "You may need to download and install updates to switch channels."
+            Write-Success 'Update channel changed successfully!'
+            Write-InfoMsg 'Channel will take effect on next update check.'
+            Write-InfoMsg 'You may need to download and install updates to switch channels.'
         }
         else {
             return $false
@@ -547,13 +614,17 @@ function Set-OfficeUpdateChannel {
 }
 
 function Clear-UpdateFiles {
-    Write-Log ""
-    Write-Log "Cleaning up update files..." -Color Yellow
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
+    Write-Log ''
+    Write-Log 'Cleaning up update files...' -Color Yellow
 
     try {
         if (Test-Path $script:Config.UpdatesPath) {
             # Get folder size before cleanup
-            $folderSize = (Get-ChildItem -Path $script:Config.UpdatesPath -Recurse -File -ErrorAction SilentlyContinue |
+            $folderSize = (Get-ChildItem -Path $script:Config.UpdatesPath -Recurse -File `
+                    -ErrorAction SilentlyContinue |
                     Measure-Object -Property Length -Sum).Sum
 
             if ($folderSize -gt 0) {
@@ -561,14 +632,16 @@ function Clear-UpdateFiles {
                 Write-ProgressMsg "Found $sizeMB MB of update files to remove..."
 
                 # Remove all files and subdirectories in the updates folder
-                Get-ChildItem -Path $script:Config.UpdatesPath -Recurse -ErrorAction SilentlyContinue |
-                    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+                if ($PSCmdlet.ShouldProcess($script:Config.UpdatesPath, 'Remove downloaded update files')) {
+                    Get-ChildItem -Path $script:Config.UpdatesPath -Recurse -ErrorAction SilentlyContinue |
+                        Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
+                }
 
                 Write-Success "Cleaned up $sizeMB MB of update files"
                 Write-InfoMsg "Updates folder cleared: $($script:Config.UpdatesPath)"
             }
             else {
-                Write-InfoMsg "No update files to clean up"
+                Write-InfoMsg 'No update files to clean up'
             }
         }
         else {
@@ -586,178 +659,207 @@ function Clear-UpdateFiles {
 #endregion
 
 #region Main Script
-function Start-M365UpdateManager {
+function Main {
     [CmdletBinding(SupportsShouldProcess)]
     param()
 
     try {
+        if (-not (Test-Elevation)) {
+            Write-Host ('[-] This script requires administrator privileges. ' +
+                'Run from an elevated session.') -ForegroundColor Red
+            return 1
+        }
+
         Show-Banner
-        Initialize-Logging
-        Cleanup-OldLogs
+        Start-Logging
+        Remove-OldLogs
 
         # Step 1: Prerequisites
         if (!(Test-Prerequisites)) {
-            Write-ErrorMsg "Prerequisites check failed. Cannot continue."
-            return
+            Write-ErrorMsg 'Prerequisites check failed. Cannot continue.'
+            return 1
         }
 
         # Step 2: Check installation status
         $officeInfo = Get-InstalledOfficeInfo
 
         if (!$officeInfo.Installed) {
-            Write-Log ""
-            Write-WarningMsg "M365 Apps are not installed on this system."
+            Write-Log ''
+            Write-WarningMsg 'M365 Apps are not installed on this system.'
 
-            if (Get-UserConfirmation "Would you like to install M365 Apps now?") {
-                Write-InfoMsg "Starting fresh installation..."
+            if (Get-UserConfirmation 'Would you like to install M365 Apps now?') {
+                Write-InfoMsg 'Starting fresh installation...'
 
                 # Download installation files
                 if ($PSCmdlet.ShouldProcess('M365 Apps', 'Download installation files')) {
                     New-DownloadConfiguration
+
                     if (Invoke-OfficeDownload) {
                         # Install Office
                         if (Invoke-OfficeInstall -IsUpdate $false) {
-                            Write-Log ""
-                            Write-Success "M365 Apps installation completed successfully!"
-                            Write-InfoMsg "Please restart any Office applications."
+                            Write-Log ''
+                            Write-Success 'M365 Apps installation completed successfully!'
+                            Write-InfoMsg 'Please restart any Office applications.'
 
                             # Clean up installation files after successful install
-                            if (Get-UserConfirmation "Would you like to clean up the downloaded installation files to save space?") {
-                                if ($PSCmdlet.ShouldProcess($script:Config.UpdatesPath, 'Clean up installation files')) {
+                            if (Get-UserConfirmation `
+                                    'Would you like to clean up the downloaded installation files to save space?') {
+                                if ($PSCmdlet.ShouldProcess($script:Config.UpdatesPath,
+                                        'Clean up installation files')) {
                                     Clear-UpdateFiles
                                 }
                             }
                         }
+                        else {
+                            return 1
+                        }
+                    }
+                    else {
+                        return 1
                     }
                 }
             }
             else {
-                Write-InfoMsg "Installation cancelled by user."
+                Write-InfoMsg 'Installation cancelled by user.'
             }
-            return
+            return 0
         }
 
         # Step 3: Ask about changing update channel
-        Write-Log ""
-        if (Get-UserConfirmation "Would you like to change the update channel?" "N") {
+        Write-Log ''
+        if (Get-UserConfirmation 'Would you like to change the update channel?' 'N') {
             $newChannel = Get-ChannelSelection
 
             if ($newChannel) {
-                Write-Log ""
-                Write-Host "You selected: " -ForegroundColor Cyan -NoNewline
+                Write-Log ''
+                Write-Host '[*] You selected: ' -ForegroundColor Cyan -NoNewline
                 Write-Host "$($newChannel.Name)" -ForegroundColor Green
 
-                if (Get-UserConfirmation "Confirm channel change?") {
+                if (Get-UserConfirmation 'Confirm channel change?') {
                     if (Set-OfficeUpdateChannel -ChannelGuid $newChannel.Guid -ChannelName $newChannel.Name) {
                         # Update the office info with the new channel
                         $officeInfo.Channel = $newChannel.Guid
-                        Write-InfoMsg "Note: After downloading updates, you'll switch to the new channel."
+                        Write-InfoMsg 'Note: After downloading updates, you''ll switch to the new channel.'
                     }
                 }
                 else {
-                    Write-InfoMsg "Channel change cancelled."
+                    Write-InfoMsg 'Channel change cancelled.'
                 }
             }
         }
 
         # Step 4: Check for updates
-        Write-Log ""
-        Write-Log "Checking for available updates..." -Color Yellow
+        Write-Log ''
+        Write-Log 'Checking for available updates...' -Color Yellow
 
         $latestVersionInfo = Get-LatestOfficeVersion -ChannelGuid $officeInfo.Channel
 
         if ($latestVersionInfo) {
-            $updateAvailable = Compare-OfficeVersions -InstalledVersion $officeInfo.Version -LatestVersion $latestVersionInfo.Version
+            $updateAvailable = Compare-OfficeVersions -InstalledVersion $officeInfo.Version `
+                -LatestVersion $latestVersionInfo.Version
 
             if ($updateAvailable) {
-                Write-Log ""
-                Write-WarningMsg "Update available!"
+                Write-Log ''
+                Write-WarningMsg 'Update available!'
                 Write-InfoMsg "  Installed version: $($officeInfo.Version)"
                 Write-InfoMsg "  Latest version:    $($latestVersionInfo.Version)"
-                Write-Log ""
+                Write-Log ''
 
-                if (Get-UserConfirmation "Would you like to download the update?") {
+                if (Get-UserConfirmation 'Would you like to download the update?') {
                     # Create download configuration
                     if ($PSCmdlet.ShouldProcess('M365 Apps', 'Download update')) {
                         New-DownloadConfiguration
 
                         # Download updates
                         if (Invoke-OfficeDownload) {
-                            Write-Log ""
+                            Write-Log ''
                             Write-Success "Updates downloaded to: $($script:Config.UpdatesPath)"
 
                             # Prompt for installation
-                            if (Get-UserConfirmation "Would you like to install the updates now?") {
+                            if (Get-UserConfirmation 'Would you like to install the updates now?') {
                                 if ($PSCmdlet.ShouldProcess('M365 Apps', 'Install updates')) {
                                     if (Invoke-OfficeInstall -IsUpdate $true) {
-                                        Write-Log ""
-                                        Write-Success "Update installation completed!"
+                                        Write-Log ''
+                                        Write-Success 'Update installation completed!'
 
                                         # Verify new version
                                         Start-Sleep -Seconds 3
                                         $newInfo = Get-InstalledOfficeInfo
                                         if ($newInfo.Version -eq $latestVersionInfo.Version) {
-                                            Write-Success "Successfully updated to version $($latestVersionInfo.Version)"
+                                            Write-Success ("Successfully updated to version " +
+                                                "$($latestVersionInfo.Version)")
                                         }
                                         else {
-                                            Write-WarningMsg "Installation completed but version verification unclear."
+                                            Write-WarningMsg 'Installation completed but version verification unclear.'
                                             Write-InfoMsg "Installed version now shows: $($newInfo.Version)"
                                         }
 
                                         # Clean up update files after successful installation
-                                        if (Get-UserConfirmation "Would you like to clean up the downloaded update files to save space?") {
-                                            if ($PSCmdlet.ShouldProcess($script:Config.UpdatesPath, 'Clean up update files')) {
+                                            if (Get-UserConfirmation `
+                                                    ('Would you like to clean up the downloaded update ' +
+                                                        'files to save space?')) {
+                                                if ($PSCmdlet.ShouldProcess($script:Config.UpdatesPath,
+                                                        'Clean up update files')) {
                                                 Clear-UpdateFiles
                                             }
                                         }
                                     }
+                                    else {
+                                        return 1
+                                    }
                                 }
                             }
                             else {
-                                Write-InfoMsg "Updates downloaded but not installed."
-                                Write-InfoMsg "Run this script again to install, or use install.xml manually."
+                                Write-InfoMsg 'Updates downloaded but not installed.'
+                                Write-InfoMsg 'Run this script again to install, or use install.xml manually.'
                             }
+                        }
+                        else {
+                            return 1
                         }
                     }
                 }
                 else {
-                    Write-InfoMsg "Download cancelled by user."
+                    Write-InfoMsg 'Download cancelled by user.'
                 }
             }
             else {
-                Write-Log ""
-                Write-Success "M365 Apps are up to date!"
+                # Idempotent converged state: already current, nothing to mutate.
+                Write-Log ''
+                Write-Success 'M365 Apps are up to date!'
                 Write-InfoMsg "  Current version: $($officeInfo.Version)"
                 Write-InfoMsg "  Latest version:  $($latestVersionInfo.Version)"
             }
         }
         else {
-            Write-WarningMsg "Could not determine if updates are available."
-            Write-InfoMsg "You can still download updates using the ODT configuration."
+            Write-WarningMsg 'Could not determine if updates are available.'
+            Write-InfoMsg 'You can still download updates using the ODT configuration.'
 
-            if (Get-UserConfirmation "Would you like to download anyway?") {
+            if (Get-UserConfirmation 'Would you like to download anyway?') {
                 if ($PSCmdlet.ShouldProcess('M365 Apps', 'Download update files')) {
                     New-DownloadConfiguration
-                    Invoke-OfficeDownload
+                    if (-not (Invoke-OfficeDownload)) {
+                        return 1
+                    }
                 }
             }
         }
 
+        return 0
     }
     catch {
         Write-ErrorMsg "Unexpected error: $_"
         Write-Log "Stack trace: $($_.ScriptStackTrace)"
+        return 1
     }
     finally {
-        Write-Log ""
-        Write-Log "=== Script execution completed ===" -Color Cyan
+        Write-Log ''
+        Write-Log '=== Script execution completed ===' -Color Cyan
         Write-Log "Log file saved: $script:LogFile" -Color Gray
-        Write-Log ""
-        Write-Host "Press any key to exit..." -ForegroundColor Gray
-        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+        Write-Log ''
     }
 }
 
-# Execute
-Start-M365UpdateManager
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }
 #endregion

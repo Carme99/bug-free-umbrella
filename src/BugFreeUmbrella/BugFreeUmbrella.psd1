@@ -1,6 +1,6 @@
 ﻿@{
     # --- Identity ---
-    ModuleVersion      = '5.0.0'
+    ModuleVersion      = '1.0.0'
     GUID               = '7cc494cc-4523-4630-a69e-12b77001c0f0'
     Author             = 'Carme99'
     CompanyName        = 'Carme99'
@@ -397,8 +397,7 @@
             LicenseUri                 = 'https://github.com/Carme99/bug-free-umbrella/blob/main/LICENSE'
             ProjectUri                 = 'https://github.com/Carme99/bug-free-umbrella'
             IconUri                    = ''
-            ReleaseNotes               = '5.0.0 Hurricane - Platform'
-            Prerelease                 = ''
+            ReleaseNotes               = '1.0.0 - Clean-slate relaunch'
             RequireLicenseAcceptance   = $false
             ExternalModuleDependencies = @()
         }

@@ -1,4 +1,4 @@
-# Frequently Asked Questions (FAQ)
+﻿# Frequently Asked Questions (FAQ)
 
 ![Tier](https://img.shields.io/badge/Tier-1-green) ![Category](https://img.shields.io/badge/Category-Foundation-blue) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen)
 
@@ -22,7 +22,7 @@ Common questions about Bug-Free Umbrella scripts and how to use them.
 
 ### What is Bug-Free Umbrella?
 
-Bug-Free Umbrella is a comprehensive collection of 357 PowerShell scripts for enterprise IT management, covering:
+Bug-Free Umbrella is a comprehensive collection of 539 PowerShell scripts for enterprise IT management, covering:
 
 - Microsoft 365 & Intune administration
 - Azure & AWS cloud management
@@ -377,12 +377,11 @@ git pull origin main
 
 ### How often are scripts updated?
 
-Check the **[Changelog](../CHANGELOG.md)** for release history. Recent updates:
+Check the **[Changelog](../CHANGELOG.md)** for release history. Current release:
 
-- **v4.4.0 "Nimbus"** (2026-08-20) - Catalog & intelligence release
-- **v4.3.0 "Zephyr"** (2026-08-08) - Quality & enforcement release
-- **v4.2.0 "Tempest"** (2026-08-06) - Security & hardening release
-- **v4.1.0 "Drizzle"** (2026-04-17) - Bug fix release
+- **v1.0.0 "Clean-Slate Relaunch"** (2026-08-24) - every script conformed to [RELAUNCH-SPEC](RELAUNCH-SPEC.md), per-script Pester tests, analyzer-clean
+
+Pre-relaunch history (old weather-codename versioning, kept for reference): v4.4.0 "Nimbus", v4.3.0 "Zephyr", v4.2.0 "Tempest", v4.1.0 "Drizzle".
 
 ### Will old scripts break after updates?
 
@@ -439,7 +438,7 @@ Yes, use:
 
 - [Getting Started](Getting-Started.md) - Step-by-step onboarding
 - [Prerequisites](Prerequisites.md) - System requirements and setup
-- [Script Catalog](Script-Catalog.md) - Browse all 357 scripts
+- [Script Catalog](Script-Catalog.md) - Browse all 539 scripts
 - [Troubleshooting](Troubleshooting.md) - Solve common problems
 - [Support Guide](../SUPPORT.md) - Get help
 - [Contributing](../CONTRIBUTING.md) - Contribute to the project

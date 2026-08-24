@@ -1,6 +1,6 @@
 # Catalog Automation
 
-> Auto-generated metadata for all 357 scripts — how it works and how to use it.
+> Auto-generated metadata for all 539 scripts — how it works and how to use it.
 
 ## Overview
 
@@ -16,7 +16,7 @@ launcher) and CI.
   "$schema": "https://raw.githubusercontent.com/Carme99/bug-free-umbrella/main/scripts/.catalog/metadata.schema.json",
   "version": "1.0.0",
   "generated": "2026-08-20T12:00:00.0000000+01:00",
-  "totalScripts": 357,
+  "totalScripts": 539,
   "scripts": [
     {
       "path": "endpoints/intune/reporting/Get-DeviceComplianceReport.ps1",

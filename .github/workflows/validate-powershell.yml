@@ -101,32 +101,28 @@ jobs:
             Write-Host "No issues found by PSScriptAnalyzer!" -ForegroundColor Green
           }
 
-      - name: Enforce policy rules (comment-based help, style, ShouldProcess)
+      - name: Enforce policy rules (settings of record)
         shell: pwsh
         run: |
-          $settings = @{
-            Severity = @('Error', 'Warning', 'Information')
-            Rules = @{
-              PSUseConsistentIndentation = @{ Enable = $true }
-              PSUseConsistentWhitespace  = @{ Enable = $true }
-              PSPlaceOpenBrace           = @{ Enable = $true }
-              PSPlaceCloseBrace          = @{ Enable = $true }
-              PSUseCorrectCasing         = @{ Enable = $true }
-            }
-            IncludeRules = @(
-              'PSUseConsistentIndentation', 'PSUseConsistentWhitespace',
-              'PSPlaceOpenBrace', 'PSPlaceCloseBrace', 'PSUseCorrectCasing',
-              'PSShouldProcess', 'PSUseShouldProcessForStateChangingFunctions',
-              'PSUseSupportsShouldProcess'
-            )
-          }
-          $policyFindings = Invoke-ScriptAnalyzer -Path ./scripts -Recurse -Settings $settings
-          if ($policyFindings) {
-            $policyFindings | Format-Table RuleName, ScriptName, Line, Message -AutoSize
-            Write-Host "Policy enforcement found $($policyFindings.Count) finding(s). Failing the pipeline." -ForegroundColor Red
+          # Policy of record: .vscode/PSScriptAnalyzerSettings.psd1 (same file the
+          # curated analyzer step uses). The documented bar is zero Error-severity
+          # findings across ./scripts; warnings are reported but need no gate.
+          $psaSettings = './.vscode/PSScriptAnalyzerSettings.psd1'
+          if (-not (Test-Path $psaSettings)) {
+            Write-Host "Settings file '$psaSettings' not found. Cannot enforce policy." -ForegroundColor Red
             exit 1
           }
-          Write-Host "Policy enforcement passed (help/style/ShouldProcess)." -ForegroundColor Green
+
+          $policyFindings = Invoke-ScriptAnalyzer -Path ./scripts -Recurse -Settings $psaSettings
+          $policyErrors   = @($policyFindings | Where-Object Severity -eq 'Error')
+          $policyWarnings = @($policyFindings | Where-Object Severity -eq 'Warning')
+          Write-Host "Policy enforcement: $($policyErrors.Count) error(s), $($policyWarnings.Count) warning(s)." -ForegroundColor Gray
+          if ($policyErrors.Count -gt 0) {
+            $policyErrors | Format-Table RuleName, ScriptName, Line, Message -AutoSize
+            Write-Host "Policy enforcement found $($policyErrors.Count) error(s). Failing the pipeline." -ForegroundColor Red
+            exit 1
+          }
+          Write-Host "Policy enforcement passed (zero errors under settings of record)." -ForegroundColor Green
 
       - name: Enforce comment-based help (SYNOPSIS presence)
         shell: pwsh
@@ -191,7 +187,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # Outcome of the module smoke step, consumed by the summary job as a merge gate
-    # (the test job itself stays non-gating so Pester failures remain informational).
+    # (the test job gates: summary fails if Pester reports any failure).
     outputs:
       module_smoke: ${{ steps.module_smoke.outcome }}
 
@@ -202,13 +198,15 @@ jobs:
       - name: Install Pester
         shell: pwsh
         run: |
-          Install-Module -Name Pester -Force -SkipPublisherCheck -Scope CurrentUser
-          try {
-            $mod = Get-Module -ListAvailable Pester | Sort-Object Version -Descending | Select-Object -First 1
-            if ($mod) { Write-Host "Pester version: $($mod.Version)" -ForegroundColor Gray }
-          } catch {
-            Write-Host "Failed to get Pester version: $($_.Exception.Message)" -ForegroundColor Yellow
-          }
+          # Pin to the version the suite is developed and verified against.
+          # Unpinned installs drift onto Pester 6.x, which fails whole Describes
+          # on control-flow that 5.x tolerates (e.g. escaping break/continue).
+          Install-Module -Name Pester -RequiredVersion 5.7.1 -Force -SkipPublisherCheck -Scope CurrentUser
+          # Runner images ship a newer system-wide Pester (e.g. 5.9.0). Command resolution
+          # picks the highest version across PSModulePath, silently ignoring this pin —
+          # force the pinned version into the session before Invoke-Pester runs.
+          Import-Module Pester -RequiredVersion 5.7.1 -Force
+          Write-Host "Pester session version: $((Get-Module Pester).Version)" -ForegroundColor Gray
 
       - name: Run Pester Tests
         shell: pwsh
@@ -219,26 +217,40 @@ jobs:
           }
           $config = Import-PowerShellDataFile -Path ./Tests/Pester.Config.psd1
           $pesterConfig = New-PesterConfiguration -Hashtable $config
-          # Coverage is enabled in config but no threshold is enforced — allow low coverage to pass
-          # Pester will still generate CodeCoverage.xml and TestResults.xml for artifact upload
+          # Gating: the pipeline FAILS if any Pester test fails.
+          # Coverage is collected (CodeCoverage.xml) but not threshold-enforced; the enforced
+          # coverage contract is per-script test presence (100% mirrored), not line percentage.
           Write-Host "Invoking Pester with config from Tests/Pester.Config.psd1..." -ForegroundColor Cyan
           $result = Invoke-Pester -Configuration $pesterConfig
           Write-Host "Pester completed: Passed=$($result.PassedCount) Failed=$($result.FailedCount) Skipped=$($result.SkippedCount) Total=$($result.TotalCount)" -ForegroundColor Cyan
           if ($result.FailedCount -gt 0) {
-            Write-Host "Pester found $($result.FailedCount) failed test(s). Marking as informational — not failing the pipeline (known pre-existing failures)." -ForegroundColor Yellow
-            Write-Host "⚠️ Pester failures are informational until the pre-existing tests are fixed in a follow-up." -ForegroundColor Yellow
-          } else {
-            Write-Host "All Pester tests passed!" -ForegroundColor Green
+            Write-Host "::error::Pester found $($result.FailedCount) failed test(s)." -ForegroundColor Red
+            exit 1
           }
-          # Informational posture: force success regardless of Pester's internal exit signaling.
-          exit 0
+          Write-Host "All Pester tests passed!" -ForegroundColor Green
+
+      - name: Enforce per-script test mirror (gating)
+        shell: pwsh
+        run: |
+          $missing = @(Get-ChildItem -Recurse scripts -Filter *.ps1 |
+            Where-Object { $_.Name -notlike '*.Tests.ps1' } | ForEach-Object {
+              $rel = [IO.Path]::GetRelativePath((Get-Location).Path, $_.FullName) -replace '\.ps1$', '.Tests.ps1'
+              $test = Join-Path 'Tests' ($rel -replace '^scripts[\\/]', '')
+              if (-not (Test-Path $test)) { $_.FullName }
+            })
+          if ($missing.Count -gt 0) {
+            Write-Host "::error::Missing mirrored test files:" -ForegroundColor Red
+            $missing | ForEach-Object { Write-Host "  $_" }
+            exit 1
+          }
+          Write-Host "All scripts have mirrored test files." -ForegroundColor Green
 
       - name: Module import smoke check (gating)
         id: module_smoke
         shell: pwsh
         run: |
           # Gating: the generated module must import cleanly and expose the full catalog.
-          # Pester failures above stay informational; this check gates via the summary job.
+          # Pester failures above already fail the job; this check gates via the summary job.
           Import-Module ./src/BugFreeUmbrella -Force -ErrorAction Stop
           $commandCount = (Get-Command -Module BugFreeUmbrella | Measure-Object).Count
           Write-Host "BugFreeUmbrella exported commands: $commandCount" -ForegroundColor Cyan
@@ -270,14 +282,11 @@ jobs:
           echo "=== Validation Summary ==="
           echo "PSScriptAnalyzer: ${{ needs.analyze.result }} (gating - fails on errors)"
           echo "Syntax Check: ${{ needs.syntax-check.result }} (gating - fails on errors)"
-          echo "Pester Tests: ${{ needs.test.result }} (informational - does not gate merge; coverage is informational)"
+          echo "Pester Tests: ${{ needs.test.result }} (gating - fails on test failures)"
           echo "Module Smoke: ${{ needs.test.outputs.module_smoke }} (gating - module must import with >= 350 commands)"
           echo ""
-          if [ "${{ needs.analyze.result }}" != "success" ] || [ "${{ needs.syntax-check.result }}" != "success" ] || [ "${{ needs.test.outputs.module_smoke }}" != "success" ]; then
+          if [ "${{ needs.analyze.result }}" != "success" ] || [ "${{ needs.syntax-check.result }}" != "success" ] || [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.test.outputs.module_smoke }}" != "success" ]; then
             echo "❌ One or more gating validation checks failed"
             exit 1
           fi
           echo "✓ All gating validation checks completed!"
-          if [ "${{ needs.test.result }}" != "success" ] && [ "${{ needs.test.result }}" != "skipped" ]; then
-            echo "⚠️ Pester tests had failures — informational only for now"
-          fi

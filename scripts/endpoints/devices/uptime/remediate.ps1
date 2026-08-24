@@ -1,58 +1,90 @@
-<#
+﻿<#
 .SYNOPSIS
-    Deploy the restart notification script and scheduled task
+    Deploy the restart notification script and scheduled task.
 
 .DESCRIPTION
-    Deploys a toast notification script (RestartNotification.ps1) and registers a scheduled task that shows it after the uptime/detect.ps1 script flags a device that has not been restarted for 4+ days. Installs the BurntToast module when missing, downloads the branding logo image, and registers a one-shot scheduled task that triggers 15 seconds after deployment.
+    Deploys a toast notification script (RestartNotification.ps1) and registers a scheduled task that
+    shows it after uptime/detect.ps1 flags a device that has not been restarted for 4+ days. Installs
+    the BurntToast module when missing and registers a one-shot scheduled task that triggers 15 seconds
+    after deployment. Destructive steps (replacing an existing task) honor -WhatIf/-Confirm.
+    Idempotent: re-running on a converged device succeeds and only refreshes the same task.
+    Exit codes: 0 = deployment succeeded; 1 = any deployment step failed.
 
 .EXAMPLE
-    ./remediate.ps1
+    PS C:\> .\remediate.ps1
+
+    Deploys the restart notification script and registers the RestartNotification scheduled task.
+
+.EXAMPLE
+    PS C:\> .\remediate.ps1 -WhatIf
+
+    Shows which files would be written and tasks registered without changing the system.
 
 .NOTES
     File Name  : remediate.ps1
     Author     : Intune / Proactive Remediations
-    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Prerequisite: PowerShell 7.0
     Version    : 1.0.0
-    Date       : 2026-08-08
+    Date       : 2026-08-23
 #>
 
-# Wrapper script to deploy and trigger your notification script via scheduled task
+[CmdletBinding(SupportsShouldProcess)]
+param()
 
-# Paths and variables
-$LogPath = "C:\IT_Logs"
-if (-not (Test-Path $LogPath)) {
-    New-Item -ItemType Directory -Path $LogPath -Force | Out-Null
+# PSAvoidUsingWriteHost is intentionally accepted: prefixed, colored console output is the mandated
+# output convention of docs/RELAUNCH-SPEC.md section 3.
+$ErrorActionPreference = 'Stop'
+
+$LogPath = 'C:\IT_Logs'
+$TaskName = 'RestartNotification'
+
+function Write-DeploymentLog {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Message,
+
+        [string]$LogRoot = $LogPath
+    )
+
+    $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+    $logFile = Join-Path $LogRoot 'DeployRestartNotification.log'
+    "$timestamp - $Message" | Out-File -FilePath $logFile -Append -Encoding UTF8
+    Write-Host "[*] $Message" -ForegroundColor Cyan  # For Intune 'Post Remediation Detection Output'
 }
 
-function Write-Log {
-    param([string]$Message)
-    $Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    "$Timestamp - $Message" | Out-File -FilePath "$LogPath\DeployRestartNotification.log" -Append -Encoding UTF8
-    Write-Output "$Timestamp - $Message" # For Intune 'Post Remediation Detection Output'
-}
+function Install-BurntToastModule {
+    # Module-installation seam (network operation): tests mock this function.
+    [CmdletBinding()]
+    param()
 
-Write-Log "Deployment script started."
-
-# === Check BurntToast module on deployment machine and install if missing ===
-if (-not (Get-Module -ListAvailable -Name BurntToast)) {
-    Write-Log "BurntToast module not found. Installing..."
-    try {
-        Install-Module -Name BurntToast -Force -Scope CurrentUser -AllowClobber -ErrorAction Stop
-        Write-Log "BurntToast module installed successfully."
+    if (Get-Module -ListAvailable -Name BurntToast) {
+        Write-DeploymentLog 'BurntToast module already installed.'
+        return
     }
-    catch {
-        Write-Error "Failed to install BurntToast module: $_"
-        exit 1
-    }
-}
-else {
-    Write-Log "BurntToast module already installed."
+
+    Write-DeploymentLog 'BurntToast module not found. Installing...'
+    Install-Module -Name BurntToast -Force -Scope CurrentUser -AllowClobber -ErrorAction Stop
+    Write-DeploymentLog 'BurntToast module installed successfully.'
 }
 
-# Where to save your notification script
-$NotificationScriptPath = "$env:LOCALAPPDATA\Temp\RestartNotification.ps1"
+function Save-RestartNotificationScript {
+    # File-write seam so tests can verify the deployed script without touching disk.
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Path,
 
-# Your exact notification script content as a here-string
+        [Parameter(Mandatory)]
+        [ValidateNotNullOrEmpty()]
+        [string]$Content
+    )
+
+    Set-Content -Path $Path -Value $Content -Force -Encoding UTF8 -ErrorAction Stop
+}
+
 $NotificationScriptContent = @'
 # Set up logging
 $LogPath = "C:\IT_Logs"
@@ -66,7 +98,7 @@ function Write-Log {
     "$Timestamp - $Message" | Out-File -FilePath "$LogPath\RestartNotification.log" -Append -Encoding UTF8
 }
 
-Write-Log "Notification script started."
+Write-DeploymentLog "Notification script started."
 
 # Ensure TLS 1.2 (GitHub requires it)
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
@@ -76,18 +108,18 @@ $LogoImageUri = "https://raw.githubusercontent.com/insignit/endpointmanagerbrand
 $LogoImage = "$env:TEMP\ToastLogoImage.png"
 
 if (-not (Test-Path $LogoImage) -or ((Get-Item $LogoImage).Length -eq 0)) {
-    Write-Log "Downloading logo image $LogoImageUri"
+    Write-DeploymentLog "Downloading logo image $LogoImageUri"
     try {
         Invoke-WebRequest -Uri $LogoImageUri -OutFile $LogoImage -UseBasicParsing -TimeoutSec 15 -ErrorAction Stop
-        Write-Log "Downloaded logo image $LogoImage"
+        Write-DeploymentLog "Downloaded logo image $LogoImage"
     }
     catch {
-        Write-Log "Failed to download logo image: $_"
+        Write-DeploymentLog "Failed to download logo image: $_"
         Exit 1
     }
 }
 else {
-    Write-Log "Logo image already exists: $LogoImage"
+    Write-DeploymentLog "Logo image already exists: $LogoImage"
 }
 
     # Get time since last restart for notification text
@@ -98,78 +130,108 @@ else {
         $UptimeDays = [math]::Floor($Uptime.TotalDays)
     }
     catch {
-        Write-Log "Failed to get uptime: $_"
+        Write-DeploymentLog "Failed to get uptime: $_"
         $UptimeDays = "unknown"
     }
 
 # Show toast notification with buttons
 try {
     Import-Module BurntToast
-    
+
     # Create toast buttons
     $btnRestart = New-BTButton -Content "Restart Now" -Arguments "shutdown /r /t 0" -ActivationType Protocol
     $btnRemind = New-BTButton -Content "Remind Me Later" -Arguments "dismiss" -ActivationType Protocol
 
     # Show toast with buttons
+    $toastText = @(
+        "Restart Required",
+        "Your device has not been restarted in $UptimeDays days.",
+        "Restart for better performance and security."
+    )
     New-BurntToastNotification `
-        -Text "Restart Required", "Your device has not been restarted in $UptimeDays days.", "Restart for better performance and security." `
+        -Text $toastText `
         -AppLogo $LogoImage `
         -Button $btnRestart, $btnRemind
 
-    Write-Log "Toast notification shown successfully with buttons."
+    Write-DeploymentLog "Toast notification shown successfully with buttons."
 }
 catch {
-    Write-Log "Failed to show toast notification: $_"
+    Write-DeploymentLog "Failed to show toast notification: $_"
     Exit 1
 }
 
-Write-Log "Notification script completed."
+Write-DeploymentLog "Notification script completed."
 Exit 0
 '@
 
-# Save the notification script
-try {
-    Set-Content -Path $NotificationScriptPath -Value $NotificationScriptContent -Force -Encoding UTF8
-    Write-Log "Notification script saved to $NotificationScriptPath."
-}
-catch {
-    Write-Error "Failed to save notification script: $_"
-    exit 1
-}
+function Main {
+    [CmdletBinding(SupportsShouldProcess)]
+    [OutputType([int])]
+    param()
 
-# Scheduled task details
-$TaskName = "RestartNotification"
+    try {
+        Write-DeploymentLog 'Deployment script started.'
 
-# Remove existing task if present
-try {
-    if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
-        Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
-        Write-Log "Existing scheduled task '$TaskName' removed."
+        if (-not (Test-Path $LogPath)) {
+            if ($PSCmdlet.ShouldProcess($LogPath, 'Create log directory')) {
+                New-Item -ItemType Directory -Path $LogPath -Force -ErrorAction Stop | Out-Null
+            }
+        }
+
+        Install-BurntToastModule
+
+        # Where to save the notification script.
+        $notificationScriptPath = "$env:LOCALAPPDATA\Temp\RestartNotification.ps1"
+
+        if ($PSCmdlet.ShouldProcess($notificationScriptPath, 'Write restart notification script')) {
+            Save-RestartNotificationScript -Path $notificationScriptPath -Content $NotificationScriptContent
+            Write-DeploymentLog "Notification script saved to $notificationScriptPath."
+        }
+
+        # Remove existing task if present (destructive: gated by ShouldProcess).
+        if (Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue) {
+            if ($PSCmdlet.ShouldProcess($TaskName, 'Remove existing scheduled task')) {
+                Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction Stop
+                Write-DeploymentLog "Existing scheduled task '$TaskName' removed."
+            }
+        }
+
+        # Scheduled task action: run the notification script hidden, bypassing execution policy.
+        $actionArgs = @{
+            Execute  = 'powershell.exe'
+            Argument = "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$notificationScriptPath`""
+        }
+        $action = New-ScheduledTaskAction @actionArgs
+
+        # Trigger: run once, 15 seconds from now.
+        $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(15)
+
+        # Principal: current user, interactive logon, limited privileges.
+        $currentUser = "$env:USERDOMAIN\$env:USERNAME"
+        $principal = New-ScheduledTaskPrincipal -UserId $currentUser -LogonType Interactive -RunLevel Limited
+
+        if ($PSCmdlet.ShouldProcess($TaskName, 'Register restart notification scheduled task')) {
+            $registerArgs = @{
+                TaskName  = $TaskName
+                Action    = $action
+                Trigger   = $trigger
+                Principal = $principal
+                Force     = $true
+            }
+            Register-ScheduledTask @registerArgs -ErrorAction Stop | Out-Null
+            Write-DeploymentLog "Scheduled task '$TaskName' registered successfully."
+        }
+
+        Write-DeploymentLog 'Deployment script completed. Waiting for scheduled task to trigger.'
+        Write-Host '[+] Restart notification deployed.' -ForegroundColor Green
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
 }
-catch {
-    Write-Error "Failed to remove existing task: $_"
-}
 
-# Create scheduled task action to run your script
-$Action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$NotificationScriptPath`""
+# Execute only when run as a script; dot-sourcing (Pester tests) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main @PSBoundParameters) }
 
-# Trigger: run once, 15 seconds from now
-$Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(15)
-
-# Principal: current user, interactive logon, limited privileges
-$CurrentUser = "$env:USERDOMAIN\$env:USERNAME"
-$Principal = New-ScheduledTaskPrincipal -UserId $CurrentUser -LogonType Interactive -RunLevel Limited
-
-# Register the scheduled task
-try {
-    Register-ScheduledTask -TaskName $TaskName -Action $Action -Trigger $Trigger -Principal $Principal -Force
-    Write-Log "Scheduled task '$TaskName' registered successfully."
-}
-catch {
-    Write-Error "Failed to register scheduled task: $_"
-    exit 1
-}
-
-Write-Log "Deployment script completed. Waiting for scheduled task to trigger."
-exit 0

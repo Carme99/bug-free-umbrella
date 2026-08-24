@@ -161,6 +161,7 @@ function Get-TagsFromSynopsis {
 
 $psFiles = Get-ChildItem -Path $scriptsRoot -Filter '*.ps1' -Recurse -File |
     Where-Object { $_.FullName -notmatch '/devices/(winget|proactive-remediations)/' } |
+    Where-Object { $_.Name -notlike '*.Tests.ps1' } |
     Sort-Object FullName
 
 $entries = [System.Collections.Generic.List[object]]::new()
@@ -324,7 +325,7 @@ $catalog = [ordered]@{
     scripts       = @($sortedEntries)
 }
 
-$json = $catalog | ConvertTo-Json -Depth 6
+$json = ($catalog | ConvertTo-Json -Depth 6) -replace "`r`n", "`n"
 
 # -------------------------------------------------------------------------
 # Validate mode
@@ -378,8 +379,9 @@ if (-not (Test-Path -LiteralPath $outDir)) {
     New-Item -ItemType Directory -Path $outDir -Force | Out-Null
 }
 
-# Write UTF8 (no BOM required for JSON; BOM is okay but we use UTF8 without BOM via .NET)
-[System.IO.File]::WriteAllText($OutputPath, $json + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
+# Byte-deterministic across platforms: UTF-8 without BOM, LF newlines only
+# (ConvertTo-Json/[Environment]::NewLine would emit CRLF on Windows).
+[System.IO.File]::WriteAllText($OutputPath, $json + "`n", [System.Text.UTF8Encoding]::new($false))
 
 Write-Host "[+] Catalog generated: $OutputPath" -ForegroundColor Green
 Write-Host ("    totalScripts={0}  withoutSynopsis={1}" -f $sortedEntries.Count, $withoutSynopsis) -ForegroundColor Cyan

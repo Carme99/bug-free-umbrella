@@ -1,62 +1,82 @@
-<#
+﻿<#
 .SYNOPSIS
     Detect Windows Update policy drift (Autopatch V2)
 
 .DESCRIPTION
-    Checks the registry for the Windows Update policies DoNotConnectToWindowsUpdateInternetLocations and NoAutoUpdate (the supported WUaaS controls; DisableWindowsUpdateAccess is unsupported on Windows 10+ / Server 2016+). Exits 1 when drift is found so the paired remediation can remove the values. Logs via Start-Transcript.
+    Checks the registry for the Windows Update policies DoNotConnectToWindowsUpdateInternetLocations and
+    NoAutoUpdate. DisableWindowsUpdateAccess is unsupported on Windows 10+ / Server 2016+, so this pair manages
+    the supported WUaaS controls instead.
+    Intune Proactive Remediation detection script: exits 1 when any managed value is present (drift, remediation
+    needed) and 0 when the device is compliant. Logs to the Intune Management Extension log directory via
+    Start-Transcript.
+    See https://learn.microsoft.com/en-us/windows/deployment/update/waas-wu-settings
 
 .EXAMPLE
-    ./AP_Detection.ps1
+    PS C:\> .\AP_Detection.ps1
+
+    Runs the detection; exit 0 means compliant, exit 1 means drift was found.
+
+.EXAMPLE
+    PS C:\> .\AP_Detection.ps1 -Verbose
+
+    Runs the detection with verbose preference enabled.
 
 .NOTES
     File Name  : AP_Detection.ps1
     Author     : Intune / Proactive Remediations
-    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Prerequisite: PowerShell 5.1+
     Version    : 1.0.0
-    Date       : 2026-08-08
+    Date       : 2026-08-23
 #>
 
-$TranscriptPath = "C:\ProgramData\Microsoft\IntuneManagementExtension\Logs"
-$TranscriptName = "AutoPatchDetection.log"
-New-Item $TranscriptPath -ItemType Directory -Force
+[CmdletBinding()]
+param()
 
-# stopping orphaned transcripts
-try {
-    Stop-Transcript | Out-Null
+# PSScriptAnalyzer: Write-Host with prefix/color output is mandated by docs/RELAUNCH-SPEC.md section 3.
+
+$ErrorActionPreference = 'Stop'
+
+$TranscriptPath = 'C:\ProgramData\Microsoft\IntuneManagementExtension\Logs'
+$TranscriptName = 'AutoPatchDetection.log'
+
+$regkeys = @(
+    @{ Name = 'DoNotConnectToWindowsUpdateInternetLocations'
+       Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate' },
+    @{ Name = 'NoAutoUpdate'
+       Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU' }
+)
+
+function Start-DetectionLog {
+# Opens the Intune transcript, stopping any orphaned session first.
+    # PSSA justification: New-Item only creates the Intune log directory; non-destructive and idempotent.
+    New-Item -Path $TranscriptPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
+    try { Stop-Transcript | Out-Null } catch { Write-Verbose 'No active transcript to stop' }
+    Start-Transcript -Path "$TranscriptPath\$TranscriptName" -Append -ErrorAction Stop
 }
-catch [System.InvalidOperationException] {
-    Write-Verbose "No active transcript to stop: $($_.Exception.Message)" -Verbose:$false
-}
 
-Start-Transcript -Path $TranscriptPath\$TranscriptName -Append
-
-
-# initialize the array
-[PsObject[]]$regkeys = @()
-# populate the array with each object
-# NOTE: "DisableWindowsUpdateAccess" ("Remove access to use all Windows Update features")
-# is not supported on Windows 10+ / Server 2016+; the supported WUaaS control is
-# NoAutoUpdate under ...\WindowsUpdate\AU (see waas-wu-settings).
-$regkeys += [PsObject]@{ Name = "DoNotConnectToWindowsUpdateInternetLocations"; path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\" }
-$regkeys += [PsObject]@{ Name = "NoAutoUpdate"; path = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU\" }
-
-
-foreach ($setting in $regkeys) {
-    Write-Host "checking $($setting.name)"
-    if ((Get-Item $setting.path -ErrorAction Ignore).Property -contains $setting.name) {
-        Write-Host "$($setting.name) is not correct"
-        $RemediationNeeded = $true
+function Main {
+    try {
+        Start-DetectionLog
+        $remediationNeeded = $false
+        foreach ($setting in $regkeys) {
+            Write-Host "[*] Checking $($setting.Name)" -ForegroundColor Cyan
+            if ((Get-Item -Path $setting.Path -ErrorAction Ignore).Property -contains $setting.Name) {
+                Write-Host "[!] $($setting.Name) is present and should be removed." -ForegroundColor Yellow
+                $remediationNeeded = $true
+            }
+        }
+        Stop-Transcript
+        if ($remediationNeeded) {
+            return 1
+        }
+        Write-Host '[+] Registry settings are correct.' -ForegroundColor Green
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        try { Stop-Transcript | Out-Null } catch { Write-Verbose 'No active transcript to stop' }
+        return 1
     }
 }
 
-
-if ($RemediationNeeded -eq $true) {
-    Write-Host "registry settings are incorrect"
-    Stop-Transcript
-    exit 1
-}
-else {
-    Write-Host "registry settings are correct"
-    Stop-Transcript
-    exit 0
-}
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

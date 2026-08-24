@@ -35,25 +35,27 @@
     Export full user report to HTML file.
 
 .EXAMPLE
-    .\Get-M365UserInfo.ps1
+    PS C:\> .\Get-M365UserInfo.ps1
     Prompts for user email and displays interactive menu.
 
 .EXAMPLE
-    .\Get-M365UserInfo.ps1 -UserEmail "john.doe@contoso.com" -AutoConnect
+    PS C:\> .\Get-M365UserInfo.ps1 -UserEmail "john.doe@contoso.com" -AutoConnect
     Connects automatically and displays menu for specific user.
 
 .EXAMPLE
-    .\Get-M365UserInfo.ps1 -UserEmail "john.doe@contoso.com" -QuickView
+    PS C:\> .\Get-M365UserInfo.ps1 -UserEmail "john.doe@contoso.com" -QuickView
     Displays quick summary without interactive menu.
 
 .EXAMPLE
-    .\Get-M365UserInfo.ps1 -UserEmail "john.doe@contoso.com" -ExportReport
+    PS C:\> .\Get-M365UserInfo.ps1 -UserEmail "john.doe@contoso.com" -ExportReport
     Generates comprehensive HTML report for the user.
 
 .NOTES
-    Author: IT Operations
-    Version: 1.0.0
-    Requires: PowerShell 7
+    File Name  : Get-M365UserInfo.ps1
+    Author     : IT Operations
+    Prerequisite: PowerShell 7.0
+    Version    : 1.0.0
+    Date       : 2026-08-23
 
     Required Modules:
     - ExchangeOnlineManagement (Exchange operations)
@@ -184,7 +186,8 @@ function Test-EmailAddress {
     if ([string]::IsNullOrWhiteSpace($Email)) { return $false }
 
     # Improved regex that doesn't allow invalid patterns like user@.com
-    $pattern = '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$'
+    $pattern = '^[a-zA-Z0-9.!#$%&''*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?' +
+        '(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$'
 
     return $Email -match $pattern
 }
@@ -222,7 +225,8 @@ function Connect-M365Services {
         else {
             $exoConnection = Get-ConnectionInformation -ErrorAction SilentlyContinue
             if ($exoConnection) {
-                Write-Host "[+] Exchange Online: Connected as $($exoConnection.UserPrincipalName)" -ForegroundColor Green
+                Write-Host "[+] Exchange Online: Connected as $($exoConnection.UserPrincipalName)" `
+                    -ForegroundColor Green
                 $script:ConnectedServices.ExchangeOnline = $true
             }
             elseif ($Force -or $AutoConnect) {
@@ -254,7 +258,8 @@ function Connect-M365Services {
             }
             elseif ($Force -or $AutoConnect) {
                 Write-Host "[!] Connecting to Microsoft Graph..." -ForegroundColor Yellow
-                Connect-MgGraph -Scopes "User.Read.All", "Directory.Read.All", "Reports.Read.All", "Group.Read.All" -NoWelcome -ErrorAction Stop
+                Connect-MgGraph -Scopes "User.Read.All", "Directory.Read.All", "Reports.Read.All", "Group.Read.All" `
+                    -NoWelcome -ErrorAction Stop
                 Write-Host "[+] Microsoft Graph: Connected" -ForegroundColor Green
                 $script:ConnectedServices.MicrosoftGraph = $true
             }
@@ -307,7 +312,10 @@ function Get-UserBasicInfo {
     # Get Azure AD user info
     if ($script:ConnectedServices.MicrosoftGraph) {
         try {
-            $user = Get-MgUser -UserId $Email -Property "DisplayName,UserPrincipalName,Mail,JobTitle,Department,OfficeLocation,MobilePhone,BusinessPhones,AccountEnabled,CreatedDateTime,SignInActivity" -ErrorAction Stop
+            $userProps = "DisplayName", "UserPrincipalName", "Mail", "JobTitle", "Department",
+                "OfficeLocation", "MobilePhone", "BusinessPhones", "AccountEnabled",
+                "CreatedDateTime", "SignInActivity"
+            $user = Get-MgUser -UserId $Email -Property $userProps -ErrorAction Stop
             $script:UserData.AzureADUser = $user
             $script:UserData.JobTitle = $user.JobTitle
             $script:UserData.Department = $user.Department
@@ -366,7 +374,8 @@ function Get-MailboxStatistics {
         # Use safe parsing function with error handling
         $mailboxSizeGB = Get-MailboxSizeGB $stats.TotalItemSize
 
-        $mailboxDetails = Get-EXOMailbox -Identity $script:UserData.UserPrincipalName -Properties ProhibitSendQuota, ArchiveStatus
+        $mailboxDetails = Get-EXOMailbox -Identity $script:UserData.UserPrincipalName `
+            -Properties ProhibitSendQuota, ArchiveStatus
 
         # Parse quota safely
         $quotaGB = if ($mailboxDetails.ProhibitSendQuota -ne 'Unlimited') {
@@ -384,7 +393,8 @@ function Get-MailboxStatistics {
         Write-Host "╠══════════════════════════════════════════════════════════════╣" -ForegroundColor Cyan
         Write-Host "║ Mailbox Size    : $mailboxSizeGB GB" -ForegroundColor White
         Write-Host "║ Quota           : $quotaGB GB" -ForegroundColor White
-        Write-Host "║ Quota Used      : $quotaPercent%" -ForegroundColor $(if ($quotaPercent -ge 90) { "Red" } elseif ($quotaPercent -ge 80) { "Yellow" } else { "Green" })
+        $quotaColor = if ($quotaPercent -ge 90) { "Red" } elseif ($quotaPercent -ge 80) { "Yellow" } else { "Green" }
+        Write-Host "║ Quota Used      : $quotaPercent%" -ForegroundColor $quotaColor
         Write-Host "║ Item Count      : $($stats.ItemCount)" -ForegroundColor White
         Write-Host "║ Last Logon      : $($stats.LastLogonTime)" -ForegroundColor White
         Write-Host "║ Archive Status  : $($mailboxDetails.ArchiveStatus)" -ForegroundColor White
@@ -521,7 +531,8 @@ function Get-UserSignInActivity {
             Write-Host "║                   SIGN-IN ACTIVITY                           ║" -ForegroundColor Cyan
             Write-Host "╠══════════════════════════════════════════════════════════════╣" -ForegroundColor Cyan
             Write-Host "║ Last Sign-In         : $($user.SignInActivity.LastSignInDateTime)" -ForegroundColor White
-            Write-Host "║ Last Interactive     : $($user.SignInActivity.LastNonInteractiveSignInDateTime)" -ForegroundColor White
+            Write-Host "║ Last Interactive     : $($user.SignInActivity.LastNonInteractiveSignInDateTime)" `
+                -ForegroundColor White
             Write-Host "╚══════════════════════════════════════════════════════════════╝" -ForegroundColor Cyan
         }
         else {
@@ -543,15 +554,17 @@ function Invoke-QuarantineManagement {
 
     try {
         $startDate = (Get-Date).AddDays(-7)
-        $messages = Get-QuarantineMessage -RecipientAddress $script:UserData.PrimaryEmail -StartReceivedDate $startDate -ErrorAction Stop
+        $messages = Get-QuarantineMessage -RecipientAddress $script:UserData.PrimaryEmail `
+            -StartReceivedDate $startDate -ErrorAction Stop
 
         if ($messages) {
             Write-Host "[+] Found $($messages.Count) quarantined message(s)" -ForegroundColor Green
-            Write-Host "[i] Launch Manage-QuarantinedEmails.ps1 for full management interface" -ForegroundColor Cyan
+            Write-Host "[*] Launch Manage-QuarantinedEmails.ps1 for full management interface" -ForegroundColor Cyan
             Write-Host ""
 
             $messages | Select-Object -First 5 | ForEach-Object {
-                Write-Host "  • $($_.ReceivedTime.ToString('yyyy-MM-dd HH:mm')) - From: $($_.SenderAddress)" -ForegroundColor Yellow
+                Write-Host "  • $($_.ReceivedTime.ToString('yyyy-MM-dd HH:mm')) - From: $($_.SenderAddress)" `
+                    -ForegroundColor Yellow
                 Write-Host "    Subject: $($_.Subject)" -ForegroundColor Gray
                 Write-Host "    Reason: $($_.QuarantineTypes -join ', ')" -ForegroundColor Gray
                 Write-Host ""
@@ -597,7 +610,7 @@ function Export-UserReport {
     $safeEmail = Get-SafeFileName $script:UserData.UserPrincipalName
     $reportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
     if (-not (Test-Path -LiteralPath $reportDir -PathType Container)) {
-        New-Item -ItemType Directory -Path $reportDir -Force | Out-Null
+        New-Item -ItemType Directory -Path $reportDir -Force -ErrorAction Stop | Out-Null
     }
     $reportPath = Join-Path $reportDir "M365_UserReport_${safeEmail}_$timestamp.html"
 
@@ -608,6 +621,8 @@ function Export-UserReport {
     $safeJobTitle = ConvertTo-HtmlSafe $script:UserData.JobTitle
     $safeDepartment = ConvertTo-HtmlSafe $script:UserData.Department
     $safeMailboxType = ConvertTo-HtmlSafe $script:UserData.MailboxType
+    $statusClass = if ($script:UserData.AccountEnabled) { 'status-enabled' } else { 'status-disabled' }
+    $statusText = if ($script:UserData.AccountEnabled) { 'Enabled' } else { 'Disabled' }
 
     $html = @"
 <!DOCTYPE html>
@@ -618,7 +633,8 @@ function Export-UserReport {
         body { font-family: 'Segoe UI', Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
         h1 { color: #0078d4; border-bottom: 3px solid #0078d4; padding-bottom: 10px; }
         h2 { color: #505050; margin-top: 30px; background-color: #e0e0e0; padding: 10px; border-radius: 5px; }
-        .section { background: white; padding: 20px; margin: 10px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .section { background: white; padding: 20px; margin: 10px 0; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         table { border-collapse: collapse; width: 100%; margin-top: 10px; }
         th { background-color: #0078d4; color: white; padding: 10px; text-align: left; }
         td { padding: 10px; border-bottom: 1px solid #ddd; }
@@ -642,19 +658,21 @@ function Export-UserReport {
             <tr><td class="label">Job Title</td><td>$safeJobTitle</td></tr>
             <tr><td class="label">Department</td><td>$safeDepartment</td></tr>
             <tr><td class="label">Mailbox Type</td><td>$safeMailboxType</td></tr>
-            <tr><td class="label">Account Status</td><td class="$(if ($script:UserData.AccountEnabled) { 'status-enabled' } else { 'status-disabled' })">$(if ($script:UserData.AccountEnabled) { 'Enabled' } else { 'Disabled' })</td></tr>
+            <tr><td class="label">Account Status</td><td class="$statusClass">$statusText</td></tr>
         </table>
     </div>
 
     <div class="footer">
         Generated by Get-M365UserInfo.ps1<br>
-        <strong>Note:</strong> This report has not been thoroughly tested. Please validate before making operational decisions.
+        <strong>Note:</strong> This report has not been thoroughly tested.
+        Please validate before making operational decisions.
     </div>
 </body>
 </html>
 "@
 
-    $html | Out-File -FilePath $reportPath -Encoding UTF8
+    # PS 7+ default encoding is UTF-8 (no BOM); omitting -Encoding avoids re-specifying it
+    $html | Out-File -FilePath $reportPath -ErrorAction Stop
     Write-Host "[+] Report saved to: $reportPath" -ForegroundColor Green
 }
 
@@ -662,92 +680,106 @@ function Export-UserReport {
 
 #region Main Execution
 
-Show-Banner
+function Main {
+    try {
+    Show-Banner
 
-# Connect to services
-if (-not (Connect-M365Services)) {
-    if (-not $AutoConnect) {
-        Write-Host "[?] Would you like to connect now? (Y/N): " -ForegroundColor Yellow -NoNewline
-        $response = Read-Host
-        if ($response -eq 'Y' -or $response -eq 'y') {
-            Connect-M365Services -Force
-        }
-        else {
-            Write-Host "`n[-] Cannot proceed without service connections. Exiting." -ForegroundColor Red
-            exit 1
-        }
-    }
-}
-
-# Get user email
-if ([string]::IsNullOrWhiteSpace($UserEmail)) {
-    $UserEmail = Get-UserEmailInteractive
-    if (-not $UserEmail) {
-        Write-Host "[-] No valid email provided. Exiting." -ForegroundColor Red
-        exit 1
-    }
-}
-
-# Validate and get user info
-if (-not (Get-UserBasicInfo -Email $UserEmail)) {
-    Write-Host "[-] Unable to retrieve user information. Exiting." -ForegroundColor Red
-    exit 1
-}
-
-# Display initial summary
-Show-UserSummary
-
-# Quick view mode
-if ($QuickView) {
-    Get-MailboxStatistics
-    Get-UserLicenses
-    Invoke-QuarantineManagement
-    Write-Host "`n[+] Quick view completed!" -ForegroundColor Green
-    exit 0
-}
-
-# Export report mode
-if ($ExportReport) {
-    Export-UserReport
-    exit 0
-}
-
-# Interactive menu loop
-$continue = $true
-while ($continue) {
-    Show-MainMenu
-    $choice = Read-Host
-
-    switch ($choice) {
-        '1' { Get-MailboxStatistics }
-        '2' { Get-UserLicenses }
-        '3' { Invoke-QuarantineManagement }
-        '4' { Get-UserGroupMemberships }
-        '5' { Get-UserMobileDevices }
-        '6' { Get-UserSignInActivity }
-        '7' { Show-UserSummary }
-        '8' { Export-UserReport }
-        '9' {
-            $UserEmail = Get-UserEmailInteractive
-            if ($UserEmail) {
-                if (Get-UserBasicInfo -Email $UserEmail) {
-                    Show-UserSummary
-                }
+    # Connect to services
+    if (-not (Connect-M365Services)) {
+        if (-not $AutoConnect) {
+            Write-Host "[?] Would you like to connect now? (Y/N): " -ForegroundColor Yellow -NoNewline
+            $response = Read-Host
+            if ($response -eq 'Y' -or $response -eq 'y') {
+                Connect-M365Services -Force
+            }
+            else {
+                Write-Host "`n[-] Cannot proceed without service connections. Exiting." -ForegroundColor Red
+                return 1
             }
         }
-        '0' {
-            Write-Host "`n[+] Thank you for using M365 User Info Toolkit!" -ForegroundColor Green
-            $continue = $false
-        }
-        default {
-            Write-Host "[-] Invalid option. Please select 0-9." -ForegroundColor Red
+    }
+
+    # Get user email
+    if ([string]::IsNullOrWhiteSpace($UserEmail)) {
+        $UserEmail = Get-UserEmailInteractive
+        if (-not $UserEmail) {
+            Write-Host "[-] No valid email provided. Exiting." -ForegroundColor Red
+            return 1
         }
     }
 
-    if ($continue) {
-        Write-Host "`nPress any key to continue..." -ForegroundColor Gray
-        $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+    # Validate and get user info
+    if (-not (Get-UserBasicInfo -Email $UserEmail)) {
+        Write-Host "[-] Unable to retrieve user information. Exiting." -ForegroundColor Red
+        return 1
+    }
+
+    # Display initial summary
+    Show-UserSummary
+
+    # Quick view mode
+    if ($QuickView) {
+        Get-MailboxStatistics
+        Get-UserLicenses
+        Invoke-QuarantineManagement
+        Write-Host "`n[+] Quick view completed!" -ForegroundColor Green
+        return 0
+    }
+
+    # Export report mode
+    if ($ExportReport) {
+        Export-UserReport
+        return 0
+    }
+
+    # Interactive menu loop
+    $continue = $true
+    while ($continue) {
+        Show-MainMenu
+        $choice = Read-Host
+
+        switch ($choice) {
+            '1' { Get-MailboxStatistics }
+            '2' { Get-UserLicenses }
+            '3' { Invoke-QuarantineManagement }
+            '4' { Get-UserGroupMemberships }
+            '5' { Get-UserMobileDevices }
+            '6' { Get-UserSignInActivity }
+            '7' { Show-UserSummary }
+            '8' { Export-UserReport }
+            '9' {
+                $UserEmail = Get-UserEmailInteractive
+                if ($UserEmail) {
+                    if (Get-UserBasicInfo -Email $UserEmail) {
+                        Show-UserSummary
+                    }
+                }
+            }
+            '0' {
+                Write-Host "`n[+] Thank you for using M365 User Info Toolkit!" -ForegroundColor Green
+                $continue = $false
+            }
+            default {
+                Write-Host "[-] Invalid option. Please select 0-9." -ForegroundColor Red
+            }
+        }
+
+        if ($continue) {
+            Write-Host "`nPress any key to continue..." -ForegroundColor Gray
+            try { $null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown") }
+            catch { Write-Verbose "Key wait unavailable on non-interactive host: $($_.Exception.Message)" }
+        }
+    }
+
+        return 0
+    }
+    catch {
+        Write-Host "[-] Unexpected error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
 }
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }
 
 #endregion

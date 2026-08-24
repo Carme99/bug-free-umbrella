@@ -1,83 +1,117 @@
-<#
+﻿<#
 .SYNOPSIS
-    Remediate regional settings to UK standards
+    Remediate regional settings to UK standards.
 
 .DESCRIPTION
-    Sets the geographic location to United Kingdom, time zone to GMT Standard Time and culture to en-GB when they deviate from the required UK values, and reports each applied change.
+    Aligns the device regional configuration with the required UK values: sets
+    the geographic location to United Kingdom (GeoId 242), the time zone to GMT
+    Standard Time, the system locale and culture to en-GB, and makes en-GB the
+    primary entry of the user language list. Every deviation is corrected with a
+    persisted cmdlet call (Set-WinHomeLocation, Set-TimeZone, Set-WinSystemLocale,
+    Set-Culture, Set-WinUserLanguageList); each mutation is gated behind
+    -WhatIf/-Confirm via SupportsShouldProcess and reported. Re-running against an
+    already-compliant device makes no changes and still exits 0 (idempotent).
+    A restart may be required for some changes to fully take effect.
 
 .EXAMPLE
-    ./remediate.ps1
+    PS C:\> .\Invoke-RemediationRegionLanguageSettings.ps1
+
+    Applies every required UK regional setting that deviates on this device.
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationRegionLanguageSettings.ps1 -WhatIf
+
+    Shows which regional settings would be changed without changing anything.
 
 .NOTES
-    File Name  : remediate.ps1
+    File Name  : Invoke-RemediationRegionLanguageSettings.ps1
     Author     : Intune / Proactive Remediations
-    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Prerequisite: PowerShell 7.0
     Version    : 1.0.0
-    Date       : 2026-08-08
+    Date       : 2026-08-23
 #>
 
-# Remediate Windows client device regional settings to UK standards
-# Exit 0 if successful, Exit 1 if failed
+[CmdletBinding(SupportsShouldProcess)]
+param()
 
 $ErrorActionPreference = 'Stop'
 
-# Required settings
-$requiredCulture = 'en-GB'
-$requiredGeoId = 242  # United Kingdom
-$requiredTimeZone = 'GMT Standard Time'
+function Main {
+    # Advanced function so $PSCmdlet (and thus ShouldProcess) resolves inside Main.
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
 
-try {
-    $changes = @()
+    try {
+        Write-Host "[*] Remediating regional settings to UK standards..." -ForegroundColor Cyan
 
-    # Set geographic location to United Kingdom
-    $currentGeoId = (Get-WinHomeLocation).GeoId
-    if ($currentGeoId -ne $requiredGeoId) {
-        Set-WinHomeLocation -GeoId $requiredGeoId
-        $changes += "Geographic location set to UK"
+        # Required settings
+        $requiredCulture = 'en-GB'
+        $requiredGeoId = 242      # United Kingdom
+        $requiredTimeZone = 'GMT Standard Time'
+
+        $changes = @()
+
+        # Geographic location -> United Kingdom
+        $currentGeoId = (Get-WinHomeLocation -ErrorAction Stop).GeoId
+        if ($currentGeoId -ne $requiredGeoId) {
+            if ($PSCmdlet.ShouldProcess("GeoId $requiredGeoId (United Kingdom)", "Set geographic location")) {
+                Set-WinHomeLocation -GeoId $requiredGeoId -ErrorAction Stop
+                $changes += "Geographic location set to UK"
+            }
+        }
+
+        # Time zone -> GMT Standard Time
+        $currentTimeZone = (Get-TimeZone -ErrorAction Stop).Id
+        if ($currentTimeZone -ne $requiredTimeZone) {
+            if ($PSCmdlet.ShouldProcess($requiredTimeZone, "Set time zone")) {
+                Set-TimeZone -Id $requiredTimeZone -ErrorAction Stop
+                $changes += "Time zone set to GMT Standard Time"
+            }
+        }
+
+        # System locale -> en-GB
+        $systemLocale = (Get-WinSystemLocale -ErrorAction Stop).Name
+        if ($systemLocale -ne $requiredCulture) {
+            if ($PSCmdlet.ShouldProcess($requiredCulture, "Set system locale")) {
+                Set-WinSystemLocale -SystemLocale $requiredCulture -ErrorAction Stop
+                $changes += "System locale set to en-GB"
+            }
+        }
+
+        # Culture -> en-GB
+        $currentCulture = (Get-Culture).Name
+        if ($currentCulture -ne $requiredCulture) {
+            if ($PSCmdlet.ShouldProcess($requiredCulture, "Set culture")) {
+                Set-Culture -CultureInfo $requiredCulture -ErrorAction Stop
+                $changes += "Culture set to en-GB"
+            }
+        }
+
+        # User language list -> en-GB primary
+        $userLanguageList = @(Get-WinUserLanguageList -ErrorAction Stop)
+        $primaryLanguage = $userLanguageList[0].LanguageTag
+        if ($primaryLanguage -ne $requiredCulture) {
+            if ($PSCmdlet.ShouldProcess("$requiredCulture as primary language", "Set user language list")) {
+                $languageList = New-WinUserLanguageList -Language $requiredCulture -ErrorAction Stop
+                Set-WinUserLanguageList -LanguageList $languageList -Force -ErrorAction Stop
+                $changes += "Primary language set to en-GB"
+            }
+        }
+
+        if ($changes.Count -gt 0) {
+            Write-Host "[+] Regional settings remediated: $($changes -join '; ')" -ForegroundColor Green
+            Write-Host "[!] Restart may be required for all changes to take effect." -ForegroundColor Yellow
+        }
+        else {
+            Write-Host "[+] Already compliant: no regional changes needed" -ForegroundColor Green
+        }
+        return 0
     }
-
-    # Set time zone to GMT Standard Time
-    $currentTimeZone = (Get-TimeZone).Id
-    if ($currentTimeZone -ne $requiredTimeZone) {
-        Set-TimeZone -Id $requiredTimeZone
-        $changes += "Time zone set to GMT Standard Time"
-    }
-
-    # Set system locale
-    $systemLocale = (Get-WinSystemLocale).Name
-    if ($systemLocale -ne $requiredCulture) {
-        Set-WinSystemLocale -SystemLocale $requiredCulture
-        $changes += "System locale set to en-GB"
-    }
-
-    # Set culture
-    $currentCulture = (Get-Culture).Name
-    if ($currentCulture -ne $requiredCulture) {
-        Set-Culture -CultureInfo $requiredCulture
-        $changes += "Culture set to en-GB"
-    }
-
-    # Configure user language list
-    $userLanguageList = Get-WinUserLanguageList
-    $primaryLanguage = $userLanguageList[0].LanguageTag
-
-    if ($primaryLanguage -ne $requiredCulture) {
-        # Clear existing and set en-GB as primary
-        $languageList = New-WinUserLanguageList -Language $requiredCulture
-        Set-WinUserLanguageList -LanguageList $languageList -Force
-        $changes += "Primary language set to en-GB"
-    }
-
-    if ($changes.Count -gt 0) {
-        Write-Host "Regional settings remediated: $($changes -join '; '). Restart may be required for all changes to take effect."
-        exit 0
-    }
-    else {
-        Write-Host "No changes needed - already compliant"
-        exit 0
+    catch {
+        Write-Host "[-] Error remediating regional settings: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
 }
-catch {
-    Write-Host "Error remediating regional settings: $($_.Exception.Message)"
-    exit 1
-}
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

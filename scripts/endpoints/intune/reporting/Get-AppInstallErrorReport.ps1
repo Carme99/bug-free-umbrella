@@ -1,15 +1,22 @@
-<#
+﻿<#
 .SYNOPSIS
-    Detailed analysis of application installation failures.
+    Report detailed application installation failures from Microsoft Intune.
 
 .DESCRIPTION
-    Analyzes app deployment failures:
+    Analyzes app deployment failures reported by Intune:
     - Failed installations by app
     - Error codes and descriptions
     - Device-specific failures
     - User-specific failures
     - Installation attempt history
     - Remediation suggestions
+
+    The report is read-only: it never mutates tenant configuration, so it is safe to
+    re-run (idempotent). A summary is printed to the console and results can optionally
+    be exported to HTML and/or CSV under Documents\Reports.
+    Exit codes:
+    - 0: report generated successfully (including zero failures).
+    - 1: unsafe report path, missing prerequisite module, or the Graph query failed.
 
 .PARAMETER AppName
     Filter by specific application name.
@@ -27,11 +34,21 @@
     Export to CSV.
 
 .EXAMPLE
-    .\Get-AppInstallErrorReport.ps1 -Days 7 -ExportHTML
-    Reports on app failures in last 7 days.
+    PS C:\> .\Get-AppInstallErrorReport.ps1 -Days 7 -ExportHTML
+    Reports on app failures in last 7 days and writes an HTML report.
+
+.EXAMPLE
+    PS C:\> .\Get-AppInstallErrorReport.ps1 -AppName "Microsoft Edge" -Days 14 -Top 10 -ExportCSV
+    Reports the top 10 failures for Microsoft Edge over 14 days, exported as CSV.
 
 .NOTES
-    Requires Microsoft.Graph PowerShell module
+    File Name   : Get-AppInstallErrorReport.ps1
+    Author      : Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version     : 1.0.0
+    Date        : 2026-08-23
+
+    Requires the Microsoft.Graph.Authentication PowerShell module.
     Requires permissions: DeviceManagementApps.Read.All, DeviceManagementManagedDevices.Read.All
 #>
 
@@ -41,9 +58,11 @@ param(
     [string]$AppName,
 
     [Parameter(Mandatory = $false)]
+    [ValidateRange(1, [int]::MaxValue)]
     [int]$Days = 7,
 
     [Parameter(Mandatory = $false)]
+    [ValidateRange(1, [int]::MaxValue)]
     [int]$Top,
 
     [Parameter(Mandatory = $false)]
@@ -53,112 +72,150 @@ param(
     [switch]$ExportCSV
 )
 
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-if ([string]::IsNullOrWhiteSpace($ReportDir) -or
-    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
-    $ReportDir -match '^(\\\\|//)') {
-    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
-    exit 1
-}
-$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
-
-#Requires -Modules Microsoft.Graph.Authentication
-
-$script:report = @{
-    ScanTime = Get-Date
-    Days = $Days
-    Failures = @()
-    Summary = @{
-        TotalFailures = 0
-        UniqueApps = 0
-        UniqueDevices = 0
-    }
-}
+$ErrorActionPreference = 'Stop'
 
 function Write-ColorOutput {
+    <#
+    .SYNOPSIS
+        Writes a console message using the relaunch output-prefix color scheme.
+    #>
+    [CmdletBinding()]
     param([string]$Message, [string]$Level = 'Info')
     $color = switch ($Level) { 'Success' { 'Green' } 'Warning' { 'Yellow' } 'Error' { 'Red' } default { 'Cyan' } }
     Write-Host $Message -ForegroundColor $color
 }
 
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "  App Installation Error Report" -ForegroundColor Cyan
-Write-Host "========================================`n" -ForegroundColor Cyan
+function Main {
+    try {
+        $ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+        if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+            $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+            $ReportDir -match '^(\\\\|//)') {
+            Write-Host "[-] Unsafe report path: $ReportDir." `
+                "Report path must be a local absolute path without '..' traversal." -ForegroundColor Red
+            return 1
+        }
 
-Connect-MgGraph -Scopes "DeviceManagementApps.Read.All", "DeviceManagementManagedDevices.Read.All" -NoWelcome
+        if (-not (Get-Module -Name Microsoft.Graph.Authentication -ListAvailable)) {
+            Write-Host "[-] Microsoft.Graph.Authentication module not found!" -ForegroundColor Red
+            Write-Host "[!] Install with: Install-Module -Name Microsoft.Graph" -ForegroundColor Yellow
+            return 1
+        }
 
-Write-Host "Querying app installation status..." -ForegroundColor Cyan
-$cutoffDate = (Get-Date).AddDays(-$Days)
+        $ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+        if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+            New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+        }
 
-try {
-    $apps = Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/beta/deviceAppManagement/mobileApps" -Method GET
-    
-    foreach ($app in $apps.value) {
-        if ($AppName -and $app.displayName -notlike "*$AppName*") { continue }
-        
-        $status = Invoke-MgGraphRequest -Uri "https://graph.microsoft.com/beta/deviceAppManagement/mobileApps/$($app.id)/deviceStatuses" -Method GET
-        
-        foreach ($deviceStatus in $status.value) {
-            if ($deviceStatus.installState -eq 'failed' -and $deviceStatus.lastSyncDateTime -gt $cutoffDate) {
-                $failure = [PSCustomObject]@{
-                    AppName = $app.displayName
-                    DeviceName = $deviceStatus.deviceName
-                    UserName = $deviceStatus.userPrincipalName
-                    ErrorCode = $deviceStatus.errorCode
-                    InstallState = $deviceStatus.installState
-                    LastSync = $deviceStatus.lastSyncDateTime
-                }
-                
-                $script:report.Failures += $failure
-                $script:report.Summary.TotalFailures++
+        $script:report = @{
+            ScanTime = Get-Date
+            Days     = $Days
+            Failures = @()
+            Summary  = @{
+                TotalFailures = 0
+                UniqueApps    = 0
+                UniqueDevices = 0
             }
         }
-    }
-    
-    $script:report.Summary.UniqueApps = ($script:report.Failures | Select-Object -ExpandProperty AppName -Unique).Count
-    $script:report.Summary.UniqueDevices = ($script:report.Failures | Select-Object -ExpandProperty DeviceName -Unique).Count
-    
-    Write-ColorOutput "Found $($script:report.Summary.TotalFailures) failures" -Level Warning
-}
-catch {
-    Write-ColorOutput "Error: $($_.Exception.Message)" -Level Error
-}
 
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "  Failure Summary" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-ColorOutput "Total Failures: $($script:report.Summary.TotalFailures)" -Level Warning
-Write-Host "Unique Apps: $($script:report.Summary.UniqueApps)"
-Write-Host "Unique Devices: $($script:report.Summary.UniqueDevices)"
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "  [*] App Installation Error Report" -ForegroundColor Cyan
+        Write-Host "========================================`n" -ForegroundColor Cyan
 
-if ($script:report.Failures.Count -gt 0) {
-    Write-Host "`nTop Failures:" -ForegroundColor Cyan
-    $displayCount = if ($Top) { $Top } else { 20 }
-    $script:report.Failures | Select-Object -First $displayCount | Format-Table AppName, DeviceName, ErrorCode, LastSync -AutoSize
-}
+        Write-Host "[*] Connecting to Microsoft Graph..." -ForegroundColor Cyan
+        $graphScopes = @('DeviceManagementApps.Read.All', 'DeviceManagementManagedDevices.Read.All')
+        Connect-MgGraph -Scopes $graphScopes -NoWelcome -ErrorAction Stop
+        Write-Host "[+] Connected to Microsoft Graph" -ForegroundColor Green
 
-if ($ExportHTML) {
-    $html = @"
+        Write-Host "[*] Querying app installation status..." -ForegroundColor Cyan
+        $cutoffDate = (Get-Date).AddDays(-$Days)
+
+        try {
+            $mobileAppsUri = 'https://graph.microsoft.com/beta/deviceAppManagement/mobileApps'
+            $apps = Invoke-MgGraphRequest -Uri $mobileAppsUri -Method GET -ErrorAction Stop
+
+            foreach ($app in $apps.value) {
+                if ($AppName -and $app.displayName -notlike "*$AppName*") { continue }
+
+                $statusUri = "$mobileAppsUri/$($app.id)/deviceStatuses"
+                $status = Invoke-MgGraphRequest -Uri $statusUri -Method GET -ErrorAction Stop
+
+                foreach ($deviceStatus in $status.value) {
+                    if ($deviceStatus.installState -eq 'failed' -and $deviceStatus.lastSyncDateTime -gt $cutoffDate) {
+                        $failure = [PSCustomObject]@{
+                            AppName      = $app.displayName
+                            DeviceName   = $deviceStatus.deviceName
+                            UserName     = $deviceStatus.userPrincipalName
+                            ErrorCode    = $deviceStatus.errorCode
+                            InstallState = $deviceStatus.installState
+                            LastSync     = $deviceStatus.lastSyncDateTime
+                        }
+
+                        $script:report.Failures += $failure
+                        $script:report.Summary.TotalFailures++
+                    }
+                }
+            }
+
+            $script:report.Summary.UniqueApps =
+                ($script:report.Failures | Select-Object -ExpandProperty AppName -Unique).Count
+            $script:report.Summary.UniqueDevices =
+                ($script:report.Failures | Select-Object -ExpandProperty DeviceName -Unique).Count
+
+            Write-ColorOutput "[!] Found $($script:report.Summary.TotalFailures) failures" -Level Warning
+        }
+        catch {
+            Write-ColorOutput "[-] Error: $($_.Exception.Message)" -Level Error
+            return 1
+        }
+
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "  Failure Summary" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-ColorOutput "[!] Total Failures: $($script:report.Summary.TotalFailures)" -Level Warning
+        Write-Host "Unique Apps: $($script:report.Summary.UniqueApps)"
+        Write-Host "Unique Devices: $($script:report.Summary.UniqueDevices)"
+
+        if ($script:report.Failures.Count -gt 0) {
+            Write-Host "`nTop Failures:" -ForegroundColor Cyan
+            $displayCount = if ($Top) { $Top } else { 20 }
+            $script:report.Failures | Select-Object -First $displayCount |
+                Format-Table AppName, DeviceName, ErrorCode, LastSync -AutoSize
+        }
+
+        if ($ExportHTML) {
+            $html = @"
 <!DOCTYPE html><html><head><title>App Installation Failures</title>
 <style>body{font-family:'Segoe UI',sans-serif;margin:20px}table{width:100%;border-collapse:collapse}
 th{background:#007bff;color:white;padding:12px}td{padding:10px;border-bottom:1px solid #ddd}</style></head>
-<body><h1>App Installation Failures</h1><p>Period: Last $Days days | Total Failures: $($script:report.Summary.TotalFailures)</p>
+<body><h1>App Installation Failures</h1>
+<p>Period: Last $Days days | Total Failures: $($script:report.Summary.TotalFailures)</p>
 <table><tr><th>App</th><th>Device</th><th>User</th><th>Error Code</th><th>Last Sync</th></tr>
-$(foreach($f in $script:report.Failures){"<tr><td>$($f.AppName)</td><td>$($f.DeviceName)</td><td>$($f.UserName)</td><td>$($f.ErrorCode)</td><td>$($f.LastSync)</td></tr>"})
+$(foreach ($f in $script:report.Failures) {
+    "<tr><td>$($f.AppName)</td><td>$($f.DeviceName)</td><td>$($f.UserName)</td>" +
+    "<td>$($f.ErrorCode)</td><td>$($f.LastSync)</td></tr>"
+})
 </table></body></html>
 "@
-    $reportPath = "$ReportDir\AppInstallErrors_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
-    $html | Out-File -FilePath $reportPath -Encoding UTF8
-    Write-ColorOutput "`nHTML report: $reportPath" -Level Success
+            $reportPath = Join-Path $ReportDir "AppInstallErrors_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+            $html | Out-File -FilePath $reportPath -Encoding UTF8 -ErrorAction Stop
+            Write-ColorOutput "[+] HTML report: $reportPath" -Level Success
+        }
+
+        if ($ExportCSV) {
+            $csvPath = Join-Path $ReportDir "AppInstallErrors_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+            $script:report.Failures | Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8 -ErrorAction Stop
+            Write-ColorOutput "[+] CSV report: $csvPath" -Level Success
+        }
+
+        Write-Host "`n========================================`n" -ForegroundColor Cyan
+        return 0
+    }
+    catch {
+        Write-ColorOutput "[-] Error: $($_.Exception.Message)" -Level Error
+        return 1
+    }
 }
 
-if ($ExportCSV) {
-    $csvPath = "$ReportDir\AppInstallErrors_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
-    $script:report.Failures | Export-Csv -Path $csvPath -NoTypeInformation -Encoding UTF8
-    Write-ColorOutput "CSV report: $csvPath" -Level Success
-}
-
-Write-Host "`n========================================`n" -ForegroundColor Cyan
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

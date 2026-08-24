@@ -2,7 +2,7 @@
 
 ![Tier](https://img.shields.io/badge/Tier-1-green) ![Category](https://img.shields.io/badge/Category-Foundation-blue) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen)
 
-> **Catalog is auto-generated from `scripts/.catalog/metadata.json` via `tools/Build-Catalog.ps1` — see [Catalog Automation](Catalog-Automation.md).**
+> **Catalog is auto-generated from `scripts/.catalog/metadata.json` via `tools/Build-Catalog.ps1`** — see [Catalog Automation](Catalog-Automation.md). The generated catalog covers the **356 cataloged scripts** in that metadata file; the `endpoints/devices/winget/` and `endpoints/devices/proactive-remediations/` trees are inventoried separately and are not part of it.
 
 > **Your roadmap to finding exactly what you need, fast!**
 
@@ -17,7 +17,7 @@
 - [Script Index by Category](#script-index-by-category)
 - [Learning Paths](#learning-paths)
 - [Repository Statistics](#repository-statistics)
-- [Latest Updates](#latest-updates-v430-zephyr)
+- [Previous Release Notes (v4.4.0)](#previous-release-notes-v440-nimbus)
 - [Tips for Navigation](#tips-for-navigation)
 - [External Links](#external-links)
 - [Featured Scripts](#featured-scripts)
@@ -137,7 +137,7 @@ START HERE → Main README → Winget Updates Section
 | Document | Purpose | When to Use |
 |----------|---------|-------------|
 | **[README](../README.md)** | Repository overview, quick start | First stop for new users |
-| **[CHANGELOG](../CHANGELOG.md)** | Version history with fun codenames! 🌂 | See what's new, understand changes |
+| **[CHANGELOG](../CHANGELOG.md)** | Version history and release notes | See what's new, understand changes |
 | **[Documentation Home](README.md)** | Complete documentation hub | Deep dive into all scripts |
 | **[Script Examples](Script-Examples.md)** | Detailed examples with outputs | Learn how scripts work |
 | **[Workflows](Workflows.md)** | End-to-end step-by-step guides | Follow complete processes |
@@ -261,7 +261,7 @@ START HERE → Main README → Winget Updates Section
 
 #### Security & Compliance (10 scripts)
 **Location:** `scripts/security/compliance/frameworks/`
-- Test-CISBenchmark.ps1 - **NEW v2.0.0! 15+ CIS controls** 🔧 *(Fixed in v3.0.1)*
+- Test-CISBenchmark.ps1 - **15+ CIS controls** 🔧
   - Password policies (6 controls: history, age, length, complexity)
   - Account lockout policies (3 controls: duration, threshold, reset)
   - Audit policies (6+ controls: credential validation, logon, process creation)
@@ -290,7 +290,7 @@ START HERE → Main README → Winget Updates Section
 - Backup-GroupPolicies.ps1 - GPO backup automation
 
 **Monitoring** (`monitoring/`)
-- Monitor-ServerHealth.ps1 - **NEW! 13 major features!** 🌈
+- Monitor-ServerHealth.ps1 - Comprehensive server health check
   - Interactive mode with menu
   - Disk I/O, Windows Update status, Security monitoring
   - Network connectivity, Certificate monitoring
@@ -320,9 +320,9 @@ START HERE → Main README → Winget Updates Section
 ### 🖱️ Device Management (60+ scripts)
 
 #### Proactive Remediations (51 pairs = 102 scripts)
-**Location:** `scripts/endpoints/devices/proactive-remediations/`
+**Location:** `scripts/endpoints/remediation/` (`system/`, `network/`, `security/`)
 
-Each has `detect.ps1` and `remediate.ps1`:
+Each remediation ships a detection script (`Test-*`) and a remediation script (`Invoke-*`):
 - **Fix-DiskSpace** - Low disk space cleanup
 - **Fix-TempFiles** - Temporary file removal
 - **Fix-StaleProfiles** - Old profile cleanup
@@ -339,17 +339,17 @@ Each has `detect.ps1` and `remediate.ps1`:
 - **language-pack-audit** - Language pack cleanup
 
 #### Winget Application Updates (35 apps)
-**Location:** `scripts/endpoints/devices/winget/`
+**Location:** `scripts/endpoints/remediation/winget/`
 
 Organized by category:
-- `browsers/` - Chrome, Firefox, Edge
-- `communication/` - Teams, Zoom, Slack, Discord
-- `development/` - VS Code, Git, Python, Node.js, Azure CLI
-- `media/` - VLC, Spotify, iTunes
-- `productivity/` - 7-Zip, Notepad++, Adobe Reader
-- `remote-access/` - TeamViewer, AnyDesk, WinSCP
-- `runtimes/` - .NET, C++ Redistributables, Java
-- `utilities/` - Various system utilities
+- `browsers/` - Chrome, Firefox
+- `communication/` - Slack, Discord
+- `development/` - VS Code, Git, PowerShell 7, Azure CLI, SSMS
+- `media/` - OBS, VLC, Zoom
+- `productivity/` - Microsoft Teams, Adobe Reader, Notepad++, Remote Desktop
+- `remote-access/` - TeamViewer, WinSCP
+- `runtimes/` - Visual C++ Redistributables, Edge WebView2
+- `security/` · `utilities/` · `vendor-specific/` - 1Password, 7-Zip, Lenovo Dock Manager
 
 #### Other Device Management
 **Location:** `scripts/endpoints/devices/`
@@ -426,19 +426,19 @@ Organized by category:
 
 | Metric | Count |
 |--------|-------|
-| **Total Scripts** | 357 |
+| **Total Scripts** | 539 |
 | **Top-Level Domains** | 8 |
 | **Subcategories** | 94 |
 | **Proactive Remediations** | 51 pairs (102 scripts) |
-| **Winget App Templates** | 35 |
-| **Documentation Files** | 36 |
-| **Latest Release** | [v4.4.0 "Nimbus - Catalog & Intelligence"](../CHANGELOG.md) 🌧️ |
+| **Winget-Managed Applications** | 35 |
+| **Documentation Files** | 45 |
+| **Latest Release** | [v1.0.0 "Clean-Slate Relaunch"](../CHANGELOG.md) |
 
 ---
 
-## 🌧️ Latest Updates (v4.4.0 "Nimbus")
+## Previous Release Notes (v4.4.0 "Nimbus")
 
-**What's New:**
+**Highlights (historical, pre-relaunch):**
 - 📐 **PSSA Policy Enforcement**: Comment-based help, style rules and ShouldProcess (-WhatIf) are now enforced in CI on every PR; 4,404 style findings fixed across 345 scripts; 56 state-changing functions retrofitted with `SupportsShouldProcess` guards
 - 🎯 **Microsoft Learn Alignment**: 14 dead/misleading MS Learn links fixed; deprecated APIs migrated (`Get-WmiObject`→`Get-CimInstance`, `WebAdministration`→`IISAdministration`, `Send-MailMessage`→`SmtpClient`, SQLPS→`SqlServer`); winget migrated to `Microsoft.WinGet.Client` (81 files)
 - 🛡️ **Endpoint & Remediation Fixes**: Driver block scripts write `DenyDeviceIDs` as the documented REG value; Autopatch `UseWUServer` read at the documented `\AU` path; SYSTEM-context fixes for TeamsCache/TempFiles/BrokenShortcuts/CertificateExpiry/StaleProfiles
@@ -475,14 +475,14 @@ Resolves 122 open issues (#106-#245) via 18 PRs (#228-#245).
 
 - **GitHub Repository**: [Carme99/bug-free-umbrella](https://github.com/Carme99/bug-free-umbrella)
 - **Issues & Feature Requests**: [GitHub Issues](https://github.com/Carme99/bug-free-umbrella/issues)
-- **Changelog with Fun Codenames**: [CHANGELOG](../CHANGELOG.md) 🌂
+- **Changelog**: [CHANGELOG](../CHANGELOG.md)
 - **Claude Code**: [github.com/anthropics/claude-code](https://github.com/anthropics/claude-code)
 
 ---
 
 ## 🌟 Featured Scripts
 
-### 🆕 Recently Enhanced (v3.7.0 Shower 🌧️)
+### 🆕 Recently Enhanced
 - **Comprehensive Documentation Enhancements**
   - 9 new Tier 3 documentation pages for advanced topics
   - Critical fixes for version inconsistencies and duplicate content

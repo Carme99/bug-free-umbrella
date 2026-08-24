@@ -1,46 +1,52 @@
-<#
+﻿<#
 .SYNOPSIS
     Remediates ONLY priority/security-critical applications using winget.
 
 .DESCRIPTION
     Streamlined remediation variant that updates only the highest-priority applications
-    (browsers, VPN clients, security tools). Designed for rapid security patching.
+    (browsers, VPN clients, security tools). Designed for rapid security patching with shorter
+    timeouts and faster retry exhaustion than the full remediation script.
+    This variant is optimized for emergency security updates (zero-day patches), maintenance
+    windows where apps can be force-closed, and minimal disruption to users.
+    Exit codes:
+    - 0: priority remediation successful, or no priority applications required updates.
+    - 1: remediation failed, or no priority application could be updated.
 
-    This variant is optimized for:
-    - Emergency security updates (zero-day patches)
-    - Maintenance windows where apps can be force-closed
-    - Minimal disruption to users
+.PARAMETER EnableLogging
+    Enable detailed logging to %TEMP%\WingetUpdateRemediation_Priority.log.
+
+.PARAMETER ForceCloseApps
+    Force close running applications before updating (recommended for maintenance windows).
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationCheckOutdatedCriticalAppsPriorityOnly.ps1
+    Update priority apps only, skipping applications that are currently running.
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationCheckOutdatedCriticalAppsPriorityOnly.ps1 -ForceCloseApps $true
+    Force close and update priority apps (use in maintenance windows).
 
 .NOTES
+    File Name: Invoke-RemediationCheckOutdatedCriticalAppsPriorityOnly.ps1
     Author: Bug-Free Umbrella
-    Version: 1.0
-    Intune Context: SYSTEM
-    Exit 0: Remediation successful
-    Exit 1: Remediation failed
+    Prerequisite: PowerShell 7.0
+    Version: 1.0.0
+    Date: 2026-08-23
 
     USAGE RECOMMENDATION:
     Deploy this variant with higher frequency (hourly/every 4 hours) for rapid
-    security response. Use standard remediate.ps1 for comprehensive updates.
-
-.PARAMETER EnableLogging
-    Enable detailed logging to %TEMP%\WingetUpdateRemediation_Priority.log
-
-.PARAMETER ForceCloseApps
-    Force close running applications before updating (recommended for maintenance windows)
-
-.EXAMPLE
-    .\remediate_priority_only.ps1
-    Update priority apps only (skip if running)
-
-.EXAMPLE
-    .\remediate_priority_only.ps1 -ForceCloseApps $true
-    Force close and update priority apps (use in maintenance windows)
+    security response. Use Invoke-RemediationCheckOutdatedCriticalApps.ps1 for
+    comprehensive updates.
 #>
+
+[CmdletBinding(SupportsShouldProcess)]
 
 param(
     [bool]$EnableLogging = $true,  # Default to enabled for priority updates
     [bool]$ForceCloseApps = $false
 )
+
+$ErrorActionPreference = 'Stop'
 
 # ========================= PRIORITY CONFIGURATION ========================= #
 
@@ -81,16 +87,38 @@ $ProcessNameMap = @{
     'Bitwarden.Bitwarden' = 'Bitwarden'
 }
 
-$LogPath = "$env:TEMP\WingetUpdateRemediation_Priority.log"
+$LogPath = Join-Path $env:TEMP 'WingetUpdateRemediation_Priority.log'
 $MaxRetries = 2  # Faster failure for priority updates
 $TimeoutMinutes = 5  # Shorter timeout for priority updates
+
+# ========================= WINGET WRAPPER ========================= #
+
+function Invoke-Winget {
+    param([string[]]$ArgumentList)
+
+    $output = & winget.exe @ArgumentList 2>&1
+    $exitCode = $LASTEXITCODE
+
+    return [PSCustomObject]@{
+        Output = @($output)
+        ExitCode = $exitCode
+    }
+}
 
 # ========================= LOGGING ========================= #
 
 function Write-Log {
     param([string]$Message, [string]$Level = "INFO")
+
     $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "[$timestamp] [PRIORITY] [$Level] $Message"
+    $levelPrefixes = @{
+        "SUCCESS" = "[+]"
+        "WARN" = "[!]"
+        "ERROR" = "[-]"
+    }
+    $prefix = $levelPrefixes[$Level]
+    if (-not $prefix) { $prefix = "[*]" }
+    $logMessage = "$prefix [$timestamp] [PRIORITY] [$Level] $Message"
 
     if ($EnableLogging) {
         Add-Content -Path $LogPath -Value $logMessage -ErrorAction SilentlyContinue
@@ -122,7 +150,7 @@ function Stop-AppProcess {
 
     $processName = Get-AppProcessName -AppId $AppId
     if (-not $processName) {
-        # FIX: Return false when process name cannot be determined (safer default)
+        # Return false when the process name cannot be determined (safer default)
         Write-Log "Cannot determine process name for $AppId - skipping process close" "WARN"
         return $false
     }
@@ -148,7 +176,7 @@ function Stop-AppProcess {
             Stop-Process -Name $processName -Force -ErrorAction SilentlyContinue
             Start-Sleep -Seconds 1
 
-            # FIX: Verify process was actually terminated after force kill
+            # Verify the process was actually terminated after force kill
             $stillRunning = Get-Process -Name $processName -ErrorAction SilentlyContinue
             if ($stillRunning) {
                 Write-Log "Failed to terminate $processName after force kill" "ERROR"
@@ -156,7 +184,7 @@ function Stop-AppProcess {
             }
         }
 
-        Write-Log "Successfully closed $processName"
+        Write-Log "Successfully closed $processName" "SUCCESS"
         return $true
 
     }
@@ -196,7 +224,15 @@ function Update-PriorityApp {
         }
         $job = Start-Job -ScriptBlock {
             param($id)
-            & winget upgrade --id $id --silent --accept-source-agreements --accept-package-agreements 2>&1
+            function Invoke-WingetUpgradeJob {
+                param([string[]]$ArgumentList)
+                & winget.exe @ArgumentList 2>&1
+                return $LASTEXITCODE
+            }
+            Invoke-WingetUpgradeJob -ArgumentList @(
+                'upgrade', '--id', $id, '--silent',
+                '--accept-source-agreements', '--accept-package-agreements'
+            ) | Out-Null
         } -ArgumentList $AppId
 
         $completed = Wait-Job -Job $job -Timeout ($TimeoutMinutes * 60)
@@ -208,7 +244,7 @@ function Update-PriorityApp {
             # Check actual winget output for success indicators
             $outputString = $output -join "`n"
 
-            # FIX: Differentiate between actually updated vs already up-to-date
+            # Differentiate between actually updated vs already up-to-date
             $wasUpdated = $outputString -match 'Successfully installed'
             $alreadyUpToDate = $outputString -match 'No applicable update found' -or
             $outputString -match 'No available upgrade found'
@@ -255,76 +291,89 @@ function Update-PriorityApp {
 
 # ========================= MAIN LOGIC ========================= #
 
-try {
-    Write-Log "=== PRIORITY App Update Remediation Started ==="
-    Write-Log "Force Close: $ForceCloseApps"
-    Write-Log "Priority Apps: $($PriorityApps.Count)"
+function Main {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
 
-    # Get outdated priority apps
-    $wingetOutput = & winget list --upgrade-available 2>&1 | Out-String
-    $lines = $wingetOutput -split "`n" | Where-Object { $_ -match '\S' }
+    try {
+        Write-Log "=== PRIORITY App Update Remediation Started ==="
+        Write-Log "Force Close: $ForceCloseApps"
+        Write-Log "Priority Apps: $($PriorityApps.Count)"
 
-    $outdatedPriorityApps = @()
-
-    foreach ($line in $lines) {
-        if ($line -match '^Name\s+Id\s+' -or $line -match '^-+' -or $line -match '^\d+ upgrades available') {
-            continue
+        # Get outdated priority apps
+        $wingetResult = Invoke-Winget -ArgumentList @('list', '--upgrade-available')
+        if ($wingetResult.ExitCode -ne 0) {
+            Write-Log "winget list exited with code $($wingetResult.ExitCode)" "ERROR"
+            return 1
         }
+        $wingetOutput = $wingetResult.Output | Out-String
+        $lines = $wingetOutput -split "`n" | Where-Object { $_ -match '\S' }
 
-        if ($line -match '^\s*(.+?)\s{2,}([^\s]+\.[^\s]+)\s+') {
-            $appName = $matches[1].Trim()
-            $appId = $matches[2].Trim()
+        $outdatedPriorityApps = @()
 
-            if ($appId -in $PriorityApps) {
-                $outdatedPriorityApps += [PSCustomObject]@{
-                    Name = $appName
-                    Id = $appId
+        foreach ($line in $lines) {
+            if ($line -match '^Name\s+Id\s+' -or $line -match '^-+' -or $line -match '^\d+ upgrades available') {
+                continue
+            }
+
+            if ($line -match '^\s*(.+?)\s{2,}([^\s]+\.[^\s]+)\s+') {
+                $appName = $matches[1].Trim()
+                $appId = $matches[2].Trim()
+
+                if ($appId -in $PriorityApps) {
+                    $outdatedPriorityApps += [PSCustomObject]@{
+                        Name = $appName
+                        Id = $appId
+                    }
                 }
             }
         }
-    }
 
-    if ($outdatedPriorityApps.Count -eq 0) {
-        Write-Log "No priority applications require updates"
-        exit 0
-    }
+        if ($outdatedPriorityApps.Count -eq 0) {
+            Write-Log "No priority applications require updates"
+            return 0
+        }
 
-    Write-Log "Found $($outdatedPriorityApps.Count) priority apps to update"
-    Write-Log ""
+        Write-Log "Found $($outdatedPriorityApps.Count) priority apps to update"
+        Write-Log ""
 
-    # Update each priority app
-    $successCount = 0
-    $failCount = 0
+        # Update each priority app
+        $successCount = 0
+        $failCount = 0
 
-    foreach ($app in $outdatedPriorityApps) {
-        $success = Update-PriorityApp -AppId $app.Id -AppName $app.Name
+        foreach ($app in $outdatedPriorityApps) {
+            $success = Update-PriorityApp -AppId $app.Id -AppName $app.Name
 
-        if ($success) {
-            $successCount++
+            if ($success) {
+                $successCount++
+            }
+            else {
+                $failCount++
+            }
+
+            Write-Log ""
+        }
+
+        # Summary
+        Write-Log "=== PRIORITY Remediation Complete ==="
+        Write-Log "Successfully Updated: $successCount" "SUCCESS"
+        Write-Log "Failed: $failCount"
+
+        if ($successCount -gt 0) {
+            Write-Log "Priority security updates completed successfully" "SUCCESS"
+            return 0
         }
         else {
-            $failCount++
+            Write-Log "No priority applications were updated" "WARN"
+            return 1
         }
 
-        Write-Log ""
     }
-
-    # Summary
-    Write-Log "=== PRIORITY Remediation Complete ==="
-    Write-Log "Successfully Updated: $successCount"
-    Write-Log "Failed: $failCount"
-
-    if ($successCount -gt 0) {
-        Write-Log "Priority security updates completed successfully"
-        exit 0
+    catch {
+        Write-Log "Unexpected error: $_" "ERROR"
+        return 1
     }
-    else {
-        Write-Log "No priority applications were updated" "WARN"
-        exit 1
-    }
-
 }
-catch {
-    Write-Log "Unexpected error: $_" "ERROR"
-    exit 1
-}
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

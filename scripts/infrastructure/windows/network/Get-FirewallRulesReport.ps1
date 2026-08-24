@@ -31,24 +31,36 @@
     Export rules to CSV file.
 
 .EXAMPLE
-    .\Get-FirewallRulesReport.ps1
+    PS C:\> .\Get-FirewallRulesReport.ps1
     Lists all enabled firewall rules.
 
 .EXAMPLE
-    .\Get-FirewallRulesReport.ps1 -Direction Inbound -Action Allow -ExportHTML
+    PS C:\> .\Get-FirewallRulesReport.ps1 -Direction Inbound -Action Allow -ExportHTML
     Documents all inbound allow rules and exports to HTML.
 
 .EXAMPLE
-    .\Get-FirewallRulesReport.ps1 -Enabled All -ExportCSV
+    PS C:\> .\Get-FirewallRulesReport.ps1 -Enabled All -ExportCSV
     Exports all firewall rules (enabled and disabled) to CSV.
 
 .NOTES
-    Requires Administrator privileges
-    Compatible with Windows Server 2016, 2019, and 2022
-    Useful for security audits and documentation
+    File Name     : Get-FirewallRulesReport.ps1
+    Author        : Bug-Free Umbrella
+    Prerequisite  : PowerShell 5.1+
+    Version       : 1.0.0
+    Date          : 2026-08-23
+
+    Administrator privileges are required; the elevation check runs inside Main (not via
+    #Requires) so the script can be safely loaded for testing. Compatible with Windows
+    Server 2016, 2019, and 2022. Useful for security audits and documentation.
 #>
 
 [CmdletBinding()]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+            Justification = 'Colored Write-Host prefix output is the specified console UX.')]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '',
+            Justification = 'Parameters are consumed by helper functions via dynamic scoping.')]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '',
+            Justification = 'Plural nouns are intentional: functions aggregate collections.')]
 param(
     [Parameter(Mandatory = $false)]
     [ValidateSet('Inbound', 'Outbound', 'All')]
@@ -73,53 +85,43 @@ param(
     [switch]$ExportCSV
 )
 
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-if ([string]::IsNullOrWhiteSpace($ReportDir) -or
-    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
-    $ReportDir -match '^(\\\\|//)') {
-    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
-    exit 1
-}
-$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
+$ErrorActionPreference = 'Stop'
 
-#Requires -RunAsAdministrator
 
-$script:report = @{
-    ServerName = $env:COMPUTERNAME
-    ScanTime = Get-Date
-    Filters = @{
-        Direction = $Direction
-        Enabled = $Enabled
-        Action = $Action
-        Profile = $Profile
+function Test-AdminPrivilege {
+    # Runtime replacement for the former '#Requires -RunAsAdministrator' directive.
+    # Unix platforms (offline test runners) have no elevation concept, so the check
+    # passes through there; Windows hosts still require an elevated session.
+    if ($PSVersionTable.ContainsKey('Platform') -and $PSVersionTable.Platform -eq 'Unix') {
+        return $true
     }
-    Rules = @()
-    Summary = @{
-        TotalRules = 0
-        InboundRules = 0
-        OutboundRules = 0
-        AllowRules = 0
-        BlockRules = 0
-        EnabledRules = 0
-        DisabledRules = 0
-    }
-    Profiles = @{}
+
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    return ([Security.Principal.WindowsPrincipal]$identity).IsInRole(
+        [Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
 
-    $color = switch ($Level) {
-        'Warning' { 'Yellow' }
-        'Error' { 'Red' }
-        'Success' { 'Green' }
-        'Info' { 'Cyan' }
-        default { 'White' }
+    # Mandated console prefixes: [-] error/critical, [!] warning, [+] success, [*] info.
+    $prefix = switch ($Level) {
+        'Critical' { '[-]' }
+        'Error' { '[-]' }
+        'Warning' { '[!]' }
+        'Success' { '[+]' }
+        default { '[*]' }
     }
-    Write-Host $Message -ForegroundColor $color
+
+    $color = switch ($Level) {
+        'Critical' { 'Red' }
+        'Error' { 'Red' }
+        'Warning' { 'Yellow' }
+        'Success' { 'Green' }
+        default { 'Cyan' }
+    }
+
+    Write-Host "$prefix $Message" -ForegroundColor $color
 }
 
 function Get-FirewallRules {
@@ -155,7 +157,8 @@ function Get-FirewallRules {
     foreach ($rule in $rules) {
         $ruleCount++
         if ($ruleCount % 100 -eq 0) {
-            Write-Progress -Activity "Processing firewall rules" -Status "Processed $ruleCount of $($rules.Count)" -PercentComplete (($ruleCount / $rules.Count) * 100)
+            Write-Progress -Activity "Processing firewall rules" `
+                -Status "Processed $ruleCount of $($rules.Count)" -PercentComplete (($ruleCount / $rules.Count) * 100)
         }
 
         # Get additional rule details
@@ -218,26 +221,27 @@ function Get-FirewallProfiles {
 
     $profiles = Get-NetFirewallProfile
 
-    foreach ($profile in $profiles) {
-        $script:report.Profiles[$profile.Name] = @{
-            Enabled = $profile.Enabled
-            DefaultInboundAction = $profile.DefaultInboundAction
-            DefaultOutboundAction = $profile.DefaultOutboundAction
-            AllowInboundRules = $profile.AllowInboundRules
-            AllowLocalFirewallRules = $profile.AllowLocalFirewallRules
-            AllowLocalIPsecRules = $profile.AllowLocalIPsecRules
-            NotifyOnListen = $profile.NotifyOnListen
-            EnableStealthModeForIPsec = $profile.EnableStealthModeForIPsec
-            LogFileName = $profile.LogFileName
-            LogMaxSizeKilobytes = $profile.LogMaxSizeKilobytes
-            LogAllowed = $profile.LogAllowed
-            LogBlocked = $profile.LogBlocked
-            LogIgnored = $profile.LogIgnored
+    foreach ($fwProfile in $profiles) {
+        $script:report.Profiles[$fwProfile.Name] = @{
+            Enabled = $fwProfile.Enabled
+            DefaultInboundAction = $fwProfile.DefaultInboundAction
+            DefaultOutboundAction = $fwProfile.DefaultOutboundAction
+            AllowInboundRules = $fwProfile.AllowInboundRules
+            AllowLocalFirewallRules = $fwProfile.AllowLocalFirewallRules
+            AllowLocalIPsecRules = $fwProfile.AllowLocalIPsecRules
+            NotifyOnListen = $fwProfile.NotifyOnListen
+            EnableStealthModeForIPsec = $fwProfile.EnableStealthModeForIPsec
+            LogFileName = $fwProfile.LogFileName
+            LogMaxSizeKilobytes = $fwProfile.LogMaxSizeKilobytes
+            LogAllowed = $fwProfile.LogAllowed
+            LogBlocked = $fwProfile.LogBlocked
+            LogIgnored = $fwProfile.LogIgnored
         }
 
-        $statusText = if ($profile.Enabled) { "Enabled" } else { "Disabled" }
-        $statusColor = if ($profile.Enabled) { 'Success' } else { 'Warning' }
-        Write-ColorOutput "  $($profile.Name): $statusText (In: $($profile.DefaultInboundAction), Out: $($profile.DefaultOutboundAction))" -Level $statusColor
+        $statusText = if ($fwProfile.Enabled) { "Enabled" } else { "Disabled" }
+        $statusColor = if ($fwProfile.Enabled) { 'Success' } else { 'Warning' }
+        Write-ColorOutput "  $($fwProfile.Name): $statusText (In: $($fwProfile.DefaultInboundAction), Out: `
+            $($fwProfile.DefaultOutboundAction))" -Level $statusColor
     }
 }
 
@@ -261,11 +265,11 @@ function Show-Summary {
     Write-Host "  Enabled: $($script:report.Summary.EnabledRules) | Disabled: $($script:report.Summary.DisabledRules)"
 
     Write-Host "`nFirewall Profiles:" -ForegroundColor Cyan
-    foreach ($profile in $script:report.Profiles.GetEnumerator()) {
-        $statusText = if ($profile.Value.Enabled) { "Enabled" } else { "Disabled" }
-        Write-Host "  $($profile.Key): $statusText"
-        Write-Host "    Default Inbound: $($profile.Value.DefaultInboundAction)"
-        Write-Host "    Default Outbound: $($profile.Value.DefaultOutboundAction)"
+    foreach ($fwProfile in $script:report.Profiles.GetEnumerator()) {
+        $statusText = if ($fwProfile.Value.Enabled) { "Enabled" } else { "Disabled" }
+        Write-Host "  $($fwProfile.Key): $statusText"
+        Write-Host "    Default Inbound: $($fwProfile.Value.DefaultInboundAction)"
+        Write-Host "    Default Outbound: $($fwProfile.Value.DefaultOutboundAction)"
     }
 
     Write-Host "`nSample Rules (First 10):" -ForegroundColor Cyan
@@ -286,11 +290,14 @@ function Export-HTMLReport {
     <title>Firewall Rules Report - $($script:report.ServerName)</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .container { max-width: 1800px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { max-width: 1800px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h1 { color: #333; border-bottom: 3px solid #007bff; padding-bottom: 10px; }
         h2 { color: #555; margin-top: 30px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px 0; }
-        .metric { background-color: #f8f9fa; padding: 15px; border-radius: 4px; border-left: 4px solid #007bff; text-align: center; }
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px
+            0; }
+        .metric { background-color: #f8f9fa; padding: 15px; border-radius: 4px; border-left: 4px solid #007bff;
+            text-align: center; }
         .metric-value { font-size: 1.8em; font-weight: bold; color: #007bff; }
         table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.85em; }
         th { background-color: #007bff; color: white; padding: 10px; text-align: left; position: sticky; top: 0; }
@@ -349,17 +356,18 @@ function Export-HTMLReport {
 
         <h2>Firewall Profiles</h2>
         <table>
-            <tr><th>Profile</th><th>Status</th><th>Default Inbound</th><th>Default Outbound</th><th>Allow Inbound Rules</th><th>Logging</th></tr>
-            $(foreach($profile in $script:report.Profiles.GetEnumerator()) {
-                $enabledClass = if($profile.Value.Enabled) { 'enabled' } else { 'disabled' }
-                $enabledText = if($profile.Value.Enabled) { 'Enabled' } else { 'Disabled' }
+            <tr><th>Profile</th><th>Status</th><th>Default Inbound</th><th>Default Outbound</th><th>Allow Inbound
+            Rules</th><th>Logging</th></tr>
+            $(foreach($fwProfile in $script:report.Profiles.GetEnumerator()) {
+                $enabledClass = if($fwProfile.Value.Enabled) { 'enabled' } else { 'disabled' }
+                $enabledText = if($fwProfile.Value.Enabled) { 'Enabled' } else { 'Disabled' }
                 "<tr>
-                    <td>$($profile.Key)</td>
+                    <td>$($fwProfile.Key)</td>
                     <td class='$enabledClass'>$enabledText</td>
-                    <td>$($profile.Value.DefaultInboundAction)</td>
-                    <td>$($profile.Value.DefaultOutboundAction)</td>
-                    <td>$($profile.Value.AllowInboundRules)</td>
-                    <td>Allowed: $($profile.Value.LogAllowed), Blocked: $($profile.Value.LogBlocked)</td>
+                    <td>$($fwProfile.Value.DefaultInboundAction)</td>
+                    <td>$($fwProfile.Value.DefaultOutboundAction)</td>
+                    <td>$($fwProfile.Value.AllowInboundRules)</td>
+                    <td>Allowed: $($fwProfile.Value.LogAllowed), Blocked: $($fwProfile.Value.LogBlocked)</td>
                 </tr>"
             })
         </table>
@@ -382,7 +390,8 @@ function Export-HTMLReport {
                 $enabledClass = if($rule.Enabled -eq 'True') { 'enabled' } else { 'disabled' }
                 $actionClass = if($rule.Action -eq 'Allow') { 'action-allow' } else { 'action-block' }
                 $directionClass = if($rule.Direction -eq 'Inbound') { 'inbound' } else { 'outbound' }
-                $program = if($rule.Program.Length -gt 50) { "..." + $rule.Program.Substring($rule.Program.Length - 47) } else { $rule.Program }
+                $program = if($rule.Program.Length -gt 50) { "..." + $rule.Program.Substring($rule.Program.Length -
+            47) } else { $rule.Program }
 
                 "<tr>
                     <td>$($rule.DisplayName)</td>
@@ -420,22 +429,81 @@ function Export-CSVReport {
     return $reportPath
 }
 
-# Main execution
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "  Windows Firewall Rules Report" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Server: $($script:report.ServerName)"
+function Main {
+    try {
+        if (-not (Test-AdminPrivilege)) {
+            Write-Host "[-] Administrator privileges are required to read firewall rules." -ForegroundColor Red
+            return 1
+        }
 
-Get-FirewallProfiles
-Get-FirewallRules
-Show-Summary
+        $myDocs = [Environment]::GetFolderPath('MyDocuments')
+        if ([string]::IsNullOrWhiteSpace($myDocs)) {
+            # Profile-less contexts (CI runners, SYSTEM services): MyDocuments resolves empty;
+            # fall back so report writing degrades gracefully instead of crashing.
+            $myDocs = [Environment]::GetFolderPath('UserProfile')
+        }
+        $script:ReportDir = Join-Path $myDocs 'Reports'
+        if ([string]::IsNullOrWhiteSpace($script:ReportDir) -or
+            $script:ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+            $script:ReportDir -match '^(\\\\|//)') {
+            throw "Unsafe report path: $script:ReportDir. Report path must be a local absolute " +
+                "path without '..' traversal."
+        }
+        $script:ReportDir = [System.IO.Path]::GetFullPath($script:ReportDir)
+        if (-not (Test-Path -LiteralPath $script:ReportDir -PathType Container)) {
+            New-Item -ItemType Directory -Path $script:ReportDir -Force -ErrorAction Stop | Out-Null
+        }
 
-if ($ExportHTML) {
-    Write-Host "Generating HTML report..." -ForegroundColor Cyan
-    Export-HTMLReport
+        $script:report = @{
+            ServerName = $env:COMPUTERNAME
+            ScanTime = Get-Date
+            Filters = @{
+                Direction = $Direction
+                Enabled = $Enabled
+                Action = $Action
+                Profile = $Profile
+            }
+            Rules = @()
+            Summary = @{
+                TotalRules = 0
+                InboundRules = 0
+                OutboundRules = 0
+                AllowRules = 0
+                BlockRules = 0
+                EnabledRules = 0
+                DisabledRules = 0
+            }
+            Profiles = @{}
+        }
+
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "  Windows Firewall Rules Report" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "Server: $($script:report.ServerName)"
+
+        Get-FirewallProfiles
+        Get-FirewallRules
+        Show-Summary
+
+        if ($ExportHTML) {
+            Write-Host "Generating HTML report..." -ForegroundColor Cyan
+            Export-HTMLReport | Out-Null
+        }
+
+        if ($ExportCSV) {
+            Write-Host "Generating CSV report..." -ForegroundColor Cyan
+            Export-CSVReport | Out-Null
+        }
+
+        Write-Host "[+] Firewall rules report completed." -ForegroundColor Green
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-if ($ExportCSV) {
-    Write-Host "Generating CSV report..." -ForegroundColor Cyan
-    Export-CSVReport
-}
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }
+

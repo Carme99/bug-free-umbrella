@@ -1,15 +1,16 @@
-<#
+﻿<#
 .SYNOPSIS
-    Universal winget package updater that works for ANY application.
+    Generates Intune proactive remediation scripts for any winget package.
 
 .DESCRIPTION
-    This script generates Intune proactive remediation scripts for any winget package:
+    This script generates Intune proactive remediation detect/remediate pairs for any winget package:
     - Detects if updates are available
     - Checks if app is running (prevents forced closure)
     - Installs updates silently
     - Works in SYSTEM context
     - Generates both detect.ps1 and remediate.ps1
-    - Supports batch creation for multiple apps
+    - Supports batch creation for multiple apps via CSV
+    Exit codes: 0 = generation succeeded, 1 = generation failed (e.g. missing CSV file).
 
 .PARAMETER AppName
     Display name of the application (used for reporting).
@@ -33,35 +34,40 @@
     Path to CSV file with columns: AppName,WingetID,ProcessName
 
 .EXAMPLE
-    .\New-BulkWingetUpdater.ps1 -AppName "Google Chrome" -WingetID "Google.Chrome" -ProcessName "chrome"
-    Generates detect.ps1 and remediate.ps1 for Chrome updates.
+    PS C:\> .\New-BulkWingetUpdater.ps1 -AppName "Google Chrome" -WingetID "Google.Chrome" -ProcessName "chrome"
+
+    Generates detect.ps1 and remediate.ps1 for Chrome updates under .\Google Chrome\.
 
 .EXAMPLE
-    .\New-BulkWingetUpdater.ps1 -GenerateBatch -CSVPath ".\apps.csv"
-    Generates remediation scripts for all apps in the CSV.
+    PS C:\> .\New-BulkWingetUpdater.ps1 -GenerateBatch -CSVPath ".\apps.csv"
 
-.EXAMPLE
-    # CSV format:
-    # AppName,WingetID,ProcessName
-    # Google Chrome,Google.Chrome,chrome
-    # 7-Zip,7zip.7zip,7zFM
-    # Microsoft Teams,Microsoft.Teams,Teams
+    Generates remediation scripts for all apps listed in the CSV. Expected columns:
+    AppName,WingetID,ProcessName (e.g. Google Chrome,Google.Chrome,chrome).
 
 .NOTES
-    Requires winget to be installed on target devices
-    Compatible with Windows 10/11
-    Designed for Intune Proactive Remediations
+    File Name  : New-BulkWingetUpdater.ps1
+    Author     : Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version    : 1.0.0
+    Date       : 2026-08-23
+
+    Requires winget to be installed on target devices.
+    Compatible with Windows 10/11.
+    Designed for Intune Proactive Remediations.
 #>
 
-[CmdletBinding(DefaultParameterSetName = 'Single')]
+[CmdletBinding(DefaultParameterSetName = 'Single', SupportsShouldProcess)]
 param(
     [Parameter(Mandatory = $true, ParameterSetName = 'Single')]
+    [ValidateNotNullOrEmpty()]
     [string]$AppName,
 
     [Parameter(Mandatory = $true, ParameterSetName = 'Single')]
+    [ValidateNotNullOrEmpty()]
     [string]$WingetID,
 
     [Parameter(Mandatory = $true, ParameterSetName = 'Single')]
+    [ValidateNotNullOrEmpty()]
     [string]$ProcessName,
 
     [Parameter(Mandatory = $false)]
@@ -74,10 +80,16 @@ param(
     [switch]$GenerateBatch,
 
     [Parameter(Mandatory = $true, ParameterSetName = 'Batch')]
+    [ValidateNotNullOrEmpty()]
     [string]$CSVPath
 )
 
+# PSAvoidUsingWriteHost is intentionally accepted: prefixed, colored console output is the mandated
+# output convention of docs/RELAUNCH-SPEC.md section 3.
+$ErrorActionPreference = 'Stop'
+
 function Write-ColorOutput {
+    # Trivial private helper mapping a level to a console color.
     param([string]$Message, [string]$Level = 'Info')
     $color = switch ($Level) {
         'Success' { 'Green' }
@@ -108,7 +120,8 @@ try {
 # Check if there's an available update
 if ((`$lines -match '\bVersion\s+Available\b' -and `$process -ne `$null)) {
     `$verInstalled, `$verAvailable = (-split `$lines[-1])[-3,-2]
-    Write-Host "Application update available for $Name. Current version is `$verInstalled, version available is `$verAvailable. $Name is currently running, will try again later."
+    Write-Host "Application update available for $Name. Current version is `$verInstalled, " +
+        "version available is `$verAvailable. $Name is currently running, will try again later."
     [PSCustomObject]@{
         Name = "$Name"
         InstalledVersion = `$verInstalled
@@ -119,7 +132,8 @@ if ((`$lines -match '\bVersion\s+Available\b' -and `$process -ne `$null)) {
 }
 if ((`$lines -match '\bVersion\s+Available\b' -and `$process -eq `$null)) {
     `$verInstalled, `$verAvailable = (-split `$lines[-1])[-3,-2]
-    Write-Host "Application update available for $Name. Current version is `$verInstalled, version available is `$verAvailable"
+    Write-Host "Application update available for $Name. Current version is `$verInstalled, " +
+        "version available is `$verAvailable"
     [PSCustomObject]@{
         Name = "$Name"
         InstalledVersion = `$verInstalled
@@ -134,7 +148,8 @@ if ((`$lines -match '\bVersion\s+Available\b' -and `$process -eq `$null)) {
         @"
 if (`$lines -match '\bVersion\s+Available\b') {
     `$verInstalled, `$verAvailable = (-split `$lines[-1])[-3,-2]
-    Write-Host "Application update available for $Name. Current version is `$verInstalled, version available is `$verAvailable"
+    Write-Host "Application update available for $Name. Current version is `$verInstalled, " +
+        "version available is `$verAvailable"
     [PSCustomObject]@{
         Name = "$Name"
         InstalledVersion = `$verInstalled
@@ -172,7 +187,8 @@ if (`$lines -match '\bVersion\s+Available\b') {
 `$AppProcess = "$Process"
 
 # Location of the winget exe
-`$wingetExe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction SilentlyContinue
+`$wingetPattern = "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe"
+`$wingetExe = Resolve-Path `$wingetPattern -ErrorAction SilentlyContinue
 
 if (-not `$wingetExe) {
     Write-Host "Winget not found on this system."
@@ -275,7 +291,8 @@ Write-Verbose -Verbose "Force update enabled"
 `$AppProcess = "$Process"
 
 # Location of the winget exe
-`$wingetExe = Resolve-Path "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe" -ErrorAction SilentlyContinue
+`$wingetPattern = "C:\Program Files\WindowsApps\Microsoft.DesktopAppInstaller_*_x64__8wekyb3d8bbwe\winget.exe"
+`$wingetExe = Resolve-Path `$wingetPattern -ErrorAction SilentlyContinue
 
 if (-not `$wingetExe) {
     Write-Error "Winget not found on this system."
@@ -340,55 +357,74 @@ function New-WingetScripts {
 
     # Create output directory
     $appFolder = Join-Path $Path $Name
-    if (-not (Test-Path $appFolder)) {
-        New-Item -ItemType Directory -Path $appFolder -Force | Out-Null
+    if (-not (Test-Path -LiteralPath $appFolder)) {
+        if (-not $PSCmdlet.ShouldProcess($appFolder, 'Create output folder')) { return }
+        New-Item -ItemType Directory -Path $appFolder -Force -ErrorAction Stop | Out-Null
     }
 
     # Generate detect script
     $detectScript = New-DetectScript -Name $Name -ID $ID -Process $Process -Force $Force
     $detectPath = Join-Path $appFolder "detect.ps1"
     if ($PSCmdlet.ShouldProcess($detectPath, 'Write detect script')) {
-        $detectScript | Out-File -FilePath $detectPath -Encoding UTF8 -Force
+        $detectScript | Out-File -FilePath $detectPath -Encoding utf8 -Force -ErrorAction Stop
     }
 
     # Generate remediate script
     $remediateScript = New-RemediateScript -Name $Name -ID $ID -Process $Process -Force $Force
     $remediatePath = Join-Path $appFolder "remediate.ps1"
     if ($PSCmdlet.ShouldProcess($remediatePath, 'Write remediate script')) {
-        $remediateScript | Out-File -FilePath $remediatePath -Encoding UTF8 -Force
+        $remediateScript | Out-File -FilePath $remediatePath -Encoding utf8 -Force -ErrorAction Stop
     }
 
-    Write-ColorOutput "  Created: $appFolder" -Level Success
-    Write-ColorOutput "    - detect.ps1" -Level Info
-    Write-ColorOutput "    - remediate.ps1" -Level Info
+    Write-ColorOutput "  [+] Created: $appFolder" -Level Success
+    Write-ColorOutput "    [*] detect.ps1" -Level Info
+    Write-ColorOutput "    [*] remediate.ps1" -Level Info
 }
 
-# Main execution
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "  Winget Remediation Script Generator" -ForegroundColor Cyan
-Write-Host "========================================`n" -ForegroundColor Cyan
+function Main {
+    try {
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "  Winget Remediation Script Generator" -ForegroundColor Cyan
+        Write-Host "========================================`n" -ForegroundColor Cyan
 
-if ($GenerateBatch) {
-    if (-not (Test-Path $CSVPath)) {
-        Write-ColorOutput "ERROR: CSV file not found: $CSVPath" -Level Error
-        exit 1
+        if ($GenerateBatch) {
+            if (-not (Test-Path -LiteralPath $CSVPath)) {
+                Write-ColorOutput "[-] ERROR: CSV file not found: $CSVPath" -Level Error
+                return 1
+            }
+
+            $apps = Import-Csv -Path $CSVPath -ErrorAction Stop
+            Write-ColorOutput "[*] Generating scripts for $($apps.Count) applications..." -Level Info
+
+            foreach ($app in $apps) {
+                Write-Host "[*] Processing: $($app.AppName)" -ForegroundColor Cyan
+                $wingetScriptArgs = @{
+                    Name    = $app.AppName
+                    ID      = $app.WingetID
+                    Process = $app.ProcessName
+                    Path    = $OutputPath
+                    Force   = [bool]$ForceUpdate
+                }
+                New-WingetScripts @wingetScriptArgs
+            }
+
+            Write-ColorOutput "[+] Batch generation complete!" -Level Success
+            Write-ColorOutput "[*] Output location: $OutputPath" -Level Info
+        }
+        else {
+            Write-Host "[*] Generating scripts for: $AppName" -ForegroundColor Cyan
+            New-WingetScripts -Name $AppName -ID $WingetID -Process $ProcessName -Path $OutputPath -Force:$ForceUpdate
+            Write-ColorOutput "[+] Script generation complete!" -Level Success
+        }
+
+        Write-Host "`n========================================`n" -ForegroundColor Cyan
+        return 0
     }
-
-    $apps = Import-Csv -Path $CSVPath
-    Write-ColorOutput "Generating scripts for $($apps.Count) applications...`n" -Level Info
-
-    foreach ($app in $apps) {
-        Write-Host "Processing: $($app.AppName)" -ForegroundColor Cyan
-        New-WingetScripts -Name $app.AppName -ID $app.WingetID -Process $app.ProcessName -Path $OutputPath -Force:$ForceUpdate
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
-
-    Write-ColorOutput "`nBatch generation complete!" -Level Success
-    Write-ColorOutput "Output location: $OutputPath" -Level Info
-}
-else {
-    Write-Host "Generating scripts for: $AppName" -ForegroundColor Cyan
-    New-WingetScripts -Name $AppName -ID $WingetID -Process $ProcessName -Path $OutputPath -Force:$ForceUpdate
-    Write-ColorOutput "`nScript generation complete!" -Level Success
 }
 
-Write-Host "`n========================================`n" -ForegroundColor Cyan
+# Execute only when run as a script; dot-sourcing (Pester tests) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

@@ -1,92 +1,167 @@
-<#
+﻿<#
 .SYNOPSIS
-    Detect Windows Update stuck for more than 7 days
+    Detects Windows Update states that have been stuck for more than 7 days.
 
 .DESCRIPTION
-    Detects a Windows Update state that has been stuck for more than 7 days:
-      - Windows Update service not running/missing
-      - Pending updates that have persisted for more than 7 days (tracked via a
-        first-seen marker under HKLM\SOFTWARE\BugFreeUmbrella)
+    Detects a Windows Update state that has been stuck for more than 7 days: either the
+    Windows Update service is not running/missing, or pending updates have persisted for more
+    than 7 days. The persistence window is tracked via a first-seen marker under
+    HKLM\SOFTWARE\BugFreeUmbrella (a registry write, gated behind -WhatIf/-Confirm).
+    Ordinary pending updates installed recently (still within the 7-day window) do NOT trigger
+    remediation - the full component reset in remediate.ps1 only runs for genuinely stuck states.
+    Exit codes:
+    - 0: compliant - Windows Update is healthy, the pending state is not yet stuck, or the
+      first-seen marker was just recorded/reset.
+    - 1: non-compliant or failure - the service is missing/not running, the update query failed,
+      or pending updates have been stuck for more than 7 days.
 
-    Ordinary pending updates (installed recently, still within the 7-day
-    window) do NOT trigger remediation - the full component reset in
-    remediate.ps1 only runs for genuinely stuck states.
+.EXAMPLE
+    PS C:\> .\Test-RemediationFixWindowsUpdateStuck.ps1
+    Runs the detection check and exits 0 when Windows Update is healthy, 1 when stuck.
+
+.EXAMPLE
+    PS C:\> .\Test-RemediationFixWindowsUpdateStuck.ps1 -WhatIf
+    Runs the check but shows which first-seen marker writes would happen without performing them.
 
 .NOTES
-    For Intune Proactive Remediations
-    Exit 0 = Windows Update healthy (or pending state not yet stuck)
-    Exit 1 = Non-compliant (stuck Windows Update detected)
+    File Name: Test-RemediationFixWindowsUpdateStuck.ps1
+    Author: Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version: 1.0.0
+    Date: 2026-08-23
 #>
+
+[CmdletBinding(SupportsShouldProcess)]
+
+$ErrorActionPreference = 'Stop'
+
+#region Configuration
 
 # Marker registry location recording when the pending-update state was first seen
 $markerPath = "HKLM:\SOFTWARE\BugFreeUmbrella\WUStuckFirstSeen"
 $markerName = "FirstSeen"
 $STUCK_DAYS = 7
 
-# Detect stuck Windows Update
-$wuService = Get-Service wuauserv -ErrorAction SilentlyContinue
+#endregion
 
-if (-not $wuService) {
-    Write-Host "Windows Update service not found"
-    exit 1
-}
+#region Functions
 
-if ($wuService.Status -ne 'Running') {
-    Write-Host "Windows Update service is $($wuService.Status)"
-    exit 1
-}
+function Get-PendingUpdateCount {
+    <#
+    .SYNOPSIS
+        Queries the Microsoft Update COM API for the number of installed-but-pending updates.
+    #>
+    [CmdletBinding()]
+    param()
 
-# Check for pending updates
-try {
-    $updateSession = New-Object -ComObject Microsoft.Update.Session
+    $updateSession = New-Object -ComObject Microsoft.Update.Session -ErrorAction Stop
     $updateSearcher = $updateSession.CreateUpdateSearcher()
     $searchResult = $updateSearcher.Search("IsInstalled=0")
-    $pendingCount = $searchResult.Updates.Count
-}
-catch {
-    Write-Host "Could not query updates: $($_.Exception.Message)"
-    exit 1
+    return $searchResult.Updates.Count
 }
 
-if ($pendingCount -eq 0) {
-    # No pending updates - clear the first-seen marker (state is healthy)
-    if (Test-Path $markerPath) {
-        Remove-Item -Path $markerPath -Force -ErrorAction SilentlyContinue
+function Main {
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
+    try {
+        $outputMsg = "[*] Checking for a stuck Windows Update state..."
+        Write-Host $outputMsg -ForegroundColor Cyan
+
+        $wuService = Get-Service wuauserv -ErrorAction SilentlyContinue
+
+        if (-not $wuService) {
+            $outputMsg = "[!] Windows Update service not found"
+            Write-Host $outputMsg -ForegroundColor Yellow
+            return 1
+        }
+
+        if ($wuService.Status -ne 'Running') {
+            $outputMsg = "[!] Windows Update service is $($wuService.Status)"
+            Write-Host $outputMsg -ForegroundColor Yellow
+            return 1
+        }
+
+        try {
+            $pendingCount = Get-PendingUpdateCount -ErrorAction Stop
+        }
+        catch {
+            $outputMsg = "[!] Could not query updates: $($_.Exception.Message)"
+            Write-Host $outputMsg -ForegroundColor Yellow
+            return 1
+        }
+
+        if ($pendingCount -eq 0) {
+            # No pending updates - clear the first-seen marker (state is healthy)
+            if (Test-Path $markerPath) {
+                if ($PSCmdlet.ShouldProcess($markerPath, "Remove stale first-seen marker")) {
+                    Remove-Item -Path $markerPath -Force -ErrorAction SilentlyContinue
+                }
+            }
+            $outputMsg = "[+] Windows Update healthy"
+            Write-Host $outputMsg -ForegroundColor Green
+            return 0
+        }
+
+        # Pending updates exist - check how long the pending state has persisted
+        $firstSeen = (Get-ItemProperty -Path $markerPath -Name $markerName -ErrorAction SilentlyContinue).$markerName
+
+        if (-not $firstSeen) {
+            # First observation of the pending state - record the timestamp but do NOT
+            # flag yet; remediation only triggers once the state persists > 7 days.
+            if (-not (Test-Path $markerPath)) {
+                if ($PSCmdlet.ShouldProcess($markerPath, "Create first-seen marker key")) {
+                    New-Item -Path $markerPath -Force | Out-Null
+                }
+            }
+            if ($PSCmdlet.ShouldProcess($markerPath, "Record first-seen timestamp")) {
+                Set-ItemProperty -Path $markerPath -Name $markerName -Value (Get-Date).ToString("o") -Force
+            }
+            $outputMsg = "[*] Found $pendingCount pending updates"
+            Write-Host $outputMsg -ForegroundColor Cyan
+            $outputMsg = "[*]   first observation - not yet flagged"
+            Write-Host $outputMsg -ForegroundColor Cyan
+            return 0
+        }
+
+        try {
+            $firstSeenDate = [DateTime]::Parse($firstSeen)
+        }
+        catch {
+            # Unparseable marker - reset it and re-observe
+            if ($PSCmdlet.ShouldProcess($markerPath, "Reset unparseable first-seen marker")) {
+                Set-ItemProperty -Path $markerPath -Name $markerName -Value (Get-Date).ToString("o") -Force
+            }
+            $outputMsg = "[*] Found $pendingCount pending updates (marker reset - not yet flagged)"
+            Write-Host $outputMsg -ForegroundColor Cyan
+            return 0
+        }
+
+        $pendingDays = ((Get-Date) - $firstSeenDate).Days
+
+        if ($pendingDays -gt $STUCK_DAYS) {
+            $outputMsg = "[!] Found $pendingCount pending updates stuck"
+            Write-Host $outputMsg -ForegroundColor Yellow
+            $outputMsg = "[!]   more than $STUCK_DAYS days since first seen"
+            Write-Host $outputMsg -ForegroundColor Yellow
+            return 1
+        }
+
+        $outputMsg = "[*] Found $pendingCount pending updates (pending for $pendingDays days)"
+
+        Write-Host $outputMsg -ForegroundColor Cyan
+        $outputMsg = "[*]   not yet stuck"
+        Write-Host $outputMsg -ForegroundColor Cyan
+        return 0
     }
-    Write-Host "Windows Update healthy"
-    exit 0
-}
-
-# Pending updates exist - check how long the pending state has persisted
-$firstSeen = (Get-ItemProperty -Path $markerPath -Name $markerName -ErrorAction SilentlyContinue).$markerName
-
-if (-not $firstSeen) {
-    # First observation of the pending state - record the timestamp but do NOT
-    # flag yet; remediation only triggers once the state persists > 7 days.
-    if (-not (Test-Path $markerPath)) {
-        New-Item -Path $markerPath -Force | Out-Null
+    catch {
+        $outputMsg = "[-] Error during stuck-state check: $($_.Exception.Message)"
+        Write-Host $outputMsg -ForegroundColor Red
+        return 1
     }
-    Set-ItemProperty -Path $markerPath -Name $markerName -Value (Get-Date).ToString("o") -Force
-    Write-Host "Found $pendingCount pending updates (first observation - not yet flagged)"
-    exit 0
 }
 
-try {
-    $firstSeenDate = [DateTime]::Parse($firstSeen)
-}
-catch {
-    # Unparseable marker - reset it and re-observe
-    Set-ItemProperty -Path $markerPath -Name $markerName -Value (Get-Date).ToString("o") -Force
-    Write-Host "Found $pendingCount pending updates (marker reset - not yet flagged)"
-    exit 0
-}
+#endregion
 
-$pendingDays = ((Get-Date) - $firstSeenDate).Days
-
-if ($pendingDays -gt $STUCK_DAYS) {
-    Write-Host "Found $pendingCount pending updates stuck for more than $STUCK_DAYS days (since $firstSeenDate)"
-    exit 1
-}
-
-Write-Host "Found $pendingCount pending updates (pending for $pendingDays days - not yet stuck)"
-exit 0
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

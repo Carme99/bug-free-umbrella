@@ -1,8 +1,8 @@
 # Changelog
 
-![Version](https://img.shields.io/badge/version-5.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![Release Date](https://img.shields.io/badge/release-2026--08--23-green)
-![Total Scripts](https://img.shields.io/badge/scripts-357-orange)
+![Total Scripts](https://img.shields.io/badge/scripts-539-orange)
 ![License](https://img.shields.io/badge/license-Apache%202.0-red)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
 
@@ -16,8 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## 📑 Table of Contents
 
 - [🌂 About Our Release Names](#-about-our-release-names)
-- [Unreleased](#unreleased)
-- **Latest Releases:**
+- **Latest Release:**
+  - [v1.0.0 (2026-08-23) - Clean-Slate Relaunch](#100---2026-08-23---clean-slate-relaunch)
+- **Previous Releases** (historical, pre-relaunch versioning; dates are each release's own):
   - [v5.0.0 (2026-08-23) 🌪️ Hurricane - Platform & Distribution Release](#500---2026-08-23-🌪️-hurricane---platform--distribution-release)
   - [v4.4.0 (2026-08-20) 🌧️ Nimbus - Catalog & Intelligence Release](#440---2026-08-20-🌧️-nimbus---catalog--intelligence-release)
   - [v4.3.0 (2026-08-08) 🌈 Zephyr - Quality & Enforcement Release](#430---2026-08-08-🌈-zephyr---quality--enforcement-release)
@@ -49,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## 🌂 About Our Release Names
 
-Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
+Bug-Free Umbrella historically used **weather-themed codenames** for releases. As of the v1.0.0 clean-slate relaunch (2026-08-23) codenames are retired and releases are identified by version number only. The table below is retained to help interpret historical entries:
 
 | Icon | Name | Type | Meaning |
 |------|------|------|---------|
@@ -61,7 +62,21 @@ Bug-Free Umbrella uses **weather-themed codenames** to make releases memorable:
 
 ---
 
-## [Unreleased]
+## [1.0.0] - 2026-08-23 - Clean-Slate Relaunch
+
+> The version counter resets to 1.0.0. Every script in the collection was brought to a single unified standard and re-baselined as BugFreeUmbrella 1.0.0; weather-themed release codenames are retired.
+
+### Relaunch Scope
+
+- **Unified standard** — all **539 scripts** across 8 domains (automation 6, cloud 15, collaboration 23, data 6, endpoints 426, infrastructure 42, security 16, utilities 5) swept to the standard defined in `docs/RELAUNCH-SPEC.md`.
+- **Per-script test coverage** — every script has a Pester suite under `Tests/`, mirroring the script's repo-relative directory (e.g. `scripts/endpoints/devices/autopatch/V3/detect.ps1` → `Tests/endpoints/devices/autopatch/V3/detect.Tests.ps1`).
+- **Analyzer-clean** — PSScriptAnalyzer reports zero errors across the collection.
+- **Rebrand** — documentation tone moved from whimsical to ops-grade professional; weather-themed codenames dropped from release identity; the module manifest no longer carries `Prerelease` or codename fields. The module name remains `BugFreeUmbrella`.
+- **Module** — published to PSGallery as version 1.0.0 via the tag-triggered release workflow.
+
+Platform groundwork delivered in the immediately preceding development cycle (installable PSGallery module, CLI v2 launcher, remediation reorg with forwarding shims) carries into this baseline; its historical entry follows below. All release history predating the relaunch is retained unchanged for reference.
+
+---
 
 <a id="500---2026-08-23-🌪️-hurricane---platform--distribution-release"></a>
 
@@ -1622,6 +1637,7 @@ Comprehensive documentation suite:
 
 | Version | Date | Codename | Type | Major Changes |
 |---------|------|----------|------|---------------|
+| **1.0.0** | 2026-08-23 | — | Relaunch | Clean-slate relaunch: 539 scripts unified to RELAUNCH-SPEC, per-script Pester coverage, analyzer-clean, rebrand |
 | **5.0.0** | 2026-08-23 | 🌪️ Hurricane | Major | PSGallery module, CLI v2, remediation reorg with shims |
 | **4.4.0** | 2026-08-20 | 🌧️ Nimbus | Minor | Catalog + MCP server, CI hardening, quality sweep |
 | **4.3.0** | 2026-08-08 | 🌈 Zephyr | Minor | MS Learn alignment (97 findings), PSSA enforcement gates, 122 issues |
@@ -1649,6 +1665,10 @@ Comprehensive documentation suite:
 ---
 
 ## Upgrade Notes
+
+### Upgrading to 1.0.0 (Relaunch)
+- **Version reset**: the version counter restarts at 1.0.0; automation pinning `>= 4.x` or `>= 5.0.0` must relax its version constraint.
+- **Manifest metadata**: the module manifest no longer carries `Prerelease` or codename fields.
 
 ### Upgrading to 5.0.0 (Hurricane)
 - ⚠️ **Path changes with forwarding shims**: winget + proactive-remediation scripts moved to canonical `scripts/endpoints/remediation/{winget,system,network,security}/` locations with Test-/Invoke- Verb-Noun names. Old paths still work via shims — **shims are removed in 6.0.0**; migrate automation now.

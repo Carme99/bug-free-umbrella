@@ -1,92 +1,130 @@
-<#
+﻿<#
 .SYNOPSIS
-    Remediates Print Spooler service issues.
+    Repair a stuck or broken Print Spooler service.
 
 .DESCRIPTION
-    This remediation script fixes Print Spooler issues by:
-    - Stopping Print Spooler service
-    - Clearing stuck print jobs from spool directory
-    - Restarting Print Spooler service
-    - Setting service to Automatic startup
+    Stops the Print Spooler service when it is running, clears stuck print jobs
+    (*.shd/*.spl) from the spool directory, restores the service to Automatic
+    startup and starts it again, verifying that it ends up Running.
+    Side effects: the Spooler service is stopped/started, its startup type may be
+    changed and stuck print job files are permanently deleted. Every mutating
+    step is gated behind -WhatIf/-Confirm via SupportsShouldProcess.
+    Re-running on an already-converged system makes no changes and still exits 0
+    (idempotent).
+    Exit codes: 0 = remediation successful (or already converged), 1 = the
+    Spooler service was not found or did not return to Running.
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationFixPrintSpooler.ps1
+
+    Clears stuck print jobs and restores the Print Spooler service to Running.
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationFixPrintSpooler.ps1 -WhatIf
+
+    Shows which service actions and spool file deletions would occur without
+    changing anything.
 
 .NOTES
-    Returns exit code 0 if remediation is successful.
-    Returns exit code 1 if remediation fails.
+    File Name  : Invoke-RemediationFixPrintSpooler.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 7.0
+    Version    : 1.0.0
+    Date       : 2026-08-23
 #>
 
-try {
-    Write-Host "Starting Print Spooler remediation..."
+[CmdletBinding(SupportsShouldProcess)]
+param()
 
-    # Stop Print Spooler service
-    Write-Host "Stopping Print Spooler service..."
-    $spoolerService = Get-Service -Name "Spooler" -ErrorAction SilentlyContinue
+$ErrorActionPreference = 'Stop'
 
-    if ($spoolerService) {
-        if ($spoolerService.Status -eq 'Running') {
-            Stop-Service -Name "Spooler" -Force -ErrorAction Stop
-            Start-Sleep -Seconds 3
-            Write-Host "Print Spooler service stopped"
+function Main {
+    # Advanced function so $PSCmdlet (and thus ShouldProcess) resolves inside Main.
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
+    try {
+        Write-Host "[*] Remediating Print Spooler..." -ForegroundColor Cyan
+
+        $spoolPath = Join-Path $env:SystemRoot 'System32\spool\PRINTERS'
+        $changeCount = 0
+
+        $spoolerService = Get-Service -Name 'Spooler' -ErrorAction SilentlyContinue
+        if (-not $spoolerService) {
+            Write-Host "[-] Error remediating Print Spooler: the Spooler service was not found" -ForegroundColor Red
+            return 1
         }
-    }
-    else {
-        Write-Host "Print Spooler service not found!"
-        exit 1
-    }
 
-    # Clear spool directory
-    Write-Host "Clearing print spool directory..."
-    $spoolPath = "$env:SystemRoot\System32\spool\PRINTERS"
-
-    if (Test-Path $spoolPath) {
-        try {
-            # Remove all spool files
-            Get-ChildItem -Path $spoolPath -Include "*.shd", "*.spl" -Recurse -ErrorAction SilentlyContinue |
-                Remove-Item -Force -ErrorAction SilentlyContinue
-
-            Write-Host "Print spool cleared successfully"
+        # Clear stuck print jobs (*.shd/*.spl) from the spool directory.
+        $staleJobs = @()
+        if (Test-Path -LiteralPath $spoolPath) {
+            $staleJobs = @(Get-ChildItem -LiteralPath $spoolPath -File -ErrorAction SilentlyContinue |
+                Where-Object { $_.Extension -in '.shd', '.spl' })
         }
-        catch {
-            Write-Host "Warning: Could not fully clear spool directory: $($_.Exception.Message)"
-            # Continue even if some files can't be deleted
+        else {
+            # Recreate a missing spool directory so the service can queue again.
+            if ($PSCmdlet.ShouldProcess($spoolPath, 'Create missing spool directory')) {
+                New-Item -Path $spoolPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
+                $changeCount++
+            }
         }
-    }
-    else {
-        Write-Host "Spool directory not found: $spoolPath"
-        # Create it if it doesn't exist
-        try {
-            New-Item -Path $spoolPath -ItemType Directory -Force | Out-Null
-            Write-Host "Created spool directory"
+
+        # Stop the service only when there are stuck jobs to remove, so a
+        # converged system (clean spool, running service) is left untouched.
+        if ($staleJobs.Count -gt 0 -and $spoolerService.Status -eq 'Running') {
+            if ($PSCmdlet.ShouldProcess('Spooler', 'Stop Print Spooler service')) {
+                Stop-Service -Name 'Spooler' -Force -ErrorAction Stop
+                $changeCount++
+            }
         }
-        catch {
-            Write-Host "Failed to create spool directory: $($_.Exception.Message)"
-            exit 1
+
+        foreach ($job in $staleJobs) {
+            if ($PSCmdlet.ShouldProcess($job.FullName, 'Delete stuck print job')) {
+                Remove-Item -LiteralPath $job.FullName -Force -ErrorAction Stop
+                $changeCount++
+            }
         }
+
+        # Restore Automatic startup.
+        if ($spoolerService.StartType -ne 'Automatic') {
+            if ($PSCmdlet.ShouldProcess('Spooler', 'Set startup type to Automatic')) {
+                Set-Service -Name 'Spooler' -StartupType Automatic -ErrorAction Stop
+                $changeCount++
+            }
+        }
+
+        # Start the service again.
+        if ($spoolerService.Status -ne 'Running') {
+            if ($PSCmdlet.ShouldProcess('Spooler', 'Start Print Spooler service')) {
+                Start-Service -Name 'Spooler' -ErrorAction Stop
+                $changeCount++
+            }
+        }
+
+        # Verify the service ended up Running.
+        $spoolerService = Get-Service -Name 'Spooler' -ErrorAction SilentlyContinue
+        if (-not $spoolerService -or $spoolerService.Status -ne 'Running') {
+            $finalStatus = 'Missing'
+            if ($spoolerService) {
+                $finalStatus = $spoolerService.Status
+            }
+            Write-Host "[-] Error remediating Print Spooler: service did not return to Running (status: $finalStatus)" -ForegroundColor Red
+            return 1
+        }
+
+        if ($changeCount -eq 0) {
+            Write-Host "[+] Already healthy: Print Spooler is running with Automatic startup and a clean spool directory" -ForegroundColor Green
+        }
+        else {
+            Write-Host "[+] Print Spooler remediation completed ($changeCount change(s))" -ForegroundColor Green
+        }
+        return 0
     }
-
-    # Set service to Automatic startup
-    Write-Host "Setting Print Spooler service to Automatic startup..."
-    Set-Service -Name "Spooler" -StartupType Automatic -ErrorAction Stop
-
-    # Start Print Spooler service
-    Write-Host "Starting Print Spooler service..."
-    Start-Service -Name "Spooler" -ErrorAction Stop
-    Start-Sleep -Seconds 3
-
-    # Verify service is running
-    $spoolerService = Get-Service -Name "Spooler"
-
-    if ($spoolerService.Status -eq 'Running') {
-        Write-Host "Print Spooler service is now running"
-        Write-Host "Print Spooler remediation completed successfully"
-        exit 0
+    catch {
+        Write-Host "[-] Error remediating Print Spooler: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
-    else {
-        Write-Host "Failed to start Print Spooler service. Status: $($spoolerService.Status)"
-        exit 1
-    }
-
 }
-catch {
-    Write-Host "Error during Print Spooler remediation: $($_.Exception.Message)"
-    exit 1
-}
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

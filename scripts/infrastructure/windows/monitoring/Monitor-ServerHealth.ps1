@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Comprehensive real-time health monitoring for Windows Server 2016-2022 with optional advanced features.
 
@@ -53,23 +53,14 @@
 .PARAMETER IncludeNetworkTests
     Test network connectivity to gateway, DNS servers, and internet.
 
+.PARAMETER IncludeApplications
+    Enable monitoring for IIS, SQL Server, and Hyper-V (if installed).
+
 .PARAMETER IncludeCertificates
     Check certificate expiration in LocalMachine stores.
 
 .PARAMETER IncludeScheduledTasks
     Monitor scheduled tasks for failures and disabled tasks.
-
-.PARAMETER IncludeApplications
-    Enable monitoring for IIS, SQL Server, and Hyper-V (if installed).
-
-.PARAMETER CheckIIS
-    Specifically monitor IIS application pools and websites.
-
-.PARAMETER CheckSQLServer
-    Specifically monitor SQL Server service status.
-
-.PARAMETER CheckHyperV
-    Specifically monitor Hyper-V and virtual machines.
 
 .PARAMETER ExportJSON
     Export report in JSON format for automation and integration.
@@ -98,41 +89,65 @@
 .PARAMETER SMTPCredential
     PSCredential object for SMTP authentication.
 
+.PARAMETER CheckIIS
+    Specifically monitor IIS application pools and websites.
+
+.PARAMETER CheckSQLServer
+    Specifically monitor SQL Server service status.
+
+.PARAMETER CheckHyperV
+    Specifically monitor Hyper-V and virtual machines.
+
 .PARAMETER CertificateWarningDays
     Days before expiration to warn about certificates (default: 30).
 
 .EXAMPLE
-    .\Monitor-ServerHealth.ps1
+    PS C:\> .\Monitor-ServerHealth.ps1
     Runs in interactive mode, prompting for monitoring options.
 
 .EXAMPLE
-    .\Monitor-ServerHealth.ps1 -AlertThreshold High -ExportReport
+    PS C:\> .\Monitor-ServerHealth.ps1 -AlertThreshold High -ExportReport
     Performs health check with high sensitivity and exports HTML report.
 
 .EXAMPLE
-    .\Monitor-ServerHealth.ps1 -IncludeSecurity -IncludeCertificates -ExportReport
+    PS C:\> .\Monitor-ServerHealth.ps1 -IncludeSecurity -IncludeCertificates -ExportReport
     Monitors security settings and certificates, exports HTML report.
 
 .EXAMPLE
-    .\Monitor-ServerHealth.ps1 -IncludeApplications -CheckIIS -CheckSQLServer
+    PS C:\> .\Monitor-ServerHealth.ps1 -IncludeApplications -CheckIIS -CheckSQLServer
     Monitors IIS and SQL Server applications.
 
 .EXAMPLE
-    .\Monitor-ServerHealth.ps1 -IncludeDiskIO -IncludeWindowsUpdate -IncludeNetworkTests -ShowProgress -ExportJSON
+    PS C:\> .\Monitor-ServerHealth.ps1 -IncludeDiskIO -IncludeWindowsUpdate -IncludeNetworkTests -ShowProgress `
+        -ExportJSON
     Comprehensive monitoring with progress indicators and JSON export.
 
 .EXAMPLE
-    .\Monitor-ServerHealth.ps1 -EmailReport -SMTPServer "smtp.example.com" -EmailFrom "monitor@example.com" -EmailTo "admin@example.com" -ExportReport
+    PS C:\> .\Monitor-ServerHealth.ps1 -EmailReport -SMTPServer "smtp.example.com" -EmailFrom "monitor@example.com" `
+        -EmailTo "admin@example.com" -ExportReport
     Monitors server and emails HTML report.
 
 .NOTES
-    Requires Administrator privileges
-    Compatible with Windows Server 2016, 2019, and 2022
-    Typical execution time: 30 seconds (basic) to 2-3 minutes (full scan)
-    Interactive mode available when run without parameters
+    File Name     : Monitor-ServerHealth.ps1
+    Author        : Bug-Free Umbrella
+    Prerequisite  : PowerShell 5.1+
+    Version       : 1.0.0
+    Date          : 2026-08-23
+
+    Administrator privileges are required; the elevation check runs inside Main (not via
+    #Requires) so the script can be safely loaded for testing. Compatible with Windows
+    Server 2016, 2019, and 2022. Typical execution time: 30 seconds (basic) to 2-3 minutes
+    (full scan). Interactive mode is available when run without parameters.
+
 #>
 
 [CmdletBinding()]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+            Justification = 'Colored Write-Host prefix output is the specified console UX.')]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '',
+            Justification = 'Parameters are consumed by helper functions via dynamic scoping.')]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '',
+            Justification = 'Plural nouns are intentional: functions aggregate collections.')]
 param(
     [Parameter(Mandatory = $false)]
     [switch]$ExportReport,
@@ -213,19 +228,21 @@ param(
     [int]$CertificateWarningDays = 30
 )
 
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-if ([string]::IsNullOrWhiteSpace($ReportDir) -or
-    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
-    $ReportDir -match '^(\\\\|//)') {
-    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
-    exit 1
-}
-$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
+$ErrorActionPreference = 'Stop'
 
-#Requires -RunAsAdministrator
+
+function Test-AdminPrivilege {
+    # Runtime replacement for the former '#Requires -RunAsAdministrator' directive.
+    # Unix platforms (offline test runners) have no elevation concept, so the check
+    # passes through there; Windows hosts still require an elevated session.
+    if ($PSVersionTable.ContainsKey('Platform') -and $PSVersionTable.Platform -eq 'Unix') {
+        return $true
+    }
+
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    return ([Security.Principal.WindowsPrincipal]$identity).IsInRole(
+        [Security.Principal.WindowsBuiltInRole]::Administrator)
+}
 
 # Define alert thresholds
 $thresholds = @{
@@ -255,146 +272,28 @@ $thresholds = @{
     }
 }
 
-$script:threshold = $thresholds[$AlertThreshold]
-$script:healthReport = @{
-    ServerName = $env:COMPUTERNAME
-    ScanTime = Get-Date
-    Status = 'Healthy'
-    Issues = @()
-    Warnings = @()
-    CPU = @{}
-    Memory = @{}
-    Disks = @()
-    Services = @()
-    EventLogErrors = @()
-    Network = @()
-    SystemInfo = @{}
-    DiskIO = @{
-        Enabled = $false
-        Samples = @()
-        AverageReadsPerSec = 0
-        AverageWritesPerSec = 0
-        AverageReadLatencyMs = 0
-        AverageWriteLatencyMs = 0
-        AverageQueueLength = 0
-        Status = 'OK'
-    }
-    WindowsUpdate = @{
-        Enabled = $false
-        LastSuccessfulUpdate = $null
-        PendingUpdates = @()
-        FailedUpdates = @()
-        UpdatesInstalled = 0
-        UpdatesPending = 0
-        UpdatesFailed = 0
-        Status = 'OK'
-        RebootRequired = $false
-        WindowsUpdateService = 'Unknown'
-    }
-    Security = @{
-        Enabled = $false
-        Firewall = @{
-            DomainProfile = 'Unknown'
-            PrivateProfile = 'Unknown'
-            PublicProfile = 'Unknown'
-            Status = 'OK'
-        }
-        Defender = @{
-            ServiceRunning = $false
-            RealTimeProtection = $false
-            SignatureAge = 0
-            LastScan = $null
-            Status = 'OK'
-        }
-        FailedLogins = @{
-            Last24Hours = 0
-            RecentAttempts = @()
-            Status = 'OK'
-        }
-    }
-    NetworkTests = @{
-        Enabled = $false
-        Gateway = @{
-            IP = $null
-            Reachable = $false
-            Latency = 0
-        }
-        DNS = @{
-            PrimaryServer = $null
-            Reachable = $false
-            ResolutionWorking = $false
-        }
-        Internet = @{
-            Reachable = $false
-            Target = '8.8.8.8'
-            Latency = 0
-        }
-        Status = 'OK'
-    }
-    AdvancedPerformance = @{
-        PageFile = @{
-            TotalSizeMB = 0
-            UsedMB = 0
-            UsedPercent = 0
-            Status = 'OK'
-        }
-        Handles = 0
-        Threads = 0
-        Processes = 0
-    }
-    Certificates = @{
-        Enabled = $false
-        Certificates = @()
-        Expiring = 0
-        Expired = 0
-        Status = 'OK'
-    }
-    ScheduledTasks = @{
-        Enabled = $false
-        Tasks = @()
-        Failed = 0
-        Disabled = 0
-        Status = 'OK'
-    }
-    Applications = @{
-        IIS = @{
-            Enabled = $false
-            Installed = $false
-            Running = $false
-            ApplicationPools = @()
-            Websites = @()
-            FailedPools = 0
-            StoppedSites = 0
-            Status = 'OK'
-        }
-        SQLServer = @{
-            Enabled = $false
-            Installed = $false
-            Running = $false
-            Databases = @()
-            FailedJobs = @()
-            Status = 'OK'
-        }
-        HyperV = @{
-            Enabled = $false
-            Installed = $false
-            Running = $false
-            VirtualMachines = @()
-            Status = 'OK'
-        }
-    }
-}
 
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
 
+    # Mandated console prefixes: [-] error/critical, [!] warning, [+] success, [*] info.
+    $prefix = switch ($Level) {
+        'Critical' { '[-]' }
+        'Error' { '[-]' }
+        'Warning' { '[!]' }
+        'Success' { '[+]' }
+        default { '[*]' }
+    }
+
     $color = switch ($Level) {
         'Critical' { 'Red' }
+        'Error' { 'Red' }
         'Warning' { 'Yellow' }
         'Success' { 'Green' }
-        default { 'White' }
+        default { 'Cyan' }
     }
-    Write-Host $Message -ForegroundColor $color
+
+    Write-Host "$prefix $Message" -ForegroundColor $color
 }
 
 function Update-Progress {
@@ -601,13 +500,15 @@ function Get-MemoryHealth {
         $script:healthReport.Memory.Status = 'Critical'
         $script:healthReport.Status = 'Critical'
         $script:healthReport.Issues += "Memory utilization critical: $memoryUsedPercent%"
-        Write-ColorOutput "  [CRITICAL] Memory: $memoryUsedPercent% ($usedMemoryGB GB / $totalMemoryGB GB)" -Level Critical
+        Write-ColorOutput "  [CRITICAL] Memory: $memoryUsedPercent% ($usedMemoryGB GB / $totalMemoryGB GB)" -Level `
+            Critical
     }
     elseif ($memoryUsedPercent -ge $script:threshold.MemoryWarning) {
         $script:healthReport.Memory.Status = 'Warning'
         if ($script:healthReport.Status -ne 'Critical') { $script:healthReport.Status = 'Warning' }
         $script:healthReport.Warnings += "Memory utilization elevated: $memoryUsedPercent%"
-        Write-ColorOutput "  [WARNING] Memory: $memoryUsedPercent% ($usedMemoryGB GB / $totalMemoryGB GB)" -Level Warning
+        Write-ColorOutput "  [WARNING] Memory: $memoryUsedPercent% ($usedMemoryGB GB / $totalMemoryGB GB)" -Level `
+            Warning
     }
     else {
         Write-ColorOutput "  [OK] Memory: $memoryUsedPercent% ($usedMemoryGB GB / $totalMemoryGB GB)" -Level Success
@@ -639,16 +540,19 @@ function Get-DiskHealth {
             $diskInfo.Status = 'Critical'
             $script:healthReport.Status = 'Critical'
             $script:healthReport.Issues += "Drive $($disk.DriveLetter): critically low space ($freeSpacePercent%)"
-            Write-ColorOutput "  [CRITICAL] Drive $($disk.DriveLetter): $freeSpacePercent% free ($($diskInfo.FreeGB) GB / $($diskInfo.TotalGB) GB)" -Level Critical
+            Write-ColorOutput "  [CRITICAL] Drive $($disk.DriveLetter): $freeSpacePercent% free ($($diskInfo.FreeGB) `
+                GB / $($diskInfo.TotalGB) GB)" -Level Critical
         }
         elseif ($freeSpacePercent -le $script:threshold.DiskWarning) {
             $diskInfo.Status = 'Warning'
             if ($script:healthReport.Status -ne 'Critical') { $script:healthReport.Status = 'Warning' }
             $script:healthReport.Warnings += "Drive $($disk.DriveLetter): low space ($freeSpacePercent%)"
-            Write-ColorOutput "  [WARNING] Drive $($disk.DriveLetter): $freeSpacePercent% free ($($diskInfo.FreeGB) GB / $($diskInfo.TotalGB) GB)" -Level Warning
+            Write-ColorOutput "  [WARNING] Drive $($disk.DriveLetter): $freeSpacePercent% free ($($diskInfo.FreeGB) `
+                GB / $($diskInfo.TotalGB) GB)" -Level Warning
         }
         else {
-            Write-ColorOutput "  [OK] Drive $($disk.DriveLetter): $freeSpacePercent% free ($($diskInfo.FreeGB) GB / $($diskInfo.TotalGB) GB)" -Level Success
+            Write-ColorOutput "  [OK] Drive $($disk.DriveLetter): $freeSpacePercent% free ($($diskInfo.FreeGB) GB / `
+                $($diskInfo.TotalGB) GB)" -Level Success
         }
 
         $script:healthReport.Disks += $diskInfo
@@ -735,7 +639,8 @@ function Get-EventLogHealth {
 
         if ($criticalErrors.Count -gt 20) {
             $script:healthReport.Warnings += "High volume of errors in event logs (last 24h): $($criticalErrors.Count)"
-            Write-ColorOutput "  [WARNING] Found $($criticalErrors.Count) critical errors in last 24 hours" -Level Warning
+            Write-ColorOutput "  [WARNING] Found $($criticalErrors.Count) critical errors in last 24 hours" -Level `
+                Warning
         }
         elseif ($criticalErrors.Count -gt 0) {
             Write-ColorOutput "  [INFO] Found $($criticalErrors.Count) errors in last 24 hours"
@@ -824,15 +729,23 @@ function Get-DiskIOHealth {
         }
 
         $script:healthReport.DiskIO.Samples = $samples
-        $script:healthReport.DiskIO.AverageReadsPerSec = [math]::Round(($samples | Measure-Object -Property ReadsPerSec -Average).Average, 2)
-        $script:healthReport.DiskIO.AverageWritesPerSec = [math]::Round(($samples | Measure-Object -Property WritesPerSec -Average).Average, 2)
-        $script:healthReport.DiskIO.AverageReadLatencyMs = [math]::Round(($samples | Measure-Object -Property ReadLatency -Average).Average, 2)
-        $script:healthReport.DiskIO.AverageWriteLatencyMs = [math]::Round(($samples | Measure-Object -Property WriteLatency -Average).Average, 2)
-        $script:healthReport.DiskIO.AverageQueueLength = [math]::Round(($samples | Measure-Object -Property QueueLength -Average).Average, 2)
+        $script:healthReport.DiskIO.AverageReadsPerSec = [math]::Round(($samples |
+            Measure-Object -Property ReadsPerSec -Average).Average, 2)
+        $script:healthReport.DiskIO.AverageWritesPerSec = [math]::Round(($samples |
+            Measure-Object -Property WritesPerSec -Average).Average, 2)
+        $script:healthReport.DiskIO.AverageReadLatencyMs = [math]::Round(($samples |
+            Measure-Object -Property ReadLatency -Average).Average, 2)
+        $script:healthReport.DiskIO.AverageWriteLatencyMs = [math]::Round(($samples |
+            Measure-Object -Property WriteLatency -Average).Average, 2)
+        $script:healthReport.DiskIO.AverageQueueLength = [math]::Round(($samples |
+            Measure-Object -Property QueueLength -Average).Average, 2)
 
-        if ($script:healthReport.DiskIO.AverageReadLatencyMs -gt 25 -or $script:healthReport.DiskIO.AverageWriteLatencyMs -gt 25) {
+        if ($script:healthReport.DiskIO.AverageReadLatencyMs -gt 25 -or `
+            $script:healthReport.DiskIO.AverageWriteLatencyMs -gt 25) {
             $script:healthReport.DiskIO.Status = 'Warning'
-            $script:healthReport.Warnings += "High disk latency detected (Read: $($script:healthReport.DiskIO.AverageReadLatencyMs)ms, Write: $($script:healthReport.DiskIO.AverageWriteLatencyMs)ms)"
+            $script:healthReport.Warnings += "High disk latency detected (Read: `
+                $($script:healthReport.DiskIO.AverageReadLatencyMs)ms, Write: `
+                    $($script:healthReport.DiskIO.AverageWriteLatencyMs)ms)"
             Write-ColorOutput "  [WARNING] Disk I/O: High latency" -Level Warning
         }
         elseif ($script:healthReport.DiskIO.AverageQueueLength -gt 2) {
@@ -841,7 +754,8 @@ function Get-DiskIOHealth {
             Write-ColorOutput "  [WARNING] Disk I/O: High queue length" -Level Warning
         }
         else {
-            Write-ColorOutput "  [OK] Disk I/O: Read=$($script:healthReport.DiskIO.AverageReadLatencyMs)ms, Write=$($script:healthReport.DiskIO.AverageWriteLatencyMs)ms" -Level Success
+            Write-ColorOutput "  [OK] Disk I/O: Read=$($script:healthReport.DiskIO.AverageReadLatencyMs)ms, `
+                Write=$($script:healthReport.DiskIO.AverageWriteLatencyMs)ms" -Level Success
         }
     }
     catch {
@@ -862,11 +776,13 @@ function Get-AdvancedPerformanceMetrics {
         if ($pageFile) {
             $script:healthReport.AdvancedPerformance.PageFile.TotalSizeMB = $pageFile.AllocatedBaseSize
             $script:healthReport.AdvancedPerformance.PageFile.UsedMB = $pageFile.CurrentUsage
-            $script:healthReport.AdvancedPerformance.PageFile.UsedPercent = [math]::Round(($pageFile.CurrentUsage / $pageFile.AllocatedBaseSize) * 100, 2)
+            $script:healthReport.AdvancedPerformance.PageFile.UsedPercent = [math]::Round(($pageFile.CurrentUsage / `
+                $pageFile.AllocatedBaseSize) * 100, 2)
 
             if ($script:healthReport.AdvancedPerformance.PageFile.UsedPercent -gt 80) {
                 $script:healthReport.AdvancedPerformance.PageFile.Status = 'Warning'
-                $script:healthReport.Warnings += "Page file usage high: $($script:healthReport.AdvancedPerformance.PageFile.UsedPercent)%"
+                $script:healthReport.Warnings += "Page file usage high: `
+                    $($script:healthReport.AdvancedPerformance.PageFile.UsedPercent)%"
             }
         }
 
@@ -883,7 +799,8 @@ function Get-AdvancedPerformanceMetrics {
             $script:healthReport.AdvancedPerformance.Handles = [int]$handleCounter.CounterSamples[0].CookedValue
         }
 
-        Write-ColorOutput "  [OK] Page File: $($script:healthReport.AdvancedPerformance.PageFile.UsedPercent)% used" -Level Success
+        Write-ColorOutput "  [OK] Page File: $($script:healthReport.AdvancedPerformance.PageFile.UsedPercent)% used" `
+            -Level Success
     }
     catch {
         Write-ColorOutput "  [WARNING] Could not collect advanced metrics: $($_.Exception.Message)" -Level Warning
@@ -948,8 +865,10 @@ function Get-WindowsUpdateHealth {
 
         if ($script:healthReport.WindowsUpdate.UpdatesPending -gt 10) {
             $script:healthReport.WindowsUpdate.Status = 'Warning'
-            $script:healthReport.Warnings += "Many pending updates: $($script:healthReport.WindowsUpdate.UpdatesPending)"
-            Write-ColorOutput "  [WARNING] Windows Update: $($script:healthReport.WindowsUpdate.UpdatesPending) pending updates" -Level Warning
+            $script:healthReport.Warnings += "Many pending updates: `
+                $($script:healthReport.WindowsUpdate.UpdatesPending)"
+            Write-ColorOutput "  [WARNING] Windows Update: $($script:healthReport.WindowsUpdate.UpdatesPending) `
+                pending updates" -Level Warning
         }
         elseif ($rebootPending) {
             $script:healthReport.WindowsUpdate.Status = 'Warning'
@@ -957,7 +876,8 @@ function Get-WindowsUpdateHealth {
             Write-ColorOutput "  [WARNING] Windows Update: Reboot required" -Level Warning
         }
         else {
-            Write-ColorOutput "  [OK] Windows Update: $($script:healthReport.WindowsUpdate.UpdatesPending) pending" -Level Success
+            Write-ColorOutput "  [OK] Windows Update: $($script:healthReport.WindowsUpdate.UpdatesPending) pending" `
+                -Level Success
         }
     }
     catch {
@@ -978,11 +898,11 @@ function Get-SecurityHealth {
 
     try {
         $fwProfiles = Get-NetFirewallProfile -ErrorAction Stop
-        foreach ($profile in $fwProfiles) {
-            switch ($profile.Name) {
-                'Domain' { $script:healthReport.Security.Firewall.DomainProfile = $profile.Enabled }
-                'Private' { $script:healthReport.Security.Firewall.PrivateProfile = $profile.Enabled }
-                'Public' { $script:healthReport.Security.Firewall.PublicProfile = $profile.Enabled }
+        foreach ($fwProfile in $fwProfiles) {
+            switch ($fwProfile.Name) {
+                'Domain' { $script:healthReport.Security.Firewall.DomainProfile = $fwProfile.Enabled }
+                'Private' { $script:healthReport.Security.Firewall.PrivateProfile = $fwProfile.Enabled }
+                'Public' { $script:healthReport.Security.Firewall.PublicProfile = $fwProfile.Enabled }
             }
         }
 
@@ -1013,7 +933,8 @@ function Get-SecurityHealth {
             $mpComputerStatus = Get-MpComputerStatus -ErrorAction SilentlyContinue
 
             if ($mpPreference) {
-                $script:healthReport.Security.Defender.RealTimeProtection = $mpPreference.DisableRealtimeMonitoring -eq $false
+                $script:healthReport.Security.Defender.RealTimeProtection = $mpPreference.DisableRealtimeMonitoring `
+                    -eq $false
             }
 
             if ($mpComputerStatus) {
@@ -1022,8 +943,10 @@ function Get-SecurityHealth {
 
                 if ($mpComputerStatus.AntivirusSignatureAge -gt 7) {
                     $script:healthReport.Security.Defender.Status = 'Warning'
-                    $script:healthReport.Warnings += "Defender signatures outdated: $($mpComputerStatus.AntivirusSignatureAge) days"
-                    Write-ColorOutput "  [WARNING] Defender: Signatures $($mpComputerStatus.AntivirusSignatureAge) days old" -Level Warning
+                    $script:healthReport.Warnings += "Defender signatures outdated: `
+                        $($mpComputerStatus.AntivirusSignatureAge) days"
+                    Write-ColorOutput "  [WARNING] Defender: Signatures $($mpComputerStatus.AntivirusSignatureAge) `
+                        days old" -Level Warning
                 }
                 elseif (-not $script:healthReport.Security.Defender.RealTimeProtection) {
                     $script:healthReport.Security.Defender.Status = 'Critical'
@@ -1100,8 +1023,10 @@ function Get-NetworkConnectivityHealth {
         $ping = Test-Connection -ComputerName $gatewayIP -Count 2 -ErrorAction SilentlyContinue
         if ($ping) {
             $script:healthReport.NetworkTests.Gateway.Reachable = $true
-            $script:healthReport.NetworkTests.Gateway.Latency = [math]::Round(($ping.ResponseTime | Measure-Object -Average).Average, 2)
-            Write-ColorOutput "  [OK] Gateway: $gatewayIP ($($script:healthReport.NetworkTests.Gateway.Latency)ms)" -Level Success
+            $script:healthReport.NetworkTests.Gateway.Latency = [math]::Round(($ping.ResponseTime |
+                Measure-Object -Average).Average, 2)
+            Write-ColorOutput "  [OK] Gateway: $gatewayIP ($($script:healthReport.NetworkTests.Gateway.Latency)ms)" `
+                -Level Success
         }
         else {
             $script:healthReport.NetworkTests.Status = 'Critical'
@@ -1124,10 +1049,10 @@ function Get-NetworkConnectivityHealth {
             $script:healthReport.NetworkTests.DNS.PrimaryServer = $dnsIP
 
             $dnsPing = Test-Connection -ComputerName $dnsIP -Count 2 -ErrorAction SilentlyContinue
-            $script:healthReport.NetworkTests.DNS.Reachable = ($dnsPing -ne $null)
+            $script:healthReport.NetworkTests.DNS.Reachable = ($null -ne $dnsPing)
 
             $dnsTest = Resolve-DnsName -Name 'www.microsoft.com' -ErrorAction SilentlyContinue
-            $script:healthReport.NetworkTests.DNS.ResolutionWorking = ($dnsTest -ne $null)
+            $script:healthReport.NetworkTests.DNS.ResolutionWorking = ($null -ne $dnsTest)
 
             if ($script:healthReport.NetworkTests.DNS.ResolutionWorking) {
                 Write-ColorOutput "  [OK] DNS: Server $dnsIP, resolution working" -Level Success
@@ -1150,8 +1075,10 @@ function Get-NetworkConnectivityHealth {
         $internetPing = Test-Connection -ComputerName $internetTarget -Count 2 -ErrorAction SilentlyContinue
         if ($internetPing) {
             $script:healthReport.NetworkTests.Internet.Reachable = $true
-            $script:healthReport.NetworkTests.Internet.Latency = [math]::Round(($internetPing.ResponseTime | Measure-Object -Average).Average, 2)
-            Write-ColorOutput "  [OK] Internet: Reachable ($($script:healthReport.NetworkTests.Internet.Latency)ms)" -Level Success
+            $script:healthReport.NetworkTests.Internet.Latency = [math]::Round(($internetPing.ResponseTime |
+                Measure-Object -Average).Average, 2)
+            Write-ColorOutput "  [OK] Internet: Reachable ($($script:healthReport.NetworkTests.Internet.Latency)ms)" `
+                -Level Success
         }
         else {
             $script:healthReport.Warnings += "Internet connectivity test failed"
@@ -1219,12 +1146,14 @@ function Get-CertificateHealth {
             $script:healthReport.Certificates.Status = 'Critical'
             $script:healthReport.Status = 'Critical'
             $script:healthReport.Issues += "Expired certificates found: $($script:healthReport.Certificates.Expired)"
-            Write-ColorOutput "  [CRITICAL] Certificates: $($script:healthReport.Certificates.Expired) expired" -Level Critical
+            Write-ColorOutput "  [CRITICAL] Certificates: $($script:healthReport.Certificates.Expired) expired" `
+                -Level Critical
         }
         elseif ($script:healthReport.Certificates.Expiring -gt 0) {
             $script:healthReport.Certificates.Status = 'Warning'
             $script:healthReport.Warnings += "Certificates expiring soon: $($script:healthReport.Certificates.Expiring)"
-            Write-ColorOutput "  [WARNING] Certificates: $($script:healthReport.Certificates.Expiring) expiring within $CertificateWarningDays days" -Level Warning
+            Write-ColorOutput "  [WARNING] Certificates: $($script:healthReport.Certificates.Expiring) expiring `
+                within $CertificateWarningDays days" -Level Warning
         }
         else {
             Write-ColorOutput "  [OK] Certificates: All valid" -Level Success
@@ -1251,7 +1180,8 @@ function Get-ScheduledTasksHealth {
             Where-Object { $_.TaskPath -notlike '\Microsoft\*' }
 
         foreach ($task in $tasks) {
-            $taskInfo = Get-ScheduledTaskInfo -TaskName $task.TaskName -TaskPath $task.TaskPath -ErrorAction SilentlyContinue
+            $taskInfo = Get-ScheduledTaskInfo -TaskName $task.TaskName -TaskPath $task.TaskPath -ErrorAction `
+                SilentlyContinue
 
             $taskData = @{
                 Name = $task.TaskName
@@ -1263,7 +1193,7 @@ function Get-ScheduledTasksHealth {
                 Status = 'OK'
             }
 
-            if ($taskInfo.LastTaskResult -ne 0 -and $taskInfo.LastTaskResult -ne $null) {
+            if ($taskInfo.LastTaskResult -ne 0 -and $null -ne $taskInfo.LastTaskResult) {
                 $taskData.Status = 'Failed'
                 $script:healthReport.ScheduledTasks.Failed++
             }
@@ -1279,7 +1209,8 @@ function Get-ScheduledTasksHealth {
         if ($script:healthReport.ScheduledTasks.Failed -gt 0) {
             $script:healthReport.ScheduledTasks.Status = 'Warning'
             $script:healthReport.Warnings += "Failed scheduled tasks: $($script:healthReport.ScheduledTasks.Failed)"
-            Write-ColorOutput "  [WARNING] Scheduled Tasks: $($script:healthReport.ScheduledTasks.Failed) failed" -Level Warning
+            Write-ColorOutput "  [WARNING] Scheduled Tasks: $($script:healthReport.ScheduledTasks.Failed) failed" `
+                -Level Warning
         }
         else {
             Write-ColorOutput "  [OK] Scheduled Tasks: $($tasks.Count) monitored, none failed" -Level Success
@@ -1358,7 +1289,8 @@ function Get-IISHealth {
             $script:healthReport.Applications.IIS.StoppedSites -gt 0) {
             $script:healthReport.Applications.IIS.Status = 'Critical'
             $script:healthReport.Status = 'Critical'
-            $script:healthReport.Issues += "IIS: $($script:healthReport.Applications.IIS.FailedPools) stopped pools, $($script:healthReport.Applications.IIS.StoppedSites) stopped sites"
+            $script:healthReport.Issues += "IIS: $($script:healthReport.Applications.IIS.FailedPools) stopped pools, `
+                $($script:healthReport.Applications.IIS.StoppedSites) stopped sites"
             Write-ColorOutput "  [CRITICAL] IIS: Stopped application pools or websites detected" -Level Critical
         }
         elseif (-not $script:healthReport.Applications.IIS.Running) {
@@ -1500,7 +1432,8 @@ function Send-EmailReport {
     if (-not $EmailReport) { return }
 
     if (-not $SMTPServer -or -not $EmailFrom -or -not $EmailTo) {
-        Write-ColorOutput "`n[WARNING] Email reporting requires -SMTPServer, -EmailFrom, and -EmailTo parameters" -Level Warning
+        Write-ColorOutput "`n[WARNING] Email reporting requires -SMTPServer, -EmailFrom, and -EmailTo parameters" `
+            -Level Warning
         return
     }
 
@@ -1522,16 +1455,26 @@ function Send-EmailReport {
 </head>
 <body>
     <h2>Server Health Report - $($script:healthReport.ServerName)</h2>
-    <p><strong>Status:</strong> <span class="status-$($script:healthReport.Status.ToLower())">$($script:healthReport.Status.ToUpper())</span></p>
+    <p><strong>Status:</strong> <span
+            class="status-$($script:healthReport.Status.ToLower())">$($script:healthReport.Status.ToUpper())</span></p>
     <p><strong>Scan Time:</strong> $($script:healthReport.ScanTime)</p>
 
     <h3>Summary</h3>
     <table>
         <tr><th>Component</th><th>Status</th><th>Details</th></tr>
-        <tr><td>CPU</td><td>$($script:healthReport.CPU.Status)</td><td>$($script:healthReport.CPU.AverageCPU)% average</td></tr>
-        <tr><td>Memory</td><td>$($script:healthReport.Memory.Status)</td><td>$($script:healthReport.Memory.UsedPercent)% used</td></tr>
-        <tr><td>Disks</td><td>$(($script:healthReport.Disks | Where-Object {$_.Status -ne 'OK'}).Count) issues</td><td>$($script:healthReport.Disks.Count) volumes</td></tr>
-        <tr><td>Services</td><td>$(($script:healthReport.Services | Where-Object {$_.Health -ne 'OK'}).Count) issues</td><td>$($script:healthReport.Services.Count) monitored</td></tr>
+        <tr><td>CPU</td><td>$($script:healthReport.CPU.Status)</td><td>$($script:healthReport.CPU.AverageCPU)%
+            average</td></tr>
+        `
+            `
+                `
+                    `
+                        `
+                            <tr><td>Memory</td><td>$($script:healthReport.Memory.Status)</td>
+                            <td>$($script:healthReport.Memory.UsedPercent)% used</td></tr>
+        <tr><td>Disks</td><td>$(($script:healthReport.Disks | Where-Object {$_.Status -ne 'OK'}).Count)
+            issues</td><td>$($script:healthReport.Disks.Count) volumes</td></tr>
+        <tr><td>Services</td><td>$(($script:healthReport.Services | Where-Object {$_.Health -ne 'OK'}).Count)
+            issues</td><td>$($script:healthReport.Services.Count) monitored</td></tr>
     </table>
 
     $(if($script:healthReport.Issues.Count -gt 0) {
@@ -1599,11 +1542,14 @@ function Export-HTMLReport {
     <title>Server Health Report - $($script:healthReport.ServerName)</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { max-width: 1200px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h1 { color: #333; border-bottom: 3px solid $statusColor; padding-bottom: 10px; }
         h2 { color: #555; margin-top: 30px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-        .status-badge { display: inline-block; padding: 8px 16px; border-radius: 4px; color: white; font-weight: bold; background-color: $statusColor; }
-        .metric { background-color: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 4px; border-left: 4px solid #007bff; }
+        .status-badge { display: inline-block; padding: 8px 16px; border-radius: 4px; color: white; font-weight: bold;
+            background-color: $statusColor; }
+        .metric { background-color: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 4px; border-left: 4px solid
+            #007bff; }
         table { width: 100%; border-collapse: collapse; margin: 15px 0; }
         th { background-color: #007bff; color: white; padding: 12px; text-align: left; }
         td { padding: 10px; border-bottom: 1px solid #ddd; }
@@ -1641,7 +1587,8 @@ function Export-HTMLReport {
         <h2>CPU Usage</h2>
         <div class="metric">
             <strong>Average CPU:</strong> $($script:healthReport.CPU.AverageCPU)%<br>
-            <strong>Status:</strong> <span class="$($script:healthReport.CPU.Status.ToLower())">$($script:healthReport.CPU.Status)</span>
+            <strong>Status:</strong> <span
+            class="$($script:healthReport.CPU.Status.ToLower())">$($script:healthReport.CPU.Status)</span>
         </div>
         <table>
             <tr><th>Process</th><th>CPU Time</th><th>Memory (MB)</th></tr>
@@ -1653,16 +1600,26 @@ function Export-HTMLReport {
         <h2>Memory Usage</h2>
         <div class="metric">
             <strong>Total Memory:</strong> $($script:healthReport.Memory.TotalGB) GB<br>
-            <strong>Used:</strong> $($script:healthReport.Memory.UsedGB) GB ($($script:healthReport.Memory.UsedPercent)%)<br>
+            <strong>Used:</strong> $($script:healthReport.Memory.UsedGB) GB
+            ($($script:healthReport.Memory.UsedPercent)%)<br>
             <strong>Free:</strong> $($script:healthReport.Memory.FreeGB) GB<br>
-            <strong>Status:</strong> <span class="$($script:healthReport.Memory.Status.ToLower())">$($script:healthReport.Memory.Status)</span>
+            <strong>Status:</strong> <span
+            class="$($script:healthReport.Memory.Status.ToLower())">$($script:healthReport.Memory.Status)</span>
         </div>
 
         <h2>Disk Space</h2>
         <table>
             <tr><th>Drive</th><th>Label</th><th>Total (GB)</th><th>Free (GB)</th><th>Free %</th><th>Status</th></tr>
             $(foreach($disk in $script:healthReport.Disks) {
-                "<tr><td>$($disk.DriveLetter):</td><td>$($disk.Label)</td><td>$($disk.TotalGB)</td><td>$($disk.FreeGB)</td><td>$($disk.FreePercent)%</td><td class='$($disk.Status.ToLower())'>$($disk.Status)</td></tr>"
+
+            `
+                `
+                    `
+                        `
+                            `
+                                "<tr><td>$($disk.DriveLetter):</td><td>$($disk.Label)</td><td>$($disk.TotalGB)</td>" +
+                                "<td>$($disk.FreeGB)</td><td>$($disk.FreePercent)%</td>" +
+                                "<td class='$($disk.Status.ToLower())'>$($disk.Status)</td></tr>"
             })
         </table>
 
@@ -1670,15 +1627,18 @@ function Export-HTMLReport {
         <table>
             <tr><th>Service Name</th><th>Display Name</th><th>Status</th><th>Start Type</th><th>Health</th></tr>
             $(foreach($svc in $script:healthReport.Services) {
-                "<tr><td>$($svc.Name)</td><td>$($svc.DisplayName)</td><td>$($svc.Status)</td><td>$($svc.StartType)</td><td class='$($svc.Health.ToLower())'>$($svc.Health)</td></tr>"
+
+            "<tr><td>$($svc.Name)</td><td>$($svc.DisplayName)</td><td>$($svc.Status)</td><td>$($svc.StartType)</td><td
+            class='$($svc.Health.ToLower())'>$($svc.Health)</td></tr>"
             })
         </table>
 
         <h2>Recent Event Log Errors (Last 24h)</h2>
         $(if($script:healthReport.EventLogErrors.Count -gt 0) {
             "<table><tr><th>Time</th><th>Log</th><th>Level</th><th>Source</th><th>Event ID</th><th>Message</th></tr>"
-            foreach($event in $script:healthReport.EventLogErrors) {
-                "<tr><td>$($event.TimeCreated)</td><td>$($event.LogName)</td><td>$($event.Level)</td><td>$($event.Source)</td><td>$($event.EventID)</td><td>$($event.Message)</td></tr>"
+            foreach($evt in $script:healthReport.EventLogErrors) {
+                "<tr><td>$($evt.TimeCreated)</td><td>$($evt.LogName)</td><td>$($evt.Level)</td>" +
+                "<td>$($evt.Source)</td><td>$($evt.EventID)</td><td>$($evt.Message)</td></tr>"
             }
             "</table>"
         } else {
@@ -1693,7 +1653,8 @@ function Export-HTMLReport {
                 <strong>Read Latency:</strong> $($script:healthReport.DiskIO.AverageReadLatencyMs) ms<br>
                 <strong>Write Latency:</strong> $($script:healthReport.DiskIO.AverageWriteLatencyMs) ms<br>
                 <strong>Queue Length:</strong> $($script:healthReport.DiskIO.AverageQueueLength)<br>
-                <strong>Status:</strong> <span class='$($script:healthReport.DiskIO.Status.ToLower())'>$($script:healthReport.DiskIO.Status)</span>
+                <strong>Status:</strong> <span
+            class='$($script:healthReport.DiskIO.Status.ToLower())'>$($script:healthReport.DiskIO.Status)</span>
             </div>"
         })
 
@@ -1735,7 +1696,14 @@ function Export-HTMLReport {
             if($script:healthReport.Security.FailedLogins.RecentAttempts.Count -gt 0) {
                 "<table><tr><th>Time</th><th>User</th><th>Workstation</th><th>IP</th></tr>"
                 foreach($login in $script:healthReport.Security.FailedLogins.RecentAttempts) {
-                    "<tr><td>$($login.TimeCreated)</td><td>$($login.TargetUserName)</td><td>$($login.WorkstationName)</td><td>$($login.IpAddress)</td></tr>"
+
+            `
+                `
+                    `
+                        `
+                            `
+                                "<tr><td>$($login.TimeCreated)</td><td>$($login.TargetUserName)</td>" +
+                                "<td>$($login.WorkstationName)</td><td>$($login.IpAddress)</td></tr>"
                 }
                 "</table>"
             }
@@ -1772,7 +1740,8 @@ function Export-HTMLReport {
             </table>"
         })
 
-        $(if($script:healthReport.Certificates.Enabled -and $script:healthReport.Certificates.Certificates.Count -gt 0) {
+        $(if($script:healthReport.Certificates.Enabled -and $script:healthReport.Certificates.Certificates.Count -gt
+            0) {
             "<h2>Certificate Status</h2>
             <div class='metric'>
                 <strong>Expired:</strong> $($script:healthReport.Certificates.Expired)<br>
@@ -1780,7 +1749,8 @@ function Export-HTMLReport {
             </div>
             <table>
                 <tr><th>Subject</th><th>Expires</th><th>Days</th><th>Status</th></tr>"
-                foreach($cert in ($script:healthReport.Certificates.Certificates | Sort-Object DaysUntilExpiry | Select-Object -First 10)) {
+                foreach($cert in ($script:healthReport.Certificates.Certificates | Sort-Object DaysUntilExpiry |
+            Select-Object -First 10)) {
                     $statusClass = switch($cert.Status) {
                         'Expired' { 'critical' }
                         'Expiring' { 'warning' }
@@ -1829,7 +1799,14 @@ function Export-HTMLReport {
             <div class='metric'>
                 <strong>Installed:</strong> $($script:healthReport.Applications.SQLServer.Installed)<br>
                 <strong>Running:</strong> $($script:healthReport.Applications.SQLServer.Running)<br>
-                <strong>Status:</strong> <span class='$($script:healthReport.Applications.SQLServer.Status.ToLower())'>$($script:healthReport.Applications.SQLServer.Status)</span>
+                <strong>Status:</strong> <span
+            `
+                `
+                    `
+                        `
+                            `
+                                class='$($script:healthReport.Applications.SQLServer.Status.ToLower())'>
+                                $($script:healthReport.Applications.SQLServer.Status)</span>
             </div>"
         })
 
@@ -1837,7 +1814,8 @@ function Export-HTMLReport {
             "<h2>Hyper-V</h2>
             <div class='metric'>
                 <strong>Total VMs:</strong> $($script:healthReport.Applications.HyperV.VirtualMachines.Count)<br>
-                <strong>Running VMs:</strong> $(($script:healthReport.Applications.HyperV.VirtualMachines | Where-Object {$_.State -eq 'Running'}).Count)
+                <strong>Running VMs:</strong> $(($script:healthReport.Applications.HyperV.VirtualMachines |
+            Where-Object {$_.State -eq 'Running'}).Count)
             </div>"
         })
 
@@ -1855,178 +1833,359 @@ function Export-HTMLReport {
     return $reportPath
 }
 
-# Main execution
+function Main {
+    try {
+        if (-not (Test-AdminPrivilege)) {
+            Write-Host "[-] Administrator privileges are required for the server health check." -ForegroundColor Red
+            return 1
+        }
 
-# Check if running in interactive mode (no significant parameters provided)
-$interactiveModeParams = @('IncludeDiskIO', 'IncludeWindowsUpdate', 'IncludeSecurity', 'IncludeNetworkTests',
-    'IncludeApplications', 'IncludeCertificates', 'IncludeScheduledTasks',
-    'CheckIIS', 'CheckSQLServer', 'CheckHyperV', 'ExportJSON', 'ShowProgress')
+        $myDocs = [Environment]::GetFolderPath('MyDocuments')
+        if ([string]::IsNullOrWhiteSpace($myDocs)) {
+            # Profile-less contexts (CI runners, SYSTEM services): MyDocuments resolves empty;
+            # fall back so report writing degrades gracefully instead of crashing.
+            $myDocs = [Environment]::GetFolderPath('UserProfile')
+        }
+        $script:ReportDir = Join-Path $myDocs 'Reports'
+        if ([string]::IsNullOrWhiteSpace($script:ReportDir) -or
+            $script:ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+            $script:ReportDir -match '^(\\\\|//)') {
+            throw "Unsafe report path: $script:ReportDir. Report path must be a local absolute " +
+                "path without '..' traversal."
+        }
+        $script:ReportDir = [System.IO.Path]::GetFullPath($script:ReportDir)
+        if (-not (Test-Path -LiteralPath $script:ReportDir -PathType Container)) {
+            New-Item -ItemType Directory -Path $script:ReportDir -Force -ErrorAction Stop | Out-Null
+        }
 
-$hasOptionalParams = $false
-foreach ($param in $interactiveModeParams) {
-    if (Get-Variable -Name $param -ValueOnly -ErrorAction SilentlyContinue) {
-        $hasOptionalParams = $true
-        break
+        $script:threshold = $thresholds[$AlertThreshold]
+        $script:healthReport = @{
+            ServerName = $env:COMPUTERNAME
+            ScanTime = Get-Date
+            Status = 'Healthy'
+            Issues = @()
+            Warnings = @()
+            CPU = @{}
+            Memory = @{}
+            Disks = @()
+            Services = @()
+            EventLogErrors = @()
+            Network = @()
+            SystemInfo = @{}
+            DiskIO = @{
+                Enabled = $false
+                Samples = @()
+                AverageReadsPerSec = 0
+                AverageWritesPerSec = 0
+                AverageReadLatencyMs = 0
+                AverageWriteLatencyMs = 0
+                AverageQueueLength = 0
+                Status = 'OK'
+            }
+            WindowsUpdate = @{
+                Enabled = $false
+                LastSuccessfulUpdate = $null
+                PendingUpdates = @()
+                FailedUpdates = @()
+                UpdatesInstalled = 0
+                UpdatesPending = 0
+                UpdatesFailed = 0
+                Status = 'OK'
+                RebootRequired = $false
+                WindowsUpdateService = 'Unknown'
+            }
+            Security = @{
+                Enabled = $false
+                Firewall = @{
+                    DomainProfile = 'Unknown'
+                    PrivateProfile = 'Unknown'
+                    PublicProfile = 'Unknown'
+                    Status = 'OK'
+                }
+                Defender = @{
+                    ServiceRunning = $false
+                    RealTimeProtection = $false
+                    SignatureAge = 0
+                    LastScan = $null
+                    Status = 'OK'
+                }
+                FailedLogins = @{
+                    Last24Hours = 0
+                    RecentAttempts = @()
+                    Status = 'OK'
+                }
+            }
+            NetworkTests = @{
+                Enabled = $false
+                Gateway = @{
+                    IP = $null
+                    Reachable = $false
+                    Latency = 0
+                }
+                DNS = @{
+                    PrimaryServer = $null
+                    Reachable = $false
+                    ResolutionWorking = $false
+                }
+                Internet = @{
+                    Reachable = $false
+                    Target = '8.8.8.8'
+                    Latency = 0
+                }
+                Status = 'OK'
+            }
+            AdvancedPerformance = @{
+                PageFile = @{
+                    TotalSizeMB = 0
+                    UsedMB = 0
+                    UsedPercent = 0
+                    Status = 'OK'
+                }
+                Handles = 0
+                Threads = 0
+                Processes = 0
+            }
+            Certificates = @{
+                Enabled = $false
+                Certificates = @()
+                Expiring = 0
+                Expired = 0
+                Status = 'OK'
+            }
+            ScheduledTasks = @{
+                Enabled = $false
+                Tasks = @()
+                Failed = 0
+                Disabled = 0
+                Status = 'OK'
+            }
+            Applications = @{
+                IIS = @{
+                    Enabled = $false
+                    Installed = $false
+                    Running = $false
+                    ApplicationPools = @()
+                    Websites = @()
+                    FailedPools = 0
+                    StoppedSites = 0
+                    Status = 'OK'
+                }
+                SQLServer = @{
+                    Enabled = $false
+                    Installed = $false
+                    Running = $false
+                    Databases = @()
+                    FailedJobs = @()
+                    Status = 'OK'
+                }
+                HyperV = @{
+                    Enabled = $false
+                    Installed = $false
+                    Running = $false
+                    VirtualMachines = @()
+                    Status = 'OK'
+                }
+            }
+        }
+
+        # Check if running in interactive mode (no significant parameters provided)
+        $interactiveModeParams = @('IncludeDiskIO', 'IncludeWindowsUpdate', 'IncludeSecurity', 'IncludeNetworkTests',
+            'IncludeApplications', 'IncludeCertificates', 'IncludeScheduledTasks',
+            'CheckIIS', 'CheckSQLServer', 'CheckHyperV', 'ExportJSON', 'ShowProgress')
+
+        $hasOptionalParams = $false
+        foreach ($param in $interactiveModeParams) {
+            if (Get-Variable -Name $param -ValueOnly -ErrorAction SilentlyContinue) {
+                $hasOptionalParams = $true
+                break
+            }
+        }
+
+        if (-not $hasOptionalParams -and -not $ExportReport -and -not $EmailReport) {
+            Show-InteractiveMenu
+        }
+
+        # Calculate total steps for progress tracking
+        $totalSteps = 7  # Base checks (CPU, Memory, Disk, Services, Events, Network, SystemInfo)
+        if ($IncludeDiskIO) { $totalSteps++ }
+        if ($IncludeWindowsUpdate) { $totalSteps++ }
+        if ($IncludeSecurity) { $totalSteps++ }
+        if ($IncludeNetworkTests) { $totalSteps++ }
+        if ($IncludeCertificates) { $totalSteps++ }
+        if ($IncludeScheduledTasks) { $totalSteps++ }
+        if ($CheckIIS -or $IncludeApplications) { $totalSteps += 3 }  # IIS, SQL, Hyper-V
+        $totalSteps++  # Advanced metrics (always runs)
+
+        $currentStep = 0
+
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "  Server Health Monitor" -ForegroundColor Cyan
+        Write-Host "  Alert Threshold: $AlertThreshold" -ForegroundColor Cyan
+        Write-Host "========================================`n" -ForegroundColor Cyan
+
+        # Core checks
+        Write-Host "Checking CPU..." -ForegroundColor Cyan
+        Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" `
+            -Status "Checking CPU..."
+        Get-CPUHealth
+
+        Write-Host "`nChecking Memory..." -ForegroundColor Cyan
+        Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" `
+            -Status "Checking Memory..."
+        Get-MemoryHealth
+
+        Write-Host "`nChecking Disk Space..." -ForegroundColor Cyan
+        Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" `
+            -Status "Checking Disks..."
+        Get-DiskHealth
+
+        # Optional: Disk I/O
+        if ($IncludeDiskIO) {
+            Write-Host "`nChecking Disk I/O..." -ForegroundColor Cyan
+            Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" `
+                -Status "Checking Disk I/O..."
+            Get-DiskIOHealth
+        }
+
+        Write-Host "`nChecking Services..." -ForegroundColor Cyan
+        Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" `
+            -Status "Checking Services..."
+        Get-ServiceHealth
+
+        Write-Host "`nChecking Event Logs..." -ForegroundColor Cyan
+        Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" `
+            -Status "Checking Event Logs..."
+        Get-EventLogHealth
+
+        Write-Host "`nChecking Network..." -ForegroundColor Cyan
+        Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" `
+            -Status "Checking Network..."
+        Get-NetworkHealth
+
+        # Advanced performance metrics (always run)
+        Get-AdvancedPerformanceMetrics
+
+        # Optional: Windows Update
+        if ($IncludeWindowsUpdate) {
+            Write-Host "`nChecking Windows Update..." -ForegroundColor Cyan
+            Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" `
+                -Status "Checking Windows Update..."
+            Get-WindowsUpdateHealth
+        }
+
+        # Optional: Security
+        if ($IncludeSecurity) {
+            Write-Host "`nChecking Security..." -ForegroundColor Cyan
+            Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" `
+                -Status "Checking Security..."
+            Get-SecurityHealth
+        }
+
+        # Optional: Network Tests
+        if ($IncludeNetworkTests) {
+            Write-Host "`nTesting Network Connectivity..." -ForegroundColor Cyan
+            Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" `
+                -Status "Testing Network..."
+            Get-NetworkConnectivityHealth
+        }
+
+        # Optional: Certificates
+        if ($IncludeCertificates) {
+            Write-Host "`nChecking Certificates..." -ForegroundColor Cyan
+            Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" `
+                -Status "Checking Certificates..."
+            Get-CertificateHealth
+        }
+
+        # Optional: Scheduled Tasks
+        if ($IncludeScheduledTasks) {
+            Write-Host "`nChecking Scheduled Tasks..." -ForegroundColor Cyan
+            Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" `
+                -Status "Checking Scheduled Tasks..."
+            Get-ScheduledTasksHealth
+        }
+
+        # Optional: Applications
+        if ($CheckIIS -or $IncludeApplications) {
+            Write-Host "`nChecking IIS..." -ForegroundColor Cyan
+            Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" `
+                -Status "Checking IIS..."
+            Get-IISHealth
+        }
+
+        if ($CheckSQLServer -or $IncludeApplications) {
+            Write-Host "`nChecking SQL Server..." -ForegroundColor Cyan
+            Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" `
+                -Status "Checking SQL Server..."
+            Get-SQLServerHealth
+        }
+
+        if ($CheckHyperV -or $IncludeApplications) {
+            Write-Host "`nChecking Hyper-V..." -ForegroundColor Cyan
+            Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" `
+                -Status "Checking Hyper-V..."
+            Get-HyperVHealth
+        }
+
+        Write-Host "`nGathering System Info..." -ForegroundColor Cyan
+        Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" `
+            -Status "Gathering System Info..."
+        Get-SystemInfo
+
+        # Complete progress
+        if ($ShowProgress) {
+            Write-Progress -Activity "Server Health Check" -Completed
+        }
+
+        # Summary
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "  Health Check Summary" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "Server: $($script:healthReport.ServerName)"
+        Write-Host "Status: " -NoNewline
+        switch ($script:healthReport.Status) {
+            'Critical' { Write-Host "CRITICAL" -ForegroundColor Red }
+            'Warning' { Write-Host "WARNING" -ForegroundColor Yellow }
+            default { Write-Host "HEALTHY" -ForegroundColor Green }
+        }
+
+        if ($script:healthReport.Issues.Count -gt 0) {
+            Write-Host "`nCritical Issues:" -ForegroundColor Red
+            $script:healthReport.Issues | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
+        }
+
+        if ($script:healthReport.Warnings.Count -gt 0) {
+            Write-Host "`nWarnings:" -ForegroundColor Yellow
+            $script:healthReport.Warnings | ForEach-Object { Write-Host "  - $_" -ForegroundColor Yellow }
+        }
+
+        # Export reports
+        $htmlPath = $null
+        if ($ExportReport) {
+            Write-Host "`nGenerating HTML report..." -ForegroundColor Cyan
+            $htmlPath = Export-HTMLReport
+        }
+
+        if ($ExportJSON) {
+            Write-Host "Generating JSON report..." -ForegroundColor Cyan
+            Export-JSONReport | Out-Null
+        }
+
+        if ($EmailReport) {
+            Write-Host "Sending email report..." -ForegroundColor Cyan
+            Send-EmailReport -HTMLReportPath $htmlPath
+        }
+
+        Write-Host "[+] Server health check completed with status: $($script:healthReport.Status)" -ForegroundColor `
+            Green
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
 }
 
-if (-not $hasOptionalParams -and -not $ExportReport -and -not $EmailReport) {
-    Show-InteractiveMenu
-}
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }
 
-# Calculate total steps for progress tracking
-$totalSteps = 7  # Base checks (CPU, Memory, Disk, Services, Events, Network, SystemInfo)
-if ($IncludeDiskIO) { $totalSteps++ }
-if ($IncludeWindowsUpdate) { $totalSteps++ }
-if ($IncludeSecurity) { $totalSteps++ }
-if ($IncludeNetworkTests) { $totalSteps++ }
-if ($IncludeCertificates) { $totalSteps++ }
-if ($IncludeScheduledTasks) { $totalSteps++ }
-if ($CheckIIS -or $IncludeApplications) { $totalSteps += 3 }  # IIS, SQL, Hyper-V
-$totalSteps++  # Advanced metrics (always runs)
-
-$currentStep = 0
-
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "  Server Health Monitor" -ForegroundColor Cyan
-Write-Host "  Alert Threshold: $AlertThreshold" -ForegroundColor Cyan
-Write-Host "========================================`n" -ForegroundColor Cyan
-
-# Core checks
-Write-Host "Checking CPU..." -ForegroundColor Cyan
-Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking CPU..."
-Get-CPUHealth
-
-Write-Host "`nChecking Memory..." -ForegroundColor Cyan
-Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Memory..."
-Get-MemoryHealth
-
-Write-Host "`nChecking Disk Space..." -ForegroundColor Cyan
-Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Disks..."
-Get-DiskHealth
-
-# Optional: Disk I/O
-if ($IncludeDiskIO) {
-    Write-Host "`nChecking Disk I/O..." -ForegroundColor Cyan
-    Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Disk I/O..."
-    Get-DiskIOHealth
-}
-
-Write-Host "`nChecking Services..." -ForegroundColor Cyan
-Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Services..."
-Get-ServiceHealth
-
-Write-Host "`nChecking Event Logs..." -ForegroundColor Cyan
-Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Event Logs..."
-Get-EventLogHealth
-
-Write-Host "`nChecking Network..." -ForegroundColor Cyan
-Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Network..."
-Get-NetworkHealth
-
-# Advanced performance metrics (always run)
-Get-AdvancedPerformanceMetrics
-
-# Optional: Windows Update
-if ($IncludeWindowsUpdate) {
-    Write-Host "`nChecking Windows Update..." -ForegroundColor Cyan
-    Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Windows Update..."
-    Get-WindowsUpdateHealth
-}
-
-# Optional: Security
-if ($IncludeSecurity) {
-    Write-Host "`nChecking Security..." -ForegroundColor Cyan
-    Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Security..."
-    Get-SecurityHealth
-}
-
-# Optional: Network Tests
-if ($IncludeNetworkTests) {
-    Write-Host "`nTesting Network Connectivity..." -ForegroundColor Cyan
-    Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Testing Network..."
-    Get-NetworkConnectivityHealth
-}
-
-# Optional: Certificates
-if ($IncludeCertificates) {
-    Write-Host "`nChecking Certificates..." -ForegroundColor Cyan
-    Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Certificates..."
-    Get-CertificateHealth
-}
-
-# Optional: Scheduled Tasks
-if ($IncludeScheduledTasks) {
-    Write-Host "`nChecking Scheduled Tasks..." -ForegroundColor Cyan
-    Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Scheduled Tasks..."
-    Get-ScheduledTasksHealth
-}
-
-# Optional: Applications
-if ($CheckIIS -or $IncludeApplications) {
-    Write-Host "`nChecking IIS..." -ForegroundColor Cyan
-    Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking IIS..."
-    Get-IISHealth
-}
-
-if ($CheckSQLServer -or $IncludeApplications) {
-    Write-Host "`nChecking SQL Server..." -ForegroundColor Cyan
-    Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking SQL Server..."
-    Get-SQLServerHealth
-}
-
-if ($CheckHyperV -or $IncludeApplications) {
-    Write-Host "`nChecking Hyper-V..." -ForegroundColor Cyan
-    Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Checking Hyper-V..."
-    Get-HyperVHealth
-}
-
-Write-Host "`nGathering System Info..." -ForegroundColor Cyan
-Update-Progress -Current (++$currentStep) -Total $totalSteps -Activity "Server Health Check" -Status "Gathering System Info..."
-Get-SystemInfo
-
-# Complete progress
-if ($ShowProgress) {
-    Write-Progress -Activity "Server Health Check" -Completed
-}
-
-# Summary
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "  Health Check Summary" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Server: $($script:healthReport.ServerName)"
-Write-Host "Status: " -NoNewline
-switch ($script:healthReport.Status) {
-    'Critical' { Write-Host "CRITICAL" -ForegroundColor Red }
-    'Warning' { Write-Host "WARNING" -ForegroundColor Yellow }
-    default { Write-Host "HEALTHY" -ForegroundColor Green }
-}
-
-if ($script:healthReport.Issues.Count -gt 0) {
-    Write-Host "`nCritical Issues:" -ForegroundColor Red
-    $script:healthReport.Issues | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
-}
-
-if ($script:healthReport.Warnings.Count -gt 0) {
-    Write-Host "`nWarnings:" -ForegroundColor Yellow
-    $script:healthReport.Warnings | ForEach-Object { Write-Host "  - $_" -ForegroundColor Yellow }
-}
-
-# Export reports
-$htmlPath = $null
-if ($ExportReport) {
-    Write-Host "`nGenerating HTML report..." -ForegroundColor Cyan
-    $htmlPath = Export-HTMLReport
-}
-
-if ($ExportJSON) {
-    Write-Host "Generating JSON report..." -ForegroundColor Cyan
-    Export-JSONReport
-}
-
-if ($EmailReport) {
-    Write-Host "Sending email report..." -ForegroundColor Cyan
-    Send-EmailReport -HTMLReportPath $htmlPath
-}
-
-Write-Host "`n========================================`n" -ForegroundColor Cyan

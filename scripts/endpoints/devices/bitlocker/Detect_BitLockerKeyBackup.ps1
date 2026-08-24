@@ -1,118 +1,198 @@
+﻿<#
+.SYNOPSIS
+    Check BitLocker recovery key backup to Azure AD for the system drive
+
+.DESCRIPTION
+    Intune Proactive Remediation detection script for BitLocker key escrow. Confirms the device is Azure AD joined,
+    queries the BitLocker Management event log for event ID 845 confirming recovery-key backup of the system drive
+    within the past 7 days, and collects per-drive encryption status for the Intune report.
+
+    Exit codes: 0 when the recovery key is backed up, 1 when the backup event is missing so the paired
+    remediation runs,
+    and 0 with a WARNING line when the device is not Azure AD joined (remediation cannot apply, so failing would be
+    noise). The last output line is uploaded to Intune and visible in the Remediation Device Status columns.
+
+.EXAMPLE
+    PS C:\> .\Detect_BitLockerKeyBackup.ps1
+
+    Runs the detection and prints an OK, FAIL, or WARNING summary line; exits 0, 1, or 0 respectively.
+
+.EXAMPLE
+    PS C:\> .\Detect_BitLockerKeyBackup.ps1 -Verbose
+
+    Runs the detection with verbose preference enabled for richer diagnostics.
+
+.NOTES
+    File Name  : Detect_BitLockerKeyBackup.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 5.1+
+    Version    : 1.0.0
+    Date       : 2026-08-23
+
+    Run as administrator/SYSTEM on Windows with the BitLocker management cmdlets available.
+    Reference:
+    https://techcommunity.microsoft.com/t5/intune-customer-success/using-bitlocker-recovery-keys-with-microsoft-endpoint-manager/ba-p/2255517
+#>
+
+[CmdletBinding()]
+param()
+
+$ErrorActionPreference = 'Stop'
+
+# PSScriptAnalyzer: Write-Host with prefix/color output is mandated by docs/RELAUNCH-SPEC.md section 3.
+
 #region Functions
+
+function Invoke-JoinStatusQuery {
+    <#
+    .SYNOPSIS
+        Thin wrapper around dsregcmd.exe and findstr.exe that reads the device join status.
+
+    .DESCRIPTION
+        Wraps the native dsregcmd /status query and filters the relevant AzureAdJoined and DomainJoined lines so
+        both native
+        executables stay behind a single mockable seam. Returns the filtered output lines.
+
+    .EXAMPLE
+        PS C:\> Invoke-JoinStatusQuery
+
+    .NOTES
+        Wrapper only; takes no parameters.
+    #>
+    [CmdletBinding()]
+    param()
+
+    $status = & "$env:SystemRoot\System32\dsregcmd.exe" /status
+    return ($status | findstr.exe /i "AzureAdJoined DomainJoined")
+}
+
 function Test-DeviceJoinStatus {
     <#
     .SYNOPSIS
         Verifies the Azure AD and Domain join status of a device.
 
     .DESCRIPTION
-        The function checks if the device is joined to Azure AD and/or a traditional AD domain.
+        The function checks if the device is joined to Azure AD and/or a traditional AD domain. It returns a
+        custom object
+        with properties StatusCode and Summary; StatusCode is 0 when the device is Azure AD joined and 1 when it
+        is not.
+        Summary provides a string describing the join status including the hostname.
 
     .NOTES
-        The function returns a custom object with properties StatusCode and Summary. StatusCode is 0 if the device is Azure AD Joined, 1 if not. 
-        Summary provides a summary string of the device's join status, including the hostname.
-        - Function was added to get more detail on the device. For Main function, if device is not AADJ, then there is no way to backup Bitlocker keys to AADJ.
-          So, in main script, if device is not AADJ then document details, but do Exit 0, since Fix becomes irrelevant, and a fail is just noise.
+        If the device is not Azure AD joined there is no way to back up BitLocker recovery keys to Azure AD, so Main
+        documents the details but exits 0 to avoid remediation noise.
     #>
     [CmdletBinding()]
-    param (
-    )
+    param ()
 
     try {
-        # Capture the output of the dsregcmd command, specifically looking for lines containing "AzureAdJoined" or "DomainJoined"
-        $result = dsregcmd /status | findstr /i "AzureAdJoined DomainJoined"
+# Capture dsregcmd output, looking for lines containing AzureAdJoined or DomainJoined.
+        $result = Invoke-JoinStatusQuery
 
-        # If the command fails to execute, an exception is thrown
         if ($null -eq $result) {
             throw "Failed to execute dsregcmd command."
         }
 
-        # Check the result for "AzureAdJoined : YES" - if it exists, the device is Azure AD joined
+# Check the result for "AzureAdJoined : YES" / "DomainJoined : YES".
         $AzureAdJoined = if ($result -match "AzureAdJoined : YES") { "Yes" } else { "No" }
-
-        # Similarly, check the result for "DomainJoined : YES" - if it exists, the device is Domain joined
         $DomainJoined = if ($result -match "DomainJoined : YES") { "Yes" } else { "No" }
 
-        # Retrieve the hostname of the device
+# Retrieve the hostname of the device.
         $hostname = $env:COMPUTERNAME
 
-        # Compile the findings into a summary string, now including the hostname
+# Compile the findings into a summary string including the hostname.
         $summary = "Hostname = $hostname - AADJ = $AzureAdJoined, ADJ = $DomainJoined. "
 
-        # Define status code based on Azure AD join status
+# Status code based on Azure AD join status.
         $statusCode = if ($AzureAdJoined -eq "Yes") { 0 } else { 1 }
 
-        # Return a custom object with properties StatusCode and Summary
         return New-Object PSObject -Property @{
             StatusCode = $statusCode
             Summary = $summary
         }
     }
     catch {
-        # Catch any errors that occurred during execution
-        Write-Host "An error occurred: $_" -ForegroundColor Red
+        Write-Host "[-] An error occurred: $_" -ForegroundColor Red
     }
 }
-
 
 function Test-AzureADBitLockerBackup {
     <#
     .SYNOPSIS
-        Check the BitLocker Management event log for event ID 845 to confirm successful backup of BitLocker key to Azure AD for the system drive.
+        Check the BitLocker Management event log for event ID 845 confirming successful backup of the BitLocker
+        key to Azure
+        AD for the system drive.
 
     .DESCRIPTION
-        This function queries the BitLocker Management event log for event ID 845 and checks if the level of the event is "Information". 
-        If the event is found and is specifically for the system drive, it means the BitLocker key backup to Azure AD was successful.
+        Queries the BitLocker Management event log for event ID 845 at Information level within the past nDays.
+        If an event
+        exists specifically for the system drive, the BitLocker key backup to Azure AD was successful. Returns 0
+        on success
+        and 1 when no confirming event is found.
 
     .PARAMETER nDays
         The number of past days to check for the event. The default is 1.
 
+    .EXAMPLE
+        PS C:\> Test-AzureADBitLockerBackup -nDays 7
+
+        Checks the last seven days for a successful system drive key backup event.
+
     .NOTES
         Run this script as an administrator.
 
-        Information and/or References:
-            https://techcommunity.microsoft.com/t5/intune-customer-success/using-bitlocker-recovery-keys-with-microsoft-endpoint-manager/ba-p/2255517
-
-    .EXAMPLE
-        Test-AzureADBitLockerBackup -nDays 7
+        Reference:
+        https://techcommunity.microsoft.com/t5/intune-customer-success/using-bitlocker-recovery-keys-with-microsoft-endpoint-manager/ba-p/2255517
     #>
     [CmdletBinding()]
     param (
         [Parameter(Mandatory = $false)]
+        [ValidateRange(1, 3650)]
         [int]
         $nDays = 1
     )
 
     try {
-        # Get the date nDays ago
+# Get the date nDays ago.
         $pastDate = (Get-Date).AddDays(-$nDays)
 
-        # Get the system drive from the environment variables
+# Get the system drive from the environment variables.
         $systemDrive = $env:SystemDrive
 
-        # Get the BitLocker Management event log events with ID 845 and Level 4 (Information) from the past nDays
-        $events = Get-WinEvent -FilterHashtable @{LogName = "Microsoft-Windows-BitLocker/BitLocker Management"; ID = 845; Level = 4; StartTime = $pastDate } -ErrorAction Stop
+# Get BitLocker Management events with ID 845 and Level 4 (Information) from the past nDays.
+        $events = Get-WinEvent -FilterHashtable @{
+            LogName = "Microsoft-Windows-BitLocker/BitLocker Management"
+            ID = 845
+            Level = 4
+            StartTime = $pastDate
+        } -ErrorAction Stop
 
-        # If events exist, check if any of them are for the system drive
+# If events exist, check whether any of them are for the system drive.
         if ($events) {
-            foreach ($event in $events) {
-                $eventData = [xml]$event.ToXml()
-                $volume = $eventData.Event.EventData.Data | Where-Object { $_.Name -eq 'VolumeMountPoint' } | Select-Object -ExpandProperty '#text'
+            foreach ($evt in $events) {
+                $eventData = [xml]$evt.ToXml()
+                $volume = $eventData.Event.EventData.Data |
+                    Where-Object { $_.Name -eq 'VolumeMountPoint' } |
+                    Select-Object -ExpandProperty '#text'
                 if ($volume -eq $systemDrive) {
-                    Write-Host "BitLocker key backup to Azure AD for the system drive ($systemDrive) was successful in the past $nDays day(s)." -ForegroundColor Green
+                    Write-Host ("[+] Key backup to Azure AD for the system drive ($systemDrive) was successful " +
+                        "in the past $nDays day(s).") -ForegroundColor Green
                     return 0
                 }
             }
 
-            Write-Host "No events found in the past $nDays day(s) indicating successful BitLocker key backup to Azure AD for the system drive ($systemDrive)." -ForegroundColor Yellow
+            Write-Host ("[!] No events found in the past $nDays day(s) indicating successful BitLocker key backup " +
+                "to Azure AD for the system drive ($systemDrive).") -ForegroundColor Yellow
             return 1
         }
         else {
-            Write-Host "No events found in the past $nDays day(s) indicating successful BitLocker key backup to Azure AD." -ForegroundColor Yellow
+            Write-Host ("[!] No events found in the past $nDays day(s) indicating a successful " +
+                "key backup to Azure AD.") -ForegroundColor Yellow
             return 1
         }
     }
     catch {
-        Write-Host "Failed to query BitLocker Management event log: $_" -ForegroundColor Red
+        Write-Host "[-] Failed to query BitLocker Management event log: $_" -ForegroundColor Red
         return 1
     }
 }
@@ -123,31 +203,37 @@ function Test-OSBitLockerStatus {
         Checks if the system drive is BitLocker encrypted.
 
     .DESCRIPTION
-        The function checks if the system drive on a computer is BitLocker encrypted. It returns 0 if the system drive is encrypted, and 1 if it's not.
+        Checks whether the system drive on the computer is BitLocker encrypted. Returns 0 if the system drive is
+        encrypted,
+        and 1 if it is not.
+
+    .EXAMPLE
+        PS C:\> Test-OSBitLockerStatus
 
     .NOTES
         Run this script with administrator privileges.
 
-        Original idea was to use this function, it is no longer used. Instead we use Test-AzureADBitLockerBackup as it confirms successful Key backup to AzureAD
+        Originally intended as the primary check; Test-AzureADBitLockerBackup is used instead because it
+        confirms successful
+        key backup to Azure AD.
     #>
+    [CmdletBinding()]
+    param ()
 
-    # Identify the system drive
+# Identify the system drive.
     $systemDrive = [Environment]::GetFolderPath("System").Substring(0, 2)
 
-    # Get the BitLocker volume status for the system drive
+# Get the BitLocker volume status for the system drive.
     $BitLockerVolume = Get-BitLockerVolume -MountPoint $systemDrive
 
-    # Check if BitLocker protection is enabled for the system drive
+# Check if BitLocker protection is enabled for the system drive.
     if ($BitLockerVolume.ProtectionStatus -eq 'On') {
-        # System drive is encrypted with BitLocker
         return 0
     }
     else {
-        # System drive is not encrypted with BitLocker
         return 1
     }
 }
-
 
 function Test-AllDrivesEncryption {
     <#
@@ -155,24 +241,26 @@ function Test-AllDrivesEncryption {
         Checks all drives to see if they are encrypted with BitLocker.
 
     .DESCRIPTION
-        The function iterates over all drives, checks each one for BitLocker encryption and builds a summary.
+        Iterates over all drives, checks each one for BitLocker encryption, and builds a summary string of the
+        encryption
+        status of all drives.
+
+    .EXAMPLE
+        PS C:\> Test-AllDrivesEncryption
 
     .NOTES
-        Returns a summary string of the encryption status of all drives.
+        Returns a summary string; includes failure detail if BitLocker status cannot be read.
     #>
-
     [CmdletBinding()]
     param ()
 
-    # Initialize the summary string
     $summary = ""
 
     try {
-        # Get all BitLocker volumes
+# Get all BitLocker volumes.
         $BitLockerVolumes = Get-BitLockerVolume -ErrorAction Stop
 
         foreach ($BitLockerVolume in $BitLockerVolumes) {
-            # Check the encryption status of the volume
             if ($BitLockerVolume.EncryptionMethod -eq "None") {
                 $summary += "Drive $($BitLockerVolume.MountPoint) not encrypted. "
             }
@@ -182,125 +270,115 @@ function Test-AllDrivesEncryption {
         }
     }
     catch {
-        # If an error occurred, add it to the summary
         $summary += "Failed to get BitLocker status: $($_.Exception.Message). "
     }
 
-    # Return the summary string
     return $summary
 }
-
 
 function Get-BitLockerVolumeInfo {
     <#
     .SYNOPSIS
-        Used to retrieve BitLocker volume information.
+        Retrieves BitLocker volume information.
 
     .DESCRIPTION
-        This script retrieves the BitLocker volume information of the local computer. For each volume, it presents volume type, mount point, volume status, encryption percentage, and key protector type.
+        Retrieves BitLocker volume information of the local computer. For each volume it presents volume type,
+        mount point,
+        volume status, encryption percentage, and key protector type, combined into a single string.
+
+    .EXAMPLE
+        PS C:\> Get-BitLockerVolumeInfo
 
     .NOTES
         Run this script as an administrator.
     #>
     [CmdletBinding()]
-    param (
-    )
+    param ()
 
     begin {
-        Write-Host "Starting BitLocker volume information retrieval process." -ForegroundColor Cyan
+        $volumeInfoString = ""
+        Write-Host "[*] Starting BitLocker volume information retrieval process." -ForegroundColor Cyan
     }
 
     process {
         try {
-            # Get BitLocker volumes
             $BitLockerVolumes = Get-BitLockerVolume -ErrorAction Stop
-
             $volumeInfoArray = @()
 
             foreach ($BitLockerVolume in $BitLockerVolumes) {
-                # Construct a single string that contains volume type, mount point, volume status, encryption percentage, and key protector type
-                $volumeInfo = "Volume Type: $($BitLockerVolume.VolumeType), Mount Point: $($BitLockerVolume.MountPoint), Volume Status: $($BitLockerVolume.VolumeStatus), Encryption Percentage: $($BitLockerVolume.EncryptionPercentage), KeyProtector Type: $($BitLockerVolume.KeyProtector[0].KeyProtectorType)"
+# Construct a single string per volume with type, mount point, status, and protector type.
+                $v = $BitLockerVolume
+                $volumeInfo = "Volume Type: $($v.VolumeType), Mount Point: $($v.MountPoint), " +
+                    "Volume Status: $($v.VolumeStatus), Encryption Percentage: $($v.EncryptionPercentage), " +
+                    "KeyProtector Type: $($v.KeyProtector[0].KeyProtectorType)"
 
-                # Add this volume information to the array
                 $volumeInfoArray += $volumeInfo
-
-                Write-Host "Successfully retrieved BitLocker volume information for $($BitLockerVolume.MountPoint)." -ForegroundColor Green
+                Write-Host "[+] Retrieved BitLocker volume information for $($v.MountPoint)." -ForegroundColor Green
             }
 
-            # Combine all volume information strings into a single string, separated by dots
             $volumeInfoString = $volumeInfoArray -join '. '
-
-            # Output the single string that contains information for all volumes
             Write-Host $volumeInfoString
         }
         catch {
-            Write-Host "Failed to retrieve BitLocker volume information: $_" -ForegroundColor Red
+            Write-Host "[-] Failed to retrieve BitLocker volume information: $_" -ForegroundColor Red
         }
     }
 
     end {
-        Write-Host "BitLocker volume information retrieval process completed." -ForegroundColor Cyan
+        Write-Host "[*] BitLocker volume information retrieval process completed." -ForegroundColor Cyan
         return $volumeInfoString
     }
 }
 
 #endregion Functions
 
-Write-Host "`n`n"
+function Main {
+    [CmdletBinding()]
+    param()
 
-#region Main
+    try {
+        $txtStatus = ""
 
-$txtStatus = ""
+# Document domain join info regardless of outcome so it uploads to Intune.
+        $adJoined = Test-DeviceJoinStatus
+        $txtStatus += "$($adJoined.Summary)"
 
-# Call functions
+# If the device is not Azure AD Joined, keys cannot be backed up to Azure AD;
+# document drive status and exit 0 (WARNING) since remediation cannot fix it.
+        if ($($adJoined.StatusCode) -eq 0) {
+            $bitlockerBackupStatus = Test-AzureADBitLockerBackup -nDays 7
+        }
+        else {
+            $bitlockerBackupStatus = -2
+        }
 
-$adJoined = Test-DeviceJoinStatus               
-$txtStatus += "$($adJoined.Summary)"                        #Document domain join info. No matter the result, we want to upload info to Intune.
-
-# Is device Azure AD Joined? if not, there's nothing to do here, can't backup bitlocker keys to AAD. Document drive status, send info to Intune.
-if ($($adJoined.StatusCode) -eq 0) {
-    $bitlockerBackupStatus = Test-AzureADBitLockerBackup -nDays 7     #Bitlocker keys have been sucessfully backed up to Azure AD?
-}
-else {
-    $bitlockerBackupStatus = -2
-}
-$encryptedDrives = Test-AllDrivesEncryption                 #Check encryption status of device drives.
-$bitlockerinfo = Get-BitLockerVolumeInfo                    #Get Bitlocker info for devices drives, info will get uploaded to Intune Remediation status.
-
+        $encryptedDrives = Test-AllDrivesEncryption
+        $bitlockerinfo = Get-BitLockerVolumeInfo
 
 # Build summary text of findings and status.
-$txtStatus += "$encryptedDrives"
-if ($bitlockerinfo -ne "") {
-    $txtStatus += "[$bitlockerinfo]"                                #Add bitlocker detailed info, only if we were able to get it.
+        $txtStatus += "$encryptedDrives"
+        if ($bitlockerinfo -ne "") {
+            $txtStatus += "[$bitlockerinfo]"
+        }
+
+# The last output line is uploaded to Intune and shown in the Remediation Device Status columns.
+        if ($bitlockerBackupStatus -eq 0) {
+            Write-Host "OK $([datetime]::Now) : $txtStatus"
+            return 0
+        }
+        elseif ($bitlockerBackupStatus -eq 1) {
+            Write-Host "FAIL $([datetime]::Now) : $txtStatus"
+            return 1
+        }
+        else {
+            Write-Host "WARNING $([datetime]::Now) : $txtStatus"
+            return 0
+        }
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-
-Write-Host "`n`n"
-
-#Return result. Last line of script is automatically uploaded to Intune, can be seen in the "Output" columns of Remediation Device Status.
-# If the BitLocker key has been successfully backed up to Azure AD ($bitlockerBackupStatus equals 0),
-# it prints an OK message along with the current date and time, and the status text stored in $txtStatus.
-# Then it exits the script with a success status code (0).
-if ($bitlockerBackupStatus -eq 0) {
-    Write-Host "OK $([datetime]::Now) : $txtStatus"
-    exit 0
-}
-
-# If the BitLocker key backup to Azure AD has failed ($bitlockerBackupStatus equals 1),
-# it prints a FAIL message along with the current date and time, and the status text stored in $txtStatus.
-# Then it exits the script with an error status code (1). This will call the Remediation script.
-elseif ($bitlockerBackupStatus -eq 1) {
-    Write-Host "FAIL $([datetime]::Now) : $txtStatus"
-    exit 1
-}
-
-# If the value of $bitlockerBackupStatus is anything other than 0 or 1,
-# it prints a WARNING message along with the current date and time, and the status text stored in $txtStatus.
-# Then it exits the script with a success status code (0). No need to execute Remediation script, 
-#   but something is wrong, something that can't be fix with Remediation script.
-else {
-    Write-Host "WARNING $([datetime]::Now) : $txtStatus"
-    exit 0
-}
-
-#endregion Main
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

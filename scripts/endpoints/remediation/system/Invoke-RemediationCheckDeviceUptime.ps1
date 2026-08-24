@@ -1,77 +1,101 @@
-<#
+﻿<#
 .SYNOPSIS
-    Notifies users about required system reboots.
+    Assess device uptime and pending-reboot state.
 
 .DESCRIPTION
-    Schedules a user notification about the need to reboot. For excessive uptime
-    or pending updates, creates a persistent reminder to help maintain system health.
+    Reads the current uptime from Win32_OperatingSystem and checks the Windows Update and
+    Component Based Servicing registry markers for pending reboots, then logs recommended
+    actions for IT review when uptime exceeds 14 days or a reboot is pending. The script
+    changes no system state - it only reads and reports - so it is idempotent and safe to
+    re-run at any time.
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationCheckDeviceUptime.ps1
+
+    Prints the current uptime, any pending reboot reasons and recommended actions.
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationCheckDeviceUptime.ps1 -Verbose
+
+    Runs the same assessment with verbose progress information.
 
 .NOTES
-    Author: Intune Admin
-    Version: 1.0
-    Intune Context: SYSTEM
-    Exit 0: Notification scheduled
+    File Name  : Invoke-RemediationCheckDeviceUptime.ps1
+    Author     : Intune Admin
+    Prerequisite: PowerShell 7.0
+    Version    : 1.0.0
+    Date       : 2026-08-23
 #>
 
-try {
-    $remediationActions = @()
+[CmdletBinding()]
+param()
 
-    # Get uptime info
-    $os = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction SilentlyContinue
+$ErrorActionPreference = 'Stop'
 
-    if ($os) {
-        $lastBoot = $os.LastBootUpTime
-        $uptime = (Get-Date) - $lastBoot
+function Main {
+    try {
+        Write-Host "[*] Device Uptime Remediation:" -ForegroundColor Cyan
+
+        # Get uptime info.
+        $os = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop
+
+        if (-not $os) {
+            Write-Host "[!] Unable to determine uptime: Win32_OperatingSystem returned no data" -ForegroundColor Yellow
+            return 0
+        }
+
+        $uptime = (Get-Date) - $os.LastBootUpTime
         $uptimeDays = [Math]::Round($uptime.TotalDays, 2)
+        Write-Host "    Current Uptime: $uptimeDays days"
+        Write-Host "    Last Boot: $($os.LastBootUpTime)"
 
-        # Check for pending reboots
-        $pendingReboot = $false
+        $remediationActions = @()
         $rebootReasons = @()
 
-        if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired") {
-            $pendingReboot = $true
-            $rebootReasons += "Windows Update"
+        # Check for pending reboots.
+        $windowsUpdateKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\RebootRequired'
+        $cbsKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending'
+
+        if (Test-Path $windowsUpdateKey -ErrorAction SilentlyContinue) {
+            $rebootReasons += 'Windows Update'
         }
 
-        if (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Component Based Servicing\RebootPending") {
-            $pendingReboot = $true
-            $rebootReasons += "Component Based Servicing"
+        if (Test-Path $cbsKey -ErrorAction SilentlyContinue) {
+            $rebootReasons += 'Component Based Servicing'
         }
 
-        Write-Host "Device Uptime Remediation:"
-        Write-Host "  Current Uptime: $uptimeDays days"
-        Write-Host "  Last Boot: $lastBoot"
-
-        if ($pendingReboot) {
-            Write-Host "  Pending Reboot Reasons: $($rebootReasons -join ', ')"
+        if ($rebootReasons.Count -gt 0) {
+            Write-Host "[!] Pending Reboot Reasons: $($rebootReasons -join ', ')" -ForegroundColor Yellow
             $remediationActions += "Pending reboot detected for: $($rebootReasons -join ', ')"
         }
 
         if ($uptimeDays -gt 14) {
-            $remediationActions += "Device uptime exceeds 14 days - reboot recommended for system health"
+            Write-Host "[!] Uptime of $uptimeDays days exceeds the 14 day threshold" -ForegroundColor Yellow
+            $remediationActions += 'Device uptime exceeds 14 days - reboot recommended for system health'
         }
 
-        # Create a scheduled task to notify the user (interactive notification)
-        # Note: In SYSTEM context, we can't directly show user notifications
-        # Instead, we log the remediation for Intune reporting
-        Write-Host ""
-        Write-Host "Remediation logged in Intune for IT review."
-        Write-Host "IT should contact user to schedule reboot if needed."
-        Write-Host ""
-        Write-Host "Recommended actions:"
-        Write-Host "  - Schedule reboot during off-hours"
-        Write-Host "  - Save all work before rebooting"
-        Write-Host "  - Reboot will install pending updates and improve performance"
+        if ($remediationActions.Count -eq 0) {
+            Write-Host "[+] Already compliant: uptime within policy and no pending reboot" -ForegroundColor Green
+            return 0
+        }
 
+        # Create a record of the remediation for Intune reporting (no user notification is
+        # possible from SYSTEM context, so IT reviews the logged output instead).
+        Write-Host ""
+        Write-Host "[*] Remediation logged in Intune for IT review." -ForegroundColor Cyan
+        Write-Host "    IT should contact user to schedule reboot if needed."
+        Write-Host "Recommended actions:"
         foreach ($action in $remediationActions) {
             Write-Host "  - $action"
         }
+        Write-Host "[+] Device uptime assessment completed" -ForegroundColor Green
+        return 0
     }
-
-    exit 0
-
+    catch {
+        Write-Host "[-] Error during uptime remediation: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
-catch {
-    Write-Host "Error during uptime remediation: $_"
-    exit 1
-}
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

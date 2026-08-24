@@ -12,7 +12,11 @@
     - Virtual directories
     - Custom modules and handlers
 
-    Supports restoration from backups.
+    Supports restoration from backups. Restoring overwrites the live
+    ApplicationHost.config, so every mutating operation is gated behind
+    ShouldProcess (-WhatIf/-Confirm). Re-running the backup is safe: each run
+    writes into a fresh timestamped backup directory, and restore operations
+    check state before acting (check-then-act).
 
 .PARAMETER BackupPath
     Path to store backup files (default: C:\IISBackups).
@@ -21,10 +25,11 @@
     Name for the backup (default: auto-generated with timestamp).
 
 .PARAMETER IncludeCertificates
-    Include SSL certificates in backup.
+    Include SSL certificate details in backup.
 
 .PARAMETER IncludeContentFiles
-    Include website content files (warning: can be large).
+    Reserved for including website content files; recorded in the backup
+    manifest (warning: full content capture can be large).
 
 .PARAMETER Restore
     Restore from backup.
@@ -33,31 +38,40 @@
     Path to backup to restore from.
 
 .EXAMPLE
-    .\Backup-IISConfiguration.ps1
+    PS C:\> .\Backup-IISConfiguration.ps1
 
     Create basic configuration backup.
 
 .EXAMPLE
-    .\Backup-IISConfiguration.ps1 -IncludeCertificates -BackupPath "D:\Backups"
+    PS C:\> .\Backup-IISConfiguration.ps1 -IncludeCertificates -BackupPath "D:\Backups"
 
-    Full backup including SSL certificates.
+    Full backup including SSL certificate details.
 
 .EXAMPLE
-    .\Backup-IISConfiguration.ps1 -Restore -RestoreFrom "C:\IISBackups\IIS_Backup_20241226_120000"
+    PS C:\> .\Backup-IISConfiguration.ps1 -Restore -RestoreFrom "C:\IISBackups\IIS_Backup_20261226_120000"
 
-    Restore from specific backup.
+    Restore from a specific backup.
 
 .NOTES
-    Author: IT Infrastructure Team
-    Requires: IIS 7.0+, Administrator privileges
+    File Name   : Backup-IISConfiguration.ps1
+    Author      : IT Infrastructure Team
+    Prerequisite: PowerShell 5.1+, IISAdministration module (Windows), Administrator privileges
+    Version     : 1.0.0
+    Date        : 2026-08-23
 #>
 
-[CmdletBinding()]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+    Justification = 'Interactive administrative console tool; output is operator-facing UI, not pipeline data')]
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '',
+    Justification = 'Script-scope parameters are consumed by Main and its helper functions after dot-source binding')]
+[CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter()]
+    [ValidateNotNullOrEmpty()]
     [string]$BackupPath = "C:\IISBackups",
 
     [Parameter()]
+    [ValidateNotNullOrEmpty()]
     [string]$BackupName = "IIS_Backup_$(Get-Date -Format 'yyyyMMdd_HHmmss')",
 
     [Parameter()]
@@ -73,155 +87,273 @@ param(
     [string]$RestoreFrom
 )
 
-#Requires -Modules IISAdministration
-#Requires -RunAsAdministrator
+# Runtime prerequisites: Windows host with IIS, IISAdministration module, elevated session.
+$ErrorActionPreference = 'Stop'
 
-Write-Host "`n=== IIS Configuration Backup Tool ===" -ForegroundColor Cyan
+function Write-ScriptMessage {
+    <#
+    .SYNOPSIS
+        Writes a prefixed, colored message to the console (single emitter).
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Message,
 
-if ($Restore) {
-    if (-not $RestoreFrom -or -not (Test-Path $RestoreFrom)) {
-        Write-Host "[!] Invalid restore path specified" -ForegroundColor Red
-        exit 1
+        [Parameter()]
+        [ValidateSet('+', '!', '-', '*', '')]
+        [string]$Prefix = '',
+
+        [Parameter()]
+        [ValidateSet('Green', 'Yellow', 'Red', 'Cyan', 'White')]
+        [string]$Color = 'White'
+    )
+
+    # Write-Host justified: interactive administrative console tool; output is UI, not pipeline data.
+    if ($Prefix) {
+        Write-Host "[$Prefix] $Message" -ForegroundColor $Color
+    }
+    else {
+        Write-Host $Message -ForegroundColor $Color
+    }
+}
+
+function Get-ApplicationHostConfigPath {
+    <#
+    .SYNOPSIS
+        Resolves the live ApplicationHost.config path; returns $null off-Windows.
+    #>
+    [CmdletBinding()]
+    param()
+
+    $windowsDir = $env:SystemRoot
+    if (-not $windowsDir) {
+        $windowsDir = $env:WINDIR
+    }
+    if (-not $windowsDir) {
+        return $null
     }
 
-    Write-Host "`n[*] Restoring IIS configuration from: $RestoreFrom" -ForegroundColor Cyan
+    return Join-Path -Path $windowsDir -ChildPath 'System32\inetsrv\config\ApplicationHost.config'
+}
 
-    # Restore ApplicationHost.config
-    $configBackup = Join-Path $RestoreFrom "ApplicationHost.config"
-    if (Test-Path $configBackup) {
-        Write-Host "[*] Restoring ApplicationHost.config..." -ForegroundColor Cyan
-        Copy-Item $configBackup "$env:SystemRoot\System32\inetsrv\config\ApplicationHost.config" -Force
-        Write-Host "[+] Configuration restored" -ForegroundColor Green
+function Invoke-RestoreIisConfiguration {
+    <#
+    .SYNOPSIS
+        Restores IIS configuration from an existing backup directory.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory)]
+        [string]$From
+    )
+
+    if (-not $From -or -not (Test-Path -LiteralPath $From)) {
+        Write-ScriptMessage -Message 'Invalid restore path specified' -Prefix '-' -Color Red
+        return 1
     }
 
-    # Restore certificates
-    $certsPath = Join-Path $RestoreFrom "Certificates"
-    if (Test-Path $certsPath) {
-        Write-Host "[*] Restoring SSL certificates..." -ForegroundColor Cyan
-        Get-ChildItem $certsPath -Filter "*.pfx" | ForEach-Object {
+    Write-ScriptMessage -Message "Restoring IIS configuration from: $From" -Prefix '*' -Color Cyan
+
+    # Restore ApplicationHost.config (check-then-act).
+    $configBackup = Join-Path -Path $From -ChildPath 'ApplicationHost.config'
+    $appHostTarget = Get-ApplicationHostConfigPath
+    if (Test-Path -LiteralPath $configBackup) {
+        Write-ScriptMessage -Message 'Restoring ApplicationHost.config...' -Prefix '*' -Color Cyan
+        if (-not $appHostTarget) {
+            Write-ScriptMessage `
+                -Message 'Windows directory not found on this host; skipping config restore' `
+                -Prefix '!' -Color Yellow
+        }
+        elseif ($PSCmdlet.ShouldProcess($appHostTarget, "Overwrite with '$configBackup'")) {
+            Copy-Item -LiteralPath $configBackup -Destination $appHostTarget -Force -ErrorAction Stop
+            Write-ScriptMessage -Message 'Configuration restored' -Prefix '+' -Color Green
+        }
+    }
+    else {
+        Write-ScriptMessage -Message 'No ApplicationHost.config in backup; skipping' -Prefix '!' -Color Yellow
+    }
+
+    # List certificate files present in the backup (check-then-act).
+    $certsPath = Join-Path -Path $From -ChildPath 'Certificates'
+    if (Test-Path -LiteralPath $certsPath) {
+        Write-ScriptMessage -Message 'SSL certificates found in backup:' -Prefix '*' -Color Cyan
+        $certFiles = @(Get-ChildItem -LiteralPath $certsPath -Filter '*.pfx' -ErrorAction Stop)
+        foreach ($certFile in $certFiles) {
             # Note: Would need password protection in production
-            Write-Host "  - $($_.Name)" -ForegroundColor White
+            Write-ScriptMessage -Message "  - $($certFile.Name)"
         }
     }
 
-    Write-Host "`n[!] IIS needs to be restarted for changes to take effect" -ForegroundColor Yellow
-    Write-Host "[*] Run: iisreset /noforce" -ForegroundColor Cyan
-
+    Write-ScriptMessage -Message 'IIS needs to be restarted for changes to take effect' -Prefix '!' -Color Yellow
+    Write-ScriptMessage -Message 'Run: iisreset /noforce' -Prefix '*' -Color Cyan
+    return 0
 }
-else {
-    # Create backup
-    Write-Host "`n[*] Creating IIS configuration backup..." -ForegroundColor Cyan
 
-    $backupDir = Join-Path $BackupPath $BackupName
-    New-Item -ItemType Directory -Path $backupDir -Force | Out-Null
+function Invoke-NewIisBackup {
+    <#
+    .SYNOPSIS
+        Creates a new IIS configuration backup set.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
 
-    Write-Host "[*] Backup location: $backupDir" -ForegroundColor Cyan
+    Write-ScriptMessage -Message 'Creating IIS configuration backup...' -Prefix '*' -Color Cyan
 
-    # Backup ApplicationHost.config
-    Write-Host "`n[*] Backing up ApplicationHost.config..." -ForegroundColor Cyan
-    $appHostConfig = "$env:SystemRoot\System32\inetsrv\config\ApplicationHost.config"
-    if (Test-Path $appHostConfig) {
-        Copy-Item $appHostConfig $backupDir -Force
-        Write-Host "[+] ApplicationHost.config backed up" -ForegroundColor Green
+    $backupDir = Join-Path -Path $BackupPath -ChildPath $BackupName
+    if ($PSCmdlet.ShouldProcess($backupDir, 'Create backup directory')) {
+        New-Item -ItemType Directory -Path $backupDir -Force -ErrorAction Stop | Out-Null
     }
 
-    # Backup site configurations
-    Write-Host "[*] Backing up site configurations..." -ForegroundColor Cyan
-    $sites = Get-IISSite
+    Write-ScriptMessage -Message "Backup location: $backupDir" -Prefix '*' -Color Cyan
+
+    # Backup ApplicationHost.config (check-then-act).
+    Write-ScriptMessage -Message 'Backing up ApplicationHost.config...' -Prefix '*' -Color Cyan
+    $appHostConfig = Get-ApplicationHostConfigPath
+    if ($appHostConfig -and (Test-Path -LiteralPath $appHostConfig)) {
+        if ($PSCmdlet.ShouldProcess($backupDir, 'Copy ApplicationHost.config')) {
+            Copy-Item -LiteralPath $appHostConfig -Destination $backupDir -Force -ErrorAction Stop
+        }
+        Write-ScriptMessage -Message 'ApplicationHost.config backed up' -Prefix '+' -Color Green
+    }
+    else {
+        Write-ScriptMessage -Message 'ApplicationHost.config not found; skipping' -Prefix '!' -Color Yellow
+    }
+
+    # Backup site configurations.
+    Write-ScriptMessage -Message 'Backing up site configurations...' -Prefix '*' -Color Cyan
+    $sites = @(Get-IISSite -ErrorAction Stop)
     $sitesInfo = @()
 
     foreach ($site in $sites) {
+        $physicalPath = $site.Applications['/'].VirtualDirectories['/'].PhysicalPath
+        $bindingString = ($site.Bindings |
+            ForEach-Object { "$($_.Protocol)://$($_.BindingInformation)" }) -join '; '
         $sitesInfo += [PSCustomObject]@{
-            Name = $site.Name
-            ID = $site.Id
-            State = $site.State
-            PhysicalPath = $site.Applications['/'].VirtualDirectories['/'].PhysicalPath
+            Name            = $site.Name
+            ID              = $site.Id
+            State           = $site.State
+            PhysicalPath    = $physicalPath
             ApplicationPool = $site.Applications['/'].ApplicationPoolName
-            Bindings = ($site.Bindings | ForEach-Object { "$($_.Protocol)://$($_.BindingInformation)" }) -join "; "
+            Bindings        = $bindingString
         }
 
-        # Backup web.config if exists
-        $webConfig = Join-Path $site.Applications['/'].VirtualDirectories['/'].PhysicalPath "web.config"
-        if (Test-Path $webConfig) {
-            $siteBackupPath = Join-Path $backupDir "Sites\$($site.Name)"
-            New-Item -ItemType Directory -Path $siteBackupPath -Force | Out-Null
-            Copy-Item $webConfig $siteBackupPath -Force -ErrorAction SilentlyContinue
+        # Backup web.config if it exists (check-then-act).
+        $webConfig = Join-Path -Path $physicalPath -ChildPath 'web.config'
+        if ($physicalPath -and (Test-Path -LiteralPath $webConfig)) {
+            $siteBackupPath = Join-Path -Path $backupDir -ChildPath "Sites\$($site.Name)"
+            if ($PSCmdlet.ShouldProcess($siteBackupPath, "Copy web.config for site '$($site.Name)'")) {
+                New-Item -ItemType Directory -Path $siteBackupPath -Force -ErrorAction Stop | Out-Null
+                Copy-Item -LiteralPath $webConfig -Destination $siteBackupPath -Force -ErrorAction Stop
+            }
         }
     }
 
-    $sitesInfo | Export-Csv (Join-Path $backupDir "Sites.csv") -NoTypeInformation
-    Write-Host "[+] $($sites.Count) site configurations backed up" -ForegroundColor Green
+    $sitesCsv = Join-Path -Path $backupDir -ChildPath 'Sites.csv'
+    $sitesInfo | Export-Csv -Path $sitesCsv -NoTypeInformation -ErrorAction Stop
+    Write-ScriptMessage -Message "$($sites.Count) site configurations backed up" -Prefix '+' -Color Green
 
-    # Backup application pools
-    Write-Host "[*] Backing up application pool configurations..." -ForegroundColor Cyan
-    $appPools = Get-IISAppPool
+    # Backup application pools.
+    Write-ScriptMessage -Message 'Backing up application pool configurations...' -Prefix '*' -Color Cyan
+    $appPools = @(Get-IISAppPool -ErrorAction Stop)
     $poolsInfo = $appPools | ForEach-Object {
         [PSCustomObject]@{
-            Name = $_.Name
-            State = $_.State
+            Name                  = $_.Name
+            State                 = $_.State
             ManagedRuntimeVersion = $_.ManagedRuntimeVersion
-            ManagedPipelineMode = $_.ManagedPipelineMode
-            StartMode = $_.StartMode
+            ManagedPipelineMode   = $_.ManagedPipelineMode
+            StartMode             = $_.StartMode
             Enable32BitAppOnWin64 = $_.Enable32BitAppOnWin64
-            IdleTimeoutMinutes = $_.ProcessModel.IdleTimeout.TotalMinutes
-            RecyclingSchedule = ($_.Recycling.PeriodicRestart.Schedule -join ", ")
+            IdleTimeoutMinutes    = $_.ProcessModel.IdleTimeout.TotalMinutes
+            RecyclingSchedule     = ($_.Recycling.PeriodicRestart.Schedule -join ', ')
         }
     }
-    $poolsInfo | Export-Csv (Join-Path $backupDir "ApplicationPools.csv") -NoTypeInformation
-    Write-Host "[+] $($appPools.Count) application pools backed up" -ForegroundColor Green
+    $poolsCsv = Join-Path -Path $backupDir -ChildPath 'ApplicationPools.csv'
+    $poolsInfo | Export-Csv -Path $poolsCsv -NoTypeInformation -ErrorAction Stop
+    Write-ScriptMessage -Message "$($appPools.Count) application pools backed up" -Prefix '+' -Color Green
 
-    # Backup SSL certificates
+    # Backup SSL certificates.
     if ($IncludeCertificates) {
-        Write-Host "[*] Backing up SSL certificates..." -ForegroundColor Cyan
-        $certsDir = Join-Path $backupDir "Certificates"
-        New-Item -ItemType Directory -Path $certsDir -Force | Out-Null
+        Write-ScriptMessage -Message 'Backing up SSL certificates...' -Prefix '*' -Color Cyan
+        $certsDir = Join-Path -Path $backupDir -ChildPath 'Certificates'
+        New-Item -ItemType Directory -Path $certsDir -Force -ErrorAction Stop | Out-Null
 
-        $httpsBindings = Get-IISSite | ForEach-Object {
-            $_.Bindings | Where-Object { $_.Protocol -eq "https" }
+        $httpsBindings = Get-IISSite -ErrorAction Stop | ForEach-Object {
+            $_.Bindings | Where-Object { $_.Protocol -eq 'https' }
         }
 
         $certsExported = 0
         foreach ($binding in $httpsBindings) {
             if ($binding.CertificateHash) {
-                $cert = Get-ChildItem Cert:\LocalMachine\$($binding.CertificateStoreName) |
+                $certStore = "Cert:\LocalMachine\$($binding.CertificateStoreName)"
+                $cert = Get-ChildItem -Path $certStore -ErrorAction Stop |
                     Where-Object { $_.Thumbprint -eq $binding.CertificateHash }
 
                 if ($cert) {
                     $certInfo = [PSCustomObject]@{
-                        Thumbprint = $cert.Thumbprint
-                        Subject = $cert.Subject
-                        Issuer = $cert.Issuer
-                        NotAfter = $cert.NotAfter
+                        Thumbprint   = $cert.Thumbprint
+                        Subject      = $cert.Subject
+                        Issuer       = $cert.Issuer
+                        NotAfter     = $cert.NotAfter
                         FriendlyName = $cert.FriendlyName
                     }
-                    $certInfo | Export-Csv (Join-Path $certsDir "certificates.csv") -Append -NoTypeInformation
+                    $certCsv = Join-Path -Path $certsDir -ChildPath 'certificates.csv'
+                    $certInfo | Export-Csv -Path $certCsv -Append -NoTypeInformation -ErrorAction Stop
                     $certsExported++
                 }
             }
         }
-        Write-Host "[+] $certsExported SSL certificate details backed up" -ForegroundColor Green
+        Write-ScriptMessage -Message "$certsExported SSL certificate details backed up" -Prefix '+' -Color Green
     }
 
-    # Create backup manifest
+    # Create backup manifest.
+    $inetStp = Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\InetStp' -ErrorAction SilentlyContinue
     $manifest = @{
-        BackupDate = Get-Date
-        ComputerName = $env:COMPUTERNAME
-        IISVersion = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\InetStp" -ErrorAction SilentlyContinue).VersionString
-        SitesCount = $sites.Count
-        AppPoolsCount = $appPools.Count
+        BackupDate           = Get-Date
+        ComputerName         = $env:COMPUTERNAME
+        IISVersion           = $inetStp.VersionString
+        SitesCount           = $sites.Count
+        AppPoolsCount        = $appPools.Count
         CertificatesIncluded = $IncludeCertificates.IsPresent
+        ContentFilesIncluded = $IncludeContentFiles.IsPresent
     }
-    $manifest | ConvertTo-Json | Out-File (Join-Path $backupDir "manifest.json") -Encoding UTF8
+    $manifestPath = Join-Path -Path $backupDir -ChildPath 'manifest.json'
+    $manifest | ConvertTo-Json | Out-File -FilePath $manifestPath -Encoding UTF8 -ErrorAction Stop
 
-    # Calculate backup size
-    $backupSize = (Get-ChildItem $backupDir -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
+    # Calculate backup size.
+    $backupSize = (Get-ChildItem -LiteralPath $backupDir -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
 
-    Write-Host "`n=== Backup Summary ===" -ForegroundColor Cyan
-    Write-Host "Backup Location: $backupDir" -ForegroundColor White
-    Write-Host "Sites: $($sites.Count)" -ForegroundColor White
-    Write-Host "Application Pools: $($appPools.Count)" -ForegroundColor White
-    Write-Host "Total Size: $([math]::Round($backupSize, 2)) MB" -ForegroundColor White
-    Write-Host "`n[+] Backup completed successfully!" -ForegroundColor Green
+    Write-ScriptMessage -Message '=== Backup Summary ==='
+    Write-ScriptMessage -Message "Backup Location: $backupDir"
+    Write-ScriptMessage -Message "Sites: $($sites.Count)"
+    Write-ScriptMessage -Message "Application Pools: $($appPools.Count)"
+    Write-ScriptMessage -Message "Total Size: $([math]::Round($backupSize, 2)) MB"
+    Write-ScriptMessage -Message 'Backup completed successfully!' -Prefix '+' -Color Green
+    return 0
 }
 
-Write-Host ""
+function Main {
+    <#
+    .SYNOPSIS
+        Runs the IIS configuration backup or restore workflow.
+    #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
+    try {
+        Write-ScriptMessage -Message '=== IIS Configuration Backup Tool ==='
+
+        if ($Restore) {
+            return Invoke-RestoreIisConfiguration -From $RestoreFrom
+        }
+
+        return Invoke-NewIisBackup
+    }
+    catch {
+        Write-ScriptMessage -Message "Error: $($_.Exception.Message)" -Prefix '-' -Color Red
+        return 1
+    }
+}
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

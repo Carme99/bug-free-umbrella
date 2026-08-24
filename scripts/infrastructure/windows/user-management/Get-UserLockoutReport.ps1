@@ -11,6 +11,11 @@
     - Lockout patterns and trends
     - Top targeted accounts
 
+    This is a read-only detection script: it queries security event logs on domain
+    controllers and never modifies accounts or systems.
+
+    Exit codes: 0 = no lockouts found, 1 = one or more lockouts found (or fatal error).
+
 .PARAMETER Hours
     Number of hours to analyze (default: 24).
 
@@ -33,26 +38,35 @@
     Export results to CSV file.
 
 .EXAMPLE
-    .\Get-UserLockoutReport.ps1 -Hours 24
+    PS C:\> .\Get-UserLockoutReport.ps1 -Hours 24
     Analyzes lockouts from the last 24 hours.
 
 .EXAMPLE
-    .\Get-UserLockoutReport.ps1 -Username "jdoe" -Days 7 -IncludeSource
+    PS C:\> .\Get-UserLockoutReport.ps1 -Username "jdoe" -Days 7 -IncludeSource
     Analyzes specific user's lockouts for 7 days with source details.
 
 .EXAMPLE
-    .\Get-UserLockoutReport.ps1 -DetectBruteForce -ExportHTML
+    PS C:\> .\Get-UserLockoutReport.ps1 -DetectBruteForce -ExportHTML
     Detects brute force attempts and exports report.
 
 .NOTES
-    Requires Administrator privileges
-    Requires access to Domain Controllers for full analysis
-    Compatible with Windows Server 2016, 2019, 2022
+    File Name:     Get-UserLockoutReport.ps1
+    Author:        Bug-Free Umbrella
+    Prerequisite:  PowerShell 5.1+
+    Version:       1.0.0
+    Date:          2026-08-23
+
+    Requires the Active Directory PowerShell module at runtime (mocked in tests).
+    Requires access to Domain Controllers for full analysis.
+    Compatible with Windows Server 2016, 2019, 2022.
 #>
 
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+    Justification = 'Console reporting tool: prefixed, color-coded host output is the intended user interface.')]
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
+    [ValidateRange(1, [int]::MaxValue)]
     [int]$Hours = 24,
 
     [Parameter(Mandatory = $false)]
@@ -74,213 +88,262 @@ param(
     [switch]$ExportCSV
 )
 
-#Requires -Modules ActiveDirectory
+$ErrorActionPreference = 'Stop'
 
-$ErrorActionPreference = "Stop"
-$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+function Main {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        [int]$Hours = 24,
 
-# Reports directory (internal output location)
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-# Validate report directory: reject '..' traversal and UNC remote paths before resolution
-if ([string]::IsNullOrWhiteSpace($ReportDir) -or
-    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
-    $ReportDir -match '^(\\\\|//)') {
-    Write-Error "Unsafe report directory: $ReportDir. Report directory must be a local absolute path without '..' traversal."
-    exit 1
-}
-$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
+        [Parameter(Mandatory = $false)]
+        [int]$Days,
 
-# Calculate time range
-if ($Days) {
-    $startTime = (Get-Date).AddDays(-$Days)
-}
-else {
-    $startTime = (Get-Date).AddHours(-$Hours)
-}
+        [Parameter(Mandatory = $false)]
+        [string]$Username,
 
-Write-Host "`n=== User Account Lockout Report ===" -ForegroundColor Cyan
-Write-Host "Time Range: $startTime to $(Get-Date)" -ForegroundColor Yellow
-if ($Username) {
-    Write-Host "Username Filter: $Username" -ForegroundColor Yellow
-}
-Write-Host ""
+        [Parameter(Mandatory = $false)]
+        [switch]$IncludeSource,
 
-$lockouts = @()
-$failedLogins = @()
+        [Parameter(Mandatory = $false)]
+        [switch]$DetectBruteForce,
 
-# Get domain controllers
-Write-Host "[*] Retrieving domain controllers..." -ForegroundColor Cyan
-$dcs = Get-ADDomainController -Filter *
+        [Parameter(Mandatory = $false)]
+        [switch]$ExportHTML,
 
-Write-Host "[+] Found $($dcs.Count) domain controller(s)" -ForegroundColor Green
-Write-Host ""
-
-# Query each DC for lockout events
-foreach ($dc in $dcs) {
-    Write-Host "[*] Querying $($dc.HostName)..." -ForegroundColor Cyan
+        [Parameter(Mandatory = $false)]
+        [switch]$ExportCSV
+    )
 
     try {
-        # Event ID 4740 = Account Lockout
-        $filterXml = @"
+        $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+
+        # Reports directory (internal output location)
+        $myDocs = [Environment]::GetFolderPath('MyDocuments')
+        if ([string]::IsNullOrWhiteSpace($myDocs)) {
+            # Profile-less contexts (CI runners, SYSTEM services): MyDocuments resolves empty;
+            # fall back so report writing degrades gracefully instead of crashing.
+            $myDocs = [Environment]::GetFolderPath('UserProfile')
+        }
+        $ReportDir = Join-Path $myDocs 'Reports'
+        # Validate report directory: reject '..' traversal and UNC remote paths before resolution
+        if ([string]::IsNullOrWhiteSpace($ReportDir) -or
+            $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+            $ReportDir -match '^(\\\\|//)') {
+            $reason = "Report directory must be a local absolute path without '..' traversal."
+            throw "Unsafe report directory: $ReportDir. $reason"
+        }
+        $ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
+        if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
+            New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
+        }
+
+        # Calculate time range
+        if ($Days) {
+            $startTime = (Get-Date).AddDays(-$Days)
+        }
+        else {
+            $startTime = (Get-Date).AddHours(-$Hours)
+        }
+
+        Write-Host "`n[*] === User Account Lockout Report ===" -ForegroundColor Cyan
+        Write-Host "[*] Time Range: $startTime to $(Get-Date)" -ForegroundColor Yellow
+        if ($Username) {
+            Write-Host "[*] Username Filter: $Username" -ForegroundColor Yellow
+        }
+        Write-Host ""
+
+        $lockouts = @()
+        $failedLogins = @()
+
+        # Get domain controllers
+        Write-Host "[*] Retrieving domain controllers..." -ForegroundColor Cyan
+        $dcs = Get-ADDomainController -Filter *
+        $cutoffUtc = $startTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ")
+
+        Write-Host "[+] Found $($dcs.Count) domain controller(s)" -ForegroundColor Green
+        Write-Host ""
+
+        # Query each DC for lockout events
+        foreach ($dc in $dcs) {
+            Write-Host "[*] Querying $($dc.HostName)..." -ForegroundColor Cyan
+
+            try {
+                # Event ID 4740 = Account Lockout
+                $filterXml = @"
 <QueryList>
   <Query Id="0" Path="Security">
     <Select Path="Security">
-      *[System[(EventID=4740 or EventID=4625) and TimeCreated[@SystemTime&gt;='$($startTime.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ"))']]]
+      *[System[(EventID=4740 or EventID=4625) and TimeCreated[@SystemTime&gt;='$cutoffUtc']]]
     </Select>
   </Query>
 </QueryList>
 "@
 
-        $eventErrors = @()
-        $events = Get-WinEvent -ComputerName $dc.HostName -FilterXml $filterXml -ErrorAction SilentlyContinue -ErrorVariable eventErrors
+                $eventErrors = @()
+                $events = Get-WinEvent -ComputerName $dc.HostName -FilterXml $filterXml `
+                    -ErrorAction SilentlyContinue -ErrorVariable eventErrors
 
-        $unexpectedErrors = $eventErrors | Where-Object {
-            $_.FullyQualifiedErrorId -notlike 'NoMatchingEventsFound*'
-        }
-        if ($unexpectedErrors) {
-            throw $unexpectedErrors[0]
-        }
+                $unexpectedErrors = $eventErrors | Where-Object {
+                    $_.FullyQualifiedErrorId -notlike 'NoMatchingEventsFound*'
+                }
+                if ($unexpectedErrors) {
+                    throw $unexpectedErrors[0]
+                }
 
-        if ($events) {
-            Write-Host "[+] Found $($events.Count) events on $($dc.HostName)" -ForegroundColor Green
+                if ($events) {
+                    Write-Host "[+] Found $($events.Count) events on $($dc.HostName)" -ForegroundColor Green
 
-            foreach ($event in $events) {
-                $eventXml = [xml]$event.ToXml()
+                    foreach ($evt in $events) {
+                        $eventXml = [xml]$evt.ToXml()
 
-                if ($event.Id -eq 4740) {
-                    # Lockout event
-                    $targetUser = $eventXml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetUserName' } | Select-Object -ExpandProperty '#text'
-                    $targetDomain = $eventXml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetDomainName' } | Select-Object -ExpandProperty '#text'
+                        if ($evt.Id -eq 4740) {
+                            # Lockout event
+                            $targetUser = $eventXml.Event.EventData.Data |
+                                Where-Object { $_.Name -eq 'TargetUserName' } |
+                                Select-Object -ExpandProperty '#text'
+                            $targetDomain = $eventXml.Event.EventData.Data |
+                                Where-Object { $_.Name -eq 'TargetDomainName' } |
+                                Select-Object -ExpandProperty '#text'
 
-                    # Event 4740: 'TargetDomainName' is the domain of the locked-out
-                    # account (account identity), not the lockout source. The machine
-                    # that triggered the lockout is 'Caller Computer Name'; older v0
-                    # events may not include it, in which case fall back gracefully
-                    # to $null so it is not misattributed.
-                    $callerComputerData = $eventXml.Event.EventData.Data | Where-Object { $_.Name -eq 'Caller Computer Name' }
-                    $callerComputer = if ($callerComputerData) { $callerComputerData.'#text' } else { $null }
+                            # Event 4740: 'TargetDomainName' is the domain of the locked-out
+                            # account (account identity), not the lockout source. The machine
+                            # that triggered the lockout is 'Caller Computer Name'; older v0
+                            # events may not include it, in which case fall back gracefully
+                            # to $null so it is not misattributed.
+                            $callerComputerData = $eventXml.Event.EventData.Data |
+                                Where-Object { $_.Name -eq 'Caller Computer Name' }
+                            $callerComputer = if ($callerComputerData) { $callerComputerData.'#text' } else { $null }
 
-                    if ($Username -and $targetUser -ne $Username) {
-                        continue
-                    }
+                            if ($Username -and $targetUser -ne $Username) {
+                                continue
+                            }
 
-                    $lockouts += [PSCustomObject]@{
-                        TimeCreated = $event.TimeCreated
-                        Username = $targetUser
-                        Domain = $targetDomain
-                        SourceComputer = $callerComputer
-                        DomainController = $dc.HostName
-                        EventID = 4740
-                        Type = "Lockout"
+                            $lockouts += [PSCustomObject]@{
+                                TimeCreated = $evt.TimeCreated
+                                Username = $targetUser
+                                Domain = $targetDomain
+                                SourceComputer = $callerComputer
+                                DomainController = $dc.HostName
+                                EventID = 4740
+                                Type = "Lockout"
+                            }
+                        }
+                        elseif ($evt.Id -eq 4625) {
+                            # Failed login
+                            $targetUser = $eventXml.Event.EventData.Data |
+                                Where-Object { $_.Name -eq 'TargetUserName' } |
+                                Select-Object -ExpandProperty '#text'
+                            $workstation = $eventXml.Event.EventData.Data |
+                                Where-Object { $_.Name -eq 'WorkstationName' } |
+                                Select-Object -ExpandProperty '#text'
+                            $ipAddress = $eventXml.Event.EventData.Data |
+                                Where-Object { $_.Name -eq 'IpAddress' } |
+                                Select-Object -ExpandProperty '#text'
+
+                            if ($Username -and $targetUser -ne $Username) {
+                                continue
+                            }
+
+                            $failedLogins += [PSCustomObject]@{
+                                TimeCreated = $evt.TimeCreated
+                                Username = $targetUser
+                                SourceComputer = $workstation
+                                IPAddress = $ipAddress
+                                DomainController = $dc.HostName
+                                EventID = 4625
+                                Type = "Failed Login"
+                            }
+                        }
                     }
                 }
-                elseif ($event.Id -eq 4625) {
-                    # Failed login
-                    $targetUser = $eventXml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetUserName' } | Select-Object -ExpandProperty '#text'
-                    $workstation = $eventXml.Event.EventData.Data | Where-Object { $_.Name -eq 'WorkstationName' } | Select-Object -ExpandProperty '#text'
-                    $ipAddress = $eventXml.Event.EventData.Data | Where-Object { $_.Name -eq 'IpAddress' } | Select-Object -ExpandProperty '#text'
+                else {
+                    Write-Host "[-] No events found on $($dc.HostName)" -ForegroundColor Gray
+                }
+            }
+            catch {
+                Write-Host "[-] Error querying $($dc.HostName): $($_.Exception.Message)" -ForegroundColor Red
+            }
+        }
 
-                    if ($Username -and $targetUser -ne $Username) {
-                        continue
-                    }
+        Write-Host ""
 
-                    $failedLogins += [PSCustomObject]@{
-                        TimeCreated = $event.TimeCreated
-                        Username = $targetUser
-                        SourceComputer = $workstation
-                        IPAddress = $ipAddress
-                        DomainController = $dc.HostName
-                        EventID = 4625
-                        Type = "Failed Login"
-                    }
+        # Display results
+        Write-Host "[*] === Summary ===" -ForegroundColor Cyan
+        $lockoutColor = if ($lockouts.Count -gt 0) { "Red" } else { "Green" }
+        Write-Host "[!] Total Lockouts: $($lockouts.Count)" -ForegroundColor $lockoutColor
+        Write-Host "[!] Total Failed Logins: $($failedLogins.Count)" -ForegroundColor Yellow
+        Write-Host ""
+
+        if ($lockouts.Count -gt 0) {
+            Write-Host "[!] === Recent Lockouts ===" -ForegroundColor Cyan
+            $lockouts | Sort-Object TimeCreated -Descending |
+                Select-Object -First 20 TimeCreated, Username, SourceComputer, DomainController |
+                Format-Table -AutoSize
+
+            # Top locked out users
+            Write-Host "`n[!] === Top Locked Out Users ===" -ForegroundColor Cyan
+            $lockouts | Group-Object Username | Sort-Object Count -Descending | Select-Object -First 10 |
+                ForEach-Object {
+                    $countColor = if ($_.Count -ge 5) { "Red" } else { "Yellow" }
+                Write-Host "[!] $($_.Name): $($_.Count) lockout(s)" -ForegroundColor $countColor
+                }
+        }
+
+        if ($IncludeSource -and $lockouts.Count -gt 0) {
+            Write-Host "`n[*] === Lockout Sources ===" -ForegroundColor Cyan
+            $lockouts | Group-Object SourceComputer | Sort-Object Count -Descending | Select-Object -First 10 |
+                ForEach-Object {
+                    Write-Host "[*] $($_.Name): $($_.Count) lockout(s)" -ForegroundColor Yellow
+                }
+        }
+
+        # Brute force detection
+        if ($DetectBruteForce) {
+            Write-Host "`n[*] === Brute Force Detection ===" -ForegroundColor Cyan
+
+            # Look for patterns: multiple users from same source
+            $sourceCounts = @($failedLogins | Group-Object SourceComputer | Where-Object { $_.Count -ge 10 })
+
+            if ($sourceCounts.Count -gt 0) {
+                Write-Host "[-] Potential brute force detected!" -ForegroundColor Red
+                foreach ($source in $sourceCounts) {
+                    $uniqueUsers = ($source.Group | Select-Object -ExpandProperty Username -Unique).Count
+                    Write-Host "[-]   Source: $($source.Name)" -ForegroundColor Red
+                    Write-Host "[-]   Failed Attempts: $($source.Count)" -ForegroundColor Red
+                    Write-Host "[-]   Unique Users Targeted: $uniqueUsers" -ForegroundColor Red
+                    Write-Host ""
+                }
+            }
+            else {
+                Write-Host "[+] No obvious brute force patterns detected" -ForegroundColor Green
+            }
+
+            # Password spray detection: many different usernames in short time
+            $timeWindow = 300 # 5 minutes
+            $sprayThreshold = 10
+
+            $groupedByTime = $failedLogins |
+                Group-Object { [Math]::Floor(($_.TimeCreated - $startTime).TotalSeconds / $timeWindow) }
+
+            foreach ($group in $groupedByTime) {
+                $uniqueUsers = ($group.Group | Select-Object -ExpandProperty Username -Unique).Count
+                if ($uniqueUsers -ge $sprayThreshold) {
+                    Write-Host "[!] Potential password spray detected:" -ForegroundColor Red
+                    Write-Host "[!]   Time: $($group.Group[0].TimeCreated.ToString('yyyy-MM-dd HH:mm:ss'))"`
+                        -ForegroundColor Red
+                    Write-Host "[!]   Unique Users: $uniqueUsers" -ForegroundColor Red
+                    Write-Host "[!]   Total Attempts: $($group.Count)" -ForegroundColor Red
+                    Write-Host ""
                 }
             }
         }
-        else {
-            Write-Host "[-] No events found on $($dc.HostName)" -ForegroundColor Gray
-        }
-    }
-    catch {
-        Write-Host "[-] Error querying $($dc.HostName): $($_.Exception.Message)" -ForegroundColor Red
-    }
-}
 
-Write-Host ""
+        # Export results
+        if ($ExportHTML) {
+            $htmlPath = Join-Path $ReportDir "UserLockoutReport_$timestamp.html"
 
-# Display results
-Write-Host "=== Summary ===" -ForegroundColor Cyan
-Write-Host "Total Lockouts: $($lockouts.Count)" -ForegroundColor $(if ($lockouts.Count -gt 0) { "Red" } else { "Green" })
-Write-Host "Total Failed Logins: $($failedLogins.Count)" -ForegroundColor Yellow
-Write-Host ""
-
-if ($lockouts.Count -gt 0) {
-    Write-Host "=== Recent Lockouts ===" -ForegroundColor Cyan
-    $lockouts | Sort-Object TimeCreated -Descending | Select-Object -First 20 TimeCreated, Username, SourceComputer, DomainController |
-        Format-Table -AutoSize
-
-    # Top locked out users
-    Write-Host "`n=== Top Locked Out Users ===" -ForegroundColor Cyan
-    $lockouts | Group-Object Username | Sort-Object Count -Descending | Select-Object -First 10 |
-        ForEach-Object {
-            Write-Host "$($_.Name): $($_.Count) lockout(s)" -ForegroundColor $(if ($_.Count -ge 5) { "Red" } else { "Yellow" })
-        }
-}
-
-if ($IncludeSource -and $lockouts.Count -gt 0) {
-    Write-Host "`n=== Lockout Sources ===" -ForegroundColor Cyan
-    $lockouts | Group-Object SourceComputer | Sort-Object Count -Descending | Select-Object -First 10 |
-        ForEach-Object {
-            Write-Host "$($_.Name): $($_.Count) lockout(s)" -ForegroundColor Yellow
-        }
-}
-
-# Brute force detection
-if ($DetectBruteForce) {
-    Write-Host "`n=== Brute Force Detection ===" -ForegroundColor Cyan
-
-    # Look for patterns: multiple users from same source
-    $sourceCounts = $failedLogins | Group-Object SourceComputer | Where-Object { $_.Count -ge 10 }
-
-    if ($sourceCounts) {
-        Write-Host "[!] Potential brute force detected!" -ForegroundColor Red
-        foreach ($source in $sourceCounts) {
-            $uniqueUsers = ($source.Group | Select-Object -ExpandProperty Username -Unique).Count
-            Write-Host "  Source: $($source.Name)" -ForegroundColor Red
-            Write-Host "  Failed Attempts: $($source.Count)" -ForegroundColor Red
-            Write-Host "  Unique Users Targeted: $uniqueUsers" -ForegroundColor Red
-            Write-Host ""
-        }
-    }
-    else {
-        Write-Host "[+] No obvious brute force patterns detected" -ForegroundColor Green
-    }
-
-    # Password spray detection: many different usernames in short time
-    $timeWindow = 300 # 5 minutes
-    $sprayThreshold = 10
-
-    $groupedByTime = $failedLogins | Group-Object { [Math]::Floor(($_.TimeCreated - $startTime).TotalSeconds / $timeWindow) }
-
-    foreach ($group in $groupedByTime) {
-        $uniqueUsers = ($group.Group | Select-Object -ExpandProperty Username -Unique).Count
-        if ($uniqueUsers -ge $sprayThreshold) {
-            Write-Host "[!] Potential password spray detected:" -ForegroundColor Red
-            Write-Host "  Time: $($group.Group[0].TimeCreated.ToString('yyyy-MM-dd HH:mm:ss'))" -ForegroundColor Red
-            Write-Host "  Unique Users: $uniqueUsers" -ForegroundColor Red
-            Write-Host "  Total Attempts: $($group.Count)" -ForegroundColor Red
-            Write-Host ""
-        }
-    }
-}
-
-# Export results
-if ($ExportHTML) {
-    $htmlPath = Join-Path $ReportDir "UserLockoutReport_$timestamp.html"
-
-    $html = @"
+            $html = @"
 <!DOCTYPE html>
 <html>
 <head>
@@ -310,26 +373,40 @@ if ($ExportHTML) {
         <tr><th>Time</th><th>Username</th><th>Source Computer</th><th>Domain Controller</th></tr>
 "@
 
-    foreach ($lockout in ($lockouts | Sort-Object TimeCreated -Descending)) {
-        $html += "<tr><td>$($lockout.TimeCreated)</td><td>$([System.Net.WebUtility]::HtmlEncode("$($lockout.Username)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($lockout.SourceComputer)"))</td><td>$([System.Net.WebUtility]::HtmlEncode("$($lockout.DomainController)"))</td></tr>`n"
+            foreach ($lockout in ($lockouts | Sort-Object TimeCreated -Descending)) {
+                $cells = "<td>$($lockout.TimeCreated)</td>" +
+                    "<td>$([System.Net.WebUtility]::HtmlEncode("$($lockout.Username)"))</td>" +
+                    "<td>$([System.Net.WebUtility]::HtmlEncode("$($lockout.SourceComputer)"))</td>"
+                $cells += "<td>$([System.Net.WebUtility]::HtmlEncode("$($lockout.DomainController)"))</td>"
+                $html += "<tr>$cells</tr>`n"
+            }
+
+            $html += "</table></body></html>"
+
+            $html | Out-File -FilePath $htmlPath -Encoding UTF8
+            Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+        }
+
+        if ($ExportCSV) {
+            $csvPath = Join-Path $ReportDir "UserLockoutReport_$timestamp.csv"
+            $lockouts | Export-Csv -Path $csvPath -NoTypeInformation
+            Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
+        }
+
+        Write-Host "`n[+] Report completed!" -ForegroundColor Green
+
+        # Documented detect semantics: exit code 1 when lockouts were found
+        if ($lockouts.Count -gt 0) {
+            return 1
+        }
+
+        return 0
     }
-
-    $html += "</table></body></html>"
-
-    $html | Out-File -FilePath $htmlPath -Encoding UTF8
-    Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-if ($ExportCSV) {
-    $csvPath = Join-Path $ReportDir "UserLockoutReport_$timestamp.csv"
-    $lockouts | Export-Csv -Path $csvPath -NoTypeInformation
-    Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
-}
-
-Write-Host "`n[+] Report completed!" -ForegroundColor Green
-
-if ($lockouts.Count -gt 0) {
-    exit 1
-}
-
-exit 0
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main @PSBoundParameters) }

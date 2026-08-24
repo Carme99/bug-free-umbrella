@@ -1,68 +1,66 @@
-<#
+﻿<#
 .SYNOPSIS
     Detect Adobe Creative Cloud app updates via Remote Update Manager
 
 .DESCRIPTION
-    Runs the Adobe Remote Update Manager (RUM) in detection mode to determine whether any Adobe Creative Cloud apps require an update. Exits 1 when updates are required (so the paired remediation runs) and 0 when the system is up to date or RUM is not present. Must run in the SYSTEM context.
+    Intune Proactive Remediation detection script for Adobe Creative Cloud updates. Runs the Adobe Remote Update
+    Manager
+    (RUM) in list mode to determine whether any Adobe Creative Cloud apps require an update, logs the run to the
+    Intune
+    Management Extension log directory, and reports the affected apps.
+
+    Exit codes: 1 when updates are required so the paired remediation runs, 0 when the system is up to date or
+    RUM is
+    not installed, and 1 when the detection fails. Must run in the SYSTEM context because RUM requires elevated
+    privileges.
 
 .EXAMPLE
-    ./detect.ps1
+    PS C:\> .\detect.ps1
+
+    Runs the detection; exits 1 if any Adobe Creative Cloud app requires an update, otherwise 0.
+
+.EXAMPLE
+    PS C:\> .\detect.ps1 -Verbose
+
+    Runs the detection with verbose preference enabled for richer diagnostics.
 
 .NOTES
     File Name  : detect.ps1
     Author     : Intune / Proactive Remediations
-    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Prerequisite: PowerShell 5.1+
     Version    : 1.0.0
-    Date       : 2026-08-08
+    Date       : 2026-08-23
+
+    Used in Intune Proactive Remediation "SW-Update_CCApps"; runs as SYSTEM.
+    Sample RUM output on a machine requiring updates:
+    RemoteUpdateManager version is : 3.0.0.8 / Following Updates are applicable on the system :
+    (KBRG/13.0.3.693/win64) (ILST/27.4.0.669/win64) (COSY/6.4.0.12/win32) (CCXP/4.14.2.2/win32)
 #>
 
-<#
-===============================
-|  Detect-AdobeCCUpdates.ps1  |
-===============================
+[CmdletBinding()]
+param()
 
-Detects if any Adobe Creative Cloud Apps require an update installing, by using Adobe Remote Update Manager (RUM).
-Returns (1) if required updates are found, and (0) if not
+$ErrorActionPreference = 'Stop'
 
-Used in Proactive Remediation "SW-Update_CCApps"
-
-This script must be run in the SYSTEM context (as RUM requires Admin priviledges to successfully run)
----------------------------------------------------------------
-Sample Output from a machine requiring updates:
-
-RemoteUpdateManager version is : 3.0.0.8
-Starting the RemoteUpdateManager...
-
-Following Updates are applicable on the system :
-                (KBRG/13.0.3.693/win64)
-                (ILST/27.4.0.669/win64)
-                (COSY/6.4.0.12/win32)
-                (CCXP/4.14.2.2/win32)
-**************************************************
-RemoteUpdateManager exiting with Return Code (0)
-
----------------------------------------------------------------
-
-#>
-
-#region functions
-#endregion
+# PSScriptAnalyzer: Write-Host with prefix/color output is mandated by docs/RELAUNCH-SPEC.md section 3.
 
 #region Config
-$AppName = "Detect-CCUpdates"
-$OrgName = "TMBC"
+$AppName = 'Detect-CCUpdates'
+$OrgName = 'TMBC'
 $LogPath = "$env:ProgramData\Microsoft\IntuneManagementExtension\Logs"
 $LogFile = "$LogPath\$($OrgName)-$($AppName).log"
-# Set the path to the Adobe Remote Update Manager executable
-$ARUMPath = "C:\Program Files (x86)\Common Files\Adobe\OOBE_Enterprise\RemoteUpdateManager\RemoteUpdateManager.exe"
-# Define Latest Version of Adobe RUM executable
-[version]$LatestVersion = "3.0.0.8"
-# Define the search pattern to match in the output
-$updatesrequired = "Following Updates are applicable on the system"
-# Define the regex pattern to match Sap Codes, version numbers, and platforms
-$regexpattern = '\((\w+)\/([\d\.]+)\/(win\d+)\)'
-# Define a hash table of all product names for each Sap Code (sorted by Sap Code)
-# N.B. Sap codes obtained from various Internet sources
+
+$rumDir = 'C:\Program Files (x86)\Common Files\Adobe\OOBE_Enterprise\RemoteUpdateManager'
+$script:ARUMPath = "$rumDir\RemoteUpdateManager.exe"
+
+# Latest version of the Adobe RUM executable.
+[version]$LatestVersion = '3.0.0.8'
+
+# Search pattern to match in the RUM output and regex for sap codes, versions, and platforms.
+$updatesRequired = 'Following Updates are applicable on the system'
+$regexPattern = '\((\w+)\/([\d\.]+)\/(win\d+)\)'
+
+# Product names for each Sap Code (sap codes obtained from various Internet sources).
 $productNames = @{
     "AAM" = "Application Manager"
     "ACR" = "Camera Raw"
@@ -134,88 +132,86 @@ $productNames = @{
 }
 #endregion
 
-#region Main process
-if (!(Test-Path $LogPath)) { mkdir $LogPath -Force | Out-Null }
+function Invoke-RemoteUpdateManager {
+# Thin wrapper around the native RemoteUpdateManager executable (mock seam for tests).
+    return (& $script:ARUMPath @args 2>&1 | Out-String)
+}
 
-Start-Transcript -Path $LogFile -Force
+function Get-ApplicableUpdateReport {
+# Runs RUM in list mode and returns the raw marker result plus a report string of applicable updates.
+    [CmdletBinding()]
+    param ()
 
-try {
-    if (Test-Path -Path $ARUMPath) {
-        # Determine version of RUM installed
-        [version]$InstalledVersion = (Get-ItemProperty $ARUMPath).VersionInfo.FileVersion
+    Write-Host '[*] Running Adobe Remote Update Manager in list mode.' -ForegroundColor Cyan
+    $arumOutput = Invoke-RemoteUpdateManager --action=list
 
-        # Run Adobe Remote Update Manager and capture its output
-        $ARUMOutput = (& "$ARUMPath" --action=list) 2>&1 | Out-String
+# Find the app codes, version numbers, and platforms in the output text.
+    $discoveries = [regex]::Matches($arumOutput, $regexPattern)
+    $results = @()
+    foreach ($discovered in $discoveries) {
+        $sapCode = $discovered.Groups[1].Value
+        $versionNumber = $discovered.Groups[2].Value
+        $productName = $productNames[$sapCode]
+        $results += "$($productName) ($($sapCode)) (v$($versionNumber))"
+    }
 
-        # Use regex to find the app codes, version numbers, and platforms in the text string
-        $discoveries = [regex]::Matches($ARUMOutput, $regexpattern)
+# Join the results into one string so the content fits the Proactive Remediations result output.
+    $report = (($results -join ', ') -replace "`r`n", ', ').Trim()
+    $applicable = ($null -ne ($arumOutput | Select-String -Pattern $updatesRequired))
+    return [pscustomobject]@{ Report = $report; UpdatesApplicable = [bool]$applicable }
+}
 
-        # Create an array to store the results
-        $results = @()
+function Main {
+    [CmdletBinding()]
+    param()
 
-        # Loop through the regex matches and add a row to the results array for each app
-        foreach ($discovered in $discoveries) {
-            $SapCode = $discovered.Groups[1].Value
-            $versionNumber = $discovered.Groups[2].Value
-            #$platform = $discovered.Groups[3].Value
-            $productName = $productNames[$SapCode]
-
-            <#
-            # Add a row to the results array
-            $results += [pscustomobject]@{
-                "Product Name" = $productName
-                "Sap Code" = $SapCode
-                "Version Number" = $versionNumber
-                "Platform Architecture" = $platform
-            }
-            #>
-            $results += "$($productName) ($($SapCode)) (v$($versionNumber))"
+    try {
+        if (-not (Test-Path -Path $LogPath)) {
+            New-Item -Path $LogPath -ItemType Directory -Force -ErrorAction Stop | Out-Null
         }
-        
-        # Convert $results array to a string and join each line with a comma (so content can be output in PR results)
-        $resultsstring = (($results -join ", " ) -replace "`r`n", ", ").Trim()
+        Start-Transcript -Path $LogFile -Force -ErrorAction Stop
 
-        # Search the output for the string
-        $ARUMStatus = $ARUMOutput | ForEach-Object { "$_" | Select-String -Pattern $updatesrequired }
-        if ($ARUMStatus.Matches.Success -eq "True") {
-            # proceed to remediation script
-            if ($InstalledVersion -ge $LatestVersion) {
-                Write-Output "$($results.count) updates are required for the following Adobe Creative Cloud Apps: $($resultsstring)"
-                exit 1 # Return a non-zero exit code to trigger the remediation
+        if (-not (Test-Path -Path $script:ARUMPath)) {
+            Write-Output 'Adobe RUM not found N.B. Check if RUM should exist on this device'
+            Write-Host '[!] Adobe RUM not found; check whether it should exist on this device.' -ForegroundColor Yellow
+            return 0
+        }
+
+# Determine the version of RUM installed.
+        [version]$installedVersion = (Get-Item -Path $script:ARUMPath -ErrorAction Stop).VersionInfo.FileVersion
+
+        $detection = Get-ApplicableUpdateReport
+
+        if ($detection.UpdatesApplicable) {
+            Write-Host "[!] Updates are required: $($detection.Report)" -ForegroundColor Yellow
+            $rumNote = ''
+            if ($installedVersion -lt $LatestVersion) {
+                $rumNote = (" N.B. Adobe RUM is outdated: latest is ($($LatestVersion)), " +
+                    "installed ($($installedVersion)).")
             }
-            else {
-                Write-Output "$($results.count) updates are required for the following Adobe Creative Cloud Apps: $($resultsstring) N.B. Adobe RUM is not the latest version ($($LatestVersion)), the version on this machine ($($InstalledVersion)) should be updated"
-                exit 1 # Return a non-zero exit code to trigger the remediation
-            }
+            $reqLine = 'Updates are required for the following Adobe Creative Cloud Apps: '
+            Write-Output ($reqLine + "$($detection.Report)$rumNote")
+            return 1
         }
         else {
-            # nothing further to do
-            if ($InstalledVersion -ge $LatestVersion) {
-                Write-Output "No updates are required for Adobe Creative Cloud Apps"
-                exit 0  # Return a zero exit code to indicate success
+            if ($installedVersion -ge $LatestVersion) {
+                Write-Output 'No updates are required for Adobe Creative Cloud Apps'
             }
             else {
-                Write-Output "No updates are required for Adobe Creative Cloud Apps. N.B. Adobe RUM is not the latest version ($($LatestVersion)), the version on this machine ($($InstalledVersion)) should be updated"
-                exit 0  # Return a zero exit code to indicate success
+                Write-Output ('No updates are required for Adobe Creative Cloud Apps. ' +
+                    "N.B. Adobe RUM is outdated: latest is ($($LatestVersion)), installed ($($installedVersion)).")
             }
+            Write-Host '[+] No updates are required for Adobe Creative Cloud Apps.' -ForegroundColor Green
+            return 0
         }
     }
-    else {
-        Write-Output "Adobe RUM not found N.B. Check if RUM should exist on this device"
-        exit 0
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
+    finally {
+        try { Stop-Transcript | Out-Null } catch { Write-Verbose 'No active transcript to stop' }
     }
 }
-catch {
-    $errorMsg = $_.Exception.Message
-}
-finally {
-    if ($errorMsg) {
-        Write-Output "Something went wrong: $errorMsg"
-        Stop-Transcript | Out-Null
-        throw $errorMsg
-    }
-    else {
-        Stop-Transcript | Out-Null
-    }
-}
-#endregion
+
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

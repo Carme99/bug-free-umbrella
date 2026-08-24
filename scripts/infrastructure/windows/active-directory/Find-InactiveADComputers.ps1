@@ -1,16 +1,19 @@
-<#
+﻿<#
 .SYNOPSIS
     Identifies and reports inactive computer accounts in Active Directory.
 
 .DESCRIPTION
-    This script finds stale computer accounts in AD based on:
-    - Last logon timestamp
-    - Password last set date
-    - Account enabled/disabled status
-    - Operating system version
-    - Custom inactivity threshold
-    - Option to disable or delete stale accounts
-    - Export to HTML or CSV
+    This script finds stale computer accounts in Active Directory based on last logon timestamp,
+    password last set date, account enabled/disabled status, and operating system version. It
+    supports a custom inactivity threshold, an optional search base, filtering by operating system,
+    automatic disabling of stale accounts (gated by ShouldProcess, honoring -WhatIf/-Confirm), and
+    export of results to HTML or CSV reports.
+
+    Behavior notes:
+    - Exits with 0 on success and 1 when the ActiveDirectory module is unavailable or a fatal error occurs.
+    - Re-running the script is safe: disabling only targets accounts still reported as enabled, so a
+      converged domain yields no further changes.
+    - LastLogonTimestamp may be up to 14 days behind actual logon.
 
 .PARAMETER InactiveDays
     Number of days of inactivity to consider a computer stale (default: 90).
@@ -27,9 +30,6 @@
 .PARAMETER DisableInactive
     Automatically disable inactive computer accounts.
 
-.PARAMETER WhatIf
-    Show what would be disabled without making changes.
-
 .PARAMETER ExportHTML
     Export report to HTML file.
 
@@ -37,40 +37,49 @@
     Export computer list to CSV.
 
 .EXAMPLE
-    .\Find-InactiveADComputers.ps1
+    PS C:\> .\Find-InactiveADComputers.ps1
     Finds computers inactive for more than 90 days.
 
 .EXAMPLE
-    .\Find-InactiveADComputers.ps1 -InactiveDays 180 -ExportHTML
-    Finds computers inactive for 180+ days and exports HTML report.
+    PS C:\> .\Find-InactiveADComputers.ps1 -InactiveDays 180 -ExportHTML
+    Finds computers inactive for 180+ days and exports an HTML report.
 
 .EXAMPLE
-    .\Find-InactiveADComputers.ps1 -InactiveDays 90 -DisableInactive -WhatIf
+    PS C:\> .\Find-InactiveADComputers.ps1 -InactiveDays 90 -DisableInactive -WhatIf
     Shows which computers would be disabled without making changes.
 
 .EXAMPLE
-    .\Find-InactiveADComputers.ps1 -SearchBase "OU=Workstations,DC=domain,DC=com" -OperatingSystem "Windows 10*"
-    Finds inactive Windows 10 computers in specific OU.
+    PS C:\> .\Find-InactiveADComputers.ps1 -SearchBase "OU=Workstations,DC=contoso,DC=com" \
+        -OperatingSystem "Windows 10*"
+    Finds inactive Windows 10 computers in a specific organizational unit.
 
 .NOTES
-    Requires Active Directory PowerShell module
-    Requires appropriate AD permissions (modify if using -DisableInactive)
-    Compatible with Windows Server 2016, 2019, and 2022
-    LastLogonTimestamp may be up to 14 days behind actual logon
+    File Name     : Find-InactiveADComputers.ps1
+    Author        : Bug-Free Umbrella
+    Prerequisite  : PowerShell 5.1+
+    Version       : 1.0.0
+    Date          : 2026-08-23
+    Requires      : ActiveDirectory PowerShell module and appropriate AD permissions (modify if using -DisableInactive)
+    Compatibility : Windows Server 2016, 2019, and 2022
 #>
 
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
+# Note: these script parameters are consumed by nested functions through PowerShell dynamic
+# scoping, which PSScriptAnalyzer cannot see; PSReviewUnusedParameter is a false positive here.
     [Parameter(Mandatory = $false)]
+    [ValidateRange(1, [int]::MaxValue)]
     [int]$InactiveDays = 90,
 
     [Parameter(Mandatory = $false)]
+    [ValidateNotNullOrEmpty()]
     [string]$SearchBase,
 
     [Parameter(Mandatory = $false)]
     [switch]$IncludeDisabled,
 
     [Parameter(Mandatory = $false)]
+    [ValidateNotNullOrEmpty()]
     [string]$OperatingSystem,
 
     [Parameter(Mandatory = $false)]
@@ -83,39 +92,20 @@ param(
     [switch]$ExportCSV
 )
 
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-if ([string]::IsNullOrWhiteSpace($ReportDir) -or
-    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
-    $ReportDir -match '^(\\\\|//)') {
-    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
-    exit 1
-}
-$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
+$ErrorActionPreference = 'Stop'
 
-#Requires -Modules ActiveDirectory
-
-$script:report = @{
-    Domain = $null
-    ScanTime = Get-Date
-    InactiveDays = $InactiveDays
-    SearchBase = $SearchBase
-    InactiveComputers = @()
-    Summary = @{
-        TotalInactive = 0
-        Enabled = 0
-        Disabled = 0
-        Servers = 0
-        Workstations = 0
-        AccountsDisabled = 0
-    }
-    OperatingSystems = @{}
-}
-
+# Write-Host is intentional: interactive console reporting with the color/prefix convention
+# mandated by RELAUNCH-SPEC §3 (justifies PSAvoidUsingWriteHost).
 function Write-ColorOutput {
-    param([string]$Message, [string]$Level = 'Info')
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Message,
+
+        [Parameter(Mandatory = $false)]
+        [ValidateSet('Info', 'Success', 'Warning', 'Error')]
+        [string]$Level = 'Info'
+    )
 
     $color = switch ($Level) {
         'Warning' { 'Yellow' }
@@ -128,28 +118,77 @@ function Write-ColorOutput {
 }
 
 function Test-ADModule {
+    [CmdletBinding()]
+    param()
+
     try {
         Import-Module ActiveDirectory -ErrorAction Stop
         return $true
     }
     catch {
-        Write-ColorOutput "ERROR: Active Directory PowerShell module not available" -Level Error
-        Write-ColorOutput "Install RSAT tools or run from a Domain Controller" -Level Error
+        Write-ColorOutput "[-] ERROR: Active Directory PowerShell module not available" -Level Error
+        Write-ColorOutput "[-] Install RSAT tools or run from a Domain Controller" -Level Error
         return $false
     }
 }
 
-function Find-InactiveComputers {
-    Write-Host "`nSearching for inactive computer accounts..." -ForegroundColor Cyan
+function Initialize-Report {
+    [CmdletBinding()]
+    param()
+
+    $script:report = @{
+        Domain = $null
+        ScanTime = Get-Date
+        InactiveDays = $InactiveDays
+        SearchBase = $SearchBase
+        InactiveComputers = @()
+        Summary = @{
+            TotalInactive = 0
+            Enabled = 0
+            Disabled = 0
+            Servers = 0
+            Workstations = 0
+            AccountsDisabled = 0
+        }
+        OperatingSystems = @{}
+    }
+}
+
+function Resolve-ReportDir {
+    [CmdletBinding()]
+    param()
+
+    # Fall back to a temp base on hosts where MyDocuments is not resolvable (e.g. Linux CI).
+    $docs = [Environment]::GetFolderPath('MyDocuments')
+    $base = if (-not [string]::IsNullOrWhiteSpace($docs)) { $docs } else { [System.IO.Path]::GetTempPath() }
+    $dir = Join-Path $base 'Reports'
+    if ([string]::IsNullOrWhiteSpace($dir) -or
+        $dir -match '(^|[\\/])\.\.([\\/]|$)' -or
+        $dir -match '^(\\\\|//)') {
+        throw "Unsafe report path: $dir. Report path must be a local absolute path without '..' traversal."
+    }
+    $fullPath = [System.IO.Path]::GetFullPath($dir)
+    if (-not (Test-Path -LiteralPath $fullPath -PathType Container)) {
+        New-Item -ItemType Directory -Path $fullPath -Force -ErrorAction Stop | Out-Null
+    }
+    return $fullPath
+}
+
+function Find-InactiveComputer {
+    [CmdletBinding()]
+    param()
+
+    Write-ColorOutput "[*] Searching for inactive computer accounts..." -Level Info
 
     try {
-        $domain = Get-ADDomain
+        $domain = Get-ADDomain -ErrorAction Stop
         $script:report.Domain = $domain.DNSRoot
         Write-Host "  Domain: $($domain.DNSRoot)" -ForegroundColor Gray
 
         # Calculate cutoff date
         $cutoffDate = (Get-Date).AddDays(-$InactiveDays)
-        Write-Host "  Inactivity threshold: $InactiveDays days (before $($cutoffDate.ToString('yyyy-MM-dd')))" -ForegroundColor Gray
+        $thresholdText = $cutoffDate.ToString('yyyy-MM-dd')
+        Write-Host "  Inactivity threshold: $InactiveDays days (before $thresholdText)" -ForegroundColor Gray
 
         # Build filter
         $filter = "LastLogonTimeStamp -lt '$cutoffDate' -or LastLogonTimeStamp -notlike '*'"
@@ -166,8 +205,8 @@ function Find-InactiveComputers {
         $searchParams = @{
             Filter = $filter
             Properties = 'Name', 'DNSHostName', 'OperatingSystem', 'OperatingSystemVersion',
-            'LastLogonTimeStamp', 'PasswordLastSet', 'Enabled', 'Description',
-            'Created', 'Modified', 'DistinguishedName'
+                'LastLogonTimeStamp', 'PasswordLastSet', 'Enabled', 'Description',
+                'Created', 'Modified', 'DistinguishedName'
         }
 
         if ($SearchBase) {
@@ -176,9 +215,9 @@ function Find-InactiveComputers {
         }
 
         # Search for computers
-        $computers = Get-ADComputer @searchParams
+        $computers = Get-ADComputer @searchParams -ErrorAction Stop
 
-        Write-ColorOutput "  Found $($computers.Count) inactive computer account(s)" -Level Info
+        Write-ColorOutput "  [*] Found $($computers.Count) inactive computer account(s)" -Level Info
 
         foreach ($computer in $computers) {
             # Convert LastLogonTimestamp
@@ -222,13 +261,11 @@ function Find-InactiveComputers {
             }
 
             # Categorize by OS
-            $osType = if ($computer.OperatingSystem -like "*Server*") {
+            if ($computer.OperatingSystem -like "*Server*") {
                 $script:report.Summary.Servers++
-                "Server"
             }
             else {
                 $script:report.Summary.Workstations++
-                "Workstation"
             }
 
             # Track OS distribution
@@ -242,34 +279,35 @@ function Find-InactiveComputers {
         }
     }
     catch {
-        Write-ColorOutput "  Error searching for computers: $($_.Exception.Message)" -Level Error
-        return
+        Write-ColorOutput "  [-] Error searching for computers: $($_.Exception.Message)" -Level Error
+        throw
     }
 }
 
-function Disable-InactiveComputerAccounts {
+function Disable-InactiveComputerAccount {
     [CmdletBinding(SupportsShouldProcess)]
     param()
-    Write-Host "`nDisabling inactive computer accounts..." -ForegroundColor Yellow
 
-    $toDisable = $script:report.InactiveComputers | Where-Object { $_.Enabled -eq $true }
+    Write-ColorOutput "[!] Disabling inactive computer accounts..." -Level Warning
+
+    $toDisable = @($script:report.InactiveComputers | Where-Object { $_.Enabled -eq $true })
 
     if ($toDisable.Count -eq 0) {
-        Write-Host "  No enabled inactive accounts to disable" -ForegroundColor Gray
+        Write-Host "  [+] No enabled inactive accounts to disable" -ForegroundColor Gray
         return
     }
 
-    Write-ColorOutput "  $($toDisable.Count) account(s) will be disabled" -Level Warning
+    Write-ColorOutput "  [!] $($toDisable.Count) account(s) will be disabled" -Level Warning
 
     foreach ($computer in $toDisable) {
         if ($PSCmdlet.ShouldProcess($computer.Name, "Disable computer account")) {
             try {
                 Disable-ADAccount -Identity $computer.DistinguishedName -ErrorAction Stop
                 $script:report.Summary.AccountsDisabled++
-                Write-ColorOutput "    [OK] Disabled: $($computer.Name)" -Level Success
+                Write-ColorOutput "    [+] Disabled: $($computer.Name)" -Level Success
             }
             catch {
-                Write-ColorOutput "    [FAIL] Could not disable $($computer.Name): $($_.Exception.Message)" -Level Error
+                Write-ColorOutput "    [-] Could not disable $($computer.Name): $($_.Exception.Message)" -Level Error
             }
         }
         else {
@@ -278,14 +316,17 @@ function Disable-InactiveComputerAccounts {
     }
 
     if (-not $WhatIfPreference) {
-        Write-ColorOutput "`n  Disabled $($script:report.Summary.AccountsDisabled) account(s)" -Level Success
+        Write-ColorOutput "`n  [+] Disabled $($script:report.Summary.AccountsDisabled) account(s)" -Level Success
     }
 }
 
 function Show-Summary {
-    Write-Host "`n========================================" -ForegroundColor Cyan
-    Write-Host "  Inactive Computer Accounts Report" -ForegroundColor Cyan
-    Write-Host "========================================" -ForegroundColor Cyan
+    [CmdletBinding()]
+    param()
+
+    Write-Host "`n[*] ========================================" -ForegroundColor Cyan
+    Write-Host "[*]   Inactive Computer Accounts Report" -ForegroundColor Cyan
+    Write-Host "[*] ========================================" -ForegroundColor Cyan
     Write-Host "Domain: $($script:report.Domain)"
     Write-Host "Scan Time: $($script:report.ScanTime)"
     Write-Host "Inactivity Threshold: $($script:report.InactiveDays) days"
@@ -302,7 +343,7 @@ function Show-Summary {
     Write-Host "  Workstations: $($script:report.Summary.Workstations)"
 
     if ($script:report.Summary.AccountsDisabled -gt 0) {
-        Write-ColorOutput "  Accounts Disabled: $($script:report.Summary.AccountsDisabled)" -Level Success
+        Write-ColorOutput "  [+] Accounts Disabled: $($script:report.Summary.AccountsDisabled)" -Level Success
     }
 
     Write-Host "`nTop Inactive Computers:" -ForegroundColor Cyan
@@ -321,11 +362,14 @@ function Show-Summary {
             }
     }
 
-    Write-Host "`n========================================`n" -ForegroundColor Cyan
+    Write-Host "`n[*] ========================================`n" -ForegroundColor Cyan
 }
 
 function Export-HTMLReport {
-    $reportPath = "$ReportDir\InactiveComputers_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
+    [CmdletBinding()]
+    param()
+
+    $reportPath = Join-Path $script:ReportDir "InactiveComputers_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
 
     $html = @"
 <!DOCTYPE html>
@@ -333,23 +377,92 @@ function Export-HTMLReport {
 <head>
     <title>Inactive Computer Accounts Report</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .container { max-width: 1800px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        h1 { color: #333; border-bottom: 3px solid #007bff; padding-bottom: 10px; }
-        h2 { color: #555; margin-top: 30px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin: 20px 0; }
-        .metric { background-color: #f8f9fa; padding: 20px; border-radius: 4px; border-left: 4px solid #007bff; text-align: center; }
-        .metric.warning { border-left-color: #ffc107; }
-        .metric-value { font-size: 2em; font-weight: bold; color: #007bff; }
-        .metric.warning .metric-value { color: #ffc107; }
-        table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.85em; }
-        th { background-color: #007bff; color: white; padding: 10px; text-align: left; position: sticky; top: 0; }
-        td { padding: 8px; border-bottom: 1px solid #ddd; }
-        tr:hover { background-color: #f1f1f1; }
-        .enabled { color: #ffc107; font-weight: bold; }
-        .disabled { color: #6c757d; }
-        .very-old { background-color: #fff3cd; }
-        .footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #777; font-size: 0.9em; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .metric {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+            text-align: center;
+        }
+        .metric.warning {
+            border-left-color: #ffc107;
+        }
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .metric.warning .metric-value {
+            color: #ffc107;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.85em;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            position: sticky;
+            top: 0;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .enabled {
+            color: #ffc107;
+            font-weight: bold;
+        }
+        .disabled {
+            color: #6c757d;
+        }
+        .very-old {
+            background-color: #fff3cd;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #777;
+            font-size: 0.9em;
+        }
     </style>
 </head>
 <body>
@@ -383,15 +496,16 @@ function Export-HTMLReport {
                 <div>Workstations</div>
             </div>
             $(if($script:report.Summary.AccountsDisabled -gt 0) {
-                "<div class='metric'><div class='metric-value'>$($script:report.Summary.AccountsDisabled)</div><div>Accounts Disabled</div></div>"
+                "<div class='metric'><div class='metric-value'>$($script:report.Summary.AccountsDisabled)</div>" +
+                "<div>Accounts Disabled</div></div>"
             })
         </div>
 
         <h2>Operating System Distribution</h2>
         <table>
             <tr><th>Operating System</th><th>Count</th></tr>
-            $(foreach($os in ($script:report.OperatingSystems.GetEnumerator() | Sort-Object Value -Descending)) {
-                "<tr><td>$($os.Key)</td><td>$($os.Value)</td></tr>"
+            $(foreach($osEntry in ($script:report.OperatingSystems.GetEnumerator() | Sort-Object Value -Descending)) {
+                "<tr><td>$($osEntry.Key)</td><td>$($osEntry.Value)</td></tr>"
             })
         </table>
 
@@ -411,7 +525,12 @@ function Export-HTMLReport {
                 $enabledClass = if($computer.Enabled) { 'enabled' } else { 'disabled' }
                 $enabledText = if($computer.Enabled) { 'Enabled' } else { 'Disabled' }
                 $rowClass = if($computer.InactiveDays -gt 365) { 'very-old' } else { '' }
-                $lastLogonText = if($computer.LastLogon) { $computer.LastLogon.ToString('yyyy-MM-dd') } else { 'Never' }
+                $lastLogonText = if($computer.LastLogon) {
+                    $computer.LastLogon.ToString('yyyy-MM-dd')
+                }
+                else {
+                    'Never'
+                }
 
                 "<tr class='$rowClass'>
                     <td>$($computer.Name)</td>
@@ -434,42 +553,63 @@ function Export-HTMLReport {
 </html>
 "@
 
-    $html | Out-File -FilePath $reportPath -Encoding UTF8
-    Write-ColorOutput "`nHTML report exported to: $reportPath" -Level Success
+    $html | Out-File -FilePath $reportPath -Encoding UTF8 -ErrorAction Stop
+    Write-ColorOutput "`n[+] HTML report exported to: $reportPath" -Level Success
     return $reportPath
 }
 
 function Export-CSVReport {
-    $reportPath = "$ReportDir\InactiveComputers_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+    [CmdletBinding()]
+    param()
 
-    $script:report.InactiveComputers | Export-Csv -Path $reportPath -NoTypeInformation -Encoding UTF8
-    Write-ColorOutput "CSV report exported to: $reportPath" -Level Success
+    $reportPath = Join-Path $script:ReportDir "InactiveComputers_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+
+    $script:report.InactiveComputers |
+        Export-Csv -Path $reportPath -NoTypeInformation -Encoding UTF8 -ErrorAction Stop
+    Write-ColorOutput "[+] CSV report exported to: $reportPath" -Level Success
     return $reportPath
 }
 
-# Main execution
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "  Inactive Computer Accounts Finder" -ForegroundColor Cyan
-Write-Host "========================================`n" -ForegroundColor Cyan
+function Main {
+    try {
+        Write-Host "`n[*] ========================================" -ForegroundColor Cyan
+        Write-Host "[*]   Inactive Computer Accounts Finder" -ForegroundColor Cyan
+        Write-Host "[*] ========================================`n" -ForegroundColor Cyan
 
-if (-not (Test-ADModule)) {
-    exit 1
+        $script:ReportDir = Resolve-ReportDir
+
+        if (-not (Test-ADModule)) {
+            return 1
+        }
+
+        Initialize-Report
+
+        Find-InactiveComputer
+
+        if ($DisableInactive) {
+            Disable-InactiveComputerAccount
+        }
+
+        Show-Summary
+
+        if ($ExportHTML) {
+            Write-Host "[*] Generating HTML report..." -ForegroundColor Cyan
+            $null = Export-HTMLReport
+        }
+
+        if ($ExportCSV) {
+            Write-Host "[*] Generating CSV report..." -ForegroundColor Cyan
+            $null = Export-CSVReport
+        }
+
+        Write-Host "[+] Inactive computer account scan completed successfully" -ForegroundColor Green
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-Find-InactiveComputers
-
-if ($DisableInactive) {
-    Disable-InactiveComputerAccounts
-}
-
-Show-Summary
-
-if ($ExportHTML) {
-    Write-Host "Generating HTML report..." -ForegroundColor Cyan
-    Export-HTMLReport
-}
-
-if ($ExportCSV) {
-    Write-Host "Generating CSV report..." -ForegroundColor Cyan
-    Export-CSVReport
-}
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

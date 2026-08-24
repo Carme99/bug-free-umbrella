@@ -6,7 +6,8 @@ PSReadlineHistory.txt
 # Credentials and Secrets
 *.cred
 *.credential
-*.xml  # PowerShell credential files
+# Generated test/report outputs (xml) + credential formats below
+*.xml
 *.secure
 *.pfx
 *.cer
@@ -41,9 +42,11 @@ app_packages/
 logs/
 output/
 reports/
-*.html  # Generated reports
-*.csv   # Generated CSV exports
-!*template*.html  # Keep template files
+*.html
+# Generated CSV exports
+*.csv
+#! Keep template html files:
+!*\[tT\]emplate*.html
 !*example*.csv
 
 # Test Results
@@ -52,6 +55,11 @@ TestResults/
 *.coverage
 coverage/
 test-results/
+# Test result artifacts (never track these; CI uploads them as workflow artifacts)
+testResults.xml
+Tests/TestResults.xml
+Tests/CodeCoverage.xml
+LenovoUpdateErrors_*.csv
 
 # Build and Temporary Files
 bin/

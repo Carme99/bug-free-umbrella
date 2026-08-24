@@ -1,73 +1,104 @@
-<#
+﻿<#
 .SYNOPSIS
-    Remediate the keyboard layout to UK English
+    Remediate the user keyboard layout to UK English.
 
 .DESCRIPTION
-    Adds the en-GB language when missing, sets the UK (00000809) and UK Extended (00000452) input method tips, moves en-GB to the first position in the user language list and applies it so UK English becomes the primary keyboard layout.
+    Ensures the en-GB language is present in the user language list, sets the UK
+    standard (0809:00000809) and UK Extended (0809:00000452) input method tips,
+    and moves en-GB to the first position so UK English becomes the primary
+    keyboard layout. The script persists its changes via Set-WinUserLanguageList;
+    every persisted mutation is gated behind -WhatIf/-Confirm via
+    SupportsShouldProcess. Re-running against an already-converged profile makes
+    no changes and still exits 0 (idempotent). The user may need to sign out for
+    the new layout to fully apply.
 
 .EXAMPLE
-    ./remediate.ps1
+    PS C:\> .\Invoke-RemediationKeyboardLayout.ps1
+
+    Applies the UK English keyboard layout as the primary user layout.
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationKeyboardLayout.ps1 -WhatIf
+
+    Shows which language-list changes would be applied without changing anything.
 
 .NOTES
-    File Name  : remediate.ps1
+    File Name  : Invoke-RemediationKeyboardLayout.ps1
     Author     : Intune / Proactive Remediations
-    Prerequisite: PowerShell 5.1 or later, run in the Intune Proactive Remediation context
+    Prerequisite: PowerShell 7.0
     Version    : 1.0.0
-    Date       : 2026-08-08
+    Date       : 2026-08-23
+
+    Keyboard layout identifiers (Microsoft keyboard reference):
+      00000809 = United Kingdom (standard) https://learn.microsoft.com/en-us/globalization/keyboards/kbduk
+      00000452 = United Kingdom Extended   https://learn.microsoft.com/en-us/globalization/keyboards/kbdukx
 #>
 
-# Remediate keyboard layout to UK English
-# Exit 0 if successful, Exit 1 if failed
-#
-# Keyboard layout identifiers (Microsoft keyboard reference):
-#   00000809 = United Kingdom (standard)   https://learn.microsoft.com/en-us/globalization/keyboards/kbduk
-#   00000452 = United Kingdom Extended     https://learn.microsoft.com/en-us/globalization/keyboards/kbdukx
+[CmdletBinding(SupportsShouldProcess)]
+param()
 
 $ErrorActionPreference = 'Stop'
 
-try {
-    # Get current language list
-    $languageList = Get-WinUserLanguageList
+function Main {
+    # Advanced function so $PSCmdlet (and thus ShouldProcess) resolves inside Main.
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
 
-    # Check if en-GB exists
-    $ukLanguage = $languageList | Where-Object { $_.LanguageTag -eq 'en-GB' }
+    try {
+        Write-Host "[*] Remediating keyboard layout to UK English..." -ForegroundColor Cyan
 
-    if (-not $ukLanguage) {
-        # Add en-GB if it doesn't exist
-        Write-Host "Adding en-GB language..."
-        $languageList.Add("en-GB")
-        Set-WinUserLanguageList -LanguageList $languageList -Force
+        # Required input method tips (Microsoft keyboard reference):
+        #   0809:00000809 = United Kingdom (standard)
+        #   0809:00000452 = United Kingdom Extended
+        $requiredTips = @('0809:00000809', '0809:00000452')
 
-        # Refresh the list
-        $languageList = Get-WinUserLanguageList
-        $ukLanguage = $languageList | Where-Object { $_.LanguageTag -eq 'en-GB' }
-    }
+        $languageList = @(Get-WinUserLanguageList -ErrorAction Stop)
+        $ukLanguage = $languageList |
+            Where-Object { $_.LanguageTag -eq 'en-GB' } |
+            Select-Object -First 1
 
-    # Ensure UK keyboard layouts are set:
-    #   0809:00000809 = United Kingdom (standard) - kept as the standard-UK path
-    #   0809:00000452 = United Kingdom Extended
-    $ukLanguage.InputMethodTips.Clear()
-    $ukLanguage.InputMethodTips.Add('0809:00000809')  # UK (standard) keyboard
-    $ukLanguage.InputMethodTips.Add('0809:00000452')  # UK Extended keyboard
-
-    # Move en-GB to the first position
-    $newLanguageList = New-Object System.Collections.Generic.List[Microsoft.InternationalSettings.Commands.WinUserLanguage]
-    $newLanguageList.Add($ukLanguage)
-
-    # Add other languages
-    foreach ($lang in $languageList) {
-        if ($lang.LanguageTag -ne 'en-GB') {
-            $newLanguageList.Add($lang)
+        # Converged profile: en-GB sits first and carries exactly the required tips.
+        $isConverged = $false
+        if ($ukLanguage -and $languageList.Count -gt 0) {
+            $tipsMatched = @(Compare-Object -ReferenceObject $requiredTips -DifferenceObject @($ukLanguage.InputMethodTips)).Count -eq 0
+            $isConverged = ($languageList[0].LanguageTag -eq 'en-GB') -and $tipsMatched
         }
+
+        if ($isConverged) {
+            Write-Host "[+] Already configured: UK English is the primary keyboard layout" -ForegroundColor Green
+            return 0
+        }
+
+        if (-not $ukLanguage) {
+            Write-Host "[*] Adding en-GB language..." -ForegroundColor Cyan
+            $ukLanguage = (New-WinUserLanguageList -Language 'en-GB' -ErrorAction Stop)[0]
+        }
+        else {
+            $ukLanguage.InputMethodTips.Clear()
+        }
+        foreach ($tip in $requiredTips) {
+            $ukLanguage.InputMethodTips.Add($tip)
+        }
+
+        # Rebuild the list with en-GB first, preserving every remaining language.
+        $newLanguageList = @($ukLanguage)
+        foreach ($lang in $languageList) {
+            if ($lang.LanguageTag -ne 'en-GB') {
+                $newLanguageList += $lang
+            }
+        }
+
+        if ($PSCmdlet.ShouldProcess('user language list', 'Set en-GB as the primary UK keyboard layout')) {
+            Set-WinUserLanguageList -LanguageList $newLanguageList -Force -ErrorAction Stop
+            Write-Host "[+] UK keyboard layout set as primary. User may need to sign out for changes to fully apply." -ForegroundColor Green
+        }
+        return 0
     }
-
-    # Apply the new language list
-    Set-WinUserLanguageList -LanguageList $newLanguageList -Force
-
-    Write-Host "UK keyboard layout set as primary. User may need to sign out for changes to fully apply."
-    exit 0
+    catch {
+        Write-Host "[-] Error setting keyboard layout: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
-catch {
-    Write-Host "Error setting keyboard layout: $($_.Exception.Message)"
-    exit 1
-}
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

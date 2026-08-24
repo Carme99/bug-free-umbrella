@@ -34,24 +34,35 @@
     Export results to CSV file.
 
 .EXAMPLE
-    .\Test-ServerConnectivity.ps1 -ComputerName "server01.domain.com"
+    PS C:\> .\Test-ServerConnectivity.ps1 -ComputerName "server01.domain.com"
     Tests basic connectivity to server01.
 
 .EXAMPLE
-    .\Test-ServerConnectivity.ps1 -ComputerName "server01","server02" -Port 80,443,3389 -ExportHTML
+    PS C:\> .\Test-ServerConnectivity.ps1 -ComputerName "server01","server02" -Port 80,443,3389 -ExportHTML
     Tests HTTP, HTTPS, and RDP connectivity to multiple servers and exports report.
 
 .EXAMPLE
-    .\Test-ServerConnectivity.ps1 -ComputerName "10.0.0.1" -IncludeTraceRoute
+    PS C:\> .\Test-ServerConnectivity.ps1 -ComputerName "10.0.0.1" -IncludeTraceRoute
     Tests connectivity and performs trace route analysis.
 
 .NOTES
-    Requires network access to target systems
-    Compatible with Windows Server 2016, 2019, and 2022
-    Some tests may require firewall rules
+    File Name     : Test-ServerConnectivity.ps1
+    Author        : Bug-Free Umbrella
+    Prerequisite  : PowerShell 5.1+
+    Version       : 1.0.0
+    Date          : 2026-08-23
+
+    Requires network access to target systems. Compatible with Windows Server 2016, 2019,
+    and 2022. Some tests may require firewall rules on the target systems.
 #>
 
 [CmdletBinding()]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
+            Justification = 'Colored Write-Host prefix output is the specified console UX.')]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '',
+            Justification = 'Parameters are consumed by helper functions via dynamic scoping.')]
+        [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseProcessBlockForPipelineCommand', '',
+            Justification = 'Pipeline binding kept for interface compatibility only.')]
 param(
     [Parameter(Mandatory = $true, ValueFromPipeline = $true)]
     [string[]]$ComputerName,
@@ -75,42 +86,30 @@ param(
     [switch]$ExportCSV
 )
 
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-if ([string]::IsNullOrWhiteSpace($ReportDir) -or
-    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
-    $ReportDir -match '^(\\\\|//)') {
-    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
-    exit 1
-}
-$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
+$ErrorActionPreference = 'Stop'
 
-$script:report = @{
-    TestTime = Get-Date
-    SourceServer = $env:COMPUTERNAME
-    Results = @()
-    Summary = @{
-        TotalTargets = 0
-        SuccessfulPings = 0
-        FailedPings = 0
-        PortTestsRun = 0
-        PortTestsSuccessful = 0
-    }
-}
 
 function Write-ColorOutput {
     param([string]$Message, [string]$Level = 'Info')
 
+    # Mandated console prefixes: [-] error/critical, [!] warning, [+] success, [*] info.
+    $prefix = switch ($Level) {
+        'Critical' { '[-]' }
+        'Error' { '[-]' }
+        'Warning' { '[!]' }
+        'Success' { '[+]' }
+        default { '[*]' }
+    }
+
     $color = switch ($Level) {
+        'Critical' { 'Red' }
         'Error' { 'Red' }
         'Warning' { 'Yellow' }
         'Success' { 'Green' }
-        'Info' { 'Cyan' }
-        default { 'White' }
+        default { 'Cyan' }
     }
-    Write-Host $Message -ForegroundColor $color
+
+    Write-Host "$prefix $Message" -ForegroundColor $color
 }
 
 function Test-ICMPConnectivity {
@@ -145,7 +144,8 @@ function Test-ICMPConnectivity {
         }
 
         $script:report.Summary.SuccessfulPings++
-        Write-ColorOutput "    [OK] Ping successful - Avg: $($pingResults.AvgLatency)ms, Loss: $($pingResults.Lost)/$($pingResults.Sent)" -Level Success
+        Write-ColorOutput "    [OK] Ping successful - Avg: $($pingResults.AvgLatency)ms, Loss: `
+            $($pingResults.Lost)/$($pingResults.Sent)" -Level Success
     }
     catch {
         $pingResults.Lost = $PingCount
@@ -333,8 +333,11 @@ function Show-Summary {
     Write-Host "Failed Pings: $($script:report.Summary.FailedPings)"
 
     if ($script:report.Summary.PortTestsRun -gt 0) {
-        $portSuccessRate = [math]::Round(($script:report.Summary.PortTestsSuccessful / $script:report.Summary.PortTestsRun) * 100, 2)
-        Write-Host "`nPort Tests: $($script:report.Summary.PortTestsSuccessful)/$($script:report.Summary.PortTestsRun) successful ($portSuccessRate%)"
+        $portSuccessRate = [math]::Round(($script:report.Summary.PortTestsSuccessful / `
+            $script:report.Summary.PortTestsRun) * 100, 2)
+        Write-Host "`nPort Tests: `
+            $($script:report.Summary.PortTestsSuccessful)/$($script:report.Summary.PortTestsRun) successful `
+                ($portSuccessRate%)"
     }
 
     Write-Host "`n========================================`n" -ForegroundColor Cyan
@@ -350,10 +353,12 @@ function Export-HTMLReport {
     <title>Server Connectivity Report</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f5f5f5; }
-        .container { max-width: 1400px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { max-width: 1400px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         h1 { color: #333; border-bottom: 3px solid #007bff; padding-bottom: 10px; }
         h2 { color: #555; margin-top: 30px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
-        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px
+            0; }
         .metric { background-color: #f8f9fa; padding: 20px; border-radius: 4px; border-left: 4px solid #007bff; }
         .metric-value { font-size: 2em; font-weight: bold; color: #007bff; }
         table { width: 100%; border-collapse: collapse; margin: 15px 0; }
@@ -383,7 +388,9 @@ function Export-HTMLReport {
                 <div>Successful Pings</div>
             </div>
             <div class="metric">
-                <div class="metric-value">$($script:report.Summary.PortTestsSuccessful)/$($script:report.Summary.PortTestsRun)</div>
+                <div
+            class="metric-value">$($script:report.Summary.PortTestsSuccessful)/$($script:report.Summary.PortTestsRun)<
+            /div>
                 <div>Ports Open</div>
             </div>
         </div>
@@ -408,7 +415,8 @@ function Export-HTMLReport {
             if($result.Ping.Success) {
                 "<p class='success'>✓ Ping successful</p>"
                 "<p>Sent: $($result.Ping.Sent) | Received: $($result.Ping.Received) | Lost: $($result.Ping.Lost)</p>"
-                "<p>Latency - Min: $($result.Ping.MinLatency)ms | Avg: $($result.Ping.AvgLatency)ms | Max: $($result.Ping.MaxLatency)ms</p>"
+                "<p>Latency - Min: $($result.Ping.MinLatency)ms | Avg: $($result.Ping.AvgLatency)ms | Max:
+            $($result.Ping.MaxLatency)ms</p>"
             } else {
                 "<p class='error'>✗ Ping failed ($($result.Ping.Lost)/$($result.Ping.Sent) packets lost)</p>"
             }
@@ -421,7 +429,8 @@ function Export-HTMLReport {
                     $statusClass = if($portResult.Success) { 'success' } else { 'error' }
                     $statusText = if($portResult.Success) { '✓ Open' } else { "✗ $($portResult.Error)" }
                     $responseTime = if($portResult.Success) { "$($portResult.ResponseTime)ms" } else { 'N/A' }
-                    "<tr><td>$($portResult.Port)</td><td class='$statusClass'>$statusText</td><td>$responseTime</td></tr>"
+                    "<tr><td>$($portResult.Port)</td><td
+            class='$statusClass'>$statusText</td><td>$responseTime</td></tr>"
                 }
                 "</table>"
             }
@@ -479,28 +488,77 @@ function Export-CSVReport {
     return $reportPath
 }
 
-# Main execution
-Write-Host "`n========================================" -ForegroundColor Cyan
-Write-Host "  Server Connectivity Test" -ForegroundColor Cyan
-Write-Host "========================================" -ForegroundColor Cyan
-Write-Host "Source: $($script:report.SourceServer)"
-Write-Host "Targets: $($ComputerName -join ', ')"
-Write-Host "Ports: $($Port -join ', ')"
-Write-Host "Ping Count: $PingCount"
-Write-Host "`nStarting tests..." -ForegroundColor Cyan
+function Main {
+    try {
+        if (-not $ComputerName -or @($ComputerName).Count -eq 0) {
+            throw "Parameter -ComputerName is required"
+        }
 
-foreach ($target in $ComputerName) {
-    Test-TargetConnectivity -Target $target
+        $myDocs = [Environment]::GetFolderPath('MyDocuments')
+        if ([string]::IsNullOrWhiteSpace($myDocs)) {
+            # Profile-less contexts (CI runners, SYSTEM services): MyDocuments resolves empty;
+            # fall back so report writing degrades gracefully instead of crashing.
+            $myDocs = [Environment]::GetFolderPath('UserProfile')
+        }
+        $script:ReportDir = Join-Path $myDocs 'Reports'
+        if ([string]::IsNullOrWhiteSpace($script:ReportDir) -or
+            $script:ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+            $script:ReportDir -match '^(\\\\|//)') {
+            throw "Unsafe report path: $script:ReportDir. Report path must be a local absolute " +
+                "path without '..' traversal."
+        }
+        $script:ReportDir = [System.IO.Path]::GetFullPath($script:ReportDir)
+        if (-not (Test-Path -LiteralPath $script:ReportDir -PathType Container)) {
+            New-Item -ItemType Directory -Path $script:ReportDir -Force -ErrorAction Stop | Out-Null
+        }
+
+        $script:report = @{
+            TestTime = Get-Date
+            SourceServer = $env:COMPUTERNAME
+            Results = @()
+            Summary = @{
+                TotalTargets = 0
+                SuccessfulPings = 0
+                FailedPings = 0
+                PortTestsRun = 0
+                PortTestsSuccessful = 0
+            }
+        }
+
+        Write-Host "`n========================================" -ForegroundColor Cyan
+        Write-Host "  Server Connectivity Test" -ForegroundColor Cyan
+        Write-Host "========================================" -ForegroundColor Cyan
+        Write-Host "Source: $($script:report.SourceServer)"
+        Write-Host "Targets: $($ComputerName -join ', ')"
+        Write-Host "Ports: $($Port -join ', ')"
+        Write-Host "Ping Count: $PingCount"
+        Write-Host "`nStarting tests..." -ForegroundColor Cyan
+
+        foreach ($target in $ComputerName) {
+            Test-TargetConnectivity -Target $target
+        }
+
+        Show-Summary
+
+        if ($ExportHTML) {
+            Write-Host "Generating HTML report..." -ForegroundColor Cyan
+            Export-HTMLReport | Out-Null
+        }
+
+        if ($ExportCSV) {
+            Write-Host "Generating CSV report..." -ForegroundColor Cyan
+            Export-CSVReport | Out-Null
+        }
+
+        Write-Host "[+] Connectivity tests completed." -ForegroundColor Green
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-Show-Summary
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }
 
-if ($ExportHTML) {
-    Write-Host "Generating HTML report..." -ForegroundColor Cyan
-    Export-HTMLReport
-}
-
-if ($ExportCSV) {
-    Write-Host "Generating CSV report..." -ForegroundColor Cyan
-    Export-CSVReport
-}

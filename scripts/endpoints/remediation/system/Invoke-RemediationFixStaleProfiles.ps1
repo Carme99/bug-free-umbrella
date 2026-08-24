@@ -1,75 +1,118 @@
-<#
+﻿<#
 .SYNOPSIS
-    Remove stale user profiles to free disk space
+    Delete user profiles unused beyond the retention threshold.
 
 .DESCRIPTION
-    Removes user profiles that haven't been used within the configured threshold
-    using the documented mechanism: Get-CimInstance Win32_UserProfile with
+    Removes local user profiles whose LastUseTime is older than 120 days using
+    the documented mechanism Get-CimInstance Win32_UserProfile plus
     Remove-CimInstance, which invokes DeleteProfileW semantics and removes BOTH
-    the profile folder and the ProfileList registry entry. Only unloaded
-    profiles (Loaded -eq $false) are ever removed. Uses a more conservative
-    threshold than detection to avoid accidental removal of active profiles.
+    the profile folder and its ProfileList registry entry (plain Remove-Item
+    would orphan the registry entry).
+    Side effects: stale profile folders and their registry entries are
+    permanently deleted. Only unloaded profiles (Loaded -eq $false) are ever
+    removed - loaded profiles are skipped because DeleteProfileW fails on them
+    and deleting their folder would corrupt an active session. Every deletion
+    is gated behind -WhatIf/-Confirm via SupportsShouldProcess.
+    WARNING: this permanently deletes user data; ensure backups exist and the
+    threshold fits the environment. Re-running on a converged system removes
+    nothing and still exits 0 (idempotent).
+    Exit codes: 0 = remediation successful (or nothing to remove), 1 = profile
+    enumeration failed.
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationFixStaleProfiles.ps1
+
+    Deletes every unloaded profile unused for more than 120 days.
+
+.EXAMPLE
+    PS C:\> .\Invoke-RemediationFixStaleProfiles.ps1 -WhatIf
+
+    Shows which stale profiles would be deleted without deleting anything.
 
 .NOTES
-    For Intune Proactive Remediations
-    Exit 0 = Remediation completed successfully
-
-    Default Threshold: 120 days since last use (more conservative than detect)
-    Loaded profiles are NEVER removed (DeleteProfileW fails on loaded profiles
-    and deleting their folder would corrupt the session).
-
-    WARNING: This permanently deletes user profile data. Ensure proper backups
-    exist and threshold is set appropriately for your environment.
+    File Name  : Invoke-RemediationFixStaleProfiles.ps1
+    Author     : Intune / Proactive Remediations
+    Prerequisite: PowerShell 7.0
+    Version    : 1.0.0
+    Date       : 2026-08-23
 #>
 
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess)]
 param()
 
-# Configuration
-$PROFILE_REMOVAL_AGE_DAYS = 120  # More conservative than detection threshold
+$ErrorActionPreference = 'Stop'
 
-$removed = @()
+function ConvertFrom-DmtfDateTime {
+    # Converts a WMI/DMTF datetime string (yyyyMMddHHmmss.ffffff[+-]zzz) to DateTime.
+    # Parses the local-time portion only - the timezone offset is irrelevant for
+    # computing profile age in whole days.
+    param([string]$DmtfValue)
 
-$profiles = Get-CimInstance Win32_UserProfile | Where-Object {
-    $_.Special -eq $false -and
-    $_.LocalPath -and
-    $_.LocalPath -notmatch 'systemprofile|defaultuser' -and
-    $_.Loaded -eq $false -and
-    $_.LastUseTime
+    return [DateTime]::ParseExact(
+        $DmtfValue.Substring(0, 14),
+        'yyyyMMddHHmmss',
+        [Globalization.CultureInfo]::InvariantCulture)
 }
 
-foreach ($profile in $profiles) {
-    try {
-        $lastUse = [Management.ManagementDateTimeConverter]::ToDateTime($profile.LastUseTime)
-        $age = ((Get-Date) - $lastUse).Days
-    }
-    catch {
-        # Unparseable LastUseTime - skip this profile
-        continue
-    }
+function Main {
+    # Advanced function so $PSCmdlet (and thus ShouldProcess) resolves inside Main.
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
 
-    if ($age -gt $PROFILE_REMOVAL_AGE_DAYS) {
-        try {
-            $profileName = Split-Path $profile.LocalPath -Leaf
-            $sizeBefore = [math]::Round((Get-ChildItem $profile.LocalPath -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum).Sum / 1GB, 2)
+    # More conservative than the detection threshold to avoid removing active profiles.
+    $removalAgeDays = 120
+
+    try {
+        Write-Host "[*] Removing user profiles unused for more than $removalAgeDays days..." -ForegroundColor Cyan
+
+        $removed = @()
+
+        $staleProfiles = Get-CimInstance -ClassName Win32_UserProfile -ErrorAction Stop | Where-Object {
+            $_.Special -eq $false -and
+            $_.LocalPath -and
+            $_.LocalPath -notmatch 'systemprofile|defaultuser' -and
+            $_.Loaded -eq $false -and
+            $_.LastUseTime
+        }
+
+        foreach ($userProfile in $staleProfiles) {
+            try {
+                $lastUse = ConvertFrom-DmtfDateTime -DmtfValue $userProfile.LastUseTime
+                $ageDays = ((Get-Date) - $lastUse).Days
+            }
+            catch {
+                # Unparseable LastUseTime - skip this profile rather than guessing its age.
+                continue
+            }
+
+            if ($ageDays -le $removalAgeDays) {
+                continue
+            }
+
+            $profileName = Split-Path $userProfile.LocalPath -Leaf
 
             # Documented mechanism: Remove-CimInstance on Win32_UserProfile calls
-            # DeleteProfileW, which removes the profile folder AND its
-            # ProfileList registry key (plain Remove-Item would orphan the
-            # registry entry and can delete loaded profiles).
-            Remove-CimInstance -InputObject $profile -ErrorAction Stop
-            $removed += "$profileName ($sizeBefore GB)"
+            # DeleteProfileW, which removes the profile folder AND its ProfileList
+            # registry key.
+            if ($PSCmdlet.ShouldProcess("$profileName (unused for $ageDays days)", 'Delete stale user profile')) {
+                Remove-CimInstance -InputObject $userProfile -ErrorAction Stop
+                $removed += $profileName
+            }
         }
-        catch {
-            Write-Host "Could not remove $profileName : $($_.Exception.Message)"
+
+        if ($removed.Count -gt 0) {
+            Write-Host "[+] Removed $($removed.Count) stale profile(s): $($removed -join '; ')" -ForegroundColor Green
         }
+        else {
+            Write-Host "[+] Already clean: no profiles unused for more than $removalAgeDays days found" -ForegroundColor Green
+        }
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error removing stale profiles: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
     }
 }
 
-if ($removed.Count -gt 0) {
-    Write-Host "Removed $($removed.Count) stale profile(s): $($removed -join '; ')"
-}
-else {
-    Write-Host "No profiles removed"
-}
-exit 0
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

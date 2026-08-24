@@ -1,15 +1,57 @@
 ﻿<#
 .SYNOPSIS
-    Deprecated shim — forwards to scripts/endpoints/remediation/security/Invoke-RemediationCheckDefenderHealthStatus.ps1.
+    DEPRECATED: use scripts/endpoints/remediation/security
 
 .DESCRIPTION
-    Deprecated wrapper retained for compatibility. Forwards execution to the canonical script at scripts/endpoints/remediation/security/Invoke-RemediationCheckDefenderHealthStatus.ps1. Update Intune assignments to the canonical path. Shim will be removed in 6.0.0.
+    Deprecated compatibility shim retained so existing Intune Proactive Remediation assignments keep working.
+    Forwards execution, arguments, and exit code to the canonical script at scripts/endpoints/remediation/security.
+    Update Intune assignments to the canonical path; this shim will be removed in version 6.0.0.
+
+.EXAMPLE
+    PS C:\> .\remediate.ps1
+
+    Forwards to the canonical script and exits with its exit code.
+
+.EXAMPLE
+    PS C:\> .\remediate.ps1 -Verbose
+
+    Forwards with the caller verbose preference inherited by the canonical script.
 
 .NOTES
-    Deprecated: moved to scripts/endpoints/remediation/security/Invoke-RemediationCheckDefenderHealthStatus.ps1 — shim will be removed in 6.0.0.
-    Intune: exit 0 = healthy, exit 1 = needs remediation (preserved via $LASTEXITCODE).
-    Context: runs as SYSTEM in Proactive Remediations — uses Win32_UserProfile / Win32_Battery / Microsoft.WinGet.Client as applicable.
+    File Name  : remediate.ps1
+    Author     : Bug-Free Umbrella
+    Prerequisite: PowerShell 5.1+
+    Version    : 1.0.0
+    Date       : 2026-08-23
+
+    Exit code of the canonical script is preserved (Intune: 0 = healthy/compliant, 1 = needs remediation).
 #>
-Write-Warning 'Deprecated: moved to scripts/endpoints/remediation/security/Invoke-RemediationCheckDefenderHealthStatus.ps1 — shim will be removed in 6.0.0.'
-$null = & "$PSScriptRoot/../../../remediation/security/Invoke-RemediationCheckDefenderHealthStatus.ps1" @args
-exit $LASTEXITCODE
+
+[CmdletBinding()]
+param()
+
+# PSScriptAnalyzer: Write-Host with prefix/color output is mandated by docs/RELAUNCH-SPEC.md section 3.
+
+$ErrorActionPreference = 'Stop'
+
+$canonicalScript = Join-Path $PSScriptRoot '../../../remediation/security'
+$forwardArgs = $args
+
+function Invoke-ForwardedScript {
+# Thin seam around the canonical script invocation so tests can mock forwarding.
+    $null = & $canonicalScript @forwardArgs
+    return $LASTEXITCODE
+}
+
+function Main {
+    try {
+        Write-Warning "Deprecated: moved to $canonicalScript - shim will be removed in 6.0.0."
+        return (Invoke-ForwardedScript)
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
+}
+
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

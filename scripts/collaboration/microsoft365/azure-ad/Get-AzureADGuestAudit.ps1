@@ -1,49 +1,56 @@
 ﻿<#
 .SYNOPSIS
-    Audits Azure AD (Entra ID) guest users for security and compliance.
+    Audit Azure AD (Entra ID) guest users for security and compliance.
 
 .DESCRIPTION
-    This script analyzes guest users for:
-    - Total guest user count and trends
-    - Guest users without recent sign-ins
-    - Guests with administrator roles (security risk)
-    - Guest invitation details
-    - Group memberships and permissions
-    - External domains represented
-    - Guest user creation dates
+    Connects to Microsoft Graph and analyzes every guest user for inactivity, disabled
+    accounts, missing sign-in activity, privileged (administrator) role assignments, external
+    domain representation, and creation dates. Optionally exports the findings to HTML or CSV
+    under the user's Documents\Reports folder. Returns exit code 0 on success; exit code 1 on
+    connection or retrieval failure, and also when -CheckPrivilegedGuests finds at least one
+    guest with an administrator role so remediation pipelines can react to the finding.
 
 .PARAMETER InactivityDays
-    Days since last sign-in to consider guest inactive (default: 90).
+    Days since last sign-in after which a guest is considered inactive (default: 90).
 
 .PARAMETER CheckPrivilegedGuests
-    Identify guest users with administrator roles.
+    Identify guest users with administrator role assignments via unified RBAC.
 
 .PARAMETER GroupByDomain
-    Group guests by their external domain.
+    Group guests by their external domain in the summary output.
 
 .PARAMETER ExportHTML
-    Export results to HTML report.
+    Export results to an HTML report file.
 
 .PARAMETER ExportCSV
-    Export results to CSV file.
+    Export results to a CSV file.
 
 .EXAMPLE
-    .\Get-AzureADGuestAudit.ps1
-    Basic guest user audit.
+    PS C:\> .\Get-AzureADGuestAudit.ps1
+
+    Runs a basic guest user audit against the tenant.
 
 .EXAMPLE
-    .\Get-AzureADGuestAudit.ps1 -CheckPrivilegedGuests -GroupByDomain -ExportHTML
-    Comprehensive guest audit with privilege and domain analysis.
+    PS C:\> .\Get-AzureADGuestAudit.ps1 -CheckPrivilegedGuests -GroupByDomain -ExportHTML
+
+    Runs a comprehensive guest audit with privilege and domain analysis plus an HTML report.
 
 .NOTES
-    Requires Microsoft Graph PowerShell module (Microsoft.Graph.Identity.Governance for the privileged-guest role check)
-    Requires User.Read.All, AuditLog.Read.All permissions
-    Compatible with Azure AD / Entra ID (Microsoft 365)
+    File Name  : Get-AzureADGuestAudit.ps1
+    Author     : Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version    : 1.0.0
+    Date       : 2026-08-23
+
+    Requires Microsoft Graph PowerShell module.
+    Requires User.Read.All, AuditLog.Read.All, Directory.Read.All permissions.
+    Compatible with Azure AD / Entra ID (Microsoft 365).
 #>
 
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
+    [ValidateRange(1, [int]::MaxValue)]
     [int]$InactivityDays = 90,
 
     [Parameter(Mandatory = $false)]
@@ -59,193 +66,224 @@ param(
     [switch]$ExportCSV
 )
 
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-if ([string]::IsNullOrWhiteSpace($ReportDir) -or
-    $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
-    $ReportDir -match '^(\\\\|//)') {
-    Write-Error "Unsafe report path: $ReportDir. Report path must be a local absolute path without '..' traversal."
-    exit 1
-}
-$ReportDir = [System.IO.Path]::GetFullPath($ReportDir)
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
+$ErrorActionPreference = 'Stop'
 
-$ErrorActionPreference = "Stop"
-$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-
-Write-Host "`n=== Azure AD Guest User Audit ===" -ForegroundColor Cyan
-Write-Host "Inactivity Threshold: $InactivityDays days" -ForegroundColor Yellow
-Write-Host "Timestamp: $(Get-Date)" -ForegroundColor Gray
-Write-Host ""
-
-# Connect to Microsoft Graph
-try {
-    Write-Host "[*] Connecting to Microsoft Graph..." -ForegroundColor Cyan
-
-    $scopes = @("User.Read.All", "AuditLog.Read.All", "Directory.Read.All")
-    Connect-MgGraph -Scopes $scopes -NoWelcome
-
-    Write-Host "[+] Connected to Microsoft Graph" -ForegroundColor Green
-}
-catch {
-    Write-Host "[-] Error connecting: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
+# Resolve (and create if needed) the Documents\Reports directory used by export switches.
+function Get-ReportDirectory {
+    $reportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+    if ([string]::IsNullOrWhiteSpace($reportDir) -or
+        $reportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+        $reportDir -match '^(\\\\|//)') {
+        throw "Unsafe report path: $reportDir. Report path must be a local absolute path without '..' traversal."
+    }
+    $fullReportDir = [System.IO.Path]::GetFullPath($reportDir)
+    if (-not (Test-Path -LiteralPath $fullReportDir -PathType Container)) {
+        New-Item -ItemType Directory -Path $fullReportDir -Force -ErrorAction Stop | Out-Null
+    }
+    return $fullReportDir
 }
 
-Write-Host ""
+# Write-Host is intentional throughout: AGENTS.md requires user-facing colored [+] [!] [-] [*] console output.
+function Main {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $false)]
+        [ValidateRange(1, [int]::MaxValue)]
+        [int]$InactivityDays = 90,
 
-# Get guest users
-Write-Host "[*] Retrieving guest users..." -ForegroundColor Cyan
+        [Parameter(Mandatory = $false)]
+        [switch]$CheckPrivilegedGuests,
 
-try {
-    $guestUsers = Get-MgUser -Filter "userType eq 'Guest'" -All -Property DisplayName, UserPrincipalName, Mail, UserType, CreatedDateTime, SignInActivity, AccountEnabled
+        [Parameter(Mandatory = $false)]
+        [switch]$GroupByDomain,
 
-    Write-Host "[+] Found $($guestUsers.Count) guest user(s)" -ForegroundColor Green
-}
-catch {
-    Write-Host "[-] Error retrieving guests: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
-}
+        [Parameter(Mandatory = $false)]
+        [switch]$ExportHTML,
 
-Write-Host ""
+        [Parameter(Mandatory = $false)]
+        [switch]$ExportCSV
+    )
 
-$results = @()
-$inactiveGuests = 0
-$privilegedGuests = 0
-$disabledGuests = 0
-$neverSignedIn = 0
-$inactivityThreshold = (Get-Date).AddDays(-$InactivityDays)
+    try {
+        $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
-$i = 0
-foreach ($guest in $guestUsers) {
-    $i++
-    Write-Progress -Activity "Analyzing Guest Users" -Status "$i of $($guestUsers.Count): $($guest.DisplayName)" -PercentComplete (($i / $guestUsers.Count) * 100)
+        Write-Host "`n=== Azure AD Guest User Audit ===" -ForegroundColor Cyan
+        Write-Host "Inactivity Threshold: $InactivityDays days" -ForegroundColor Yellow
+        Write-Host "Timestamp: $(Get-Date)" -ForegroundColor Gray
+        Write-Host ""
 
-    # Get sign-in activity
-    $lastSignIn = $guest.SignInActivity.LastSignInDateTime
-
-    $isInactive = $false
-    if ($lastSignIn) {
-        if ($lastSignIn -lt $inactivityThreshold) {
-            $isInactive = $true
-            $inactiveGuests++
-        }
-    }
-    else {
-        $isInactive = $true
-        $neverSignedIn++
-    }
-
-    # Check if disabled
-    if (-not $guest.AccountEnabled) {
-        $disabledGuests++
-    }
-
-    # Extract domain
-    $domain = if ($guest.Mail) {
-        $guest.Mail.Split('@')[1]
-    }
-    elseif ($guest.UserPrincipalName) {
-        $upnParts = $guest.UserPrincipalName.Split('#')
-        if ($upnParts.Count -gt 1) {
-            $upnParts[1].Split('_')[0]
-        }
-        else {
-            "Unknown"
-        }
-    }
-    else {
-        "Unknown"
-    }
-
-    # Check for privileged roles
-    $isPrivileged = $false
-    $roles = @()
-    if ($CheckPrivilegedGuests) {
+        # Connect to Microsoft Graph
         try {
-            # Get-MgDirectoryRole (legacy directory roles) is discouraged; use unified RBAC:
-            # role assignments, with role display names resolved from the role definition.
-            $roleAssignments = Get-MgRoleManagementDirectoryRoleAssignment -Filter "principalId eq '$($guest.Id)'" -All -ErrorAction SilentlyContinue
+            Write-Host "[*] Connecting to Microsoft Graph..." -ForegroundColor Cyan
 
-            if ($roleAssignments) {
-                $isPrivileged = $true
-                $privilegedGuests++
-                $roles = $roleAssignments | ForEach-Object {
-                    $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition -UnifiedRoleDefinitionId $_.RoleDefinitionId -ErrorAction SilentlyContinue
-                    if ($roleDefinition) { $roleDefinition.DisplayName }
-                } | Where-Object { $_ }
-            }
+            $scopes = @("User.Read.All", "AuditLog.Read.All", "Directory.Read.All")
+            Connect-MgGraph -Scopes $scopes -NoWelcome -ErrorAction Stop
+
+            Write-Host "[+] Connected to Microsoft Graph" -ForegroundColor Green
         }
         catch {
-            Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
+            Write-Host "[-] Error connecting: $($_.Exception.Message)" -ForegroundColor Red
+            return 1
         }
-    }
 
-    $result = [PSCustomObject]@{
-        DisplayName = $guest.DisplayName
-        UserPrincipalName = $guest.UserPrincipalName
-        Email = $guest.Mail
-        Domain = $domain
-        CreatedDate = $guest.CreatedDateTime
-        LastSignIn = $lastSignIn
-        IsInactive = $isInactive
-        AccountEnabled = $guest.AccountEnabled
-        IsPrivileged = $isPrivileged
-        Roles = $roles -join '; '
-        DaysSinceLastSignIn = if ($lastSignIn) { ((Get-Date) - $lastSignIn).Days } else { "Never" }
-    }
+        Write-Host ""
 
-    $results += $result
-}
+        # Get guest users
+        Write-Host "[*] Retrieving guest users..." -ForegroundColor Cyan
 
-Write-Progress -Activity "Analyzing Guest Users" -Completed
+        try {
+            $guestUsers = @(Get-MgUser -Filter "userType eq 'Guest'" -All `
+                -Property DisplayName, UserPrincipalName, Mail, UserType, CreatedDateTime, `
+                    SignInActivity, AccountEnabled `
+                -ErrorAction Stop)
 
-Write-Host ""
-
-# Summary
-Write-Host "=== Summary ===" -ForegroundColor Cyan
-Write-Host "Total Guest Users: $($results.Count)" -ForegroundColor White
-Write-Host "Inactive Guests (>$InactivityDays days): $inactiveGuests" -ForegroundColor Yellow
-Write-Host "Never Signed In: $neverSignedIn" -ForegroundColor Yellow
-Write-Host "Disabled Accounts: $disabledGuests" -ForegroundColor Gray
-if ($CheckPrivilegedGuests) {
-    Write-Host "Privileged Guests (CRITICAL): $privilegedGuests" -ForegroundColor $(if ($privilegedGuests -gt 0) { "Red" } else { "Green" })
-}
-Write-Host ""
-
-# Domain breakdown
-if ($GroupByDomain) {
-    Write-Host "=== Guests by Domain ===" -ForegroundColor Cyan
-    $results | Group-Object Domain | Sort-Object Count -Descending | Select-Object -First 10 |
-        ForEach-Object {
-            Write-Host "  $($_.Name): $($_.Count) guest(s)" -ForegroundColor White
+            Write-Host "[+] Found $($guestUsers.Count) guest user(s)" -ForegroundColor Green
         }
-    Write-Host ""
-}
+        catch {
+            Write-Host "[-] Error retrieving guests: $($_.Exception.Message)" -ForegroundColor Red
+            return 1
+        }
 
-# Show privileged guests
-if ($CheckPrivilegedGuests -and $privilegedGuests -gt 0) {
-    Write-Host "=== Privileged Guest Users (CRITICAL) ===" -ForegroundColor Red
-    $results | Where-Object { $_.IsPrivileged -eq $true } |
-        Select-Object DisplayName, Email, Roles |
-        Format-Table -AutoSize
-}
+        Write-Host ""
 
-# Show inactive guests
-if ($inactiveGuests -gt 0) {
-    Write-Host "`n=== Top 10 Inactive Guest Users ===" -ForegroundColor Yellow
-    $results | Where-Object { $_.IsInactive -eq $true } |
-        Sort-Object LastSignIn |
-        Select-Object -First 10 DisplayName, Email, LastSignIn, DaysSinceLastSignIn |
-        Format-Table -AutoSize
-}
+        $results = @()
+        $inactiveGuests = 0
+        $privilegedGuests = 0
+        $disabledGuests = 0
+        $neverSignedIn = 0
+        $inactivityThreshold = (Get-Date).AddDays(-$InactivityDays)
 
-# Export
-if ($ExportHTML) {
-    $htmlPath = "$ReportDir\GuestUserAudit_$timestamp.html"
+        $i = 0
+        foreach ($guest in $guestUsers) {
+            $i++
+            $progressStatus = "$i of $($guestUsers.Count): $($guest.DisplayName)"
+            Write-Progress -Activity "Analyzing Guest Users" -Status $progressStatus `
+                -PercentComplete (($i / $guestUsers.Count) * 100)
 
-    $html = @"
+            # Get sign-in activity
+            $lastSignIn = $guest.SignInActivity.LastSignInDateTime
+
+            $isInactive = $false
+            if ($lastSignIn) {
+                if ($lastSignIn -lt $inactivityThreshold) {
+                    $isInactive = $true
+                    $inactiveGuests++
+                }
+            }
+            else {
+                $isInactive = $true
+                $neverSignedIn++
+            }
+
+            # Check if disabled
+            if (-not $guest.AccountEnabled) {
+                $disabledGuests++
+            }
+
+            # Extract domain
+            $domain = "Unknown"
+            if ($guest.Mail) {
+                $domain = $guest.Mail.Split('@')[1]
+            }
+            elseif ($guest.UserPrincipalName) {
+                $upnParts = $guest.UserPrincipalName.Split('#')
+                if ($upnParts.Count -gt 1) {
+                    $domain = $upnParts[1].Split('_')[0]
+                }
+            }
+
+            # Check for privileged roles
+            $isPrivileged = $false
+            $roles = @()
+            if ($CheckPrivilegedGuests) {
+                try {
+                    # Get-MgDirectoryRole (legacy directory roles) is discouraged; use unified RBAC:
+                    # role assignments, with role display names resolved from the role definition.
+                    $roleFilter = "principalId eq '$($guest.Id)'"
+                    $roleAssignments = Get-MgRoleManagementDirectoryRoleAssignment -Filter $roleFilter `
+                        -All -ErrorAction SilentlyContinue
+
+                    if ($roleAssignments) {
+                        $isPrivileged = $true
+                        $privilegedGuests++
+                        $roles = $roleAssignments | ForEach-Object {
+                            $roleDefinition = Get-MgRoleManagementDirectoryRoleDefinition `
+                                -UnifiedRoleDefinitionId $_.RoleDefinitionId -ErrorAction SilentlyContinue
+                            if ($roleDefinition) { $roleDefinition.DisplayName }
+                        } | Where-Object { $_ }
+                    }
+                }
+                catch {
+                    Write-Verbose "Handled exception: $($_.Exception.Message)" -Verbose:$false
+                }
+            }
+
+            $result = [PSCustomObject]@{
+                DisplayName = $guest.DisplayName
+                UserPrincipalName = $guest.UserPrincipalName
+                Email = $guest.Mail
+                Domain = $domain
+                CreatedDate = $guest.CreatedDateTime
+                LastSignIn = $lastSignIn
+                IsInactive = $isInactive
+                AccountEnabled = $guest.AccountEnabled
+                IsPrivileged = $isPrivileged
+                Roles = $roles -join '; '
+                DaysSinceLastSignIn = if ($lastSignIn) { ((Get-Date) - $lastSignIn).Days } else { "Never" }
+            }
+
+            $results += $result
+        }
+
+        Write-Progress -Activity "Analyzing Guest Users" -Completed
+
+        Write-Host ""
+
+        # Summary
+        Write-Host "=== Summary ===" -ForegroundColor Cyan
+        Write-Host "Total Guest Users: $($results.Count)" -ForegroundColor White
+        Write-Host "Inactive Guests (> $InactivityDays days): $inactiveGuests" -ForegroundColor Yellow
+        Write-Host "Never Signed In: $neverSignedIn" -ForegroundColor Yellow
+        Write-Host "Disabled Accounts: $disabledGuests" -ForegroundColor Gray
+        if ($CheckPrivilegedGuests) {
+            $privColor = if ($privilegedGuests -gt 0) { "Red" } else { "Green" }
+            Write-Host "Privileged Guests (CRITICAL): $privilegedGuests" -ForegroundColor $privColor
+        }
+        Write-Host ""
+
+        # Domain breakdown
+        if ($GroupByDomain) {
+            Write-Host "=== Guests by Domain ===" -ForegroundColor Cyan
+            $results | Group-Object Domain | Sort-Object Count -Descending | Select-Object -First 10 |
+                ForEach-Object {
+                    Write-Host "  $($_.Name): $($_.Count) guest(s)" -ForegroundColor White
+                }
+            Write-Host ""
+        }
+
+        # Show privileged guests
+        if ($CheckPrivilegedGuests -and $privilegedGuests -gt 0) {
+            Write-Host "=== Privileged Guest Users (CRITICAL) ===" -ForegroundColor Red
+            $results | Where-Object { $_.IsPrivileged -eq $true } |
+                Select-Object DisplayName, Email, Roles |
+                Format-Table -AutoSize
+        }
+
+        # Show inactive guests
+        if ($inactiveGuests -gt 0) {
+            Write-Host "`n=== Top 10 Inactive Guest Users ===" -ForegroundColor Yellow
+            $results | Where-Object { $_.IsInactive -eq $true } |
+                Sort-Object LastSignIn |
+                Select-Object -First 10 DisplayName, Email, LastSignIn, DaysSinceLastSignIn |
+                Format-Table -AutoSize
+        }
+
+        # Export
+        if ($ExportHTML) {
+            $reportDir = Get-ReportDirectory
+            $htmlPath = Join-Path $reportDir "GuestUserAudit_$timestamp.html"
+
+            $html = @"
 <!DOCTYPE html>
 <html>
 <head>
@@ -286,9 +324,11 @@ if ($ExportHTML) {
         </tr>
 "@
 
-    foreach ($result in ($results | Sort-Object DisplayName)) {
-        $rowClass = if ($result.IsPrivileged) { "critical" } elseif ($result.IsInactive) { "inactive" } else { "" }
-        $html += @"
+            foreach ($result in ($results | Sort-Object DisplayName)) {
+                $rowClass = ""
+                if ($result.IsPrivileged) { $rowClass = "critical" }
+                elseif ($result.IsInactive) { $rowClass = "inactive" }
+                $html += @"
         <tr class="$rowClass">
             <td>$($result.DisplayName)</td>
             <td>$($result.Email)</td>
@@ -299,26 +339,35 @@ if ($ExportHTML) {
             <td>$($result.IsPrivileged)</td>
         </tr>
 "@
+            }
+
+            $html += "</table></body></html>"
+            $html | Out-File -FilePath $htmlPath -Encoding UTF8 -ErrorAction Stop
+            Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+        }
+
+        if ($ExportCSV) {
+            $reportDir = Get-ReportDirectory
+            $csvPath = Join-Path $reportDir "GuestUserAudit_$timestamp.csv"
+            $results | Export-Csv -Path $csvPath -NoTypeInformation -ErrorAction Stop
+            Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
+        }
+
+        Write-Host "`n[+] Audit completed!" -ForegroundColor Green
+
+        Disconnect-MgGraph -ErrorAction SilentlyContinue | Out-Null
+
+        if ($privilegedGuests -gt 0) {
+            return 1
+        }
+
+        return 0
     }
-
-    $html += "</table></body></html>"
-    $html | Out-File -FilePath $htmlPath -Encoding UTF8
-    Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-if ($ExportCSV) {
-    $csvPath = "$ReportDir\GuestUserAudit_$timestamp.csv"
-    $results | Export-Csv -Path $csvPath -NoTypeInformation
-    Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
-}
-
-Write-Host "`n[+] Audit completed!" -ForegroundColor Green
-
-# Disconnect
-Disconnect-MgGraph | Out-Null
-
-if ($privilegedGuests -gt 0) {
-    exit 1
-}
-
-exit 0
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main @PSBoundParameters) }

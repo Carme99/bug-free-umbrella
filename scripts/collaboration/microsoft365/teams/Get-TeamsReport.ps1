@@ -1,17 +1,14 @@
 ﻿<#
 .SYNOPSIS
-    Generates comprehensive Microsoft Teams usage and compliance report.
+    Generate a Microsoft Teams usage and compliance report.
 
 .DESCRIPTION
-    This script analyzes Microsoft Teams for:
-    - Team count and membership statistics
-    - Guest user access and external sharing
-    - Channel count and types
-    - Teams without owners
-    - Archived teams
-    - Privacy settings (Public vs Private)
-    - External access configuration
-    - Teams creation policy compliance
+    This script analyzes Microsoft Teams and reports team count and membership statistics, guest user access, channel
+    counts and types, archived teams, public/private visibility, external access configuration, and teams without
+    active owners. It connects to Microsoft Teams interactively when no active session exists, and can optionally
+    export the results as HTML and/or CSV under the user's Documents\Reports folder (exports honor -WhatIf).
+    Exit codes: 0 when the report completed with no critical findings; 1 when the module or connection is unavailable
+    or when -CheckOwnership found teams without owners.
 
 .PARAMETER IncludeGuests
     Include detailed guest user analysis.
@@ -29,20 +26,27 @@
     Export results to CSV file.
 
 .EXAMPLE
-    .\Get-TeamsReport.ps1
-    Basic Teams usage report.
+    PS C:\> .\Get-TeamsReport.ps1
+    Generates a basic Teams usage report.
 
 .EXAMPLE
-    .\Get-TeamsReport.ps1 -IncludeGuests -CheckOwnership -ExportHTML
-    Comprehensive Teams audit with guest and ownership analysis.
+    PS C:\> .\Get-TeamsReport.ps1 -IncludeGuests -CheckOwnership -ExportHTML
+    Generates a comprehensive Teams audit with guest and ownership analysis plus an HTML export.
 
 .NOTES
-    Requires Microsoft Teams PowerShell module
-    Requires Teams Administrator or Global Reader role
-    Compatible with Microsoft Teams (Microsoft 365)
+    File Name  : Get-TeamsReport.ps1
+    Author     : Bug-Free Umbrella
+    Prerequisite: PowerShell 7.0
+    Version    : 1.0.0
+    Date       : 2026-08-23
+
+    Requires the MicrosoftTeams module and the Teams Administrator or Global Reader role.
+    Compatible with Microsoft Teams (Microsoft 365).
 #>
 
-[CmdletBinding()]
+# PSAvoidUsingWriteHost: Write-Host with [+]/[!]/[-]/[*] prefixes is mandated by AGENTS.md.
+# PSReviewUnusedParameter: script parameters are consumed inside Main via scope chaining.
+[CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory = $false)]
     [switch]$IncludeGuests,
@@ -60,170 +64,210 @@ param(
     [switch]$ExportCSV
 )
 
-$ErrorActionPreference = "Stop"
-$timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
-if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
-    New-Item -ItemType Directory -Path $ReportDir -Force | Out-Null
-}
+$ErrorActionPreference = 'Stop'
 
-Write-Host "`n=== Microsoft Teams Usage Report ===" -ForegroundColor Cyan
-Write-Host "Timestamp: $(Get-Date)" -ForegroundColor Gray
-Write-Host ""
+function Export-TeamsReportOutput {
+    # Writes the optional HTML/CSV report artifacts; each write is gated by ShouldProcess.
+    [CmdletBinding(SupportsShouldProcess)]
+    param(
+        [Parameter(Mandatory = $false)]
+        [string]$HtmlPath,
 
-# Check for Teams module
-try {
-    if (-not (Get-Module -Name MicrosoftTeams -ListAvailable)) {
-        Write-Host "[-] Microsoft Teams module not found!" -ForegroundColor Red
-        Write-Host "[!] Install with: Install-Module -Name MicrosoftTeams" -ForegroundColor Yellow
-        exit 1
+        [Parameter(Mandatory = $false)]
+        [string]$CsvPath,
+
+        [Parameter(Mandatory = $false)]
+        [AllowEmptyString()]
+        [string]$Html,
+
+        [Parameter(Mandatory = $false)]
+        [AllowEmptyCollection()]
+        [object[]]$Results
+    )
+
+    if ($HtmlPath -and $PSCmdlet.ShouldProcess($HtmlPath, 'Write HTML report')) {
+        $Html | Out-File -FilePath $HtmlPath -Encoding utf8 -ErrorAction Stop
+        Write-Host "[+] HTML report saved to: $HtmlPath" -ForegroundColor Green
     }
 
-    # Check connection
+    if ($CsvPath -and $PSCmdlet.ShouldProcess($CsvPath, 'Write CSV export')) {
+        $Results | Export-Csv -Path $CsvPath -NoTypeInformation -ErrorAction Stop
+        Write-Host "[+] CSV export saved to: $CsvPath" -ForegroundColor Green
+    }
+}
+
+function Main {
     try {
-        $null = Get-CsTeamsCallingPolicy -ErrorAction Stop
-    }
-    catch {
-        Write-Host "[!] Not connected to Teams. Connecting..." -ForegroundColor Yellow
-        Connect-MicrosoftTeams
-    }
+        # Prepare report directory (local absolute path only, no traversal).
+        $documentsRoot = [Environment]::GetFolderPath('MyDocuments')
+        if ([string]::IsNullOrWhiteSpace($documentsRoot)) {
+            $documentsRoot = [System.IO.Path]::Combine($HOME, 'Documents')
+        }
+        $reportDir = Join-Path $documentsRoot 'Reports'
+        if ([string]::IsNullOrWhiteSpace($reportDir) -or
+            $reportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
+            $reportDir -match '^(\\\\|//)') {
+            throw "Unsafe report path: $reportDir. Report path must be a local absolute path without '..' traversal."
+        }
+        $reportDir = [System.IO.Path]::GetFullPath($reportDir)
+        if (-not (Test-Path -LiteralPath $reportDir -PathType Container)) {
+            New-Item -ItemType Directory -Path $reportDir -Force -ErrorAction Stop | Out-Null
+        }
 
-    Write-Host "[+] Connected to Microsoft Teams" -ForegroundColor Green
-}
-catch {
-    Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
-}
+        $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 
-Write-Host ""
+        Write-Host "`n=== Microsoft Teams Usage Report ===" -ForegroundColor Cyan
+        Write-Host "Timestamp: $(Get-Date)" -ForegroundColor Gray
+        Write-Host ""
 
-# Get all teams
-Write-Host "[*] Retrieving teams..." -ForegroundColor Cyan
+        # Check for Teams module
+        if (-not (Get-Module -Name MicrosoftTeams -ListAvailable)) {
+            Write-Host "[-] Microsoft Teams module not found!" -ForegroundColor Red
+            Write-Host "[!] Install with: Install-Module -Name MicrosoftTeams" -ForegroundColor Yellow
+            return 1
+        }
 
-try {
-    $teams = Get-Team
+        # Check connection
+        try {
+            $null = Get-CsTeamsCallingPolicy -ErrorAction Stop
+        }
+        catch {
+            Write-Host "[!] Not connected to Teams. Connecting..." -ForegroundColor Yellow
+            Connect-MicrosoftTeams -ErrorAction Stop
+        }
 
-    Write-Host "[+] Found $($teams.Count) team(s)" -ForegroundColor Green
-}
-catch {
-    Write-Host "[-] Error retrieving teams: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
-}
+        Write-Host "[+] Connected to Microsoft Teams" -ForegroundColor Green
 
-Write-Host ""
+        Write-Host ""
 
-$results = @()
-$teamsWithoutOwners = 0
-$archivedTeams = 0
-$publicTeams = 0
-$privateTeams = 0
-$totalGuests = 0
-$totalChannels = 0
+        # Get all teams
+        Write-Host "[*] Retrieving teams..." -ForegroundColor Cyan
 
-$i = 0
-foreach ($team in $teams) {
-    $i++
-    Write-Progress -Activity "Analyzing Teams" -Status "$i of $($teams.Count): $($team.DisplayName)" -PercentComplete (($i / $teams.Count) * 100)
+        $teams = @(Get-Team -ErrorAction Stop)
 
-    # Get team details
-    $teamDetails = Get-Team -GroupId $team.GroupId
+        Write-Host "[+] Found $($teams.Count) team(s)" -ForegroundColor Green
 
-    # Get members
-    $members = Get-TeamUser -GroupId $team.GroupId
+        Write-Host ""
 
-    $ownerCount = ($members | Where-Object { $_.Role -eq 'Owner' }).Count
-    $memberCount = ($members | Where-Object { $_.Role -eq 'Member' }).Count
-    $guestCount = ($members | Where-Object { $_.Role -eq 'Guest' }).Count
+        $results = @()
+        $teamsWithoutOwners = 0
+        $archivedTeams = 0
+        $publicTeams = 0
+        $privateTeams = 0
+        $totalGuests = 0
+        $totalChannels = 0
 
-    # Check for teams without owners
-    if ($CheckOwnership -and $ownerCount -eq 0) {
-        $teamsWithoutOwners++
-    }
+        $i = 0
+        foreach ($team in $teams) {
+            $i++
+            $progressStatus = "$i of $($teams.Count): $($team.DisplayName)"
+            $percentComplete = if ($teams.Count -gt 0) { ($i / $teams.Count) * 100 } else { 100 }
+            Write-Progress -Activity "Analyzing Teams" -Status $progressStatus -PercentComplete $percentComplete
 
-    # Count archived
-    if ($teamDetails.Archived) {
-        $archivedTeams++
-    }
+            # Get team details
+            $teamDetails = Get-Team -GroupId $team.GroupId -ErrorAction Stop
 
-    # Count public/private
-    if ($teamDetails.Visibility -eq 'Public') {
-        $publicTeams++
-    }
-    else {
-        $privateTeams++
-    }
+            # Get members
+            $members = @(Get-TeamUser -GroupId $team.GroupId -ErrorAction Stop)
 
-    # Get channels
-    $channels = Get-TeamChannel -GroupId $team.GroupId
-    $channelCount = $channels.Count
-    $totalChannels += $channelCount
+            $ownerCount = ($members | Where-Object { $_.Role -eq 'Owner' }).Count
+            $memberCount = ($members | Where-Object { $_.Role -eq 'Member' }).Count
+            $guestCount = ($members | Where-Object { $_.Role -eq 'Guest' }).Count
 
-    $privateChannelCount = ($channels | Where-Object { $_.MembershipType -eq 'Private' }).Count
+            # Check for teams without owners
+            if ($CheckOwnership -and $ownerCount -eq 0) {
+                $teamsWithoutOwners++
+            }
 
-    # Track guests
-    if ($IncludeGuests) {
-        $totalGuests += $guestCount
-    }
+            # Count archived
+            if ($teamDetails.Archived) {
+                $archivedTeams++
+            }
 
-    $result = [PSCustomObject]@{
-        TeamName = $team.DisplayName
-        Description = $team.Description
-        Visibility = $teamDetails.Visibility
-        Archived = $teamDetails.Archived
-        OwnerCount = $ownerCount
-        MemberCount = $memberCount
-        GuestCount = $guestCount
-        TotalUsers = $members.Count
-        ChannelCount = $channelCount
-        PrivateChannelCount = $privateChannelCount
-        GroupId = $team.GroupId
-        MailNickName = $teamDetails.MailNickName
-    }
+            # Count public/private
+            if ($teamDetails.Visibility -eq 'Public') {
+                $publicTeams++
+            }
+            else {
+                $privateTeams++
+            }
 
-    $results += $result
-}
+            # Get channels
+            $channels = @(Get-TeamChannel -GroupId $team.GroupId -ErrorAction Stop)
+            $channelCount = $channels.Count
+            $totalChannels += $channelCount
 
-Write-Progress -Activity "Analyzing Teams" -Completed
+            $privateChannelCount = ($channels | Where-Object { $_.MembershipType -eq 'Private' }).Count
 
-Write-Host ""
+            # Track guests
+            if ($IncludeGuests) {
+                $totalGuests += $guestCount
+            }
 
-# Summary
-Write-Host "=== Summary ===" -ForegroundColor Cyan
-Write-Host "Total Teams: $($results.Count)" -ForegroundColor White
-Write-Host "Public Teams: $publicTeams" -ForegroundColor Gray
-Write-Host "Private Teams: $privateTeams" -ForegroundColor Gray
-Write-Host "Archived Teams: $archivedTeams" -ForegroundColor Yellow
-Write-Host "Total Channels: $totalChannels" -ForegroundColor Gray
+            $result = [PSCustomObject]@{
+                TeamName            = $team.DisplayName
+                Description         = $team.Description
+                Visibility          = $teamDetails.Visibility
+                Archived            = $teamDetails.Archived
+                OwnerCount          = $ownerCount
+                MemberCount         = $memberCount
+                GuestCount          = $guestCount
+                TotalUsers          = $members.Count
+                ChannelCount        = $channelCount
+                PrivateChannelCount = $privateChannelCount
+                GroupId             = $team.GroupId
+                MailNickName        = $teamDetails.MailNickName
+            }
 
-if ($CheckOwnership) {
-    Write-Host "Teams Without Owners: $teamsWithoutOwners" -ForegroundColor $(if ($teamsWithoutOwners -gt 0) { "Red" } else { "Green" })
-}
+            $results += $result
+        }
 
-if ($IncludeGuests) {
-    Write-Host "Total Guest Users: $totalGuests" -ForegroundColor Yellow
-}
+        Write-Progress -Activity "Analyzing Teams" -Completed
 
-Write-Host ""
+        Write-Host ""
 
-# Show issues
-if ($CheckOwnership -and $teamsWithoutOwners -gt 0) {
-    Write-Host "=== Teams Without Owners (CRITICAL) ===" -ForegroundColor Red
-    $results | Where-Object { $_.OwnerCount -eq 0 } |
-        Select-Object TeamName, MemberCount, GuestCount |
-        Format-Table -AutoSize
-}
+        # Summary
+        Write-Host "=== Summary ===" -ForegroundColor Cyan
+        Write-Host "Total Teams: $($results.Count)" -ForegroundColor White
+        Write-Host "Public Teams: $publicTeams" -ForegroundColor Gray
+        Write-Host "Private Teams: $privateTeams" -ForegroundColor Gray
+        Write-Host "Archived Teams: $archivedTeams" -ForegroundColor Yellow
+        Write-Host "Total Channels: $totalChannels" -ForegroundColor Gray
 
-# Top teams by size
-Write-Host "=== Top 10 Teams by Members ===" -ForegroundColor Cyan
-$results | Sort-Object TotalUsers -Descending |
-    Select-Object -First 10 TeamName, Visibility, TotalUsers, ChannelCount |
-    Format-Table -AutoSize
+        if ($CheckOwnership) {
+            $ownershipColor = if ($teamsWithoutOwners -gt 0) { "Red" } else { "Green" }
+            Write-Host "Teams Without Owners: $teamsWithoutOwners" -ForegroundColor $ownershipColor
+        }
 
-# Export
-if ($ExportHTML) {
-    $htmlPath = (Join-Path $ReportDir "TeamsReport_$timestamp.html")
+        if ($IncludeGuests) {
+            Write-Host "Total Guest Users: $totalGuests" -ForegroundColor Yellow
+        }
 
-    $html = @"
+        Write-Host ""
+
+        # Show issues
+        if ($CheckOwnership -and $teamsWithoutOwners -gt 0) {
+            Write-Host "=== Teams Without Owners (CRITICAL) ===" -ForegroundColor Red
+            $results | Where-Object { $_.OwnerCount -eq 0 } |
+                Select-Object TeamName, MemberCount, GuestCount |
+                Format-Table -AutoSize
+        }
+
+        # Top teams by size
+        Write-Host "=== Top 10 Teams by Members ===" -ForegroundColor Cyan
+        $results | Sort-Object TotalUsers -Descending |
+            Select-Object -First 10 TeamName, Visibility, TotalUsers, ChannelCount |
+            Format-Table -AutoSize
+
+        # Export
+        $htmlPath = $null
+        $csvPath = $null
+        $html = ''
+
+        if ($ExportHTML) {
+            $htmlPath = Join-Path $reportDir "TeamsReport_$timestamp.html"
+
+            $html = @"
 <!DOCTYPE html>
 <html>
 <head>
@@ -265,9 +309,9 @@ if ($ExportHTML) {
         </tr>
 "@
 
-    foreach ($result in ($results | Sort-Object TeamName)) {
-        $rowClass = if ($result.OwnerCount -eq 0) { "issue" } else { "" }
-        $html += @"
+            foreach ($result in ($results | Sort-Object TeamName)) {
+                $rowClass = if ($result.OwnerCount -eq 0) { "issue" } else { "" }
+                $html += @"
         <tr class="$rowClass">
             <td>$([System.Net.WebUtility]::HtmlEncode("$($result.TeamName)"))</td>
             <td>$([System.Net.WebUtility]::HtmlEncode("$($result.Visibility)"))</td>
@@ -278,23 +322,36 @@ if ($ExportHTML) {
             <td>$([System.Net.WebUtility]::HtmlEncode("$($result.ChannelCount)"))</td>
         </tr>
 "@
+            }
+
+            $html += "</table></body></html>"
+        }
+
+        $exportParams = @{
+            HtmlPath = $htmlPath
+            CsvPath  = $csvPath
+            Html     = $html
+            Results  = @($results)
+        }
+        if ($ExportCSV) {
+            $exportParams.CsvPath = Join-Path $reportDir "TeamsReport_$timestamp.csv"
+        }
+
+        $null = Export-TeamsReportOutput @exportParams
+
+        Write-Host "`n[+] Report completed!" -ForegroundColor Green
+
+        if ($teamsWithoutOwners -gt 0) {
+            return 1
+        }
+
+        return 0
     }
-
-    $html += "</table></body></html>"
-    $html | Out-File -FilePath $htmlPath -Encoding UTF8
-    Write-Host "[+] HTML report saved to: $htmlPath" -ForegroundColor Green
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
 
-if ($ExportCSV) {
-    $csvPath = (Join-Path $ReportDir "TeamsReport_$timestamp.csv")
-    $results | Export-Csv -Path $csvPath -NoTypeInformation
-    Write-Host "[+] CSV export saved to: $csvPath" -ForegroundColor Green
-}
-
-Write-Host "`n[+] Report completed!" -ForegroundColor Green
-
-if ($teamsWithoutOwners -gt 0) {
-    exit 1
-}
-
-exit 0
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

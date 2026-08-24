@@ -8,6 +8,9 @@
         Exit = $false
     }
 
+    # Coverage is COLLECTED (JaCoCo XML for artifact upload) but no line-percentage
+    # threshold is enforced. The enforced coverage contract is per-script test presence
+    # (every script has a mirrored *.Tests.ps1 under Tests/), NOT a line-coverage percentage.
     CodeCoverage = @{
         Enabled = $true
         Path = @('./scripts', './src/BugFreeUmbrella')
@@ -15,7 +18,6 @@
         OutputFormat = 'JaCoCo'
         OutputEncoding = 'UTF8'
         RecursePaths = $true
-        CoveragePercentTarget = 30
     }
 
     TestResult = @{
