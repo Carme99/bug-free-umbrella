@@ -12,7 +12,7 @@
     File Name  : BugFreeUmbrella.psm1
     Author     : Carme99
     Prerequisite: PowerShell 7.0+ recommended (5.1 minimum for import)
-    Version    : 2.0.0
+    Version    : 2.0.1
 #>
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'

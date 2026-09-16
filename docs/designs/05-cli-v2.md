@@ -1,5 +1,10 @@
 # 05 — CLI v2 Design Spec (Invoke-Umbrella Enhance)
 
+> **Historical design record.** Written before the v5.0.0 platform work and the v1.0.0
+> relaunch; the counts, file names and code excerpts below describe the plan as it stood then
+> and are not kept in sync with the current tree. See [STANDARDS](../STANDARDS.md) and
+> [ARCHITECTURE](../ARCHITECTURE.md) for the current state.
+
 > **Status:** Draft — Foundation phase (no code). Implementation consumes this spec verbatim.
 > **Version:** Target 5.0.0 Hurricane (major) · **Date:** 2026-08-20
 > **Scope:** CLI surface only. Module manifest/loader, reorg shims, test expansion, and docs generation are owned by sibling specs (`05-module-*`, `05-reorg-*`, `05-tests-*`, `05-docs-*`) — no overlap.

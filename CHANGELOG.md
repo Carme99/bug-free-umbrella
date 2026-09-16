@@ -1,7 +1,7 @@
 # Changelog
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue)
-![Release Date](https://img.shields.io/badge/release-2026--09--16-green)
+![Version](https://img.shields.io/badge/version-2.0.1-blue)
+![Release Date](https://img.shields.io/badge/release-2026--09--17-green)
 ![Catalogued Scripts](https://img.shields.io/badge/catalogued%20scripts-381-orange)
 ![Scripts on Disk](https://img.shields.io/badge/scripts%20on%20disk-566-orange)
 ![License](https://img.shields.io/badge/license-Apache%202.0-red)
@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [🌂 About Our Release Names](#-about-our-release-names)
 - **Latest Release:**
+  - [v2.0.1 (2026-09-17) - Documentation Alignment Patch](#201---2026-09-17---documentation-alignment-patch)
   - [v2.0.0 (2026-09-16) - Coverage & Correctness](#200---2026-09-16---coverage--correctness)
 - **Previous Releases** (historical, pre-relaunch versioning; dates are each release's own):
   - [v1.0.0 (2026-08-23) - Clean-Slate Relaunch](#100---2026-08-23---clean-slate-relaunch)
@@ -61,6 +62,41 @@ Bug-Free Umbrella historically used **weather-themed codenames** for releases. A
 | ⛈️ | **Thunderstorm** | Major (1.x.x) | Significant expansions |
 | 🌪️ | **Hurricane** | Breaking | Major overhauls, breaking changes |
 | 🌈 | **Rainbow** | Quality | Polish, documentation, testing |
+
+---
+
+## [2.0.1] - 2026-09-17 - Documentation Alignment Patch
+
+> Independent verification of v2.0.0 found that several documentation claims were falsified by
+> v2.0.0's own changes, and that one compatibility page published figures no data source could
+> reproduce. Those are corrected here. No script behaviour changes.
+
+### Fixed
+
+- **`docs/ARCHITECTURE.md` corrected against the workflow it documents.** It advertised four CI jobs
+  (there are six - `freshness` and `mcp-server` were added in v2.0.0), described
+  `markdown-link-check` as `fail: false` tolerating HTTP 429 (it is now `fail: true` with 429
+  dropped), said `Build-Docs.ps1 -Validate` was not wired into CI (it is, in the `freshness` job),
+  and stated 357 wrappers / 360 exports (actual: 381 wrappers / 384 exports).
+- **`scripts/.catalog/COMPATIBILITY.md` rewritten.** It published per-OS percentage tables dated
+  2025-12-30 whose columns did not reconcile with each other or with any count in the tree. It now
+  states the counting convention, reports the PowerShell-version declarations that *are* derivable
+  from each script's `.NOTES` and `#Requires` (288 declare PowerShell 7.0, 74 declare 5.1+, 373 have
+  no `#Requires` opt-out), and says plainly that there is no machine-checked per-OS matrix - rather
+  than claiming one.
+- **Stale script counts removed** from `scripts/.catalog/README.md` (357),
+  `examples/module-usage/README.md` (357 twice) and
+  `src/BugFreeUmbrella/Public/Get-BUScript.ps1` (358).
+- **`docs/designs/*.md` marked as historical design records.** They describe the pre-v5.0.0 plan and
+  are deliberately not kept in sync; each now says so at the top and points at the current contract.
+
+### Notes
+
+- The v2.0.0 tag remains valid and unchanged; this patch is additive documentation work on top of it.
+- Two documentation-debt items remain open and are tracked: [#317](https://github.com/Carme99/bug-free-umbrella/issues/317)
+  (the lychee step's temporary `continue-on-error` while pre-existing link debt is cleared) and
+  [#318](https://github.com/Carme99/bug-free-umbrella/issues/318) (four suites declaring simple
+  rather than advanced cmdlet stubs).
 
 ---
 
@@ -1786,6 +1822,7 @@ Comprehensive documentation suite:
 
 | Version | Date | Codename | Type | Major Changes |
 |---------|------|----------|------|---------------|
+| **2.0.1** | 2026-09-17 | — | Patch | Documentation corrected against the shipped workflow; compatibility matrix rewritten with derivable facts |
 | **2.0.0** | 2026-09-16 | — | Major | 16 new sub-categories across Azure/Entra/Defender/Purview/Intune/Windows Server; 38 logged defects fixed; CI freshness + parity gates wired; counting convention published; STANDARDS v2 |
 | **1.0.0** | 2026-08-23 | — | Relaunch | Clean-slate relaunch: every script unified to the standards contract, per-script Pester coverage, analyzer-clean, rebrand |
 | **5.0.0** | 2026-08-23 | 🌪️ Hurricane | Major | PSGallery module, CLI v2, remediation reorg with shims |
@@ -1815,6 +1852,11 @@ Comprehensive documentation suite:
 ---
 
 ## Upgrade Notes
+
+### Upgrading to 2.0.1 (Documentation Alignment)
+- ✅ **No breaking changes** and no script behaviour change: documentation only.
+- If you pinned to a script count, the authoritative figures are 566 files on disk, 381 catalogued
+  and 185 excluded deprecated forwarding shims; the module exports 384 commands.
 
 ### Upgrading to 2.0.0 (Coverage & Correctness)
 - ✅ **No breaking changes** for callers: no script file was renamed, moved, or removed.
@@ -1895,6 +1937,6 @@ Scripts in this repository were created with the assistance of **[Claude Code](h
 
 For detailed commit history, see [Git Log](https://github.com/Carme99/bug-free-umbrella/commits/main).
 
-**Last Updated**: 2026-09-16
+**Last Updated**: 2026-09-17
 
 [⬆️ Back to top](#-table-of-contents)

@@ -97,7 +97,7 @@ See [CONTRIBUTING.md](../../CONTRIBUTING.md) for detailed guidelines.
 
 ## Statistics
 
-- **Total Scripts:** 357
+- **Total Scripts:** 381 catalogued (566 on disk including 185 excluded shims)
 - **Cross-Platform:** ~200 (56%)
 - **Windows-Only:** ~158 (44%)
 - **Categories:** 30+
