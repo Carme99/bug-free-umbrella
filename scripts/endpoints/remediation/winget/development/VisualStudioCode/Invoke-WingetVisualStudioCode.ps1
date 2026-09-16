@@ -35,7 +35,7 @@ $ErrorActionPreference = 'Stop'
 
 #region Configuration
 $ID = 'Microsoft.VisualStudioCode'
-$AppProcess = 'VSCode'
+$AppProcess = 'Code'
 $MaxRetries = 3
 $ConnectivityHost = 'www.microsoft.com'
 $VerifyWaitSeconds = 5

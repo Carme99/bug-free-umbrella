@@ -159,7 +159,7 @@ function Main {
             $Matches[2].Trim()
         }
         else {
-            "Zoomies"
+            $ID
         }
 
         if ($packageInfo -match "No installed package found") {

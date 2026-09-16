@@ -44,17 +44,26 @@ function Main {
         # Flush DNS cache.
         Clear-DnsClientCache -ErrorAction Stop
 
-        # Restart DNS client service if needed.
+        # Start the DNS client service only when it is not running. Dnscache runs on every
+        # healthy client, so an unconditional restart bounced the resolver on every cycle -
+        # a converged system must be left alone.
         $dnsClient = Get-Service -Name "Dnscache" -ErrorAction SilentlyContinue
+
+        if ($null -eq $dnsClient) {
+            # A failed read is not the same as a stopped service; $null.Status would be $null
+            # and the comparison would silently pass as "not running".
+            throw "DNS Client service (Dnscache) could not be queried"
+        }
 
         if ($dnsClient.Status -ne "Running") {
             Start-Service -Name "Dnscache" -ErrorAction Stop
+            Write-Host "[+] Started the DNS Client service" -ForegroundColor Green
         }
         else {
-            Restart-Service -Name "Dnscache" -Force -ErrorAction Stop
+            Write-Host "[+] Already running: DNS Client service" -ForegroundColor Green
         }
 
-        Write-Host "[+] Successfully flushed DNS cache and restarted DNS Client service" -ForegroundColor Green
+        Write-Host "[+] Successfully flushed DNS cache" -ForegroundColor Green
         return 0
     }
     catch {

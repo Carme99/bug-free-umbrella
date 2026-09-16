@@ -59,7 +59,13 @@ function Main {
         # Check UAC
         $uacKeyPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
         $uacKey = Get-ItemProperty $uacKeyPath -ErrorAction SilentlyContinue
-        if ($uacKey.EnableLUA -ne 1) {
+        if ($null -eq $uacKey) {
+            # A failed read must not be scored as drift: $null.EnableLUA is $null and
+            # $null -ne 1 is $true, so the check would report "UAC is disabled" forever on a
+            # device where the key is unreadable, and the remediation would retry without end.
+            Write-Host "[!] Could not read UAC configuration at $uacKeyPath" -ForegroundColor Yellow
+        }
+        elseif ($uacKey.EnableLUA -ne 1) {
             $issues += "UAC is disabled"
         }
 

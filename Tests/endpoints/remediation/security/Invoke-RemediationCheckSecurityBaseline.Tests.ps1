@@ -58,7 +58,7 @@ Describe "Invoke-RemediationCheckSecurityBaseline" {
     }
 
     Context "Behavior" {
-        It "Returns 0 on a converged baseline, refreshing only signatures" {
+        It "Returns 0 on a converged baseline without mutating anything" {
             function Get-NetFirewallProfile { }
             function Set-NetFirewallProfile { }
             function Get-MpComputerStatus { }
@@ -72,7 +72,10 @@ Describe "Invoke-RemediationCheckSecurityBaseline" {
                     [pscustomobject]@{ Name = 'Public'; Enabled = $true }
                 )
             }
-            Mock Get-MpComputerStatus { [pscustomobject]@{ RealTimeProtectionEnabled = $true } }
+            # AntivirusSignatureAge is in days; 0 means the signatures are current.
+            Mock Get-MpComputerStatus {
+                [pscustomobject]@{ RealTimeProtectionEnabled = $true; AntivirusSignatureAge = 0 }
+            }
             Mock Get-ItemProperty { [pscustomobject]@{ EnableLUA = 1 } }
             Mock Set-NetFirewallProfile { }
             Mock Set-MpPreference { }
@@ -80,7 +83,7 @@ Describe "Invoke-RemediationCheckSecurityBaseline" {
             Mock Set-ItemProperty { }
             $out = Main *>&1
             $out | Where-Object { $_ -is [int] } | Should -Be 0
-            Should -Invoke Update-MpSignature -Exactly 1 -Scope It
+            Should -Invoke Update-MpSignature -Times 0 -Exactly -Because "current signatures need no refresh"
             Should -Invoke Set-NetFirewallProfile -Exactly 0 -Scope It
             Should -Invoke Set-MpPreference -Exactly 0 -Scope It
             Should -Invoke Set-ItemProperty -Exactly 0 -Scope It
@@ -100,7 +103,9 @@ Describe "Invoke-RemediationCheckSecurityBaseline" {
                     [pscustomobject]@{ Name = 'Public'; Enabled = $false }
                 )
             }
-            Mock Get-MpComputerStatus { [pscustomobject]@{ RealTimeProtectionEnabled = $false } }
+            Mock Get-MpComputerStatus {
+                [pscustomobject]@{ RealTimeProtectionEnabled = $false; AntivirusSignatureAge = 5 }
+            }
             Mock Get-ItemProperty { [pscustomobject]@{ EnableLUA = 0 } }
             Mock Set-NetFirewallProfile { }
             Mock Set-MpPreference { }

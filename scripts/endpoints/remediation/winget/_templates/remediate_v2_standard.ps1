@@ -37,7 +37,7 @@
     Date       : 2026-09-16
 #>
 
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess)]
 param()
 
 # PSAvoidUsingWriteHost is intentionally accepted: prefixed, colored console output is the mandated
@@ -96,7 +96,7 @@ function Invoke-WingetCommand {
 function Invoke-ModuleRemediation {
     # Microsoft.WinGet.Client path: the winget CLI is NOT supported in the SYSTEM context that Intune
     # Proactive Remediations run in.
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param()
 
     $package = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -ErrorAction SilentlyContinue
@@ -136,7 +136,9 @@ function Invoke-ModuleRemediation {
 
     # Perform upgrade via the module
     Write-Host "[*] Installing $name update ($verInstalled -> $verAvailable)..." -ForegroundColor Cyan
-    Update-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -Mode Silent -Force -ErrorAction Stop
+    if ($PSCmdlet.ShouldProcess($ID, "Update package $ID silently")) {
+        Update-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -Mode Silent -Force -ErrorAction Stop
+    }
 
     # Wait for installation to complete (configurable, mockable delay)
     Start-Sleep -Seconds $VerifyWaitSeconds

@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/Carme99/bug-free-umbrella/main/scripts/.catalog/metadata.schema.json",
   "version": "2.0.0",
-  "generated": "2026-09-16T23:31:07.5368408+01:00",
+  "generated": "2026-09-16T23:48:57.6741394+01:00",
   "totalScripts": 381,
   "excludedScripts": 185,
   "onDiskScripts": 566,
@@ -5107,11 +5107,18 @@
       "tags": [
         "network"
       ],
-      "parameters": [],
+      "parameters": [
+        {
+          "name": "Name",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
       "hasCmdletBinding": true,
       "requiresModules": [],
       "functionsExported": [
-        "Main"
+        "Main",
+        "Test-ApprovedShare"
       ]
     },
     {
@@ -5564,7 +5571,7 @@
       "name": "Test-RemediationFixCertificateExpiry.ps1",
       "category": "endpoints/remediation/security",
       "synopsis": "Detects expired or expiring certificates.",
-      "description": "Checks for expired certificates or certificates expiring within 30 days in the Personal (My) certificate store of: - the local machine (Cert:\\LocalMachine\\My) - the current process user (Cert:\\Current",
+      "description": "Checks for expired certificates in the Personal (My) certificate store of: - the local machine (Cert:\\LocalMachine\\My) - the current process user (Cert:\\CurrentUser\\My - under Intune proactive remedia",
       "tags": [
         "certificate"
       ],

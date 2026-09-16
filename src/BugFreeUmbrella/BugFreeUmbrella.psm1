@@ -7391,6 +7391,8 @@ function Invoke-RemediationCheckSharedFolders {
     [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'Wrapper name mirrors backing script filename scripts/endpoints/remediation/network/Invoke-RemediationCheckSharedFolders.ps1')]
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     param(
+        [Parameter()]
+        [String]$Name,
         [Parameter(ValueFromRemainingArguments)]
         [object[]]$RemainingArgs
     )

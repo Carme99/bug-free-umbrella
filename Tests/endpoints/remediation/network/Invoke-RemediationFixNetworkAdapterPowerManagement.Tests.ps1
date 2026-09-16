@@ -80,11 +80,29 @@ Describe "Invoke-RemediationFixNetworkAdapterPowerManagement" {
                     [pscustomobject]@{ Name = 'Loopback Pseudo'; Status = 'Up'; Virtual = $false }
                 )
             }
+            function Get-NetAdapterPowerManagement { }
+            Mock Get-NetAdapterPowerManagement {
+                [pscustomobject]@{ AllowComputerToTurnOffDevice = 'Enabled' }
+            }
             $out = Main *>&1
             ($out | Out-String) | Should -Match '\[\+\]'
             $out | Where-Object { $_ -is [int] } | Should -Be 0
             Should -Invoke Disable-NetAdapterPowerManagement -Times 1 -Exactly `
                 -ParameterFilter { $Name -eq 'Ethernet' }
+        }
+
+        It "Is idempotent: an adapter whose power management is already disabled is untouched" {
+            Mock Get-NetAdapter {
+                @([pscustomobject]@{ Name = 'Ethernet'; Status = 'Up'; Virtual = $false })
+            }
+            function Get-NetAdapterPowerManagement { }
+            Mock Get-NetAdapterPowerManagement {
+                [pscustomobject]@{ AllowComputerToTurnOffDevice = 'Disabled' }
+            }
+            $out = Main *>&1
+            ($out | Out-String) | Should -Match 'Already disabled'
+            $out | Where-Object { $_ -is [int] } | Should -Be 0
+            Should -Invoke Disable-NetAdapterPowerManagement -Times 0 -Exactly
         }
 
         It "Is idempotent: no eligible adapters means no changes and returns 0" {
