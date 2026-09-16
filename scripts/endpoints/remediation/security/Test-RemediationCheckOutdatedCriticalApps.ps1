@@ -51,6 +51,8 @@ $ErrorActionPreference = 'Stop'
 
 function Main {
     try {
+        # Reset per run: detection failure is a property of this invocation, not the session.
+        $script:DetectionFailed = $false
         Write-Log "=== Winget Critical App Update Detection Started ==="
         Write-Log "Priority Apps Only: $PriorityAppsOnly"
 
@@ -68,6 +70,11 @@ function Main {
 
         # Get outdated applications
         $outdatedApps = Get-OutdatedApps
+
+        if ($script:DetectionFailed) {
+            Write-Log "Update detection could not be completed - winget output could not be read" "ERROR"
+            return 1
+        }
 
         if ($outdatedApps.Count -eq 0) {
             Write-Log "No outdated applications detected" "OK"
@@ -241,8 +248,13 @@ function Get-OutdatedApps {
         $dataLineCount = 0
 
         foreach ($line in $lines) {
-            # Skip header lines and non-data lines
-            if ($line -match '^Name\s+Id\s+' -or $line -match '^-+' -or $line -match '^\d+ upgrades available') {
+            # Skip header lines, separators and winget's own informational messages. Those
+            # carry no package data, so counting them as parse failures would drive the failure
+            # rate to 100% on a perfectly healthy "nothing to upgrade" response.
+            if ($line -match '^Name\s+Id\s+' -or $line -match '^-+' -or $line -match '^\d+ upgrades available' -or
+                $line -match '^No installed package has an upgrade available' -or
+                $line -match '^No applicable upgrade found' -or
+                $line -match '^No upgrades available') {
                 continue
             }
 
@@ -303,7 +315,8 @@ function Get-OutdatedApps {
             if ($failureRate -gt 75) {
                 Write-Log ("CRITICAL: Parse failure rate exceeds 75% - winget output format may have " +
                     "changed. This may indicate security updates are not being detected properly.") "ERROR"
-                return @()  # Return empty array to trigger remediation failure
+                $script:DetectionFailed = $true
+                return @()
             }
             elseif ($failureRate -gt 50) {
                 Write-Log ("High parse failure rate suggests winget output format may have changed. " +
@@ -321,6 +334,7 @@ function Get-OutdatedApps {
             Start-Sleep -Seconds ([Math]::Pow(2, $RetryCount))
             return Get-OutdatedApps -RetryCount ($RetryCount + 1)
         }
+        $script:DetectionFailed = $true
         return @()
     }
 }

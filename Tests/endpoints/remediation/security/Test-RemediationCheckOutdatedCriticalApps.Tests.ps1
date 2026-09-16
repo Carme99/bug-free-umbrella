@@ -122,6 +122,21 @@ No installed package has an upgrade available.
             $out | Where-Object { $_ -is [int] } | Should -Be 0
         }
 
+        It "Returns 1 when the winget output cannot be parsed (detection failure is not compliance)" {
+            # When the winget output format changes, detection must fail loudly. Reporting
+            # "no outdated applications" here would silently stop security patching fleet-wide.
+            $unparseable = @"
+garbled line one with letters
+garbled line two with letters
+garbled line three with letters
+"@
+            Mock Invoke-Winget {
+                [pscustomobject]@{ Output = $unparseable; ExitCode = 0 }
+            }
+            $out = Main *>&1
+            $out | Where-Object { $_ -is [int] } | Should -Be 1
+        }
+
         It "Returns 1 when winget is not available" {
             Mock Get-Command { throw 'CommandNotFound' }
 
