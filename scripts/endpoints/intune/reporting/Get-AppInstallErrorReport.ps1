@@ -14,6 +14,10 @@
     The report is read-only: it never mutates tenant configuration, so it is safe to
     re-run (idempotent). A summary is printed to the console and results can optionally
     be exported to HTML and/or CSV under Documents\Reports.
+
+    Every page of the mobileApps and deviceStatuses collections is read by following
+    @odata.nextLink, so results beyond the first page are not dropped. lastSyncDateTime is
+    normalised to [datetime] before it is compared with the -Days window.
     Exit codes:
     - 0: report generated successfully (including zero failures).
     - 1: unsafe report path, missing prerequisite module, or the Graph query failed.
@@ -45,8 +49,8 @@
     File Name   : Get-AppInstallErrorReport.ps1
     Author      : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 
     Requires the Microsoft.Graph.Authentication PowerShell module.
     Requires permissions: DeviceManagementApps.Read.All, DeviceManagementManagedDevices.Read.All
@@ -132,23 +136,41 @@ function Main {
 
         try {
             $mobileAppsUri = 'https://graph.microsoft.com/beta/deviceAppManagement/mobileApps'
-            $apps = Invoke-MgGraphRequest -Uri $mobileAppsUri -Method GET -ErrorAction Stop
+            $appsResponse = Invoke-MgGraphRequest -Uri $mobileAppsUri -Method GET -ErrorAction Stop
+            $allApps = @($appsResponse.value)
 
-            foreach ($app in $apps.value) {
+            while ($appsResponse.'@odata.nextLink') {
+                $appsResponse = Invoke-MgGraphRequest -Uri $appsResponse.'@odata.nextLink' `
+                    -Method GET -ErrorAction Stop
+                $allApps += $appsResponse.value
+            }
+
+            foreach ($app in $allApps) {
                 if ($AppName -and $app.displayName -notlike "*$AppName*") { continue }
 
                 $statusUri = "$mobileAppsUri/$($app.id)/deviceStatuses"
-                $status = Invoke-MgGraphRequest -Uri $statusUri -Method GET -ErrorAction Stop
+                $statusResponse = Invoke-MgGraphRequest -Uri $statusUri -Method GET -ErrorAction Stop
+                $allStatuses = @($statusResponse.value)
 
-                foreach ($deviceStatus in $status.value) {
-                    if ($deviceStatus.installState -eq 'failed' -and $deviceStatus.lastSyncDateTime -gt $cutoffDate) {
+                while ($statusResponse.'@odata.nextLink') {
+                    $statusResponse = Invoke-MgGraphRequest -Uri $statusResponse.'@odata.nextLink' `
+                        -Method GET -ErrorAction Stop
+                    $allStatuses += $statusResponse.value
+                }
+
+                foreach ($deviceStatus in $allStatuses) {
+                    # Graph may return lastSyncDateTime as an ISO string; normalise before comparing.
+                    $lastSync = $deviceStatus.lastSyncDateTime
+                    if ($lastSync -is [string]) { $lastSync = [datetime]::Parse($lastSync) }
+
+                    if ($deviceStatus.installState -eq 'failed' -and $lastSync -gt $cutoffDate) {
                         $failure = [PSCustomObject]@{
                             AppName      = $app.displayName
                             DeviceName   = $deviceStatus.deviceName
                             UserName     = $deviceStatus.userPrincipalName
                             ErrorCode    = $deviceStatus.errorCode
                             InstallState = $deviceStatus.installState
-                            LastSync     = $deviceStatus.lastSyncDateTime
+                            LastSync     = $lastSync
                         }
 
                         $script:report.Failures += $failure

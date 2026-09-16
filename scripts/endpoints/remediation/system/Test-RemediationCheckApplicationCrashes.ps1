@@ -29,8 +29,8 @@
     File Name  : Test-RemediationCheckApplicationCrashes.ps1
     Author     : Intune Admin
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding()]
@@ -174,7 +174,8 @@ function Main {
             foreach ($issue in $issues) {
                 Write-Host "[!]   - $issue" -ForegroundColor Yellow
             }
-            Write-Host "[*] Recommendation: update applications, reinstall problematic apps, check compatibility" -ForegroundColor Cyan
+            Write-Host ("[*] Recommendation: update applications, reinstall problematic apps, " +
+                "check compatibility") -ForegroundColor Cyan
             return 1
         }
 

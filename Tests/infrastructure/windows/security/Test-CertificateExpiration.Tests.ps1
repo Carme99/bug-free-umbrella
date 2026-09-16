@@ -29,9 +29,9 @@ Describe "Test-CertificateExpiration" {
     }
 
     Context "Help & Metadata" {
-        It "Declares Version 1.0.0 and relaunch Date" {
-            $helpText | Should -Match 'Version\s*:\s*1\.0\.0'
-            $helpText | Should -Match 'Date\s*:\s*2026-08-23'
+        It "Declares Version 2.0.0 and relaunch Date" {
+            $helpText | Should -Match 'Version\s*:\s*2\.0\.0'
+            $helpText | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It "Declares matching File Name, Author and Prerequisite" {

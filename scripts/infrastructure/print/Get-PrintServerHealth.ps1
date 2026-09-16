@@ -37,12 +37,12 @@
     File Name    : Get-PrintServerHealth.ps1
     Author       : Bug-Free Umbrella
     Prerequisite : PowerShell 5.1+, Administrator privileges, Print Management features; Windows Server 2016/2019/2022
-    Version      : 1.0.0
-    Date         : 2026-08-23
+    Version      : 2.0.0
+    Date         : 2026-09-16
 #>
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
-    Justification = 'RELAUNCH-SPEC requires colored console output via Write-Host with [+]/[!]/[-]/[*] prefixes.')]
+    Justification = 'STANDARDS requires colored console output via Write-Host with [+]/[!]/[-]/[*] prefixes.')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '',
     Justification = 'Script parameters are consumed inside function Main through dynamic scoping.')]
 [CmdletBinding(SupportsShouldProcess)]

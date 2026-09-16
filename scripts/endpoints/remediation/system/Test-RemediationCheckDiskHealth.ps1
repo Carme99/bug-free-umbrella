@@ -25,8 +25,8 @@
     File Name  : Test-RemediationCheckDiskHealth.ps1
     Author     : Intune Admin
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding()]
@@ -76,7 +76,8 @@ function Main {
             if ($volume.Size -gt 0) {
                 $freePercentage = ($volume.SizeRemaining / $volume.Size) * 100
                 if ($freePercentage -lt 5) {
-                    $issues += "Volume $($volume.DriveLetter): Critically low disk space ($([math]::Round($freePercentage, 2))% free)"
+                    $issues += ("Volume $($volume.DriveLetter): Critically low disk space " +
+                    "($([math]::Round($freePercentage, 2))% free)")
                 }
             }
         }

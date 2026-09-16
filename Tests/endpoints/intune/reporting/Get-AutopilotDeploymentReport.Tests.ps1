@@ -10,9 +10,20 @@ Describe "Get-AutopilotDeploymentReport" {
         $scriptPath = Join-Path $repoRoot $scriptRelPath
 
         # Stub product-module cmdlets not installed on this machine so Pester can mock them.
-        function Connect-MgGraph { }
-        function Get-MgContext { }
-        function Get-MgDeviceManagementManagedDevice { }
+        # These stand in for advanced (CmdletBinding) functions: declare them as advanced so an
+        # unsupported parameter fails the test instead of being silently accepted.
+        function Connect-MgGraph {
+            [CmdletBinding()]
+            param([string[]]$Scopes)
+        }
+        function Get-MgContext {
+            [CmdletBinding()]
+            param()
+        }
+        function Get-MgDeviceManagementManagedDevice {
+            [CmdletBinding()]
+            param([string]$Filter, [switch]$All)
+        }
 
         # Safe: the top-level guard skips Main when dot-sourced.
         . $scriptPath
@@ -57,11 +68,11 @@ Describe "Get-AutopilotDeploymentReport" {
     }
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $raw | Should -Match '(?m)^\s*File Name\s*:\s*Get-AutopilotDeploymentReport\.ps1\s*$'
-            $raw | Should -Match '(?m)^\s*Version\s*:\s*1\.0\.0\s*$'
-            $raw | Should -Match '(?m)^\s*Date\s*:\s*2026-08-23\s*$'
+            $raw | Should -Match '(?m)^\s*Version\s*:\s*2\.0\.0\s*$'
+            $raw | Should -Match '(?m)^\s*Date\s*:\s*2026-09-16\s*$'
             $raw | Should -Match '(?m)^\s*Prerequisite\s*:\s*PowerShell 7\.0\s*$'
         }
 
@@ -123,6 +134,23 @@ Describe "Get-AutopilotDeploymentReport" {
             $text | Should -Match '\[\+\] Compliant: 1'
             $text | Should -Match '\[-\] NonCompliant: 1'
             $text | Should -Match '\[!\] Unknown: 0'
+        }
+
+        It "Emits an enrollment filter containing only valid deviceEnrollmentType enum members" {
+            Main *>&1 | Out-Null
+
+            Should -Invoke Get-MgDeviceManagementManagedDevice -Times 1 -Exactly -ParameterFilter {
+                $literals = [regex]::Matches($Filter, "deviceEnrollmentType eq '([^']+)'") |
+                    ForEach-Object { $_.Groups[1].Value }
+
+                # Members of microsoft.graph.deviceEnrollmentType (Graph v1.0).
+                $valid = '^(unknown|userEnrollment|deviceEnrollmentManager|appleBulkWithUser|' +
+                    'appleBulkWithoutUser|windowsAzureADJoin|windowsBulkUserless|windowsAutoEnrollment|' +
+                    'windowsBulkAzureDomainJoin|windowsCoManagement|windowsAzureADJoinUsingDeviceAuth|' +
+                    'appleUserEnrollment|appleUserEnrollmentWithServiceAccount)$'
+
+                $literals.Count -gt 0 -and -not ($literals | Where-Object { $_ -notmatch $valid })
+            } -Because 'Intune rejects filter literals outside the deviceEnrollmentType enum with HTTP 400'
         }
 
         It "Reuses an existing Graph session without reconnecting when Get-MgContext returns one" {

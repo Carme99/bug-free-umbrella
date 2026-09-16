@@ -62,7 +62,7 @@ Write-Host "[+] Imported BugFreeUmbrella: $commandCount commands available." -Fo
 
 Write-Host ''
 Write-Host 'Next steps:'
-Write-Host '  Get-BUScript -Search intune           # discover scripts (35 matches today)'
+Write-Host '  Get-BUScript -Search intune           # discover scripts by keyword'
 Write-Host '  Invoke-BUScript -Path <script> -WhatIf # preview any script safely'
 Write-Host '  Register-BUCompleter                  # tab completion for -Category / -Name'
 Write-Host '  Install-Module BugFreeUmbrella -Scope CurrentUser  # published module on PSGallery'

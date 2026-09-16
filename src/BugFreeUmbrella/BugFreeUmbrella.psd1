@@ -1,11 +1,11 @@
 ﻿@{
     # --- Identity ---
-    ModuleVersion      = '1.0.0'
+    ModuleVersion      = '2.0.0'
     GUID               = '7cc494cc-4523-4630-a69e-12b77001c0f0'
     Author             = 'Carme99'
     CompanyName        = 'Carme99'
     Copyright          = '(c) Carme99. Licensed under Apache-2.0.'
-    Description        = '358 PowerShell scripts as importable module'
+    Description        = '381 catalogued PowerShell scripts (566 on disk) as an importable module'
 
     # --- Requirements ---
     PowerShellVersion  = '5.1'
@@ -45,18 +45,35 @@
         'Get-AWSResourceInventory',
         'Get-AzureADGuestAudit',
         'Get-AzureADLicenseReport',
+        'Get-AzureArcServerFleet',
+        'Get-AzureBackupComplianceReport',
+        'Get-AzureCostOptimizationReport',
+        'Get-AzureDiagnosticSettingsReport',
+        'Get-AzureFlowLogMigrationStatus',
+        'Get-AzureMonitorAlertCoverage',
+        'Get-AzureNetworkSecurityAudit',
+        'Get-AzurePolicyComplianceReport',
         'Get-AzureResourceHealth',
+        'Get-AzureStorageAccountAudit',
+        'Get-AzureStorageLifecycleReport',
+        'Get-AzureUpdateManagerReport',
         'Get-BackupStatus',
         'Get-BatteryHealth',
         'Get-BitLockerStatus',
         'Get-BUScript',
+        'Get-DefenderAsrRuleAudit',
         'Get-DefenderO365ThreatReport',
+        'Get-DefenderVulnerabilityReport',
         'Get-DeviceComplianceReport',
         'Get-DeviceGroupMembership',
         'Get-DeviceHealthScore',
+        'Get-DhcpServerHealth',
         'Get-DiskReport',
         'Get-DistributionListAudit',
+        'Get-DlpPolicyPostureReport',
+        'Get-DnsServerHealth',
         'Get-DockerHealthCheck',
+        'Get-EntraBreakGlassAccountAudit',
         'Get-EventLogReport',
         'Get-ExchangeServerHealth',
         'Get-ExpiredCertificates',
@@ -81,13 +98,16 @@
         'Get-OpenPortScan',
         'Get-PerformanceReport',
         'Get-PerformanceTrends',
+        'Get-PimRoleAssignmentAudit',
         'Get-PolicyAssignmentReport',
         'Get-PostgreSQLHealth',
         'Get-PowerPlatformGovernance',
         'Get-PrintServerHealth',
+        'Get-RetentionPolicyCoverageReport',
         'Get-SecurityBaseline',
         'Get-SecurityEventAudit',
         'Get-ServiceAccountAudit',
+        'Get-SettingsCatalogPolicyReport',
         'Get-SharedMailboxReport',
         'Get-SoftwareInventory',
         'Get-SoftwareLicenseCompliance',
@@ -107,7 +127,6 @@
         'Get-WindowsUpdateCompliance',
         'Get-WingetUpdateCompliance',
         'Install-TeamsAVD',
-        'Install-TeamsAVDTests',
         'Invoke-AdobeRum',
         'Invoke-AnalyzeBuildPerformance',
         'Invoke-APDetection',
@@ -121,7 +140,6 @@
         'Invoke-GenerateWingetScripts',
         'Invoke-ManageFirewallRules',
         'Invoke-ManageQuarantinedEmails',
-        'Invoke-ManageQuarantinedEmailsTests',
         'Invoke-ManageRestorePoints',
         'Invoke-MonitorAzureAPIManagement',
         'Invoke-MonitorAzureDevOpsPipelines',
@@ -186,6 +204,7 @@
         'Invoke-RemediationRegionLanguageSettings',
         'Invoke-Sccm',
         'Invoke-SecurityComplianceScan',
+        'Invoke-StartAzurePolicyRemediation',
         'Invoke-TemplatesWinget',
         'Invoke-Uptime',
         'Invoke-UseWUServer',
@@ -265,16 +284,20 @@
         'Sync-UserGroupToPrimaryDeviceGroup',
         'Test-AdobeRum',
         'Test-APIHealth',
+        'Test-AutopilotHardwareHashCsv',
+        'Test-AzureRecoveryVaultRedundancy',
         'Test-BackupIntegrity',
         'Test-BicepTemplates',
         'Test-BitLockerKeyBackup',
         'Test-CertificateExpiration',
         'Test-CISBenchmark',
+        'Test-ConditionalAccessBaseline',
         'Test-DisableWindowsUpdateAccess',
         'Test-DoNotConnectToWindowsUpdateInternetLocations',
         'Test-Drivers',
+        'Test-EmailAuthenticationRecords',
+        'Test-FailoverClusterHealth',
         'Test-IntuneConnectivity',
-        'Test-IntuneConnectivityTests',
         'Test-NetworkConnectivity',
         'Test-NetworkDiagnostics',
         'Test-NoAutoUpdate',
@@ -382,6 +405,7 @@
         'Test-WUServer',
         'Unblock-AMDDriver',
         'Update-AllAppsWinget',
+        'Update-AzureArcAgent',
         'Update-DotNetRuntimes',
         'Update-M365Apps',
         'Update-M365AppsOfficeApps'
@@ -397,7 +421,7 @@
             LicenseUri                 = 'https://github.com/Carme99/bug-free-umbrella/blob/main/LICENSE'
             ProjectUri                 = 'https://github.com/Carme99/bug-free-umbrella'
             IconUri                    = ''
-            ReleaseNotes               = '1.0.0 - Clean-slate relaunch'
+            ReleaseNotes               = '2.0.0 - - 2026-09-16 - Coverage & Correctness > v2.0.0 expands the collection into the domains Microsoft documents but the toolkit did not > cover, repairs scripts that could not run at all, wires the documented CI gates so generated > artifacts can no longer drift, and makes the script-counting convention authoritative. > No script or path was renamed or removed. ### Release Scope - **16 new sub-categories** across Azure, Microsoft Entra, Microsoft Defender, Microsoft Purview, Intune and Win...'
             RequireLicenseAcceptance   = $false
             ExternalModuleDependencies = @()
         }

@@ -41,8 +41,8 @@
     File Name  : Test-RemediationCheckPageFileConfiguration.ps1
     Author     : Intune Admin
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding()]
@@ -80,10 +80,12 @@ function Main {
                 $initialSize = $pf.InitialSize
                 $maximumSize = $pf.MaximumSize
 
-                $notes += "Custom page file configured (initial $initialSize MB, maximum $maximumSize MB) - sizing can't be generalized, informational only"
+                $notes += ("Custom page file configured (initial $initialSize MB, maximum $maximumSize MB) - sizing " +
+                "can't be generalized, informational only")
 
                 if ($initialSize -lt $recommendedMin) {
-                    $issues += "Custom page file initial size ($initialSize MB) is below the configured minimum ($recommendedMin MB at ${MinRatio}x RAM)"
+                    $issues += ("Custom page file initial size ($initialSize MB) is below the configured minimum " +
+                    "($recommendedMin MB at ${MinRatio}x RAM)")
                 }
             }
         }

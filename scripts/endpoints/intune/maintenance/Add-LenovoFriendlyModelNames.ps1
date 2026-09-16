@@ -95,8 +95,8 @@
     File Name: Add-LenovoFriendlyModelNames.ps1
     Author: System Administrator
     Prerequisite: PowerShell 5.1+
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
     Last Modified: 2026-01-16
 
     Requirements:

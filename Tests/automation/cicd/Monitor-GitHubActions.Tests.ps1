@@ -54,9 +54,9 @@ Describe "Monitor-GitHubActions" {
     }
 
     Context "Help & Metadata" {
-        It "Declares Version 1.0.0 and relaunch Date 2026-08-23 in NOTES" {
-            $helpText | Should -Match 'Version:\s*1\.0\.0'
-            $helpText | Should -Match 'Date:\s*2026-08-23'
+        It "Declares Version 2.0.0 and relaunch Date 2026-09-16 in NOTES" {
+            $helpText | Should -Match 'Version:\s*2\.0\.0'
+            $helpText | Should -Match 'Date:\s*2026-09-16'
         }
 
         It "Names the disk file and preserves the original author in NOTES" {

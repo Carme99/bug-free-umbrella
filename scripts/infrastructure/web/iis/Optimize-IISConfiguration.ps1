@@ -41,8 +41,8 @@
     File Name   : Optimize-IISConfiguration.ps1
     Author      : IT Infrastructure Team
     Prerequisite: PowerShell 5.1+, IISAdministration module (Windows), Administrator privileges
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 #>
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',

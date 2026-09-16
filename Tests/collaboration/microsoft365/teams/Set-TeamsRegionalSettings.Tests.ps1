@@ -20,10 +20,10 @@ Describe "Set-TeamsRegionalSettings.ps1" {
     }
 
     Context "Help & Metadata" {
-        It "Declares Version 1.0.0 and relaunch Date 2026-08-23" {
+        It "Declares Version 2.0.0 and relaunch Date 2026-09-16" {
             $raw = Get-Content -LiteralPath $scriptPath -Raw
-            $raw | Should -Match '(?m)^\s*Version\s*:\s*1\.0\.0\s*$'
-            $raw | Should -Match '(?m)^\s*Date\s*:\s*2026-08-23\s*$'
+            $raw | Should -Match '(?m)^\s*Version\s*:\s*2\.0\.0\s*$'
+            $raw | Should -Match '(?m)^\s*Date\s*:\s*2026-09-16\s*$'
         }
 
         It "Declares File Name matching the actual filename and PowerShell 7.0 prerequisite" {

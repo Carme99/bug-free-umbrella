@@ -27,28 +27,37 @@ jobs:
         id: lychee
         uses: lycheeverse/lychee-action@v2
         with:
-          # lychee args: verbose, no progress, check all markdown, exclude mailto and self-repo transient 404s, tolerate 429
+          # lychee args: verbose, no progress, check all markdown; exclude mailto and only the
+          # self-repo patterns that are unstable or unverifiable from CI: compare/ links and
+          # releases/tag/ pages 404 until the referenced tags/releases exist, and GitHub serves
+          # 404 on /stargazers to non-browser clients. Every other internal link — issues, pull
+          # requests, blob, tree, wiki — is checked.
           args: >-
             --verbose --no-progress
             './**/*.md'
             --exclude 'mailto:'
-            --exclude 'https://github.com/Carme99/bug-free-umbrella'
-            --accept 200,204,206,301,302,303,307,308,429
+            --exclude 'https://github\.com/Carme99/bug-free-umbrella/compare/'
+            --exclude 'https://github\.com/Carme99/bug-free-umbrella/releases/tag/'
+            --exclude 'https://github\.com/Carme99/bug-free-umbrella/stargazers'
+            --accept 200,204,206,301,302,303,307,308
             --timeout 20
             --max-retries 2
-          fail: false
+          # Gating: a non-zero lychee exit code fails this step, and therefore the job.
+          # Do NOT set fail: false here — that made the job report success unconditionally.
+          fail: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Summary
         if: always()
+        env:
+          LYCHEE_EXIT_CODE: ${{ steps.lychee.outputs.exit_code }}
         run: |
           echo "### Markdown Link Check" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          if [ "${{ steps.lychee.outcome }}" = "success" ]; then
+          echo "lychee exit code: ${LYCHEE_EXIT_CODE:-<unset>}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${LYCHEE_EXIT_CODE:-1}" = "0" ]; then
             echo "✅ No broken links detected." >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "⚠️ Link check completed with warnings — see lychee output above. (fail: false — not blocking)" >> "$GITHUB_STEP_SUMMARY"
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "Lychee outcome: ${{ steps.lychee.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "❌ Broken links detected — see the lychee step output above. This check is gating." >> "$GITHUB_STEP_SUMMARY"
           fi

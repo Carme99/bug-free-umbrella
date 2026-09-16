@@ -30,8 +30,8 @@
     File Name  : Invoke-RemediationFixSystemFileCorruption.ps1
     Author     : Intune Admin
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 
     Intune Context: SYSTEM. May require a restart to complete and can take
     10-30 minutes; detailed results are logged in C:\Windows\Logs\CBS\CBS.log.
@@ -76,7 +76,8 @@ function Main {
             Write-Host "[*] System drive free space: $freeSpaceGB GB" -ForegroundColor Cyan
 
             if ($freeSpaceGB -lt $minDiskSpaceGB) {
-                Write-Host "[-] Error repairing system files: insufficient disk space (free: ${freeSpaceGB} GB, required: ${minDiskSpaceGB} GB)" -ForegroundColor Red
+                Write-Host ("[-] Error repairing system files: insufficient disk space (free: ${freeSpaceGB} GB, " +
+                "required: ${minDiskSpaceGB} GB)") -ForegroundColor Red
                 return 1
             }
         }
@@ -85,7 +86,8 @@ function Main {
         # BatteryStatus: 1 = Discharging, 4 = Low, 5 = Critical (all mean: on battery).
         $battery = Get-CimInstance -ClassName Win32_Battery -ErrorAction SilentlyContinue
         if ($battery -and $battery.BatteryStatus -in @(1, 4, 5)) {
-            Write-Host "[-] Error repairing system files: device is running on battery power; connect to AC before running repairs" -ForegroundColor Red
+            Write-Host ("[-] Error repairing system files: device is running on battery power; connect to AC before " +
+            "running repairs") -ForegroundColor Red
             return 1
         }
 
@@ -120,7 +122,8 @@ function Main {
         foreach ($action in $actions) {
             Write-Host "  - $action" -ForegroundColor Cyan
         }
-        Write-Host "[+] System file corruption remediation completed; a restart may be required to finish repairs" -ForegroundColor Green
+        Write-Host ("[+] System file corruption remediation completed; a restart may be required to finish " +
+        "repairs") -ForegroundColor Green
         return 0
     }
     catch {

@@ -26,8 +26,8 @@
     File Name  : Invoke-RemediationKeyboardLayout.ps1
     Author     : Intune / Proactive Remediations
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 
     Keyboard layout identifiers (Microsoft keyboard reference):
       00000809 = United Kingdom (standard) https://learn.microsoft.com/en-us/globalization/keyboards/kbduk
@@ -60,7 +60,8 @@ function Main {
         # Converged profile: en-GB sits first and carries exactly the required tips.
         $isConverged = $false
         if ($ukLanguage -and $languageList.Count -gt 0) {
-            $tipsMatched = @(Compare-Object -ReferenceObject $requiredTips -DifferenceObject @($ukLanguage.InputMethodTips)).Count -eq 0
+            $tipsMatched = @(Compare-Object -ReferenceObject $requiredTips `
+                    -DifferenceObject @($ukLanguage.InputMethodTips)).Count -eq 0
             $isConverged = ($languageList[0].LanguageTag -eq 'en-GB') -and $tipsMatched
         }
 
@@ -90,7 +91,8 @@ function Main {
 
         if ($PSCmdlet.ShouldProcess('user language list', 'Set en-GB as the primary UK keyboard layout')) {
             Set-WinUserLanguageList -LanguageList $newLanguageList -Force -ErrorAction Stop
-            Write-Host "[+] UK keyboard layout set as primary. User may need to sign out for changes to fully apply." -ForegroundColor Green
+            Write-Host ("[+] UK keyboard layout set as primary. User may need to sign out for changes to fully " +
+            "apply.") -ForegroundColor Green
         }
         return 0
     }

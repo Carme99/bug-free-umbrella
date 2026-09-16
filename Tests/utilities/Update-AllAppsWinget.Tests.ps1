@@ -38,12 +38,12 @@ Describe "Update-AllAppsWinget" {
             $script:text = Get-Content -Raw $scriptPath
         }
 
-        It "Declares all five .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares all five .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $script:text | Should -Match 'File Name\s*:\s*Update-AllAppsWinget\.ps1'
             $script:text | Should -Match 'Author\s*:\s*\S+'
             $script:text | Should -Match 'Prerequisite\s*:\s*\S+'
-            $script:text | Should -Match 'Version\s*:\s*1\.0\.0'
-            $script:text | Should -Match 'Date\s*:\s*2026-08-23'
+            $script:text | Should -Match 'Version\s*:\s*2\.0\.0'
+            $script:text | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It "Documents exactly one .PARAMETER per declared parameter, in order" {

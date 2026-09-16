@@ -60,13 +60,13 @@
     File Name: Monitor-AzureResources.ps1
     Author: IT Operations
     Prerequisite: PowerShell 7.0, Az PowerShell module (Az.Accounts, Az.Resources, Az.Compute)
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 #>
 
 #Requires -Version 7.0
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
-    Justification = 'RELAUNCH-SPEC section 3 mandates Write-Host output with [+]/[!]/[-]/[*] prefixes')]
+    Justification = 'STANDARDS section 3 mandates Write-Host output with [+]/[!]/[-]/[*] prefixes')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '',
     Justification = 'Params consumed inside Main via scoping; see help')]
 [CmdletBinding()]

@@ -12,8 +12,16 @@ Describe "Compare-ConfigurationDrift.ps1" {
         $ast = [System.Management.Automation.Language.Parser]::ParseFile($scriptFile, [ref]$tokens, [ref]$parseErrors)
 
         # Placeholder definitions so Pester can Mock commands without the module installed.
-        function Invoke-MgGraphRequest { param([string]$Uri, [string]$Method) }
-        function Connect-IntuneGraph { }
+        # `Connect-IntuneGraph` is an advanced helper function, so its stub is advanced too and
+        # mirrors the helper's real parameter set: an undeclared parameter fails binding.
+        function Invoke-MgGraphRequest {
+            [CmdletBinding()]
+            param([string]$Uri, [string]$Method)
+        }
+        function Connect-IntuneGraph {
+            [CmdletBinding()]
+            param([string[]]$Scopes, [string]$TenantId)
+        }
 
         # Safe: the script's top-level guard skips Main when dot-sourced.
         . $scriptFile
@@ -47,8 +55,8 @@ Describe "Compare-ConfigurationDrift.ps1" {
             $rawText | Should -Match 'File Name:\s*Compare-ConfigurationDrift\.ps1'
             $rawText | Should -Match 'Author:\s*\S+'
             $rawText | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
-            $rawText | Should -Match 'Version:\s*1\.0\.0'
-            $rawText | Should -Match 'Date:\s*2026-08-23'
+            $rawText | Should -Match 'Version\s*:\s*2\.0\.0'
+            $rawText | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It "Has one .PARAMETER entry per declared parameter" {

@@ -18,11 +18,11 @@ Describe "Get-SoftwareInventory" {
     }
 
     Context "Help & Metadata" {
-        It "Declares File Name, Version 1.0.0 and relaunch Date 2026-08-23 in the header" {
+        It "Declares File Name, Version 2.0.0 and relaunch Date 2026-09-16 in the header" {
             $raw = Get-Content -Raw $scriptPath
             $raw | Should -Match 'File Name:\s*Get-SoftwareInventory\.ps1'
-            $raw | Should -Match 'Version:\s*1\.0\.0'
-            $raw | Should -Match 'Date:\s*2026-08-23'
+            $raw | Should -Match 'Version:\s*2\.0\.0'
+            $raw | Should -Match 'Date:\s*2026-09-16'
             $raw | Should -Match 'Author:\s*\S+'
             $raw | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
         }

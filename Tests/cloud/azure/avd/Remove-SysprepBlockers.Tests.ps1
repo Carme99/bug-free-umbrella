@@ -13,8 +13,8 @@
     File Name   : Remove-SysprepBlockers.Tests.ps1
     Author      : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 #>
 
 Describe 'Remove-SysprepBlockers' {
@@ -57,7 +57,7 @@ Describe 'Remove-SysprepBlockers' {
         $script:sysprepBlocker = [pscustomobject]@{
             Name            = 'Contoso.Blocker'
             PackageFullName = $script:blockerFullName
-            Version         = '1.0.0.0'
+            Version         = '2.0.0.0'
             Publisher       = 'CN=Contoso'
             SignatureKind   = 'Private'
             NonRemovable    = $false
@@ -77,8 +77,8 @@ Describe 'Remove-SysprepBlockers' {
             $raw | Should -Match '(?m)File Name\s*:\s*Remove-SysprepBlockers\.ps1'
             $raw | Should -Match '(?m)Author\s*:\s*\S+'
             $raw | Should -Match '(?m)Prerequisite\s*:\s*PowerShell 7\.0'
-            $raw | Should -Match '(?m)Version\s*:\s*1\.0\.0'
-            $raw | Should -Match '(?m)Date\s*:\s*2026-08-23'
+            $raw | Should -Match '(?m)Version\s*:\s*2\.0\.0'
+            $raw | Should -Match '(?m)Date\s*:\s*2026-09-16'
         }
 
         It 'Has one PARAMETER entry per declared parameter' {

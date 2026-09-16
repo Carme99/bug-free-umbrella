@@ -23,8 +23,8 @@ Describe "New-WingetRemediationScript" {
             $help | Should -Match 'File Name\s*:\s*New-WingetRemediationScript\.ps1'
             $help | Should -Match 'Author\s*:'
             $help | Should -Match 'Prerequisite\s*:\s*PowerShell 7\.0'
-            $help | Should -Match 'Version\s*:\s*1\.0\.0'
-            $help | Should -Match 'Date\s*:\s*2026-08-23'
+            $help | Should -Match 'Version\s*:\s*2\.0\.0'
+            $help | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It "Declares a .PARAMETER entry for every param() variable" {

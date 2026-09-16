@@ -40,12 +40,12 @@
     File Name    : Reset-NetworkStack.ps1
     Author       : Server Management Team
     Prerequisite : PowerShell 5.1+, Administrator privileges, may require system restart
-    Version      : 1.0.0
-    Date         : 2026-08-23
+    Version      : 2.0.0
+    Date         : 2026-09-16
 #>
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
-    Justification = 'RELAUNCH-SPEC requires colored console output via Write-Host with [+]/[!]/[-]/[*] prefixes.')]
+    Justification = 'STANDARDS requires colored console output via Write-Host with [+]/[!]/[-]/[*] prefixes.')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '',
     Justification = 'Script parameters are consumed inside function Main through dynamic scoping.')]
 [CmdletBinding(SupportsShouldProcess)]

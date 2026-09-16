@@ -1,8 +1,9 @@
 # Changelog
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
-![Release Date](https://img.shields.io/badge/release-2026--08--23-green)
-![Total Scripts](https://img.shields.io/badge/scripts-539-orange)
+![Version](https://img.shields.io/badge/version-2.0.0-blue)
+![Release Date](https://img.shields.io/badge/release-2026--09--16-green)
+![Catalogued Scripts](https://img.shields.io/badge/catalogued%20scripts-381-orange)
+![Scripts on Disk](https://img.shields.io/badge/scripts%20on%20disk-566-orange)
 ![License](https://img.shields.io/badge/license-Apache%202.0-red)
 ![PowerShell](https://img.shields.io/badge/PowerShell-5.1%2B-blue)
 
@@ -17,8 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [🌂 About Our Release Names](#-about-our-release-names)
 - **Latest Release:**
-  - [v1.0.0 (2026-08-23) - Clean-Slate Relaunch](#100---2026-08-23---clean-slate-relaunch)
+  - [v2.0.0 (2026-09-16) - Coverage & Correctness](#200---2026-09-16---coverage--correctness)
 - **Previous Releases** (historical, pre-relaunch versioning; dates are each release's own):
+  - [v1.0.0 (2026-08-23) - Clean-Slate Relaunch](#100---2026-08-23---clean-slate-relaunch)
   - [v5.0.0 (2026-08-23) 🌪️ Hurricane - Platform & Distribution Release](#500---2026-08-23-🌪️-hurricane---platform--distribution-release)
   - [v4.4.0 (2026-08-20) 🌧️ Nimbus - Catalog & Intelligence Release](#440---2026-08-20-🌧️-nimbus---catalog--intelligence-release)
   - [v4.3.0 (2026-08-08) 🌈 Zephyr - Quality & Enforcement Release](#430---2026-08-08-🌈-zephyr---quality--enforcement-release)
@@ -62,13 +64,158 @@ Bug-Free Umbrella historically used **weather-themed codenames** for releases. A
 
 ---
 
+## [2.0.0] - 2026-09-16 - Coverage & Correctness
+
+> v2.0.0 expands the collection into the domains Microsoft documents but the toolkit did not
+> cover, repairs scripts that could not run at all, wires the documented CI gates so generated
+> artifacts can no longer drift, and makes the script-counting convention authoritative.
+> No script or path was renamed or removed.
+
+### Release Scope
+
+- **16 new sub-categories** across Azure, Microsoft Entra, Microsoft Defender, Microsoft Purview,
+  Intune and Windows Server, each grounded in Microsoft Learn documentation.
+- **Correctness sweep** — 38 logged defects investigated and resolved, including four Intune
+  scripts that aborted on connect and six call sites that passed parameters the shared helper
+  never accepted.
+- **CI hardening** — the three `tools/*.ps1 -Validate` modes that were documented as gates but
+  never wired are now gating, the module freshness gate asserts parity instead of a floor, and the
+  link checker can fail again.
+- **Counting convention** — `metadata.json` now emits `totalScripts`, `excludedScripts` and
+  `onDiskScripts` with a stated rule, so the collection's size is stated one way everywhere.
+- **Standards v2** — `docs/STANDARDS.md` replaces `docs/STANDARDS.md` as the contract of
+  record, with new rules for helper interfaces, REST paging, type normalisation, working-directory
+  hygiene and test-stub fidelity.
+- **Version stamp** — every script and mirrored test re-stamped to standard revision `2.0.0`
+  (`Date` `2026-09-16`) with `tools/Update-StandardVersion.ps1`.
+
+### Added
+
+**Azure — governance, hybrid, networking, storage, observability, protection, cost, patching**
+
+- `cloud/azure/governance/policy/` — `Get-AzurePolicyComplianceReport`, `Start-AzurePolicyRemediation`
+- `cloud/azure/arc/servers/` — `Get-AzureArcServerFleet`, `Update-AzureArcAgent`
+- `cloud/azure/network/` — `Get-AzureNetworkSecurityAudit`, `Get-AzureFlowLogMigrationStatus`
+- `cloud/azure/storage/` — `Get-AzureStorageAccountAudit`, `Get-AzureStorageLifecycleReport`
+- `cloud/azure/monitoring/` — `Get-AzureMonitorAlertCoverage`, `Get-AzureDiagnosticSettingsReport`
+- `cloud/azure/backup/` — `Get-AzureBackupComplianceReport`, `Test-AzureRecoveryVaultRedundancy`
+- `cloud/azure/cost/` — `Get-AzureCostOptimizationReport`
+- `cloud/azure/update/` — `Get-AzureUpdateManagerReport`
+
+**Security — identity and endpoint protection**
+
+- `security/identity/conditional-access/` — `Test-ConditionalAccessBaseline`
+- `security/identity/privileged-access/` — `Get-PimRoleAssignmentAudit`
+- `security/identity/entra/` — `Get-EntraBreakGlassAccountAudit`
+- `security/defender/` — `Get-DefenderVulnerabilityReport`, `Get-DefenderAsrRuleAudit`
+
+**Microsoft 365 — compliance and mail authentication**
+
+- `collaboration/microsoft365/purview/` — `Get-RetentionPolicyCoverageReport`, `Get-DlpPolicyPostureReport`
+- `collaboration/microsoft365/exchange-online/` — `Test-EmailAuthenticationRecords`
+
+**Intune — configuration policy and Autopilot onboarding**
+
+- `endpoints/intune/configuration/` — `Get-SettingsCatalogPolicyReport`
+- `endpoints/intune/autopilot/` — `Test-AutopilotHardwareHashCsv`
+
+**Windows Server — DNS, DHCP and clustering**
+
+- `infrastructure/windows/dns/` — `Get-DnsServerHealth`
+- `infrastructure/windows/dhcp/` — `Get-DhcpServerHealth`
+- `infrastructure/windows/cluster/` — `Test-FailoverClusterHealth`
+
+**Repository tooling**
+
+- `tools/Update-StandardVersion.ps1` — re-stamps the standard revision across every script and
+  mirrored test, including the assertion literals inside the suites. Supports `-WhatIf`.
+- `scripts/.catalog/metadata.schema.json` — JSON Schema for the catalog, resolving the previously
+  dead `$schema` reference.
+
+### Fixed
+
+**Scripts that could not run**
+
+- Four Intune scripts passed `-TenantId` to `Connect-IntuneGraph`, which declared only `-Scopes`;
+  parameter binding failed terminally, so `Compare-ConfigurationDrift`, `Get-DeviceHealthScore`,
+  `Get-PolicyAssignmentReport` and `Get-UserDeviceAffinity` aborted on connect. The helper now
+  accepts and forwards `-TenantId`, and `Export-IntuneReportToHTML` accepts `-Description`, which
+  two scripts already passed (the default HTML export path always failed).
+- `Invoke-DeviceBulkActions` called three Microsoft.Graph cmdlets that do not exist
+  (`Invoke-MgSync…`, `Invoke-MgRestart…`, `Invoke-MgCollect…Diagnostic`); they now call
+  `Sync-MgDeviceManagementManagedDevice`, `Restart-MgDeviceManagementManagedDeviceNow` and
+  `New-MgDeviceManagementManagedDeviceLogCollectionRequest`.
+- `Get-AutopilotDeploymentReport` filtered on `deviceEnrollmentType eq 'windowsAutopilotEnrollment'`,
+  which is not an enum member, so the query was always rejected.
+- `Get-MDEDeviceHealth` accepted `-OutputFormat CSV` and silently wrote nothing while exiting 0.
+
+**Silently wrong output**
+
+- `Invoke-DeviceBulkActions -GroupName` resolved Entra directory-object ids and passed them as Intune
+  managed-device ids, targeting zero devices on the retire/wipe path; it now resolves devices
+  correctly and no longer reports success when nothing was targeted.
+- `Get-AppInstallErrorReport` compared a raw Graph timestamp to a `[datetime]` without normalising
+  (so `-Days` was not applied) and never followed `@odata.nextLink` (so only the first page was
+  reported).
+- `Find-PolicyConflicts` detected the same overlap twice and reported it at two severities,
+  inflating the conflict count.
+- `Export-IntuneConfiguration` advertised eight export categories and implemented two; unsupported
+  `-ConfigTypes` values now fail validation and a run exporting nothing exits non-zero.
+- `Get-DeviceHealthScore` documented a 100-point rubric while the reachable maximum was 90.
+- `Get-DeviceGroupMembership` aborted on administrative-unit memberships returned by `/memberOf`.
+- `New-WingetSourceConfig` mutated unconditionally while documenting idempotency;
+  `Add-LenovoFriendlyModelNames` rewrote Entra extension attributes on every run.
+
+**Repository**
+
+- The committed module (`src/BugFreeUmbrella/*`) was regenerated — it previously exported three
+  wrappers whose backing scripts did not exist.
+- Six scripts and tests wrote artifacts into the working directory, one of them a file literally
+  named `C:\AVD\M365Apps\download.xml`; all now default their output under `$env:TEMP`.
+- `Tests/Collaboration/` was removed — it collided case-insensitively with `Tests/collaboration/`
+  on Windows and macOS and duplicated an existing mirror.
+- 65 scripts exceeded the 120-column formatting rule; all were rewrapped with byte-identical output.
+
+### Changed
+
+- **`docs/STANDARDS.md`** replaces `docs/STANDARDS.md` as the binding contract, adding rules for
+  helper interfaces, REST paging and type normalisation, working-directory hygiene, and test-stub
+  fidelity (an advanced-function stub is the only way a mocked call site can fail).
+- **Catalog scope is now explicit**: `tools/Build-Catalog.ps1` names the two excluded shim trees and
+  emits `excludedScripts`, `excludedPaths`, `onDiskScripts` and `countingConvention` alongside
+  `totalScripts`, so no document needs to guess.
+- **`docs/Script-Catalog.md`** is now generated from the catalog and validated in CI instead of being
+  a hand-maintained page that listed a fraction of the collection.
+- **CI gates wired** for catalog, docs and module freshness; the module smoke test asserts export
+  parity and that every generated wrapper resolves to a real file, rather than a `>= 350` floor that
+  could not detect wrapper loss.
+- **`markdown-link-check`** now fails on a broken link; it previously branched on a step outcome that
+  `fail: false` made permanently successful.
+- Documentation corrected across `README.md`, `docs/ARCHITECTURE.md`, `docs/MCP-Server.md`,
+  `docs/Catalog-Automation.md`, `WARP.md`, `AGENTS.md`, `install.ps1`, `Invoke-Umbrella.ps1` and the
+  workflow README: removed Claude workflow references, corrected label and export counts, and
+  replaced five competing script counts with the catalog convention.
+- `mcp-server` is versioned with the release and its lockfile is now tracked so `npm ci` works.
+- `AGENTS.md` no longer teaches the top-level `exit` pattern the standards contract forbids.
+
+### Resolved issues
+
+Fixes #265–#302, covering the repository infrastructure, CI, documentation, Intune and
+standards-compliance findings logged during the v2.0.0 audit.
+
+### Upgrade Notes
+
+See [Upgrading to 2.0.0](#upgrading-to-200-coverage--correctness) below.
+
+---
+
 ## [1.0.0] - 2026-08-23 - Clean-Slate Relaunch
 
 > The version counter resets to 1.0.0. Every script in the collection was brought to a single unified standard and re-baselined as BugFreeUmbrella 1.0.0; weather-themed release codenames are retired.
 
 ### Relaunch Scope
 
-- **Unified standard** — all **539 scripts** across 8 domains (automation 6, cloud 15, collaboration 23, data 6, endpoints 426, infrastructure 42, security 16, utilities 5) swept to the standard defined in `docs/RELAUNCH-SPEC.md`.
+- **Unified standard** — all **539 scripts** across 8 domains (automation 6, cloud 15, collaboration 23, data 6, endpoints 426, infrastructure 42, security 16, utilities 5) swept to the standard defined in `docs/STANDARDS.md`.
 - **Per-script test coverage** — every script has a Pester suite under `Tests/`, mirroring the script's repo-relative directory (e.g. `scripts/endpoints/devices/autopatch/V3/detect.ps1` → `Tests/endpoints/devices/autopatch/V3/detect.Tests.ps1`).
 - **Analyzer-clean** — PSScriptAnalyzer reports zero errors across the collection.
 - **Rebrand** — documentation tone moved from whimsical to ops-grade professional; weather-themed codenames dropped from release identity; the module manifest no longer carries `Prerelease` or codename fields. The module name remains `BugFreeUmbrella`.
@@ -1064,7 +1211,7 @@ _For complete details of this version, see the full sample we created._
 
 **Key Scripts Added:**
 - **Get-M365UserInfo.ps1** - Interactive user management toolkit
-  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/user-management/Get-M365UserInfo.ps1)
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/Get-M365UserInfo.ps1)
 - **Manage-QuarantinedEmails.ps1** - Quarantine management
   - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/exchange-online/Manage-QuarantinedEmails.ps1)
 - **Get-UserMailboxPermissions.ps1** - Permission auditing
@@ -1133,7 +1280,7 @@ Includes:
   - 🔗 [View Documentation](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/office-apps/README.md)
 
 **Comprehensive Pester test suite**
-  - 🔗 [View Tests](https://github.com/Carme99/bug-free-umbrella/blob/main/Tests/Collaboration/Update-M365Apps.Tests.ps1)
+  - 🔗 [View Tests](https://github.com/Carme99/bug-free-umbrella/blob/main/Tests/collaboration/microsoft365/office-apps/Update-M365Apps.Tests.ps1)
 
 Test coverage:
 - 100+ test cases covering script structure, documentation, functions, error handling, security
@@ -1461,7 +1608,7 @@ Reorganized 260+ scripts from 20 flat categories into 7 technology-based domains
 ### Added
 
 **QUICK_START.md** - Comprehensive role-based quick start guide
-  - 🔗 [View Documentation](https://github.com/Carme99/bug-free-umbrella/blob/main/QUICK_START.md)
+  - 🔗 [View Documentation](https://github.com/Carme99/bug-free-umbrella/blob/main/docs/Getting-Started.md)
 
 Contents:
 - 7 role-specific entry points
@@ -1520,7 +1667,7 @@ Script grew from 541 to ~1,928 lines with backward compatibility maintained.
 
 **Critical Syntax Errors:**
 - **Invoke-SecurityComplianceScan.ps1**: Fixed space in filename
-  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/security/compliance/Invoke-SecurityComplianceScan.ps1)
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/security/hardening/Invoke-SecurityComplianceScan.ps1)
 - **Get-KubernetesHealthCheck.ps1**: Fixed variable interpolation
   - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/cloud/containers/Get-KubernetesHealthCheck.ps1)
 
@@ -1558,11 +1705,11 @@ Complete solution for managing regional settings across Microsoft 365.
 
 **Key Scripts:**
 - **Set-UserLanguageSettings.ps1** - M365 user account language settings
-  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/regional-settings/Set-UserLanguageSettings.ps1)
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/azure-ad/Set-UserLanguageSettings.ps1)
 - **Set-MailboxRegionalSettings.ps1** - Exchange Online mailbox configuration
-  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/regional-settings/Set-MailboxRegionalSettings.ps1)
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/exchange-online/Set-MailboxRegionalSettings.ps1)
 - **Set-SiteRegionalSettings.ps1** - SharePoint site settings
-  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/regional-settings/Set-SiteRegionalSettings.ps1)
+  - 🔗 [View Source](https://github.com/Carme99/bug-free-umbrella/blob/main/scripts/collaboration/microsoft365/sharepoint-onedrive/Set-SiteRegionalSettings.ps1)
 - Plus 11 more regional settings scripts
 
 #### Proactive Remediations (6 New Scripts - 3 Pairs)
@@ -1637,7 +1784,8 @@ Comprehensive documentation suite:
 
 | Version | Date | Codename | Type | Major Changes |
 |---------|------|----------|------|---------------|
-| **1.0.0** | 2026-08-23 | — | Relaunch | Clean-slate relaunch: 539 scripts unified to RELAUNCH-SPEC, per-script Pester coverage, analyzer-clean, rebrand |
+| **2.0.0** | 2026-09-16 | — | Major | 16 new sub-categories across Azure/Entra/Defender/Purview/Intune/Windows Server; 38 logged defects fixed; CI freshness + parity gates wired; counting convention published; STANDARDS v2 |
+| **1.0.0** | 2026-08-23 | — | Relaunch | Clean-slate relaunch: every script unified to the standards contract, per-script Pester coverage, analyzer-clean, rebrand |
 | **5.0.0** | 2026-08-23 | 🌪️ Hurricane | Major | PSGallery module, CLI v2, remediation reorg with shims |
 | **4.4.0** | 2026-08-20 | 🌧️ Nimbus | Minor | Catalog + MCP server, CI hardening, quality sweep |
 | **4.3.0** | 2026-08-08 | 🌈 Zephyr | Minor | MS Learn alignment (97 findings), PSSA enforcement gates, 122 issues |
@@ -1665,6 +1813,13 @@ Comprehensive documentation suite:
 ---
 
 ## Upgrade Notes
+
+### Upgrading to 2.0.0 (Coverage & Correctness)
+- ✅ **No breaking changes** for callers: no script file was renamed, moved, or removed.
+- 📐 **Standards v2**: `docs/STANDARDS.md` replaces `docs/STANDARDS.md` as the contract of record. Every script and mirrored test now carries `.NOTES Version : 2.0.0` / `Date : 2026-09-16`; re-stamp a future revision with `pwsh -File tools/Update-StandardVersion.ps1`.
+- 🧹 **Deprecated shims repaired**: the 173 forwarding shims under `scripts/endpoints/devices/{winget,proactive-remediations}/` previously failed at their parameter-binding seam and never reached the canonical script. Intune assignments pointed at shim paths work again.
+- 📊 **Counting convention**: `scripts/.catalog/metadata.json` now emits `catalogued`/`excluded`/`onDisk` counts; documentation states the collection size one way only.
+- 🔓 **CI now gating**: catalog, docs and module freshness; module export parity; link checking can fail again.
 
 ### Upgrading to 1.0.0 (Relaunch)
 - **Version reset**: the version counter restarts at 1.0.0; automation pinning `>= 4.x` or `>= 5.0.0` must relax its version constraint.
@@ -1738,6 +1893,6 @@ Scripts in this repository were created with the assistance of **[Claude Code](h
 
 For detailed commit history, see [Git Log](https://github.com/Carme99/bug-free-umbrella/commits/main).
 
-**Last Updated**: 2026-08-23
+**Last Updated**: 2026-09-16
 
 [⬆️ Back to top](#-table-of-contents)

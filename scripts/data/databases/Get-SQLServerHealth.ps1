@@ -49,12 +49,12 @@
     File Name   : Get-SQLServerHealth.ps1
     Author      : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
     Requires the SqlServer PowerShell module (or SMO) and appropriate SQL Server permissions.
     Compatible with SQL Server 2016, 2017, 2019, 2022.
     Note: Invoke-ScriptAnalyzer PSAvoidUsingWriteHost warnings are intentional;
-    RELAUNCH-SPEC section 3 mandates Write-Host-based [+] / [!] / [-] / [*] status output.
+    STANDARDS section 3 mandates Write-Host-based [+] / [!] / [-] / [*] status output.
 #>
 
 [CmdletBinding()]
@@ -432,5 +432,5 @@ function Main {
     }
 }
 
-# Execute only when run as a script; dot-sourcing (Pester tests) skips execution (RELAUNCH-SPEC §3).
+# Execute only when run as a script; dot-sourcing (Pester tests) skips execution (STANDARDS §3).
 if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

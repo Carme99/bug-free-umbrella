@@ -39,8 +39,8 @@
     File Name     : Get-ServiceAccountAudit.ps1
     Author        : Server Management Team
     Prerequisite  : PowerShell 5.1+
-    Version       : 1.0.0
-    Date          : 2026-08-23
+    Version       : 2.0.0
+    Date          : 2026-09-16
     Requires      : ActiveDirectory PowerShell module and appropriate AD permissions
 #>
 
@@ -64,7 +64,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # Write-Host is intentional: interactive console reporting with the color/prefix convention
-# mandated by RELAUNCH-SPEC §3 (justifies PSAvoidUsingWriteHost).
+# mandated by STANDARDS §3 (justifies PSAvoidUsingWriteHost).
 function Test-ADModule {
     [CmdletBinding()]
     param()

@@ -14,8 +14,8 @@
     File Name   : Optimize-DockerCleanup.Tests.ps1
     Author      : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 #>
 
 Describe 'Optimize-DockerCleanup' {
@@ -39,8 +39,8 @@ Describe 'Optimize-DockerCleanup' {
             $raw | Should -Match '(?m)File Name\s*:\s*Optimize-DockerCleanup\.ps1'
             $raw | Should -Match '(?m)Author\s*:\s*IT Infrastructure Team'
             $raw | Should -Match '(?m)Prerequisite\s*:\s*PowerShell 7\.0'
-            $raw | Should -Match '(?m)Version\s*:\s*1\.0\.0'
-            $raw | Should -Match '(?m)Date\s*:\s*2026-08-23'
+            $raw | Should -Match '(?m)Version\s*:\s*2\.0\.0'
+            $raw | Should -Match '(?m)Date\s*:\s*2026-09-16'
         }
 
         It 'Has one PARAMETER entry per declared parameter' {

@@ -29,8 +29,8 @@
     File Name  : Invoke-RemediationFixWindowsUpdateRebootPending.ps1
     Author     : Intune Admin
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -74,12 +74,14 @@ function Main {
         # the restart (deleting them would strand servicing operations mid-flight).
         if ($PSCmdlet.ShouldProcess($env:COMPUTERNAME, 'Schedule restart in 15 minutes (shutdown /r /t 900)')) {
             $shutdownExitCode = Invoke-Shutdown /r /t 900 /c `
-                "Windows Update requires a restart to finish installing updates. This device will restart in 15 minutes. Please save your work."
+                ("Windows Update requires a restart to finish installing updates. " +
+                    "This device will restart in 15 minutes. Please save your work.")
             if ($shutdownExitCode -ne 0) {
                 throw "shutdown.exe exited with code $shutdownExitCode"
             }
             Write-Host "[+] Reboot pending state detected; scheduled a restart in 15 minutes" -ForegroundColor Green
-            Write-Host "[*] RebootPending/RebootRequired registry keys left intact - Windows clears them during the restart." -ForegroundColor Cyan
+            Write-Host ("[*] RebootPending/RebootRequired registry keys left intact - " +
+                "Windows clears them during the restart.") -ForegroundColor Cyan
         }
 
         return 0

@@ -122,8 +122,8 @@
     File Name      : Update-DotNetRuntimes.ps1
     Author         : Bug-Free Umbrella
     Prerequisite   : PowerShell 5.1+
-    Version        : 1.0.0
-    Date           : 2026-08-23
+    Version        : 2.0.0
+    Date           : 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -875,7 +875,8 @@ function Remove-AspNetCoreChannel {
         if ($PSCmdlet.ShouldProcess($label, "Remove ASP.NET Core runtime")) {
             $p = Invoke-TrackedProcess -FilePath $tool -CommandLineArgs ($toolArgs -join ' ') -TimeoutMinutes 10
             if ($p.TimedOut) {
-                Write-ScriptLog -Level Warn -Message "Uninstall tool timed out after 10 minutes" -Context @{ Target = $label }
+                Write-ScriptLog -Level Warn -Message ("Uninstall tool timed out after 10 " +
+                "minutes") -Context @{ Target = $label }
                 return $false
             }
             Add-Action -Type 'EOL-Removed' -Product 'AspNetCore' -Channel $MajorMinor -Arch $a `
@@ -1321,7 +1322,8 @@ function New-SystemSnapshot {
             }
         }
         catch {
-            Write-ScriptLog -Level Warn -Message "Restore point creation failed" -Context @{ Error = $_.Exception.Message }
+            Write-ScriptLog -Level Warn -Message ("Restore point creation " +
+            "failed") -Context @{ Error = $_.Exception.Message }
             return $false
         }
     }
@@ -1834,7 +1836,8 @@ function Main {
                     Write-ScriptLog -Level Ok -Message "Report exported" -Context @{ Path = $ReportPath }
                 }
                 catch {
-                    Write-ScriptLog -Level Warn -Message "Report export failed" -Context @{ Error = $_.Exception.Message }
+                    Write-ScriptLog -Level Warn -Message ("Report export " +
+                    "failed") -Context @{ Error = $_.Exception.Message }
                 }
             }
 

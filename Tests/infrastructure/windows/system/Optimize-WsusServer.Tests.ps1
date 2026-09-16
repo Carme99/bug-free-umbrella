@@ -41,8 +41,8 @@ Describe "Optimize-WsusServer" {
             $text | Should -Match '\.SYNOPSIS'
             $text | Should -Match '\.DESCRIPTION'
             $text | Should -Match 'File Name:\s*Optimize-WsusServer\.ps1'
-            $text | Should -Match 'Version:\s*1\.0\.0'
-            $text | Should -Match 'Date:\s*2026-08-23'
+            $text | Should -Match 'Version:\s*2\.0\.0'
+            $text | Should -Match 'Date:\s*2026-09-16'
             $text | Should -Match 'Prerequisite:\s*PowerShell 5\.1\+'
             $text | Should -Match 'Author:\s*\S'
         }

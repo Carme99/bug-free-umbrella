@@ -12,16 +12,49 @@ Describe "Invoke-DeviceBulkActions.ps1" {
         $ast = [System.Management.Automation.Language.Parser]::ParseFile($scriptFile, [ref]$tokens, [ref]$parseErrors)
 
         # Placeholder definitions so Pester can Mock Graph cmdlets without the module installed.
-        function Connect-MgGraph { }
-        function Get-MgContext { }
-        function Get-MgGroup { }
-        function Get-MgGroupMember { }
-        function Get-MgDeviceManagementManagedDevice { param([string]$Filter, [string]$ManagedDeviceId) }
-        function Invoke-MgSyncDeviceManagementManagedDevice { }
-        function Invoke-MgRestartDeviceManagementManagedDevice { }
-        function Invoke-MgRetireDeviceManagementManagedDevice { }
-        function Invoke-MgWipeDeviceManagementManagedDevice { }
-        function Invoke-MgCollectDeviceManagementManagedDeviceDiagnostic { }
+        # They stand in for advanced (CmdletBinding) functions, so declare them as advanced:
+        # a parameter the real cmdlet does not have then fails the test instead of being
+        # silently accepted.
+        function Connect-MgGraph {
+            [CmdletBinding()]
+            param([string[]]$Scopes)
+        }
+        function Get-MgContext {
+            [CmdletBinding()]
+            param()
+        }
+        function Get-MgGroup {
+            [CmdletBinding()]
+            param([string]$Filter)
+        }
+        function Get-MgGroupMember {
+            [CmdletBinding()]
+            param([string]$GroupId, [switch]$All)
+        }
+        function Get-MgDeviceManagementManagedDevice {
+            [CmdletBinding()]
+            param([string]$Filter, [switch]$All)
+        }
+        function Sync-MgDeviceManagementManagedDevice {
+            [CmdletBinding()]
+            param([string]$ManagedDeviceId)
+        }
+        function Restart-MgDeviceManagementManagedDeviceNow {
+            [CmdletBinding()]
+            param([string]$ManagedDeviceId)
+        }
+        function Invoke-MgRetireDeviceManagementManagedDevice {
+            [CmdletBinding()]
+            param([string]$ManagedDeviceId)
+        }
+        function Clear-MgDeviceManagementManagedDevice {
+            [CmdletBinding()]
+            param([string]$ManagedDeviceId)
+        }
+        function New-MgDeviceManagementManagedDeviceLogCollectionRequest {
+            [CmdletBinding()]
+            param([string]$ManagedDeviceId, [hashtable]$TemplateType)
+        }
 
         # Safe: the script's top-level guard skips Main when dot-sourced.
         # -Action is mandatory; supplying it keeps dot-sourcing non-interactive while the
@@ -36,11 +69,11 @@ Describe "Invoke-DeviceBulkActions.ps1" {
         Mock Get-MgDeviceManagementManagedDevice {
             [pscustomobject]@{ Id = 'dev-1'; DeviceName = 'PC1'; ComplianceState = 'compliant' }
         }
-        Mock Invoke-MgSyncDeviceManagementManagedDevice { }
-        Mock Invoke-MgRestartDeviceManagementManagedDevice { }
+        Mock Sync-MgDeviceManagementManagedDevice { }
+        Mock Restart-MgDeviceManagementManagedDeviceNow { }
         Mock Invoke-MgRetireDeviceManagementManagedDevice { }
-        Mock Invoke-MgWipeDeviceManagementManagedDevice { }
-        Mock Invoke-MgCollectDeviceManagementManagedDeviceDiagnostic { }
+        Mock Clear-MgDeviceManagementManagedDevice { }
+        Mock New-MgDeviceManagementManagedDeviceLogCollectionRequest { }
     }
 
     Context "Help & Metadata" {
@@ -53,8 +86,8 @@ Describe "Invoke-DeviceBulkActions.ps1" {
             $rawText | Should -Match 'File Name:\s*Invoke-DeviceBulkActions\.ps1'
             $rawText | Should -Match 'Author:\s*\S+'
             $rawText | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
-            $rawText | Should -Match 'Version:\s*1\.0\.0'
-            $rawText | Should -Match 'Date:\s*2026-08-23'
+            $rawText | Should -Match 'Version:\s*2\.0\.0'
+            $rawText | Should -Match 'Date:\s*2026-09-16'
         }
 
         It "Has one .PARAMETER entry per declared parameter" {
@@ -109,7 +142,7 @@ Describe "Invoke-DeviceBulkActions.ps1" {
 
             Main | Should -Be 0
             Should -Invoke Get-MgDeviceManagementManagedDevice -Times 2 -Exactly
-            Should -Invoke Invoke-MgSyncDeviceManagementManagedDevice -Times 2 -Exactly
+            Should -Invoke Sync-MgDeviceManagementManagedDevice -Times 2 -Exactly
         }
 
         It "Honors -WhatIf: no device actions are executed and it returns 0" {
@@ -122,7 +155,7 @@ Describe "Invoke-DeviceBulkActions.ps1" {
             $WhatIfPreference = $true
             try {
                 Main | Should -Be 0
-                Should -Invoke Invoke-MgWipeDeviceManagementManagedDevice -Times 0 -Exactly
+                Should -Invoke Clear-MgDeviceManagementManagedDevice -Times 0 -Exactly
             }
             finally {
                 $WhatIfPreference = $false
@@ -144,7 +177,7 @@ Describe "Invoke-DeviceBulkActions.ps1" {
             $NonCompliantOnly = $true
 
             Main | Should -Be 0
-            Should -Invoke Invoke-MgRestartDeviceManagementManagedDevice -Times 1 -Exactly
+            Should -Invoke Restart-MgDeviceManagementManagedDeviceNow -Times 1 -Exactly
         }
 
         It "Returns 0 when no devices match the criteria" {
@@ -157,7 +190,109 @@ Describe "Invoke-DeviceBulkActions.ps1" {
             $NonCompliantOnly = $false
 
             Main | Should -Be 0
-            Should -Invoke Invoke-MgSyncDeviceManagementManagedDevice -Times 0 -Exactly
+            Should -Invoke Sync-MgDeviceManagementManagedDevice -Times 0 -Exactly
+        }
+
+        It "Resolves -GroupName device members by azureAdDeviceId and syncs only devices" {
+            Mock Get-MgGroup { [pscustomobject]@{ Id = 'group-1'; DisplayName = 'Corp Devices' } }
+            Mock Get-MgGroupMember {
+                @(
+                    [pscustomobject]@{
+                        Id            = 'dir-object-1'
+                        DeviceId      = 'entra-device-1'
+                        '@odata.type' = '#microsoft.graph.device'
+                    },
+                    [pscustomobject]@{ Id = 'user-1'; '@odata.type' = '#microsoft.graph.user' }
+                )
+            }
+            Mock Get-MgDeviceManagementManagedDevice {
+                param($Filter)
+                if ($Filter -eq "azureAdDeviceId eq 'entra-device-1'") {
+                    [pscustomobject]@{ Id = 'dev-1'; DeviceName = 'PC1'; ComplianceState = 'compliant' }
+                }
+            }
+
+            $Action = 'Sync'
+            $DeviceNames = $null
+            $DeviceFilter = $null
+            $GroupName = 'Corp Devices'
+            $NonCompliantOnly = $false
+
+            Main | Should -Be 0
+            Should -Invoke Get-MgDeviceManagementManagedDevice -Times 1 -Exactly `
+                -ParameterFilter { $Filter -eq "azureAdDeviceId eq 'entra-device-1'" } `
+                -Because 'Entra device members are resolved by azureAdDeviceId, not by directory-object id'
+            Should -Invoke Sync-MgDeviceManagementManagedDevice -Times 1 -Exactly
+        }
+
+        It "Returns 1 and says so when -GroupName resolves to zero managed devices" {
+            Mock Get-MgGroup { [pscustomobject]@{ Id = 'group-1'; DisplayName = 'Corp Devices' } }
+            Mock Get-MgGroupMember {
+                @([pscustomobject]@{ Id = 'user-1'; '@odata.type' = '#microsoft.graph.user' })
+            }
+
+            $Action = 'Sync'
+            $DeviceNames = $null
+            $DeviceFilter = $null
+            $GroupName = 'Corp Devices'
+            $NonCompliantOnly = $false
+
+            $out = Main *>&1
+            $out | Where-Object { $_ -is [int] } | Should -Be 1
+            ($out | Out-String) | Should -Match "resolved to 0 managed devices"
+            Should -Invoke Sync-MgDeviceManagementManagedDevice -Times 0 -Exactly
+        }
+
+        It "Returns 1 when the named group does not exist" {
+            Mock Get-MgGroup { }
+
+            $Action = 'Sync'
+            $DeviceNames = $null
+            $DeviceFilter = $null
+            $GroupName = 'Missing Group'
+            $NonCompliantOnly = $false
+
+            $out = Main *>&1
+            $out | Where-Object { $_ -is [int] } | Should -Be 1
+            ($out | Out-String) | Should -Match "No Azure AD group named 'Missing Group' was found"
+        }
+
+        It "Returns 1 and surfaces the error when the group member lookup fails" {
+            Mock Get-MgGroup { [pscustomobject]@{ Id = 'group-1'; DisplayName = 'Corp Devices' } }
+            Mock Get-MgGroupMember { throw "group read denied" }
+
+            $Action = 'Sync'
+            $DeviceNames = $null
+            $DeviceFilter = $null
+            $GroupName = 'Corp Devices'
+            $NonCompliantOnly = $false
+
+            $out = Main *>&1
+            $out | Where-Object { $_ -is [int] } | Should -Be 1
+            ($out | Out-String) | Should -Match "group read denied"
+        }
+
+        It "Wipes devices with Clear-MgDeviceManagementManagedDevice" {
+            $Action = 'Wipe'
+            $DeviceNames = @('PC1')
+            $DeviceFilter = $null
+            $GroupName = $null
+            $NonCompliantOnly = $false
+
+            Main | Should -Be 0
+            Should -Invoke Clear-MgDeviceManagementManagedDevice -Times 1 -Exactly
+        }
+
+        It "Requests diagnostics with the log collection request cmdlet" {
+            $Action = 'CollectDiagnostics'
+            $DeviceNames = @('PC1')
+            $DeviceFilter = $null
+            $GroupName = $null
+            $NonCompliantOnly = $false
+
+            Main | Should -Be 0
+            Should -Invoke New-MgDeviceManagementManagedDeviceLogCollectionRequest -Times 1 -Exactly `
+                -ParameterFilter { $TemplateType.templateType -eq 'predefined' }
         }
 
         It "Returns 1 with [-] output when Graph authentication fails" {
@@ -176,7 +311,7 @@ Describe "Invoke-DeviceBulkActions.ps1" {
             Mock Get-MgDeviceManagementManagedDevice {
                 [pscustomobject]@{ Id = 'dev-1'; DeviceName = 'PC1'; ComplianceState = 'compliant' }
             }
-            Mock Invoke-MgSyncDeviceManagementManagedDevice { throw "device offline" }
+            Mock Sync-MgDeviceManagementManagedDevice { throw "device offline" }
 
             $Action = 'Sync'
             $DeviceNames = @('PC1')

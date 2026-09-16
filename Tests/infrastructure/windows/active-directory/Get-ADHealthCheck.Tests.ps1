@@ -74,7 +74,7 @@ Describe "Get-ADHealthCheck" {
             $documented | Should -Be $declared
         }
 
-        It "Has complete .NOTES metadata (File Name, Author, Prerequisite, Version 1.0.0, Date 2026-08-23)" {
+        It "Has complete .NOTES metadata (File Name, Author, Prerequisite, Version 2.0.0, Date 2026-09-16)" {
             $content = Get-Content -Raw $scriptPath
             $content | Should -Match '\.SYNOPSIS'
             $content | Should -Match '\.DESCRIPTION'
@@ -82,8 +82,8 @@ Describe "Get-ADHealthCheck" {
             $content | Should -Match 'File Name\s*:\s*Get-ADHealthCheck\.ps1'
             $content | Should -Match 'Author\s*:\s*\S+'
             $content | Should -Match 'Prerequisite\s*:\s*PowerShell'
-            $content | Should -Match 'Version\s*:\s*1\.0\.0'
-            $content | Should -Match 'Date\s*:\s*2026-08-23'
+            $content | Should -Match 'Version\s*:\s*2\.0\.0'
+            $content | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It "Has at least two examples using PS C:\> prompts" {

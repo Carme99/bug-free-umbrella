@@ -53,14 +53,14 @@ Describe "Get-WindowsUpdateCompliance" {
     }
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $fileName = Split-Path $scriptPath -Leaf
             $raw | Should -Match ("File Name:\s*" + [regex]::Escape($fileName))
             $raw | Should -Match 'Author:\s*\S'
             $raw | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
-            $raw | Should -Match 'Version:\s*1\.0\.0'
-            $raw | Should -Match 'Date:\s*2026-08-23'
+            $raw | Should -Match 'Version:\s*2\.0\.0'
+            $raw | Should -Match 'Date:\s*2026-09-16'
         }
 
         It "Has SYNOPSIS, DESCRIPTION and at least two EXAMPLES" {

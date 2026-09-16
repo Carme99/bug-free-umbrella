@@ -83,7 +83,7 @@ Describe "Get-MailboxHealth" {
         Mock Out-File { }
         Mock Export-Csv { }
 
-        # Safe: the script's top-level guard skips Main when dot-sourced (RELAUNCH-SPEC §3).
+        # Safe: the script's top-level guard skips Main when dot-sourced (STANDARDS §3).
         . $scriptPath
     }
 
@@ -111,12 +111,12 @@ Describe "Get-MailboxHealth" {
             $raw | Should -Match 'Prerequisite\s*:\s*PowerShell 7\.0'
         }
 
-        It "Is version 1.0.0" {
-            $raw | Should -Match '(?m)^\s*Version\s*:\s*1\.0\.0\s*$'
+        It "Is version 2.0.0" {
+            $raw | Should -Match '(?m)^\s*Version\s*:\s*2\.0\.0\s*$'
         }
 
         It "Is dated the relaunch date 2026-08-23" {
-            $raw | Should -Match '(?m)^\s*Date\s*:\s*2026-08-23\s*$'
+            $raw | Should -Match '(?m)^\s*Date\s*:\s*2026-09-16\s*$'
         }
 
         It "Documents every declared parameter, in order" {

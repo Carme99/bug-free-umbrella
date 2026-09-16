@@ -32,8 +32,8 @@
     File Name  : Get-UserMailboxPermissions.ps1
     Author     : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 
     Requires: ExchangeOnlineManagement module
     Permissions: Exchange Administrator or Global Reader
@@ -54,7 +54,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 # ScriptAnalyzer note: PSAvoidUsingWriteHost is accepted by design - the Bug-Free Umbrella output
-# standard (RELAUNCH-SPEC section 3 / AGENTS.md) mandates Write-Host with prefix/color output.
+# standard (STANDARDS section 3 / AGENTS.md) mandates Write-Host with prefix/color output.
 # PSReviewUnusedParameter findings are false positives: parameters are read inside Main via the
 # script scope. PSUseSingularNouns findings reflect legacy function nouns retained for conformance.
 

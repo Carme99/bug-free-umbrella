@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Common helper module for Microsoft Graph API authentication and Intune operations.
 
@@ -18,6 +18,11 @@ function Connect-IntuneGraph {
 
     .PARAMETER Scopes
         Array of permission scopes required for the operation.
+
+    .PARAMETER TenantId
+        Azure AD tenant ID to authenticate against. When omitted, the current or default
+        tenant is used. Forwarded to Connect-MgGraph -TenantId.
+        https://learn.microsoft.com/powershell/module/microsoft.graph.authentication/connect-mggraph
     #>
     [CmdletBinding()]
     param(
@@ -26,7 +31,10 @@ function Connect-IntuneGraph {
             "DeviceManagementManagedDevices.Read.All",
             "DeviceManagementConfiguration.Read.All",
             "DeviceManagementApps.Read.All"
-        )
+        ),
+
+        [Parameter(Mandatory = $false)]
+        [string]$TenantId
     )
 
     try {
@@ -41,7 +49,13 @@ function Connect-IntuneGraph {
 
         # Connect to Microsoft Graph
         Write-Host "Connecting to Microsoft Graph..." -ForegroundColor Cyan
-        Connect-MgGraph -Scopes $Scopes -NoWelcome
+        # Only pin the tenant when the caller supplied one; Connect-MgGraph otherwise prompts.
+        $connectParameters = @{ Scopes = $Scopes; NoWelcome = $true }
+        if (-not [string]::IsNullOrWhiteSpace($TenantId)) {
+            $connectParameters['TenantId'] = $TenantId
+        }
+
+        Connect-MgGraph @connectParameters
 
         $context = Get-MgContext
         if ($context) {
@@ -107,6 +121,10 @@ function Export-IntuneReportToHTML {
 
     .PARAMETER FilePath
         Output file path.
+
+    .PARAMETER Description
+        Optional description rendered into the report header summary (for example the
+        generation date and the filters that produced the data).
     #>
     [CmdletBinding()]
     param(
@@ -117,12 +135,20 @@ function Export-IntuneReportToHTML {
         [string]$Title,
 
         [Parameter(Mandatory = $false)]
-        [string]$FilePath
+        [string]$FilePath,
+
+        [Parameter(Mandatory = $false)]
+        [string]$Description
     )
 
     if (-not $FilePath) {
         $FilePath = "$env:USERPROFILE\Desktop\$($Title.Replace(' ', '_'))_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
     }
+
+    $descriptionParagraph = if (-not [string]::IsNullOrWhiteSpace($Description)) {
+        "<p><strong>Description:</strong> $Description</p>"
+    }
+    else { "" }
 
     $html = @"
 <!DOCTYPE html>
@@ -150,6 +176,7 @@ function Export-IntuneReportToHTML {
         <div class="summary">
             <p><strong>Generated:</strong> $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')</p>
             <p><strong>Total Records:</strong> $($Data.Count)</p>
+            $descriptionParagraph
         </div>
         <table>
 "@

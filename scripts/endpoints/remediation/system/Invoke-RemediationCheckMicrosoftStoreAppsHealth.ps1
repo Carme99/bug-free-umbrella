@@ -23,8 +23,8 @@
     File Name  : Invoke-RemediationCheckMicrosoftStoreAppsHealth.ps1
     Author     : Intune Admin
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -55,7 +55,8 @@ function Main {
 
         foreach ($package in $errorPackages) {
             if ($PSCmdlet.ShouldProcess($package.Name, 'Re-register AppX package')) {
-                Add-AppxPackage -DisableDevelopmentMode -Register "$($package.InstallLocation)\AppXManifest.xml" -ErrorAction Stop
+                Add-AppxPackage -DisableDevelopmentMode -Register `
+                    "$($package.InstallLocation)\AppXManifest.xml" -ErrorAction Stop
                 $remediationActions += "Re-registered $($package.Name)"
             }
         }
@@ -64,7 +65,8 @@ function Main {
         $storeApp = Get-AppxPackage -Name 'Microsoft.WindowsStore' -AllUsers -ErrorAction SilentlyContinue
         if ($storeApp -and $storeApp.Status -ne 'Ok') {
             if ($PSCmdlet.ShouldProcess('Microsoft.WindowsStore', 'Re-register Microsoft Store app')) {
-                Add-AppxPackage -DisableDevelopmentMode -Register "$($storeApp.InstallLocation)\AppXManifest.xml" -ErrorAction Stop
+                Add-AppxPackage -DisableDevelopmentMode -Register `
+                    "$($storeApp.InstallLocation)\AppXManifest.xml" -ErrorAction Stop
                 $remediationActions += 'Re-registered Microsoft Store app'
             }
         }

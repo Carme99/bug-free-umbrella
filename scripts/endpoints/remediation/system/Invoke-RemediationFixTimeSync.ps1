@@ -32,8 +32,8 @@
     File Name  : Invoke-RemediationFixTimeSync.ps1
     Author     : Intune Admin
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 
     Intune Context: SYSTEM.
 #>
@@ -152,7 +152,8 @@ function Main {
             Write-Host "[+] Time sync remediation completed" -ForegroundColor Green
         }
         else {
-            Write-Host "[+] Already configured: Windows Time service is running with Automatic startup" -ForegroundColor Green
+            Write-Host ("[+] Already configured: Windows Time service is running with Automatic " +
+            "startup") -ForegroundColor Green
         }
         return 0
     }

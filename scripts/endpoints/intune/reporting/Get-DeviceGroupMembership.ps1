@@ -50,8 +50,8 @@
     File Name: Get-DeviceGroupMembership.ps1
     Author: Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 
     Requires Microsoft.Graph PowerShell module
     Requires permissions: Group.Read.All, Device.Read.All
@@ -145,9 +145,18 @@ function Main {
 
                 if ($memberOf.value) {
                     foreach ($group in $memberOf.value) {
-                        # Get group details
-                        $groupDetails = Invoke-MgGraphRequest `
-                            -Uri "https://graph.microsoft.com/v1.0/groups/$($group.id)" -ErrorAction Stop
+                        # /devices/{id}/memberOf also returns administrative units and directory
+                        # roles; only group entries have a /groups/{id} representation.
+                        if ($group.'@odata.type' -ne '#microsoft.graph.group') {
+                            continue
+                        }
+
+                        # Get group details (projection keeps the response small; membershipRule
+                        # and description are group properties, not directoryObject properties)
+                        # https://learn.microsoft.com/graph/api/resources/group
+                        $groupUri = "https://graph.microsoft.com/v1.0/groups/$($group.id)" +
+                            "?`$select=id,displayName,membershipRule,description"
+                        $groupDetails = Invoke-MgGraphRequest -Uri $groupUri -ErrorAction Stop
 
                         $isDynamic = $groupDetails.membershipRule -ne $null
                         $membershipType = if ($isDynamic) { "Dynamic" } else { "Assigned" }

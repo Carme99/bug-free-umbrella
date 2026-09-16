@@ -40,8 +40,8 @@
     File Name: Export-IntuneConfiguration.ps1
     Author: Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 
     Requires Microsoft.Graph PowerShell module
     Requires appropriate Graph API permissions

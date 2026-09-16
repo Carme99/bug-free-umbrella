@@ -29,9 +29,9 @@ Describe "Script Catalog" -Tag 'Catalog' {
             { Get-Content -LiteralPath $script:CatalogPath -Raw | ConvertFrom-Json | Out-Null } | Should -Not -Throw
         }
 
-        It "metadata.json should have 358 totalScripts and matching array length" {
-            $script:Catalog.totalScripts | Should -Be @($script:Catalog.scripts).Count -Because "totalScripts should match scripts array length"
-            $script:Catalog.totalScripts | Should -BeGreaterOrEqual 350 -Because "catalog should have at least 350 scripts"
+        It "metadata.json totalScripts equals scripts[].Count and onDiskScripts equals totalScripts + excludedScripts" {
+            $script:Catalog.totalScripts | Should -Be @($script:Catalog.scripts).Count -Because "totalScripts is the cataloged count and must match the scripts array length"
+            $script:Catalog.onDiskScripts | Should -Be ($script:Catalog.totalScripts + $script:Catalog.excludedScripts) -Because "onDiskScripts must equal cataloged scripts (totalScripts=$($script:Catalog.totalScripts)) plus the deprecated forwarding shims excluded from the catalog (excludedScripts=$($script:Catalog.excludedScripts))"
         }
 
         It "every entry has required fields (path, name, category, synopsis, hasCmdletBinding)" {

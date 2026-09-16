@@ -12,7 +12,7 @@
     falls back to the winget.exe CLI only when the module is unavailable.
     Exit codes follow the Intune remediation convention: 0 = updated, already up to date,
     or not installed; 1 = the upgrade failed or the running process could not be closed.
-    Template note (docs/RELAUNCH-SPEC.md section 6): examples below show placeholder
+    Template note (docs/STANDARDS.md section 6): examples below show placeholder
     configuration, which makes some help rules inapplicable until placeholders are replaced.
     Configuration:
     1. Set the $ID variable to your winget package ID
@@ -38,15 +38,15 @@
     File Name  : remediate_v2_force_close.ps1
     Author     : Bug-Free Umbrella
     Prerequisite: PowerShell 5.1+
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
 param()
 
 # PSAvoidUsingWriteHost is intentionally accepted: prefixed, colored console output is the mandated
-# output convention of docs/RELAUNCH-SPEC.md section 3.
+# output convention of docs/STANDARDS.md section 3.
 # PSUseOutputTypeCorrectly is intentionally accepted: internal helper functions return plain
 # values (bool/string/object[]) by design; only Main's exit code (int) is a public contract.
 $ErrorActionPreference = 'Stop'
@@ -78,7 +78,7 @@ function Get-WingetExecutable {
 function Invoke-WingetCommand {
     # Thin wrapper seam: EVERY native winget.exe invocation (the sysget alias target) routes through
     # this function so Pester can mock the wrapper; the executable is never called elsewhere.
-    # docs/RELAUNCH-SPEC.md section 3: check $LASTEXITCODE and translate non-zero into failure handling.
+    # docs/STANDARDS.md section 3: check $LASTEXITCODE and translate non-zero into failure handling.
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]

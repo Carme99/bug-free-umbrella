@@ -38,14 +38,14 @@
     File Name   : Monitor-MongoDBHealth.ps1
     Author      : IT Operations
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
     Template generation only; a real implementation would need mongosh or the MongoDB driver.
 
     WARNING: This script has not been thoroughly tested in production environments.
     Please test in a non-production environment first and validate results before relying on this data.
     Note: Invoke-ScriptAnalyzer PSAvoidUsingWriteHost warnings are intentional;
-    RELAUNCH-SPEC section 3 mandates Write-Host-based [+] / [!] / [-] / [*] status output.
+    STANDARDS section 3 mandates Write-Host-based [+] / [!] / [-] / [*] status output.
 #>
 
 [CmdletBinding()]
@@ -165,5 +165,5 @@ function Main {
     }
 }
 
-# Execute only when run as a script; dot-sourcing (Pester tests) skips execution (RELAUNCH-SPEC §3).
+# Execute only when run as a script; dot-sourcing (Pester tests) skips execution (STANDARDS §3).
 if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

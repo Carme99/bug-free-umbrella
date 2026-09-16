@@ -6,7 +6,7 @@ Describe "Export-WingetPackageList" {
         $repoRoot = (Get-Item (Join-Path $PSScriptRoot "../../../../")).FullName
         $scriptPath = Join-Path $repoRoot "scripts/endpoints/intune/deployment/Export-WingetPackageList.ps1"
 
-        # Safe: the top-level guard skips Main when dot-sourced (docs/RELAUNCH-SPEC.md section 3).
+        # Safe: the top-level guard skips Main when dot-sourced (docs/STANDARDS.md section 3).
         . $scriptPath
 
         # Realistic `winget list` output: header + separator are skipped, then package rows.
@@ -27,10 +27,10 @@ News                        Microsoft.News       1.0           < 2.0          ms
     }
 
     Context "Help & Metadata" {
-        It "Declares Version 1.0.0 and relaunch Date 2026-08-23" {
+        It "Declares Version 2.0.0 and relaunch Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
-            ($raw -match '(?m)^\s*Version\s*:\s*1\.0\.0\s*$') | Should -BeTrue
-            ($raw -match '(?m)^\s*Date\s*:\s*2026-08-23\s*$') | Should -BeTrue
+            ($raw -match '(?m)^\s*Version\s*:\s*2\.0\.0\s*$') | Should -BeTrue
+            ($raw -match '(?m)^\s*Date\s*:\s*2026-09-16\s*$') | Should -BeTrue
         }
 
         It "Declares File Name matching the on-disk filename" {

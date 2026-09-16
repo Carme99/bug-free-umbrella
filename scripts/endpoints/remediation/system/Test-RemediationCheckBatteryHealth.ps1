@@ -25,8 +25,8 @@
     File Name  : Test-RemediationCheckBatteryHealth.ps1
     Author     : Intune Admin
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -98,7 +98,8 @@ function Main {
                 $healthPercentage = [math]::Round(($fullChargeCapacity / $designCapacity) * 100, 1)
 
                 if ($healthPercentage -lt $degradationThreshold) {
-                    $issues += "Battery capacity degraded to $healthPercentage% (design: $designCapacity mWh, current: $fullChargeCapacity mWh)"
+                    $issues += ("Battery capacity degraded to $healthPercentage% " +
+                        "(design: $designCapacity mWh, current: $fullChargeCapacity mWh)")
                 }
 
                 Write-Host "[*] Battery Health: $healthPercentage%" -ForegroundColor Cyan

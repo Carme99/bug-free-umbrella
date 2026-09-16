@@ -43,10 +43,10 @@ Describe "Get-GPOReport" {
             Get-Content -Raw $scriptPath | Should -Match 'File Name:\s*Get-GPOReport\.ps1'
         }
 
-        It "Declares Version 1.0.0 and relaunch Date" {
+        It "Declares Version 2.0.0 and relaunch Date" {
             $helpText = Get-Content -Raw $scriptPath
-            $helpText | Should -Match 'Version:\s*1\.0\.0'
-            $helpText | Should -Match 'Date:\s*2026-08-23'
+            $helpText | Should -Match 'Version:\s*2\.0\.0'
+            $helpText | Should -Match 'Date:\s*2026-09-16'
         }
 
         It "Has one .PARAMETER entry per declared parameter, in order" {

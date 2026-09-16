@@ -6,7 +6,7 @@ Describe "detect_v2.ps1" {
         $repoRoot = (Get-Item (Join-Path $PSScriptRoot "../../../../../")).FullName
         $scriptPath = Join-Path $repoRoot "scripts/endpoints/remediation/winget/_templates/detect_v2.ps1"
 
-        # Safe: the top-level guard skips Main when dot-sourced (docs/RELAUNCH-SPEC.md section 3).
+        # Safe: the top-level guard skips Main when dot-sourced (docs/STANDARDS.md section 3).
         . $scriptPath
 
         # Pass console output through so prefix assertions can inspect it.
@@ -17,7 +17,7 @@ Describe "detect_v2.ps1" {
             Name              = 'Foo'
             Id                = 'WINGETID'
             IsUpdateAvailable = $true
-            InstalledVersion  = '1.0.0'
+            InstalledVersion  = '2.0.0'
             AvailableVersions = @('2.0.0')
         }
         $currentPackage = [pscustomobject]@{
@@ -30,10 +30,10 @@ Describe "detect_v2.ps1" {
     }
 
     Context "Help & Metadata" {
-        It "Declares Version 1.0.0 and relaunch Date 2026-08-23" {
+        It "Declares Version 2.0.0 and relaunch Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
-            ($raw -match '(?m)^\s*Version\s*:\s*1\.0\.0\s*$') | Should -BeTrue
-            ($raw -match '(?m)^\s*Date\s*:\s*2026-08-23\s*$') | Should -BeTrue
+            ($raw -match '(?m)^\s*Version\s*:\s*2\.0\.0\s*$') | Should -BeTrue
+            ($raw -match '(?m)^\s*Date\s*:\s*2026-09-16\s*$') | Should -BeTrue
         }
 
         It "Declares File Name matching the on-disk filename with no orphaned parameters documented" {

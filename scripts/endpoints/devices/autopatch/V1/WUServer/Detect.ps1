@@ -21,14 +21,14 @@
     File Name  : Detect.ps1
     Author     : Intune / Proactive Remediations
     Prerequisite: PowerShell 5.1+
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding()]
 param()
 
-# PSScriptAnalyzer: Write-Host with prefix/color output is mandated by docs/RELAUNCH-SPEC.md section 3.
+# PSScriptAnalyzer: Write-Host with prefix/color output is mandated by docs/STANDARDS.md section 3.
 
 $ErrorActionPreference = 'Stop'
 

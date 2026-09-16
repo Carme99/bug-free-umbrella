@@ -36,10 +36,10 @@ Describe "Update-DotNetRuntimes" {
     }
 
     Context "Help & Metadata" {
-        It "Declares Version 1.0.0, relaunch Date, File Name, and Prerequisite in NOTES" {
+        It "Declares Version 2.0.0, relaunch Date, File Name, and Prerequisite in NOTES" {
             $raw = Get-Content -Raw $scriptPath
-            $raw | Should -Match 'Version\s*:\s*1\.0\.0'
-            $raw | Should -Match 'Date\s*:\s*2026-08-23'
+            $raw | Should -Match 'Version\s*:\s*2\.0\.0'
+            $raw | Should -Match 'Date\s*:\s*2026-09-16'
             $raw | Should -Match 'File Name\s*:\s*Update-DotNetRuntimes\.ps1'
             $raw | Should -Match 'Prerequisite\s*:\s*PowerShell'
         }

@@ -41,8 +41,8 @@
     File Name     : Get-NetworkConfiguration.ps1
     Author        : Bug-Free Umbrella
     Prerequisite  : PowerShell 5.1+
-    Version       : 1.0.0
-    Date          : 2026-08-23
+    Version       : 2.0.0
+    Date          : 2026-09-16
 
     Administrator privileges are required; the elevation check runs inside Main (not via
     #Requires) so the script can be safely loaded for testing. Compatible with Windows

@@ -48,8 +48,8 @@
     File Name  : New-BulkWingetUpdater.ps1
     Author     : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 
     Requires winget to be installed on target devices.
     Compatible with Windows 10/11.
@@ -85,7 +85,7 @@ param(
 )
 
 # PSAvoidUsingWriteHost is intentionally accepted: prefixed, colored console output is the mandated
-# output convention of docs/RELAUNCH-SPEC.md section 3.
+# output convention of docs/STANDARDS.md section 3.
 $ErrorActionPreference = 'Stop'
 
 function Write-ColorOutput {

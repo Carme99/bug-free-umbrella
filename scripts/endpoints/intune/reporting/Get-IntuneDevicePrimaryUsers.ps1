@@ -54,8 +54,8 @@
     File Name   : Get-IntuneDevicePrimaryUsers.ps1
     Author      : System Administrator
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 
     Requires the Microsoft Graph PowerShell SDK
     Required Graph Permissions:

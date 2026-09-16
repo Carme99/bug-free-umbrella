@@ -4,7 +4,9 @@
 
 .DESCRIPTION
     Deprecated compatibility shim retained so existing Intune Proactive Remediations assignments keep
-    working. Invokes the canonical script at scripts/endpoints/remediation/winget/runtimes/Cpp2012Redist/Test-WingetCpp2012Redist.ps1 and preserves its exit code. Update
+    working. Invokes the canonical script at
+    scripts/endpoints/remediation/winget/runtimes/Cpp2012Redist/Test-WingetCpp2012Redist.ps1 and preserves its exit
+    code. Update
     Intune assignments to the canonical path; this shim will be removed in version 6.0.0.
     Exit codes: passes through the canonical script's exit code (Intune convention: 0 =
     compliant/healthy, non-zero = non-compliant/needs remediation).
@@ -24,15 +26,15 @@
     File Name  : detect.ps1
     Author     : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding()]
 param()
 
 # PSAvoidUsingWriteHost is intentionally accepted: prefixed, colored console output is the mandated
-# output convention of docs/RELAUNCH-SPEC.md section 3.
+# output convention of docs/STANDARDS.md section 3.
 $ErrorActionPreference = 'Stop'
 
 function Invoke-CanonicalScript {
@@ -74,7 +76,7 @@ function Main {
     }
 }
 
-$ForwardedArgs = $args
+$ForwardedArgs = @($args | Where-Object { $null -ne $_ })
 
 # Execute only when run as a script; dot-sourcing (Pester tests) skips execution.
 if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

@@ -22,7 +22,7 @@ Common questions about Bug-Free Umbrella scripts and how to use them.
 
 ### What is Bug-Free Umbrella?
 
-Bug-Free Umbrella is a comprehensive collection of 539 PowerShell scripts for enterprise IT management, covering:
+Bug-Free Umbrella is a comprehensive collection of 566 PowerShell scripts on disk (381 catalogued) for enterprise IT management, covering:
 
 - Microsoft 365 & Intune administration
 - Azure & AWS cloud management
@@ -379,7 +379,7 @@ git pull origin main
 
 Check the **[Changelog](../CHANGELOG.md)** for release history. Current release:
 
-- **v1.0.0 "Clean-Slate Relaunch"** (2026-08-24) - every script conformed to [RELAUNCH-SPEC](RELAUNCH-SPEC.md), per-script Pester tests, analyzer-clean
+- **v2.0.0 "Coverage & Correctness"** (2026-08-24) - every script conformed to [STANDARDS](STANDARDS.md), per-script Pester tests, analyzer-clean
 
 Pre-relaunch history (old weather-codename versioning, kept for reference): v4.4.0 "Nimbus", v4.3.0 "Zephyr", v4.2.0 "Tempest", v4.1.0 "Drizzle".
 
@@ -438,7 +438,7 @@ Yes, use:
 
 - [Getting Started](Getting-Started.md) - Step-by-step onboarding
 - [Prerequisites](Prerequisites.md) - System requirements and setup
-- [Script Catalog](Script-Catalog.md) - Browse all 539 scripts
+- [Script Catalog](Script-Catalog.md) - Browse all 566 scripts on disk (381 catalogued)
 - [Troubleshooting](Troubleshooting.md) - Solve common problems
 - [Support Guide](../SUPPORT.md) - Get help
 - [Contributing](../CONTRIBUTING.md) - Contribute to the project

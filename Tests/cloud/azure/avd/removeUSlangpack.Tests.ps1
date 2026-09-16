@@ -10,8 +10,8 @@
     File Name   : removeUSlangpack.Tests.ps1
     Author      : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 #>
 
 #Requires -Modules Pester
@@ -21,7 +21,7 @@ Describe "removeUSlangpack" {
         $scriptPath = Join-Path $PSScriptRoot "../../../../scripts/cloud/azure/avd/removeUSlangpack.ps1"
         $scriptContent = Get-Content -Path $scriptPath -Raw
 
-        # Safe: the script's top-level guard skips Main when dot-sourced (RELAUNCH-SPEC §3).
+        # Safe: the script's top-level guard skips Main when dot-sourced (STANDARDS §3).
         . $scriptPath
 
         # Windows-only cmdlets are absent on Linux pwsh; Pester needs a stub before it can mock.
@@ -68,8 +68,8 @@ Describe "removeUSlangpack" {
             $scriptContent | Should -Match 'File Name\s*:\s*removeUSlangpack\.ps1'
             $scriptContent | Should -Match 'Author\s*:\s*\S+'
             $scriptContent | Should -Match 'Prerequisite\s*:\s*PowerShell 7\.0'
-            $scriptContent | Should -Match 'Version\s*:\s*1\.0\.0'
-            $scriptContent | Should -Match 'Date\s*:\s*2026-08-23'
+            $scriptContent | Should -Match 'Version\s*:\s*2\.0\.0'
+            $scriptContent | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It "Documents one .PARAMETER per declared parameter" {

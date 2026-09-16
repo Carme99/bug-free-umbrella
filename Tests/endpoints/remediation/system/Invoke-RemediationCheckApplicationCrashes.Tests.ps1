@@ -19,8 +19,8 @@ Describe 'Invoke-RemediationCheckApplicationCrashes' {
             $scriptText | Should -Match 'File Name\s*:\s*Invoke-RemediationCheckApplicationCrashes\.ps1'
             $scriptText | Should -Match 'Author\s*:'
             $scriptText | Should -Match 'Prerequisite\s*:\s*PowerShell 7\.0'
-            $scriptText | Should -Match 'Version\s*:\s*1\.0\.0'
-            $scriptText | Should -Match 'Date\s*:\s*2026-08-23'
+            $scriptText | Should -Match 'Version\s*:\s*2\.0\.0'
+            $scriptText | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It 'Documents its exit-code contract in DESCRIPTION' {

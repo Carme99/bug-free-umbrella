@@ -9,10 +9,10 @@ Describe 'endpoints/devices/proactive-remediations/Check-OutdatedCriticalApps/re
     }
 
     Context 'Help & Metadata' {
-        It 'Declares Version 1.0.0 and the relaunch date' {
+        It 'Declares Version 2.0.0 and the relaunch date' {
             $rawText = Get-Content -Path $scriptPath -Raw
-            $rawText | Should -Match '(?m)^\s*Version\s*:\s*1\.0\.0\s*$'
-            $rawText | Should -Match '(?m)^\s*Date\s*:\s*2026-08-23\s*$'
+            $rawText | Should -Match '(?m)^\s*Version\s*:\s*2\.0\.0\s*$'
+            $rawText | Should -Match '(?m)^\s*Date\s*:\s*2026-09-16\s*$'
         }
 
         It 'Records the actual disk file name in .NOTES' {

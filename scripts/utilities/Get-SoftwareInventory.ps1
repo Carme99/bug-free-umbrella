@@ -47,8 +47,8 @@
     File Name: Get-SoftwareInventory.ps1
     Author: Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 
     Requires Administrator privileges for a full inventory.
     Compatible with Windows 10, 11, Server 2016, 2019, 2022.

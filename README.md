@@ -1,6 +1,6 @@
 ﻿# BugFreeUmbrella
 
-A collection of **539 PowerShell scripts across 8 technology domains** for enterprise IT automation: Intune endpoint management, M365 administration, Windows server operations, security compliance, Azure/AWS cloud, databases, and CI/CD.
+A collection of **566 PowerShell scripts on disk (381 catalogued) across 8 technology domains** for enterprise IT automation: Intune endpoint management, M365 administration, Windows server operations, security compliance, Azure/AWS cloud, databases, and CI/CD.
 
 <div align="center">
 
@@ -14,7 +14,7 @@ A collection of **539 PowerShell scripts across 8 technology domains** for enter
 [![Issues](https://img.shields.io/github/issues/Carme99/bug-free-umbrella?style=for-the-badge)](https://github.com/Carme99/bug-free-umbrella/issues)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=for-the-badge)](CONTRIBUTING.md)
 
-[![Scripts](https://img.shields.io/badge/Scripts-539-FF6B6B?style=for-the-badge&logo=files&logoColor=white)](docs/Script-Catalog.md)
+[![Scripts](https://img.shields.io/badge/Scripts-566-FF6B6B?style=for-the-badge&logo=files&logoColor=white)](docs/Script-Catalog.md)
 [![Docs](https://img.shields.io/badge/Full_Documentation-docs%2F-4A9EFF?style=for-the-badge)](docs/README.md)
 [![MCP Server](https://img.shields.io/badge/MCP-Server-8B5CF6?style=for-the-badge)](docs/MCP-Server.md)
 [![Last Commit](https://img.shields.io/github/last-commit/Carme99/bug-free-umbrella?style=for-the-badge)](https://github.com/Carme99/bug-free-umbrella/commits/main)
@@ -29,7 +29,7 @@ A collection of **539 PowerShell scripts across 8 technology domains** for enter
 
 Most enterprise IT teams accumulate the same scripts independently: Intune remediations, compliance scans, server health checks, Exchange hygiene, Azure monitoring. This repository publishes one such collection in full — every script carries complete comment-based help, consistent structure, and Pester test coverage where marked, so you can audit, adapt, and run them instead of writing from scratch.
 
-Development is AI-assisted ([Claude Code](https://github.com/anthropics/claude-code)) with human review on every change. The [v1.0.0 relaunch](CHANGELOG.md) applied a uniform standard to all 539 scripts — see [docs/RELAUNCH-SPEC.md](docs/RELAUNCH-SPEC.md) for the exact contract.
+Development is AI-assisted ([Claude Code](https://github.com/anthropics/claude-code)) with human review on every change. The [v1.0.0 relaunch](CHANGELOG.md) applied a uniform standard to the whole collection — see [docs/STANDARDS.md](docs/STANDARDS.md) for the exact contract.
 
 ## Quick Start
 
@@ -127,13 +127,13 @@ All documentation is versioned in [`docs/`](docs/README.md) and reviewed in the 
 | Solve a specific problem | [Common Use Cases](docs/Common-Use-Cases.md) |
 | Fix something broken | [Troubleshooting](docs/Troubleshooting.md) · [FAQ](docs/FAQ.md) |
 | Understand the architecture | [ARCHITECTURE](docs/ARCHITECTURE.md) |
-| Contribute or extend | [CONTRIBUTING](CONTRIBUTING.md) · [Custom Development Guide](docs/Custom-Development-Guide.md) · [Relaunch Standards Contract](docs/RELAUNCH-SPEC.md) |
+| Contribute or extend | [CONTRIBUTING](CONTRIBUTING.md) · [Custom Development Guide](docs/Custom-Development-Guide.md) · [Relaunch Standards Contract](docs/STANDARDS.md) |
 
 Project policies: [CHANGELOG](CHANGELOG.md) · [SECURITY](SECURITY.md) · [CODE OF CONDUCT](CODE_OF_CONDUCT.md) · [GOVERNANCE](GOVERNANCE.md) · [SUPPORT](SUPPORT.md)
 
 ## Contributing
 
-Bug reports, feature requests, and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). New scripts must satisfy the standards contract in [docs/RELAUNCH-SPEC.md](docs/RELAUNCH-SPEC.md) (header/help format, behavior standard, mirrored Pester tests). This is a hobby project; typical response time is one to two weeks.
+Bug reports, feature requests, and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). New scripts must satisfy the standards contract in [docs/STANDARDS.md](docs/STANDARDS.md) (header/help format, behavior standard, mirrored Pester tests). This is a hobby project; typical response time is one to two weeks.
 
 ## License
 

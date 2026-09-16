@@ -11,12 +11,32 @@ Describe "Get-DeviceGroupMembership" {
         . $scriptPath
 
         # Stub helper-module commands (the module import itself is mocked) so Pester can attach mocks.
-        function Connect-IntuneGraph { param([string]$TenantId, [string[]]$Scopes) }
-        function Disconnect-IntuneGraph { }
-        function Invoke-MgGraphRequest { param([string]$Uri, [string]$Method) }
-        function Get-AllIntuneDevices { }
-        function Export-IntuneReportToHTML { param($Data, [string]$Title, [string]$Description, [string]$FilePath) }
-        function Export-IntuneReportToCSV { param($Data, [string]$Title, [string]$FilePath) }
+        # Each stub is advanced and mirrors the helper's real parameter set, so a parameter the
+        # helper does not declare fails binding instead of being silently swallowed.
+        function Connect-IntuneGraph {
+            [CmdletBinding()]
+            param([string[]]$Scopes, [string]$TenantId)
+        }
+        function Disconnect-IntuneGraph {
+            [CmdletBinding()]
+            param()
+        }
+        function Get-AllIntuneDevices {
+            [CmdletBinding()]
+            param()
+        }
+        function Invoke-MgGraphRequest {
+            [CmdletBinding()]
+            param([string]$Uri, [string]$Method)
+        }
+        function Export-IntuneReportToHTML {
+            [CmdletBinding()]
+            param([object[]]$Data, [string]$Title, [string]$FilePath, [string]$Description)
+        }
+        function Export-IntuneReportToCSV {
+            [CmdletBinding()]
+            param([object[]]$Data, [string]$Title, [string]$FilePath)
+        }
 
         # Mock the helper module import and every Graph entry point so nothing leaves the machine.
         Mock Import-Module { }
@@ -32,9 +52,11 @@ Describe "Get-DeviceGroupMembership" {
                 return @{ value = @([pscustomobject]@{ id = 'dev-1'; displayName = 'PC01' }) }
             }
             if ($Uri -match '/devices/dev-1/memberOf') {
-                return @{ value = @([pscustomobject]@{ id = 'grp-1' }) }
+                return @{ value = @([pscustomobject]@{
+                    '@odata.type' = '#microsoft.graph.group'; id = 'grp-1'
+                }) }
             }
-            if ($Uri -match '/groups/grp-1$') {
+            if ($Uri -match '/groups/grp-1') {
                 return [pscustomobject]@{
                     id = 'grp-1'; displayName = 'Group One'; membershipRule = $null; description = 'Test group'
                 }
@@ -62,8 +84,8 @@ Describe "Get-DeviceGroupMembership" {
             $raw | Should -Match 'File Name\s*:\s*Get-DeviceGroupMembership\.ps1'
             $raw | Should -Match 'Author\s*:\s*\S+'
             $raw | Should -Match 'Prerequisite\s*:\s*PowerShell'
-            $raw | Should -Match 'Version\s*:\s*1\.0\.0'
-            $raw | Should -Match 'Date\s*:\s*2026-08-23'
+            $raw | Should -Match 'Version\s*:\s*2\.0\.0'
+            $raw | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It "Documents exactly one .PARAMETER per declared parameter, in declaration order" {
@@ -130,6 +152,42 @@ Describe "Get-DeviceGroupMembership" {
             Should -Invoke Invoke-MgGraphRequest -Times 3 -Exactly
             Should -Invoke Export-IntuneReportToHTML -Times 1 -Exactly
             Should -Invoke Export-IntuneReportToCSV -Times 1 -Exactly
+        }
+
+        It "Skips non-group memberOf entries (administrative units) and still reports the group" {
+            $DeviceName = 'PC02'
+            Mock Invoke-MgGraphRequest {
+                param($Uri)
+                if ($Uri -match '/devices\?') {
+                    return @{ value = @([pscustomobject]@{ id = 'dev-2'; displayName = 'PC02' }) }
+                }
+                if ($Uri -match '/devices/dev-2/memberOf') {
+                    return @{ value = @(
+                        [pscustomobject]@{
+                            '@odata.type' = '#microsoft.graph.administrativeUnit'
+                            id = 'au-1'; displayName = 'Admin Unit One'
+                        }
+                        [pscustomobject]@{
+                            '@odata.type' = '#microsoft.graph.group'
+                            id = 'grp-2'; displayName = 'Group Two'
+                        }
+                    ) }
+                }
+                if ($Uri -match '/groups/grp-2') {
+                    return [pscustomobject]@{
+                        id = 'grp-2'; displayName = 'Group Two'; membershipRule = 'dynamic rule'
+                        description = 'Second group'
+                    }
+                }
+                return @{ value = @() }
+            }
+
+            $out = Main *>&1
+            @($out | Where-Object { $_ -is [int] }) | Should -Be 0
+            ($out | Out-String) | Should -Match '\[\+\].*Found 1 group memberships'
+            # Device lookup + memberOf + exactly one group detail: the administrative unit is
+            # never dereferenced through /groups/{id}.
+            Should -Invoke Invoke-MgGraphRequest -Times 3 -Exactly
         }
 
         It "Returns 1 with [-] output when the device is not found in Azure AD" {

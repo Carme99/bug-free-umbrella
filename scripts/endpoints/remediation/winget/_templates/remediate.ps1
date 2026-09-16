@@ -5,7 +5,7 @@
 .DESCRIPTION
     DEPRECATED: this legacy template is superseded by remediate_v3_standard.ps1 in this directory.
     Existing Intune Proactive Remediations assignments may still reference this path, so the filename
-    and location are preserved (docs/RELAUNCH-SPEC.md section 6 forbids renames); new deployments
+    and location are preserved (docs/STANDARDS.md section 6 forbids renames); new deployments
     should use the V3 standard template instead.
     Template for winget application update remediation scripts. Checks whether the configured package
     has a winget update available and installs it silently when the application process is not running;
@@ -27,15 +27,15 @@
     File Name  : remediate.ps1
     Author     : Intune / Proactive Remediations
     Prerequisite: PowerShell 5.1+
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding()]
 param()
 
 # PSAvoidUsingWriteHost is intentionally accepted: prefixed, colored console output is the mandated
-# output convention of docs/RELAUNCH-SPEC.md section 3.
+# output convention of docs/STANDARDS.md section 3.
 # PSUseOutputTypeCorrectly is intentionally accepted: internal helper functions return plain
 # values (bool/string/object[]) by design; only Main's exit code (int) is a public contract.
 $ErrorActionPreference = 'Stop'
@@ -65,7 +65,7 @@ function Get-WingetExecutable {
 function Invoke-WingetCommand {
     # Thin wrapper seam: EVERY native winget.exe invocation (the sysget alias target) routes through
     # this function so Pester can mock the wrapper; the executable is never called elsewhere.
-    # docs/RELAUNCH-SPEC.md section 3: check $LASTEXITCODE and translate non-zero into failure handling.
+    # docs/STANDARDS.md section 3: check $LASTEXITCODE and translate non-zero into failure handling.
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]

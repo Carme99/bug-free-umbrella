@@ -10,8 +10,16 @@ Describe "Get-AppInstallErrorReport" {
         $scriptPath = Join-Path $repoRoot $scriptRelPath
 
         # Stub product-module cmdlets not installed on this machine so Pester can mock them.
-        function Connect-MgGraph { }
-        function Invoke-MgGraphRequest { }
+        # They stand in for advanced (CmdletBinding) functions, so declare them as advanced:
+        # an unsupported parameter then fails the test instead of being silently accepted.
+        function Connect-MgGraph {
+            [CmdletBinding()]
+            param([string[]]$Scopes, [switch]$NoWelcome)
+        }
+        function Invoke-MgGraphRequest {
+            [CmdletBinding()]
+            param([string]$Uri, [string]$Method = 'GET')
+        }
 
         # Safe: the top-level guard skips Main when dot-sourced.
         . $scriptPath
@@ -50,11 +58,11 @@ Describe "Get-AppInstallErrorReport" {
     }
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $raw | Should -Match '(?m)^\s*File Name\s*:\s*Get-AppInstallErrorReport\.ps1\s*$'
-            $raw | Should -Match '(?m)^\s*Version\s*:\s*1\.0\.0\s*$'
-            $raw | Should -Match '(?m)^\s*Date\s*:\s*2026-08-23\s*$'
+            $raw | Should -Match '(?m)^\s*Version\s*:\s*2\.0\.0\s*$'
+            $raw | Should -Match '(?m)^\s*Date\s*:\s*2026-09-16\s*$'
             $raw | Should -Match '(?m)^\s*Prerequisite\s*:\s*PowerShell 7\.0\s*$'
         }
 
@@ -122,6 +130,131 @@ Describe "Get-AppInstallErrorReport" {
             ($out | Where-Object { $_ -is [int] }) | Should -Be 0
             Should -Invoke Invoke-MgGraphRequest -Times 2 -Exactly `
                 -Because 'one mobileApps list + one deviceStatuses call for the matching app'
+        }
+
+        It "Follows @odata.nextLink for the app list and reports failures from every app page" {
+            $AppName = $null
+            $Days = 7
+            $Top = $null
+            $ExportHTML = $false
+            $ExportCSV = $false
+
+            Mock Invoke-MgGraphRequest {
+                param($Uri)
+                if ($Uri -like '*deviceStatuses*') {
+                    & $failureStatus
+                }
+                elseif ($Uri -like '*skiptoken=apps-page-2*') {
+                    [pscustomobject]@{ value = @([pscustomobject]@{ id = 'app-2'; displayName = '7-Zip' }) }
+                }
+                else {
+                    [pscustomobject]@{
+                        value = @([pscustomobject]@{ id = 'app-1'; displayName = 'Microsoft Edge' })
+                        '@odata.nextLink' = (
+                            'https://graph.microsoft.com/beta/deviceAppManagement/mobileApps' +
+                            '?$skiptoken=apps-page-2')
+                    }
+                }
+            }
+
+            $out = Main *>&1
+
+            ($out | Where-Object { $_ -is [int] }) | Should -Be 0
+            ($out | Out-String) | Should -Match '\[!\] Found 2 failures'
+            Should -Invoke Invoke-MgGraphRequest -Times 4 -Exactly `
+                -Because 'two app pages plus one deviceStatuses page per app'
+        }
+
+        It "Follows @odata.nextLink for deviceStatuses and counts failures from every page" {
+            $AppName = $null
+            $Days = 7
+            $Top = $null
+            $ExportHTML = $false
+            $ExportCSV = $false
+
+            Mock Invoke-MgGraphRequest {
+                param($Uri)
+                if ($Uri -like '*skiptoken=status-page-2*') {
+                    [pscustomobject]@{
+                        value = @(
+                            [pscustomobject]@{
+                                installState      = 'failed'
+                                deviceName        = 'LTW1010334'
+                                userPrincipalName = 'bob@contoso.com'
+                                errorCode         = 0x80073CF3
+                                lastSyncDateTime  = (Get-Date).AddHours(-3)
+                            }
+                        )
+                    }
+                }
+                elseif ($Uri -like '*deviceStatuses*') {
+                    [pscustomobject]@{
+                        value = @(
+                            [pscustomobject]@{
+                                installState      = 'failed'
+                                deviceName        = 'LTW1010013'
+                                userPrincipalName = 'alice@contoso.com'
+                                errorCode         = 0x80073CF3
+                                lastSyncDateTime  = (Get-Date).AddHours(-2)
+                            }
+                        )
+                        '@odata.nextLink' = (
+                            'https://graph.microsoft.com/beta/deviceAppManagement/mobileApps/app-1/' +
+                            'deviceStatuses?$skiptoken=status-page-2')
+                    }
+                }
+                else {
+                    [pscustomobject]@{ value = @([pscustomobject]@{ id = 'app-1'; displayName = 'Edge' }) }
+                }
+            }
+
+            $out = Main *>&1
+
+            ($out | Where-Object { $_ -is [int] }) | Should -Be 0
+            ($out | Out-String) | Should -Match '\[!\] Found 2 failures'
+            Should -Invoke Invoke-MgGraphRequest -Times 3 -Exactly `
+                -Because 'one app page plus two deviceStatuses pages'
+        }
+
+        It "Excludes a failure older than the -Days window when lastSyncDateTime is an ISO string" {
+            $AppName = $null
+            $Days = 7
+            $Top = $null
+            $ExportHTML = $false
+            $ExportCSV = $false
+
+            Mock Invoke-MgGraphRequest {
+                param($Uri)
+                if ($Uri -like '*deviceStatuses*') {
+                    [pscustomobject]@{
+                        value = @(
+                            [pscustomobject]@{
+                                installState      = 'failed'
+                                deviceName        = 'LTW1010999'
+                                userPrincipalName = 'carol@contoso.com'
+                                errorCode         = 0x80073CF3
+                                lastSyncDateTime  = '2020-01-01T00:00:00Z'
+                            },
+                            [pscustomobject]@{
+                                installState      = 'failed'
+                                deviceName        = 'LTW1010013'
+                                userPrincipalName = 'alice@contoso.com'
+                                errorCode         = 0x80073CF3
+                                lastSyncDateTime  = (Get-Date).AddHours(-2)
+                            }
+                        )
+                    }
+                }
+                else {
+                    [pscustomobject]@{ value = @([pscustomobject]@{ id = 'app-1'; displayName = 'Edge' }) }
+                }
+            }
+
+            $out = Main *>&1
+
+            ($out | Where-Object { $_ -is [int] }) | Should -Be 0
+            ($out | Out-String) | Should -Match '\[!\] Found 1 failures'
+            ($out | Out-String) | Should -Match '\[!\] Total Failures: 1'
         }
 
         It "Exports an HTML report when -ExportHTML is set" {

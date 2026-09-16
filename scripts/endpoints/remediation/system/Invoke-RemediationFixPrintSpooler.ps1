@@ -29,8 +29,8 @@
     File Name  : Invoke-RemediationFixPrintSpooler.ps1
     Author     : Intune / Proactive Remediations
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -108,12 +108,14 @@ function Main {
             if ($spoolerService) {
                 $finalStatus = $spoolerService.Status
             }
-            Write-Host "[-] Error remediating Print Spooler: service did not return to Running (status: $finalStatus)" -ForegroundColor Red
+            Write-Host ("[-] Error remediating Print Spooler: service did not return to Running (status: " +
+            "$finalStatus)") -ForegroundColor Red
             return 1
         }
 
         if ($changeCount -eq 0) {
-            Write-Host "[+] Already healthy: Print Spooler is running with Automatic startup and a clean spool directory" -ForegroundColor Green
+            Write-Host ("[+] Already healthy: Print Spooler is running with Automatic startup and a clean spool " +
+            "directory") -ForegroundColor Green
         }
         else {
             Write-Host "[+] Print Spooler remediation completed ($changeCount change(s))" -ForegroundColor Green

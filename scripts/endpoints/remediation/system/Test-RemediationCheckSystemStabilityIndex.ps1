@@ -30,8 +30,8 @@
     File Name  : Test-RemediationCheckSystemStabilityIndex.ps1
     Author     : Intune Admin
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding()]
@@ -52,7 +52,8 @@ function Main {
 
         # Documented RAC metric (Win32_ReliabilityStabilityMetrics, root\cimv2).
         # See https://learn.microsoft.com/en-us/previous-versions/windows/desktop/racwmiprov/win32-reliabilitystabilitymetrics
-        $stabilityData = Get-CimInstance -Namespace "root\cimv2" -ClassName "Win32_ReliabilityStabilityMetrics" -ErrorAction SilentlyContinue |
+        $stabilityData = Get-CimInstance -Namespace "root\cimv2" `
+            -ClassName "Win32_ReliabilityStabilityMetrics" -ErrorAction SilentlyContinue |
             Select-Object -First 1
 
         if (-not $stabilityData) {
@@ -66,7 +67,8 @@ function Main {
 
         Write-Host "[*] System Stability (Reliability Monitor):" -ForegroundColor Cyan
         Write-Host "[*]   Stability Index: $stabilityIndex / 10.0" -ForegroundColor Cyan
-        Write-Host "[*]   Measurement period: $($stabilityData.StartMeasurementDate) to $($stabilityData.EndMeasurementDate)" -ForegroundColor Cyan
+        Write-Host ("[*]   Measurement period: " +
+            "$($stabilityData.StartMeasurementDate) to $($stabilityData.EndMeasurementDate)") -ForegroundColor Cyan
 
         if ($stabilityIndex -lt $minStabilityIndex) {
             $issues += "System stability index is $stabilityIndex (threshold: $minStabilityIndex)"
@@ -78,7 +80,8 @@ function Main {
             foreach ($issue in $issues) {
                 Write-Host "[!]   - $issue" -ForegroundColor Yellow
             }
-            Write-Host "[*] Recommendation: Investigate recent changes, update drivers, check for malware" -ForegroundColor Cyan
+            Write-Host ("[*] Recommendation: Investigate recent changes, " +
+                "update drivers, check for malware") -ForegroundColor Cyan
             return 1
         }
 

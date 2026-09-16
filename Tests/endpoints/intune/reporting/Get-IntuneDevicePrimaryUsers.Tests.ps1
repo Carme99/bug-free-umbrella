@@ -98,11 +98,11 @@ Describe "Get-IntuneDevicePrimaryUsers" {
     }
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $raw | Should -Match '(?m)^\s*File Name\s*:\s*Get-IntuneDevicePrimaryUsers\.ps1\s*$'
-            $raw | Should -Match '(?m)^\s*Version\s*:\s*1\.0\.0\s*$'
-            $raw | Should -Match '(?m)^\s*Date\s*:\s*2026-08-23\s*$'
+            $raw | Should -Match '(?m)^\s*Version\s*:\s*2\.0\.0\s*$'
+            $raw | Should -Match '(?m)^\s*Date\s*:\s*2026-09-16\s*$'
             $raw | Should -Match '(?m)^\s*Prerequisite\s*:\s*PowerShell 7\.0\s*$'
         }
 

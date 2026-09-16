@@ -1,10 +1,10 @@
 # BugFreeUmbrella Documentation
 
-> The complete guide to the repository: **539 PowerShell scripts across 8 domains** for enterprise IT automation — Intune, M365, servers, security, cloud, data, and CI/CD.
+> The complete guide to the repository: **566 PowerShell scripts on disk (381 catalogued) across 8 domains** for enterprise IT automation — Intune, M365, servers, security, cloud, data, and CI/CD.
 
 Documentation lives **with the code** — every page here is versioned, reviewable in PRs, and ships with each release. There is no separate wiki to drift out of date.
 
-**Current release:** [v1.0.0 "Clean-Slate Relaunch"](../CHANGELOG.md) · **Docs updated:** 2026-08-24
+**Current release:** [v2.0.0 "Coverage & Correctness"](../CHANGELOG.md) · **Docs updated:** 2026-08-24
 
 ---
 
@@ -79,7 +79,7 @@ flowchart LR
 
 ## Contributor Standards
 
-- [RELAUNCH-SPEC.md](RELAUNCH-SPEC.md) — **the v1.0.0 relaunch standards contract**: mandatory header/help format, behavior standard (`Main` + dot-source guard), PowerShell 5.1/7 compatibility rules, mirrored Pester test requirements, and the per-script definition of done. New and modified scripts must satisfy it.
+- [STANDARDS.md](STANDARDS.md) — **the v1.0.0 relaunch standards contract**: mandatory header/help format, behavior standard (`Main` + dot-source guard), PowerShell 5.1/7 compatibility rules, mirrored Pester test requirements, and the per-script definition of done. New and modified scripts must satisfy it.
 - [CONTRIBUTING.md](../CONTRIBUTING.md) · [GOVERNANCE.md](../GOVERNANCE.md) · [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md)
 
 ## Project Files

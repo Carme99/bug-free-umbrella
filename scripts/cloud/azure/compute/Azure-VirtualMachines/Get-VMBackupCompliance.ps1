@@ -51,14 +51,14 @@
     File Name   : Get-VMBackupCompliance.ps1
     Author      : IT Operations
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 
     WARNING: This script has not been thoroughly tested in production environments.
     Please test in a non-production environment first and validate results before relying on this data.
 #>
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
-    Justification = 'RELAUNCH-SPEC §3 mandates console status output via Write-Host with [+]/[!]/[-]/[*] prefixes.')]
+    Justification = 'STANDARDS §3 mandates console status output via Write-Host with [+]/[!]/[-]/[*] prefixes.')]
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]

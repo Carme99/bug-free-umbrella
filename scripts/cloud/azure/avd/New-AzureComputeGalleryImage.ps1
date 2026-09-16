@@ -126,8 +126,8 @@
     File Name: New-AzureComputeGalleryImage.ps1
     Author: Jack Lee
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 
     Requirements:
       - Az PowerShell modules (Az.Accounts, Az.Compute, Az.Network, Az.Resources)
@@ -143,7 +143,7 @@
         without creating any resources
 #>
 
-# PSScriptAnalyzer justifications (RELAUNCH-SPEC DoD #16):
+# PSScriptAnalyzer justifications (STANDARDS DoD #16):
 # - PSAvoidUsingWriteHost: spec section 3 mandates colored console output prefixes via Write-Host.
 # - PSReviewUnusedParameter: script parameters are consumed inside Main via dynamic scoping.
 # - PSUseDeclaredVarsMoreThanAssignments: Azure lookup results are assigned to test existence only.

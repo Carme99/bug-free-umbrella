@@ -24,8 +24,8 @@
     File Name  : Invoke-RemediationCheckDiskHealth.ps1
     Author     : Intune Admin
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -65,7 +65,8 @@ function Main {
             $itemPath = "$volumeCachesPath\$item"
             if (Test-Path $itemPath -ErrorAction SilentlyContinue) {
                 if ($PSCmdlet.ShouldProcess($itemPath, 'Enable disk cleanup item')) {
-                    New-ItemProperty -Path $itemPath -Name 'StateFlags0001' -Value 2 -PropertyType DWord -Force -ErrorAction SilentlyContinue
+                    New-ItemProperty -Path $itemPath -Name 'StateFlags0001' -Value 2 -PropertyType DWord -Force `
+                        -ErrorAction SilentlyContinue
                 }
                 $configuredItems += $itemPath
             }
@@ -74,7 +75,8 @@ function Main {
         # Only invoke cleanmgr when at least one cleanup item was found to configure.
         if ($configuredItems.Count -gt 0) {
             if ($PSCmdlet.ShouldProcess('cleanmgr.exe', 'Run disk cleanup for system files')) {
-                Start-Process -FilePath 'cleanmgr.exe' -ArgumentList '/sagerun:1' -WindowStyle Hidden -Wait -ErrorAction SilentlyContinue
+                Start-Process -FilePath 'cleanmgr.exe' -ArgumentList '/sagerun:1' -WindowStyle Hidden -Wait `
+                    -ErrorAction SilentlyContinue
                 $remediationActions += 'Executed disk cleanup'
             }
         }

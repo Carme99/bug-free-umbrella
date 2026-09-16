@@ -15,6 +15,15 @@
     so they honor -WhatIf and -Confirm. A summary of targeted devices and their
     per-device action results is printed at the end of the run.
 
+    -GroupName resolves the Entra device members of the named group to Intune managed devices
+    by their azureAdDeviceId; members that are not devices are ignored. A -GroupName that
+    resolves to zero managed devices is reported explicitly and exits non-zero instead of
+    reporting a false success.
+    Exit codes:
+    - 0: the action ran (including selections that legitimately match no device).
+    - 1: connection failure, device lookup failure, a -GroupName matching no group or no
+         managed device, or one or more per-device actions failed.
+
 .PARAMETER Action
     Action to perform: Sync, Restart, Retire, Wipe, CollectDiagnostics.
 
@@ -25,7 +34,8 @@
     OData filter for devices (e.g., "operatingSystem eq 'Windows'").
 
 .PARAMETER GroupName
-    Target devices in specific Azure AD group.
+    Target the Entra device members of the named Azure AD group, resolved to Intune managed
+    devices by azureAdDeviceId.
 
 .PARAMETER NonCompliantOnly
     Target only non-compliant devices.
@@ -42,11 +52,23 @@
     File Name: Invoke-DeviceBulkActions.ps1
     Author: Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 
     Requires Microsoft.Graph PowerShell module
-    Requires permissions: DeviceManagementManagedDevices.ReadWrite.All
+    Requires permissions: DeviceManagementManagedDevices.ReadWrite.All, Group.Read.All
+
+    Device actions use the Microsoft.Graph.DeviceManagement action cmdlets:
+    - Sync-MgDeviceManagementManagedDevice
+    - Restart-MgDeviceManagementManagedDeviceNow
+    - Clear-MgDeviceManagementManagedDevice (wipe)
+    - Invoke-MgRetireDeviceManagementManagedDevice
+    - New-MgDeviceManagementManagedDeviceLogCollectionRequest for collect diagnostics
+      (beta-profile cmdlet)
+    Cmdlet index:
+    https://learn.microsoft.com/powershell/module/microsoft.graph.devicemanagement/
+    Log collection action:
+    https://learn.microsoft.com/graph/api/intune-devices-manageddevice-createdevicelogcollectionrequest
 #>
 
 [CmdletBinding(SupportsShouldProcess = $true)]
@@ -118,13 +140,30 @@ function Get-TargetDevices {
         }
         elseif ($GroupName) {
             $group = Get-MgGroup -Filter "displayName eq '$GroupName'" -ErrorAction Stop
-            if ($group) {
-                $members = Get-MgGroupMember -GroupId $group.Id -All -ErrorAction Stop
-                foreach ($member in $members) {
-                    $device = Get-MgDeviceManagementManagedDevice `
-                        -ManagedDeviceId $member.Id -ErrorAction SilentlyContinue
-                    if ($device) { $devices += $device }
+            if (-not $group) {
+                throw "No Azure AD group named '$GroupName' was found."
+            }
+
+            $members = Get-MgGroupMember -GroupId $group.Id -All -ErrorAction Stop
+
+            foreach ($member in $members) {
+                # Get-MgGroupMember returns Entra directory objects; only device members can be
+                # mapped to an Intune managed device.
+                if ($member.'@odata.type' -ne '#microsoft.graph.device') { continue }
+
+                # The Entra device ID (not the directory-object ID) is what an Intune managed
+                # device reports as azureAdDeviceId; fall back to the directory-object ID when
+                # Graph does not surface the device ID.
+                $azureAdDeviceId = $member.DeviceId
+                if (-not $azureAdDeviceId -and $member.AdditionalProperties) {
+                    $azureAdDeviceId = $member.AdditionalProperties['deviceId']
                 }
+                if (-not $azureAdDeviceId) { $azureAdDeviceId = $member.Id }
+
+                # A failed lookup must abort the run, never be silently swallowed.
+                $matched = Get-MgDeviceManagementManagedDevice `
+                    -Filter "azureAdDeviceId eq '$azureAdDeviceId'" -ErrorAction Stop
+                if ($matched) { $devices += $matched }
             }
         }
         elseif ($DeviceFilter) {
@@ -159,11 +198,11 @@ function Invoke-DeviceAction {
         try {
             switch ($Action) {
                 'Sync' {
-                    Invoke-MgSyncDeviceManagementManagedDevice -ManagedDeviceId $deviceId -ErrorAction Stop
+                    Sync-MgDeviceManagementManagedDevice -ManagedDeviceId $deviceId -ErrorAction Stop
                     Write-ColorOutput "Synced: $deviceName" -Level Success
                 }
                 'Restart' {
-                    Invoke-MgRestartDeviceManagementManagedDevice -ManagedDeviceId $deviceId -ErrorAction Stop
+                    Restart-MgDeviceManagementManagedDeviceNow -ManagedDeviceId $deviceId -ErrorAction Stop
                     Write-ColorOutput "Restarted: $deviceName" -Level Success
                 }
                 'Retire' {
@@ -171,11 +210,12 @@ function Invoke-DeviceAction {
                     Write-ColorOutput "Retired: $deviceName" -Level Success
                 }
                 'Wipe' {
-                    Invoke-MgWipeDeviceManagementManagedDevice -ManagedDeviceId $deviceId -ErrorAction Stop
+                    Clear-MgDeviceManagementManagedDevice -ManagedDeviceId $deviceId -ErrorAction Stop
                     Write-ColorOutput "Wiped: $deviceName" -Level Success
                 }
                 'CollectDiagnostics' {
-                    Invoke-MgCollectDeviceManagementManagedDeviceDiagnostic -ManagedDeviceId $deviceId -ErrorAction Stop
+                    New-MgDeviceManagementManagedDeviceLogCollectionRequest -ManagedDeviceId $deviceId `
+                        -TemplateType @{ templateType = 'predefined' } -ErrorAction Stop
                     Write-ColorOutput "Collected diagnostics: $deviceName" -Level Success
                 }
             }
@@ -212,6 +252,10 @@ function Main {
         $devices = Get-TargetDevices
 
         if ($devices.Count -eq 0) {
+            if ($GroupName) {
+                Write-ColorOutput "Group '$GroupName' resolved to 0 managed devices" -Level Error
+                return 1
+            }
             Write-ColorOutput "No devices found matching criteria" -Level Warning
             return 0
         }

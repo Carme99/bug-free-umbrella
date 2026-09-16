@@ -32,11 +32,11 @@
     File Name   : Get-PostgreSQLHealth.ps1
     Author      : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
     Requires the psql command-line client (or Npgsql library).
     Note: Invoke-ScriptAnalyzer PSAvoidUsingWriteHost warnings are intentional;
-    RELAUNCH-SPEC section 3 mandates Write-Host-based [+] / [!] / [-] / [*] status output.
+    STANDARDS section 3 mandates Write-Host-based [+] / [!] / [-] / [*] status output.
 #>
 [CmdletBinding()]
 param(
@@ -70,7 +70,7 @@ function Invoke-PsqlCommand {
         [string[]]$ArgumentList
     )
 
-    # Thin wrapper around the native psql CLI; the mock seam for Pester tests (RELAUNCH-SPEC §3/§5).
+    # Thin wrapper around the native psql CLI; the mock seam for Pester tests (STANDARDS §3/§5).
     $output = & psql @ArgumentList 2>$null
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[-] psql exited with code $LASTEXITCODE" -ForegroundColor Red
@@ -146,5 +146,5 @@ function Main {
     }
 }
 
-# Execute only when run as a script; dot-sourcing (Pester tests) skips execution (RELAUNCH-SPEC §3).
+# Execute only when run as a script; dot-sourcing (Pester tests) skips execution (STANDARDS §3).
 if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

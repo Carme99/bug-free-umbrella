@@ -14,7 +14,7 @@
     File Name      : Labeler.Tests.ps1
     Author         : Carme99
     Prerequisite   : Pester 5.5.0+
-    Version        : 1.0.0
+    Version        : 2.0.0
     Date           : 2026-08-20
 #>
 

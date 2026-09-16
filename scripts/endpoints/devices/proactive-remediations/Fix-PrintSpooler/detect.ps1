@@ -23,8 +23,8 @@
     File Name     : detect.ps1
     Author        : Bug-Free Umbrella
     Prerequisite  : PowerShell 7.0
-    Version       : 1.0.0
-    Date          : 2026-08-23
+    Version       : 2.0.0
+    Date          : 2026-09-16
     Deprecated    : moved to
                     scripts/endpoints/remediation/system/Test-RemediationFixPrintSpooler.ps1 —
                     shim will be removed in 6.0.0.
@@ -46,7 +46,7 @@ function Invoke-ForwardedScript {
     )
 
     # Single seam for invoking the external canonical script; $LASTEXITCODE is the forwarding contract.
-    $null = & $Path @args
+    $null = & $Path
     return $LASTEXITCODE
 }
 
@@ -56,7 +56,7 @@ function Main {
         $targetRel = '../../../remediation/system/Test-RemediationFixPrintSpooler.ps1'
         $targetPath = Join-Path $PSScriptRoot $targetRel
         Write-Warning ('Deprecated: moved to {0} — shim will be removed in 6.0.0.' -f $movedTo)
-        return (Invoke-ForwardedScript -Path $targetPath @args)
+        return (Invoke-ForwardedScript -Path $targetPath)
     }
     catch {
         Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
@@ -64,4 +64,4 @@ function Main {
     }
 }
 
-if ($MyInvocation.InvocationName -ne '.') { exit (Main @args) }
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

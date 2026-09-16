@@ -48,8 +48,8 @@
     File Name: Get-WingetUpdateCompliance.ps1
     Author: Intune Admin
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
     Permissions: DeviceManagementManagedDevices.Read.All
     This script relies on Intune custom inventory data for real compliance reporting.
 #>

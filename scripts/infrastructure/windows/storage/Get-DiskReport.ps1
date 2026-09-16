@@ -39,8 +39,8 @@
     File Name     : Get-DiskReport.ps1
     Author        : Bug-Free Umbrella
     Prerequisite  : PowerShell 5.1+
-    Version       : 1.0.0
-    Date          : 2026-08-23
+    Version       : 2.0.0
+    Date          : 2026-09-16
 
     Requires elevation (Administrator) for full filesystem access.
     Compatible with Windows Server 2016, 2019, and 2022.
@@ -66,7 +66,7 @@ param(
 
 # PSSA warning justifications (all remaining diagnostics are reviewed and intentional):
 # - PSAvoidUsingWriteHost: operator-facing console UI with [+] [!] [-] [*] prefixes is the
-#   mandated reporting channel (RELAUNCH-SPEC §1/§3); output is not consumed downstream.
+#   mandated reporting channel (STANDARDS §1/§3); output is not consumed downstream.
 # - PSReviewUnusedParameter: script-level parameters are read inside Main/helpers via
 #   PowerShell dynamic scoping; PSSA cannot trace those references.
 # - PSUseSingularNouns: plural nouns describe report collections and are kept for clarity.

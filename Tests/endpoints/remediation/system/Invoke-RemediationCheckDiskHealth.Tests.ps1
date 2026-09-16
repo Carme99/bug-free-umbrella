@@ -5,6 +5,11 @@ Describe 'Invoke-RemediationCheckDiskHealth' {
         # Mirrored layout: this file lives at Tests/endpoints/remediation/system/
         # -> repo root is four levels up, then across into scripts/.
         $scriptPath = Join-Path $PSScriptRoot '../../../../scripts/endpoints/remediation/system/Invoke-RemediationCheckDiskHealth.ps1'
+        # Make this suite independent of the current directory: sibling suites call
+        # Set-Location in AfterAll without restoring it, so the CWD at this point
+        # depends on which file ran last.
+        Set-Location -LiteralPath $PSScriptRoot
+
         $scriptText = Get-Content $scriptPath -Raw
 
         # Safe: the script's top-level guard skips Main when dot-sourced (spec §3).
@@ -28,8 +33,8 @@ Describe 'Invoke-RemediationCheckDiskHealth' {
             $scriptText | Should -Match 'File Name\s*:\s*Invoke-RemediationCheckDiskHealth\.ps1'
             $scriptText | Should -Match 'Author\s*:'
             $scriptText | Should -Match 'Prerequisite\s*:\s*PowerShell 7\.0'
-            $scriptText | Should -Match 'Version\s*:\s*1\.0\.0'
-            $scriptText | Should -Match 'Date\s*:\s*2026-08-23'
+            $scriptText | Should -Match 'Version\s*:\s*2\.0\.0'
+            $scriptText | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It 'Has comment-based help with SYNOPSIS, DESCRIPTION and >=2 EXAMPLES' {

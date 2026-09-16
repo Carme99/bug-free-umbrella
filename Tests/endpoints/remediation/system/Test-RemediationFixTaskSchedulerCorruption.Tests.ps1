@@ -13,11 +13,11 @@ Describe "Test-RemediationFixTaskSchedulerCorruption" {
     }
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $raw | Should -Match 'File Name:\s*Test-RemediationFixTaskSchedulerCorruption\.ps1'
-            $raw | Should -Match 'Version:\s*1\.0\.0'
-            $raw | Should -Match 'Date:\s*2026-08-23'
+            $raw | Should -Match 'Version:\s*2\.0\.0'
+            $raw | Should -Match 'Date:\s*2026-09-16'
             $raw | Should -Match 'Author:'
             $raw | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
         }

@@ -9,8 +9,9 @@
 
     Covers device configuration policies, compliance policies, Settings Catalog
     profiles and app protection policies. Requires connection to Microsoft Graph
-    with DeviceManagementConfiguration.Read.All permissions. The HTML or CSV
-    report is written to the path given by -OutputPath (default: current directory).
+    with DeviceManagementConfiguration.Read.All and DeviceManagementApps.Read.All
+    permissions. The HTML or CSV report is written to the path given by -OutputPath
+    (default: current directory).
 
 .PARAMETER TenantId
     Azure AD Tenant ID (optional, will prompt if not provided)
@@ -33,11 +34,15 @@
     File Name: Get-PolicyAssignmentReport.ps1
     Author: Intune Admin
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 
     Requires: Microsoft.Graph (PowerShell SDK) module
-    Permissions: DeviceManagementConfiguration.Read.All
+    Permissions: DeviceManagementConfiguration.Read.All, DeviceManagementApps.Read.All
+
+    App protection policy assignments are exposed per targeted policy type:
+    https://learn.microsoft.com/graph/api/resources/intune-mam-managedapppolicy
+    https://learn.microsoft.com/graph/api/intune-mam-targetedmanagedapppolicyassignment-list
 #>
 
 [CmdletBinding()]
@@ -177,6 +182,64 @@ function Main {
             }
         }
 
+        # Process app protection policies. The base managedAppPolicies collection exposes no
+        # assignments navigation, so each targeted policy type is queried through its own
+        # collection; types without one are reported without assignment detail.
+        # https://learn.microsoft.com/graph/api/resources/intune-mam-managedapppolicy
+        # https://learn.microsoft.com/graph/api/intune-mam-targetedmanagedapppolicyassignment-list
+        $appProtectionCollections = @{
+            '#microsoft.graph.androidManagedAppProtection' = 'androidManagedAppProtections'
+            '#microsoft.graph.defaultManagedAppProtection' = 'defaultManagedAppProtections'
+            '#microsoft.graph.iosManagedAppProtection' = 'iosManagedAppProtections'
+            '#microsoft.graph.mdmWindowsInformationProtectionPolicy' = 'mdmWindowsInformationProtectionPolicies'
+            '#microsoft.graph.targetedManagedAppConfiguration' = 'targetedManagedAppConfigurations'
+            '#microsoft.graph.windowsInformationProtectionPolicy' = 'windowsInformationProtectionPolicies'
+            '#microsoft.graph.windowsManagedAppProtection' = 'windowsManagedAppProtections'
+        }
+
+        foreach ($policy in $appProtection) {
+            $collection = $appProtectionCollections[[string]$policy.'@odata.type']
+
+            if (-not $collection) {
+                # Policy type with no assignments navigation: report the policy itself.
+                $assignmentReport += [PSCustomObject]@{
+                    PolicyName = $policy.displayName
+                    PolicyType = "App Protection"
+                    AssignmentTarget = "Not reported by API"
+                    Intent = "N/A"
+                    GroupId = $null
+                    CreatedDate = $policy.createdDateTime
+                    ModifiedDate = $policy.lastModifiedDateTime
+                }
+                continue
+            }
+
+            $policyUri = "https://graph.microsoft.com/beta/deviceAppManagement/" +
+                "$collection/$($policy.id)/assignments"
+            $assignments = Invoke-MgGraphRequest -Uri $policyUri -Method GET -ErrorAction Stop
+
+            foreach ($assignment in $assignments.value) {
+                $targetType = if ($assignment.target.'@odata.type' -match "allLicensedUsersAssignmentTarget") {
+                    "All Users"
+                }
+                elseif ($assignment.target.'@odata.type' -match "allDevicesAssignmentTarget") { "All Devices" }
+                elseif ($assignment.target.'@odata.type' -match "groupAssignmentTarget") {
+                    "Group: $($assignment.target.groupId)"
+                }
+                else { "Unknown" }
+
+                $assignmentReport += [PSCustomObject]@{
+                    PolicyName = $policy.displayName
+                    PolicyType = "App Protection"
+                    AssignmentTarget = $targetType
+                    Intent = "N/A"
+                    GroupId = $assignment.target.groupId
+                    CreatedDate = $policy.createdDateTime
+                    ModifiedDate = $policy.lastModifiedDateTime
+                }
+            }
+        }
+
         Write-Host "[+] Found $($assignmentReport.Count) policy assignments" -ForegroundColor Green
 
         # Detect potential conflicts (same group assigned multiple policies of same type)
@@ -213,6 +276,8 @@ function Main {
         Write-Host "  Configuration Policies: $configCount"
         Write-Host "  Compliance Policies: $complianceCount"
         Write-Host "  Settings Catalog: $settingsCount"
+        $appProtectionCount = @($assignmentReport | Where-Object PolicyType -eq 'App Protection').Count
+        Write-Host "  App Protection: $appProtectionCount"
         return 0
     }
     catch {

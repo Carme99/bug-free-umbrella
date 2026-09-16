@@ -1,8 +1,15 @@
 {
   "$schema": "https://raw.githubusercontent.com/Carme99/bug-free-umbrella/main/scripts/.catalog/metadata.schema.json",
-  "version": "1.0.0",
-  "generated": "2026-08-24T06:39:58.5273394+01:00",
-  "totalScripts": 354,
+  "version": "2.0.0",
+  "generated": "2026-09-16T22:25:12.3104962+01:00",
+  "totalScripts": 381,
+  "excludedScripts": 185,
+  "onDiskScripts": 566,
+  "excludedPaths": [
+    "scripts/endpoints/devices/winget",
+    "scripts/endpoints/devices/proactive-remediations"
+  ],
+  "countingConvention": "onDiskScripts = totalScripts + excludedScripts; the excluded trees are deprecated forwarding shims to scripts/endpoints/remediation",
   "scripts": [
     {
       "path": "automation/cicd/Analyze-BuildPerformance.ps1",
@@ -355,6 +362,100 @@
       ]
     },
     {
+      "path": "cloud/azure/arc/servers/Get-AzureArcServerFleet.ps1",
+      "name": "Get-AzureArcServerFleet.ps1",
+      "category": "cloud/azure/arc/servers",
+      "synopsis": "Inventories Azure Arc-enabled servers and reports agent, heartbeat, and extension findings.",
+      "description": "Enumerates Azure Arc-enabled servers with Get-AzConnectedMachine and reports the Connected Machine agent version, connection status, last status change, OS and SKU, location, tags, and installed Arc e",
+      "tags": [
+        "azure",
+        "report"
+      ],
+      "parameters": [
+        {
+          "name": "SubscriptionId",
+          "type": "String[]",
+          "mandatory": false
+        },
+        {
+          "name": "ResourceGroupName",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "AgentStaleDays",
+          "type": "Int32",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "ConvertTo-AgentVersion",
+        "Resolve-FleetSubscription",
+        "Get-MachineResourceGroup",
+        "Get-MachineTagList",
+        "Get-ArcServerRecord",
+        "Get-FleetReportText",
+        "Main"
+      ]
+    },
+    {
+      "path": "cloud/azure/arc/servers/Update-AzureArcAgent.ps1",
+      "name": "Update-AzureArcAgent.ps1",
+      "category": "cloud/azure/arc/servers",
+      "synopsis": "Requests a Connected Machine agent upgrade for Azure Arc-enabled servers below a target version.",
+      "description": "Enumerates Azure Arc-enabled servers with Get-AzConnectedMachine, selects the machines whose Connected Machine agent version is below -MinimumAgentVersion (or below the newest agent version observed i",
+      "tags": [
+        "azure"
+      ],
+      "parameters": [
+        {
+          "name": "SubscriptionId",
+          "type": "String[]",
+          "mandatory": false
+        },
+        {
+          "name": "ResourceGroupName",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "MachineName",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "MinimumAgentVersion",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "ConvertTo-AgentVersion",
+        "Resolve-FleetSubscription",
+        "Get-MachineResourceGroup",
+        "Main"
+      ]
+    },
+    {
       "path": "cloud/azure/avd/Install-TeamsAVD.ps1",
       "name": "Install-TeamsAVD.ps1",
       "category": "cloud/azure/avd",
@@ -669,6 +770,102 @@
       ]
     },
     {
+      "path": "cloud/azure/backup/Get-AzureBackupComplianceReport.ps1",
+      "name": "Get-AzureBackupComplianceReport.ps1",
+      "category": "cloud/azure/backup",
+      "synopsis": "Reports Azure Backup compliance: unprotected VMs, stale backups, failed jobs, vaults without soft delete.",
+      "description": "Read-only Azure Backup compliance report for one Azure subscription or for every subscription the signed-in account can read. The report combines the Recovery Services vault inventory (Get-AzRecoveryS",
+      "tags": [
+        "azure",
+        "compliance",
+        "backup",
+        "report"
+      ],
+      "parameters": [
+        {
+          "name": "SubscriptionId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "ResourceGroupName",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "VaultName",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "StaleBackupDays",
+          "type": "Int32",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Test-BackupItemMatchesVm",
+        "Get-StaleBackupAgeDays",
+        "Main"
+      ]
+    },
+    {
+      "path": "cloud/azure/backup/Test-AzureRecoveryVaultRedundancy.ps1",
+      "name": "Test-AzureRecoveryVaultRedundancy.ps1",
+      "category": "cloud/azure/backup",
+      "synopsis": "Audits Recovery Services vault storage redundancy and cross-region-restore state.",
+      "description": "Read-only audit of every Recovery Services vault in one Azure subscription, or in every subscription the signed-in account can read. For each vault the script reads the backup storage redundancy type",
+      "tags": [
+        "audit"
+      ],
+      "parameters": [
+        {
+          "name": "SubscriptionId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "MinimumRedundancy",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "IncludeCrossRegionRestore",
+          "type": "SwitchParameter",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Get-RedundancyRank",
+        "ConvertTo-CrossRegionRestoreState",
+        "Main"
+      ]
+    },
+    {
       "path": "cloud/azure/compute/Azure-VirtualMachines/Get-VMBackupCompliance.ps1",
       "name": "Get-VMBackupCompliance.ps1",
       "category": "cloud/azure/compute/Azure-VirtualMachines",
@@ -897,6 +1094,151 @@
       ]
     },
     {
+      "path": "cloud/azure/cost/Get-AzureCostOptimizationReport.ps1",
+      "name": "Get-AzureCostOptimizationReport.ps1",
+      "category": "cloud/azure/cost",
+      "synopsis": "Reports Azure cost optimisation findings: top cost drivers, month-to-date spend, and idle resources.",
+      "description": "Read-only cost optimisation report for one Azure subscription or for every subscription the signed-in account can read. Cost data is read from the Microsoft Cost Management Query API (POST <scope>/pro",
+      "tags": [
+        "azure",
+        "report"
+      ],
+      "parameters": [
+        {
+          "name": "SubscriptionId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "LookbackDays",
+          "type": "Int32",
+          "mandatory": false
+        },
+        {
+          "name": "TopN",
+          "type": "Int32",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Get-CostColumnIndex",
+        "Get-LabelColumnIndex",
+        "ConvertFrom-CostQueryResponse",
+        "Invoke-CostManagementQuery",
+        "Get-TopCostDriver",
+        "Main"
+      ]
+    },
+    {
+      "path": "cloud/azure/governance/policy/Get-AzurePolicyComplianceReport.ps1",
+      "name": "Get-AzurePolicyComplianceReport.ps1",
+      "category": "cloud/azure/governance/policy",
+      "synopsis": "Reports Azure Policy compliance per assignment and per initiative, and lists non-compliant resources.",
+      "description": "Read-only Azure Policy compliance report for one subscription or for every subscription the signed-in account can read. The report is built from the Microsoft.PolicyInsights policy state records: - Ge",
+      "tags": [
+        "azure",
+        "compliance",
+        "report"
+      ],
+      "parameters": [
+        {
+          "name": "SubscriptionId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "PolicyAssignmentId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "ResourceGroupName",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "TriggerScan",
+          "type": "SwitchParameter",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Get-ObjectProperty",
+        "Get-NumericProperty",
+        "Get-EvaluationTimestamp",
+        "Add-StateToRollup",
+        "Main"
+      ]
+    },
+    {
+      "path": "cloud/azure/governance/policy/Start-AzurePolicyRemediation.ps1",
+      "name": "Start-AzurePolicyRemediation.ps1",
+      "category": "cloud/azure/governance/policy",
+      "synopsis": "Starts an Azure Policy remediation task for a deployIfNotExists or modify policy assignment.",
+      "description": "Mutating script: it creates and starts an Azure Policy remediation task with Start-AzPolicyRemediation (https://learn.microsoft.com/en-us/powershell/module/az.policyinsights/start-azpolicyremediation)",
+      "tags": [
+        "azure"
+      ],
+      "parameters": [
+        {
+          "name": "PolicyAssignmentId",
+          "type": "String",
+          "mandatory": true
+        },
+        {
+          "name": "SubscriptionId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "ResourceCount",
+          "type": "Int32",
+          "mandatory": false
+        },
+        {
+          "name": "ParallelDeploymentCount",
+          "type": "Int32",
+          "mandatory": false
+        },
+        {
+          "name": "FailureThresholdPercentage",
+          "type": "Int32",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Get-ObjectProperty",
+        "Get-RemediationTarget",
+        "Main"
+      ]
+    },
+    {
       "path": "cloud/azure/keyvault/Azure-KeyVault/Monitor-AzureKeyVaults.ps1",
       "name": "Monitor-AzureKeyVaults.ps1",
       "category": "cloud/azure/keyvault/Azure-KeyVault",
@@ -937,6 +1279,296 @@
       "hasCmdletBinding": true,
       "requiresModules": [],
       "functionsExported": [
+        "Main"
+      ]
+    },
+    {
+      "path": "cloud/azure/monitoring/Get-AzureDiagnosticSettingsReport.ps1",
+      "name": "Get-AzureDiagnosticSettingsReport.ps1",
+      "category": "cloud/azure/monitoring",
+      "synopsis": "Reports Azure Monitor diagnostic settings coverage and destinations across subscription resources.",
+      "description": "Read-only Azure Monitor diagnostic settings report for one subscription or for every subscription the signed-in account can read. Diagnostic settings are the per-resource configuration that routes pla",
+      "tags": [
+        "azure",
+        "report"
+      ],
+      "parameters": [
+        {
+          "name": "SubscriptionId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "ResourceType",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Get-DiagnosticDestination",
+        "Get-EnabledCategory",
+        "ConvertTo-DiagnosticSettingRecord",
+        "Main"
+      ]
+    },
+    {
+      "path": "cloud/azure/monitoring/Get-AzureMonitorAlertCoverage.ps1",
+      "name": "Get-AzureMonitorAlertCoverage.ps1",
+      "category": "cloud/azure/monitoring",
+      "synopsis": "Reports Azure Monitor alert coverage gaps across alert rules, action groups and severity levels.",
+      "description": "Read-only Azure Monitor alert coverage report for one subscription or for every subscription the signed-in account can read. An alert rule only notifies when a fired alert can invoke the action groups",
+      "tags": [
+        "azure",
+        "report"
+      ],
+      "parameters": [
+        {
+          "name": "SubscriptionId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "ResourceGroupName",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Get-ActionGroupId",
+        "Get-RuleResourceGroup",
+        "ConvertTo-AlertRuleRecord",
+        "Main"
+      ]
+    },
+    {
+      "path": "cloud/azure/network/Get-AzureFlowLogMigrationStatus.ps1",
+      "name": "Get-AzureFlowLogMigrationStatus.ps1",
+      "category": "cloud/azure/network",
+      "synopsis": "Reports Azure NSG-to-virtual-network flow log migration status read-only.",
+      "description": "Read-only migration readiness report for the NSG flow log retirement. NSG flow logs retire on September 30, 2027 and no longer support new creation, so every subscription must move to virtual network",
+      "tags": [
+        "azure",
+        "report",
+        "migration",
+        "network"
+      ],
+      "parameters": [
+        {
+          "name": "SubscriptionId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Get-ResourceNameFromId",
+        "Test-IdInList",
+        "Main"
+      ]
+    },
+    {
+      "path": "cloud/azure/network/Get-AzureNetworkSecurityAudit.ps1",
+      "name": "Get-AzureNetworkSecurityAudit.ps1",
+      "category": "cloud/azure/network",
+      "synopsis": "Audits Azure NSG rules, subnets, NICs, and public IP exposure read-only.",
+      "description": "Read-only Azure network exposure audit. For every selected subscription the script inventories network security groups, virtual networks, network interfaces, and public IP addresses, then reports four",
+      "tags": [
+        "azure",
+        "audit"
+      ],
+      "parameters": [
+        {
+          "name": "SubscriptionId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "ResourceGroupName",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Get-ResourceNameFromId",
+        "Test-PermissiveSource",
+        "Test-PermissivePort",
+        "Main"
+      ]
+    },
+    {
+      "path": "cloud/azure/storage/Get-AzureStorageAccountAudit.ps1",
+      "name": "Get-AzureStorageAccountAudit.ps1",
+      "category": "cloud/azure/storage",
+      "synopsis": "Audits Azure Storage account security posture against Microsoft hardening guidance.",
+      "description": "Read-only Azure Storage security audit. For every selected subscription the script inventories storage accounts with Get-AzStorageAccount and reports six classes of finding: - anonymous public blob ac",
+      "tags": [
+        "azure",
+        "security",
+        "audit"
+      ],
+      "parameters": [
+        {
+          "name": "SubscriptionId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "ResourceGroupName",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Get-AccountName",
+        "Test-WeakTlsVersion",
+        "Test-DefaultDenyRuleSet",
+        "Main"
+      ]
+    },
+    {
+      "path": "cloud/azure/storage/Get-AzureStorageLifecycleReport.ps1",
+      "name": "Get-AzureStorageLifecycleReport.ps1",
+      "category": "cloud/azure/storage",
+      "synopsis": "Reports Azure Storage blob lifecycle policy coverage per storage account.",
+      "description": "Read-only Azure Storage lifecycle report. For every selected subscription the script inventories storage accounts with Get-AzStorageAccount, reads each account's blob lifecycle management policy with",
+      "tags": [
+        "azure",
+        "report"
+      ],
+      "parameters": [
+        {
+          "name": "SubscriptionId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "ResourceGroupName",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Get-AccountName",
+        "ConvertTo-LifecycleRuleList",
+        "Get-RuleBlobTypes",
+        "Get-RuleActions",
+        "Get-LifecycleErrorText",
+        "Test-MissingPolicyError",
+        "Main"
+      ]
+    },
+    {
+      "path": "cloud/azure/update/Get-AzureUpdateManagerReport.ps1",
+      "name": "Get-AzureUpdateManagerReport.ps1",
+      "category": "cloud/azure/update",
+      "synopsis": "Reports Azure Update Manager compliance: assessments, pending patches, and maintenance schedules.",
+      "description": "Read-only Azure Update Manager compliance report for one subscription or every subscription the signed-in account can read. It combines the Azure Update Manager cmdlet surface with the Azure Resource",
+      "tags": [
+        "azure",
+        "compliance",
+        "report"
+      ],
+      "parameters": [
+        {
+          "name": "SubscriptionId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "ResourceGroupName",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Get-DynamicProperty",
+        "ConvertTo-IntOrDefault",
+        "Get-ResourceIdSegment",
+        "Get-MachineResourceId",
+        "Get-ResourceGraphRow",
         "Main"
       ]
     },
@@ -1715,6 +2347,57 @@
       ]
     },
     {
+      "path": "collaboration/microsoft365/exchange-online/Test-EmailAuthenticationRecords.ps1",
+      "name": "Test-EmailAuthenticationRecords.ps1",
+      "category": "collaboration/microsoft365/exchange-online",
+      "synopsis": "Validate SPF, DKIM and DMARC DNS records for a Microsoft 365 domain.",
+      "description": "Resolves the SPF TXT record, the MX records, the DKIM selector CNAME records and the _dmarc TXT record for the domain named by -DomainName, then compares the results with the Microsoft 365 email authe",
+      "tags": [],
+      "parameters": [
+        {
+          "name": "DomainName",
+          "type": "String",
+          "mandatory": true
+        },
+        {
+          "name": "DkimSelector",
+          "type": "String[]",
+          "mandatory": false
+        },
+        {
+          "name": "ExpectedSpfInclude",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "DmarcPolicy",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Invoke-DnsQuery",
+        "Get-DnsRecordText",
+        "Get-MatchingRecordText",
+        "Get-SpfMechanism",
+        "Get-DmarcTagValue",
+        "New-CheckRow",
+        "Main"
+      ]
+    },
+    {
       "path": "collaboration/microsoft365/Get-M365UserInfo.ps1",
       "name": "Get-M365UserInfo.ps1",
       "category": "collaboration/microsoft365",
@@ -2001,6 +2684,95 @@
       "requiresModules": [],
       "functionsExported": [
         "Write-ReportTextFile",
+        "Main"
+      ]
+    },
+    {
+      "path": "collaboration/microsoft365/purview/Get-DlpPolicyPostureReport.ps1",
+      "name": "Get-DlpPolicyPostureReport.ps1",
+      "category": "collaboration/microsoft365/purview",
+      "synopsis": "Report Microsoft Purview data loss prevention policy posture, modes and coverage gaps.",
+      "description": "Reads every DLP policy with Get-DlpCompliancePolicy -DistributionDetail and every rule with Get-DlpComplianceRule, then reports per policy: the enforcement mode normalised to the four documented polic",
+      "tags": [
+        "report"
+      ],
+      "parameters": [
+        {
+          "name": "PolicyName",
+          "type": "String[]",
+          "mandatory": false
+        },
+        {
+          "name": "IncludeEndpoints",
+          "type": "SwitchParameter",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Write-ReportFile",
+        "Get-DlpPolicyLocations",
+        "Get-NormalizedDlpMode",
+        "Test-AlertConfigured",
+        "Test-PolicyNameMatch",
+        "New-DlpPolicyRecord",
+        "Main"
+      ]
+    },
+    {
+      "path": "collaboration/microsoft365/purview/Get-RetentionPolicyCoverageReport.ps1",
+      "name": "Get-RetentionPolicyCoverageReport.ps1",
+      "category": "collaboration/microsoft365/purview",
+      "synopsis": "Report Microsoft Purview retention policy coverage, distribution and configuration gaps.",
+      "description": "Reads every retention policy with Get-RetentionCompliancePolicy -DistributionDetail -RetentionRuleTypes and every rule with Get-RetentionComplianceRule, then reports per policy: the workloads it cover",
+      "tags": [
+        "report"
+      ],
+      "parameters": [
+        {
+          "name": "PolicyName",
+          "type": "String[]",
+          "mandatory": false
+        },
+        {
+          "name": "IncludeAppPolicies",
+          "type": "SwitchParameter",
+          "mandatory": false
+        },
+        {
+          "name": "IncludeLabels",
+          "type": "SwitchParameter",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Write-ReportFile",
+        "Get-PolicyWorkloads",
+        "Test-PolicyNameMatch",
+        "New-PolicyRecord",
         "Main"
       ]
     },
@@ -3121,6 +3893,84 @@
         "Write-DeploymentLog",
         "Install-BurntToastModule",
         "Save-RestartNotificationScript",
+        "Main"
+      ]
+    },
+    {
+      "path": "endpoints/intune/autopilot/Test-AutopilotHardwareHashCsv.ps1",
+      "name": "Test-AutopilotHardwareHashCsv.ps1",
+      "category": "endpoints/intune/autopilot",
+      "synopsis": "Pre-flight a Windows Autopilot hardware hash CSV before it is imported into Intune.",
+      "description": "Reads the comma-separated-values file named by -CsvPath and validates it against the documented Windows Autopilot manual registration rules (https://learn.microsoft.com/autopilot/add-devices): - the e",
+      "tags": [
+        "intune"
+      ],
+      "parameters": [
+        {
+          "name": "CsvPath",
+          "type": "String",
+          "mandatory": true
+        },
+        {
+          "name": "MaxBatchSize",
+          "type": "Int32",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Get-FileBomName",
+        "Test-CsvHeader",
+        "Main"
+      ]
+    },
+    {
+      "path": "endpoints/intune/configuration/Get-SettingsCatalogPolicyReport.ps1",
+      "name": "Get-SettingsCatalogPolicyReport.ps1",
+      "category": "endpoints/intune/configuration",
+      "synopsis": "Report Intune settings catalog policies with their assignments, filters and status.",
+      "description": "Reads every settings catalog policy with Get-MgDeviceManagementConfigurationPolicy -All and reports, per policy: platforms, technologies, template family, setting count, assignment count and targets,",
+      "tags": [
+        "intune",
+        "report"
+      ],
+      "parameters": [
+        {
+          "name": "PolicyName",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "Platform",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "NonCompliantOnly",
+          "type": "SwitchParameter",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Get-SettingStateTotal",
         "Main"
       ]
     },
@@ -9919,6 +10769,138 @@
       ]
     },
     {
+      "path": "infrastructure/windows/cluster/Test-FailoverClusterHealth.ps1",
+      "name": "Test-FailoverClusterHealth.ps1",
+      "category": "infrastructure/windows/cluster",
+      "synopsis": "Audits a Windows failover cluster for node, quorum, resource and CSV health.",
+      "description": "Read-only health audit of a Windows failover cluster. The script reads the cluster nodes and their states, the quorum configuration and its witness, every cluster resource and every Cluster Shared Vol",
+      "tags": [
+        "health",
+        "audit"
+      ],
+      "parameters": [
+        {
+          "name": "ClusterName",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "IncludeClusterValidation",
+          "type": "SwitchParameter",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "New-CheckRow",
+        "Get-QuorumWitnessName",
+        "Get-ValidationStatus",
+        "Main"
+      ]
+    },
+    {
+      "path": "infrastructure/windows/dhcp/Get-DhcpServerHealth.ps1",
+      "name": "Get-DhcpServerHealth.ps1",
+      "category": "infrastructure/windows/dhcp",
+      "synopsis": "Audits a Windows DHCP server for scope, lease, option and failover health.",
+      "description": "Read-only health audit of a Windows DHCP server. The script reads the IPv4 scopes, their lease statistics, the router and DNS options of each scope (including options inherited from the server level)",
+      "tags": [
+        "health",
+        "audit"
+      ],
+      "parameters": [
+        {
+          "name": "ComputerName",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "ScopeId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "LowFreeAddressThreshold",
+          "type": "Int32",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "New-CheckRow",
+        "Get-FreeAddressPercent",
+        "Test-OptionIdPresent",
+        "Main"
+      ]
+    },
+    {
+      "path": "infrastructure/windows/dns/Get-DnsServerHealth.ps1",
+      "name": "Get-DnsServerHealth.ps1",
+      "category": "infrastructure/windows/dns",
+      "synopsis": "Audits a Windows DNS server for zone, forwarder, recursion and scavenging health.",
+      "description": "Read-only health audit of a Windows DNS server. The script reads the DNS zones and their types, Active Directory integration, server level forwarders, recursion settings and the aging and scavenging s",
+      "tags": [
+        "health",
+        "audit"
+      ],
+      "parameters": [
+        {
+          "name": "ComputerName",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "ScavengingStaleDays",
+          "type": "Int32",
+          "mandatory": false
+        },
+        {
+          "name": "IncludeStaleRecords",
+          "type": "SwitchParameter",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "New-CheckRow",
+        "Test-StaleDnsRecord",
+        "Main"
+      ]
+    },
+    {
       "path": "infrastructure/windows/group-policy/Backup-GroupPolicies.ps1",
       "name": "Backup-GroupPolicies.ps1",
       "category": "infrastructure/windows/group-policy",
@@ -11766,6 +12748,93 @@
       ]
     },
     {
+      "path": "security/defender/Get-DefenderAsrRuleAudit.ps1",
+      "name": "Get-DefenderAsrRuleAudit.ps1",
+      "category": "security/defender",
+      "synopsis": "Audit Microsoft Defender attack surface reduction (ASR) rule modes per managed device.",
+      "description": "Reads every onboarded device from the Microsoft Defender for Endpoint API and reports, per device, the state of the documented ASR rules against the rule GUIDs published in the ASR rules reference. En",
+      "tags": [
+        "defender",
+        "device",
+        "audit"
+      ],
+      "parameters": [
+        {
+          "name": "MachineName",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Invoke-DefenderApi",
+        "Get-DefenderApiCollection",
+        "Write-ReportFile",
+        "Test-MachineNameMatch",
+        "Get-AsrRuleMode",
+        "Main"
+      ]
+    },
+    {
+      "path": "security/defender/Get-DefenderVulnerabilityReport.ps1",
+      "name": "Get-DefenderVulnerabilityReport.ps1",
+      "category": "security/defender",
+      "synopsis": "Report Microsoft Defender Vulnerability Management weaknesses and overdue remediation.",
+      "description": "Queries the Microsoft Defender for Endpoint API with an application-only Microsoft Graph token and reports the weaknesses (CVEs) with the highest exposure, the outstanding security recommendations, an",
+      "tags": [
+        "defender",
+        "report"
+      ],
+      "parameters": [
+        {
+          "name": "TopN",
+          "type": "Int32",
+          "mandatory": false
+        },
+        {
+          "name": "MinimumCvssScore",
+          "type": "Double",
+          "mandatory": false
+        },
+        {
+          "name": "ExposedOnly",
+          "type": "SwitchParameter",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Invoke-DefenderApi",
+        "Get-DefenderApiCollection",
+        "Write-ReportFile",
+        "Get-DefenderCvssScore",
+        "Get-OverdueRemediation",
+        "Main"
+      ]
+    },
+    {
       "path": "security/hardening/Invoke-SecurityComplianceScan.ps1",
       "name": "Invoke-SecurityComplianceScan.ps1",
       "category": "security/hardening",
@@ -11816,6 +12885,147 @@
         "Test-CISWindowsCompliance",
         "Test-NISTCompliance",
         "Test-PCIDSSCompliance",
+        "Main"
+      ]
+    },
+    {
+      "path": "security/identity/conditional-access/Test-ConditionalAccessBaseline.ps1",
+      "name": "Test-ConditionalAccessBaseline.ps1",
+      "category": "security/identity/conditional-access",
+      "synopsis": "Audits Microsoft Entra Conditional Access policies against baseline design guidance.",
+      "description": "Reads every Conditional Access policy in the tenant through the Microsoft Graph conditionalAccessPolicy API and compares the result with the documented baseline: the 240-policy tenant limit that count",
+      "tags": [
+        "audit"
+      ],
+      "parameters": [
+        {
+          "name": "TenantId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "EmergencyAccessGroupId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "IncludeReportOnly",
+          "type": "SwitchParameter",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Get-GraphProperty",
+        "Get-GraphCollection",
+        "Test-StringInCollection",
+        "Main"
+      ]
+    },
+    {
+      "path": "security/identity/entra/Get-EntraBreakGlassAccountAudit.ps1",
+      "name": "Get-EntraBreakGlassAccountAudit.ps1",
+      "category": "security/identity/entra",
+      "synopsis": "Audits Microsoft Entra emergency access (break-glass) accounts against the vendor baseline.",
+      "description": "Reads the members of the Global Administrator directory role, the tenant user objects, the Conditional Access policies, and each account's password authentication methods through Microsoft Graph. For",
+      "tags": [
+        "audit"
+      ],
+      "parameters": [
+        {
+          "name": "TenantId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "ExpectedAccountCount",
+          "type": "Int32",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Get-GraphProperty",
+        "Get-GraphCollection",
+        "Add-GraphIdList",
+        "New-Finding",
+        "Main"
+      ]
+    },
+    {
+      "path": "security/identity/privileged-access/Get-PimRoleAssignmentAudit.ps1",
+      "name": "Get-PimRoleAssignmentAudit.ps1",
+      "category": "security/identity/privileged-access",
+      "synopsis": "Audits Microsoft Entra Privileged Identity Management role assignments.",
+      "description": "Reads the Microsoft Entra role assignment schedule instances and role eligibility schedule instances for the tenant through Microsoft Graph and classifies every assignment as Permanent-Active, Time-bo",
+      "tags": [
+        "audit"
+      ],
+      "parameters": [
+        {
+          "name": "TenantId",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "RoleFilter",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "IncludeGroups",
+          "type": "SwitchParameter",
+          "mandatory": false
+        },
+        {
+          "name": "StaleDays",
+          "type": "Int32",
+          "mandatory": false
+        },
+        {
+          "name": "OutputFormat",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
+          "type": "String",
+          "mandatory": false
+        }
+      ],
+      "hasCmdletBinding": true,
+      "requiresModules": [],
+      "functionsExported": [
+        "Get-GraphProperty",
+        "Get-GraphCollection",
+        "ConvertTo-IsoText",
+        "Get-AgeInDays",
+        "Test-RoleInScope",
+        "Get-PrincipalRoleKey",
+        "New-AssignmentRow",
+        "New-Finding",
         "Main"
       ]
     },

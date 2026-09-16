@@ -29,8 +29,8 @@
     File Name  : Invoke-RemediationFixTaskSchedulerCorruption.ps1
     Author     : Intune Admin
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 
     Intune Context: SYSTEM. If issues persist after the service is healthy,
     the Task Scheduler database may need manual repair.
@@ -73,7 +73,8 @@ function Main {
             Write-Host "[+] Task Scheduler remediation completed" -ForegroundColor Green
         }
         else {
-            Write-Host "[+] Already healthy: Task Scheduler service is running and the task database location is verified" -ForegroundColor Green
+            Write-Host ("[+] Already healthy: Task Scheduler service is running and the task database location is " +
+            "verified") -ForegroundColor Green
         }
         return 0
     }

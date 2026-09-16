@@ -45,8 +45,8 @@
     File Name     : Get-ADHealthCheck.ps1
     Author        : Bug-Free Umbrella
     Prerequisite  : PowerShell 5.1+
-    Version       : 1.0.0
-    Date          : 2026-08-23
+    Version       : 2.0.0
+    Date          : 2026-09-16
     Requires      : ActiveDirectory PowerShell module; Domain Admin or equivalent permissions
     Compatibility : Windows Server 2016, 2019, and 2022; run from a domain-joined computer
 #>
@@ -75,7 +75,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # Write-Host is intentional: interactive console reporting with the color/prefix convention
-# mandated by RELAUNCH-SPEC §3 (justifies PSAvoidUsingWriteHost).
+# mandated by STANDARDS §3 (justifies PSAvoidUsingWriteHost).
 function Write-ColorOutput {
     [CmdletBinding()]
     param(

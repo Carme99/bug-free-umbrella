@@ -21,11 +21,11 @@ Describe "Invoke-WingetLenovoDockManager" {
 
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $raw | Should -Match 'File Name:\s*Invoke-WingetLenovoDockManager\.ps1'
-            $raw | Should -Match 'Version:\s*1\.0\.0'
-            $raw | Should -Match 'Date:\s*2026-08-23'
+            $raw | Should -Match 'Version:\s*2\.0\.0'
+            $raw | Should -Match 'Date:\s*2026-09-16'
             $raw | Should -Match 'Author:'
             $raw | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
         }
@@ -120,8 +120,8 @@ Describe "Invoke-WingetLenovoDockManager" {
             Mock Get-WinGetPackage {
                 [pscustomobject] @{
                     Name              = 'Lenovo Dock Manager'
-                    InstalledVersion  = '1.0.0'
-                    AvailableVersions = @('1.0.0', '1.1.0')
+                    InstalledVersion  = '2.0.0'
+                    AvailableVersions = @('2.0.0', '1.1.0')
                     IsUpdateAvailable = $true
                 }
             }
@@ -145,8 +145,8 @@ Describe "Invoke-WingetLenovoDockManager" {
                 if ($script:calls -eq 1) {
                     [pscustomobject] @{
                         Name              = 'Lenovo Dock Manager'
-                        InstalledVersion  = '1.0.0'
-                        AvailableVersions = @('1.0.0', '1.1.0')
+                        InstalledVersion  = '2.0.0'
+                        AvailableVersions = @('2.0.0', '1.1.0')
                         IsUpdateAvailable = $true
                     }
                 }
@@ -180,8 +180,8 @@ Describe "Invoke-WingetLenovoDockManager" {
                 if ($script:calls -eq 1) {
                     [pscustomobject] @{
                         Name              = 'Lenovo Dock Manager'
-                        InstalledVersion  = '1.0.0'
-                        AvailableVersions = @('1.0.0', '1.1.0')
+                        InstalledVersion  = '2.0.0'
+                        AvailableVersions = @('2.0.0', '1.1.0')
                         IsUpdateAvailable = $true
                     }
                 }
@@ -204,8 +204,8 @@ Describe "Invoke-WingetLenovoDockManager" {
             Mock Get-WinGetPackage {
                 [pscustomobject] @{
                     Name              = 'Lenovo Dock Manager'
-                    InstalledVersion  = '1.0.0'
-                    AvailableVersions = @('1.0.0', '1.1.0')
+                    InstalledVersion  = '2.0.0'
+                    AvailableVersions = @('2.0.0', '1.1.0')
                     IsUpdateAvailable = $true
                 }
             }

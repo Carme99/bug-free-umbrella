@@ -1,14 +1,14 @@
 ﻿# Bug-Free Umbrella — Architecture
 
-> How the repository is organized, built, and shipped. 539 PowerShell scripts across 8 technology domains.
+> How the repository is organized, built, and shipped. 566 PowerShell scripts on disk — 381 catalogued across 8 technology domains plus 185 deprecated forwarding shims excluded from the catalog.
 
-**Applies to:** v1.0.0 "Clean-Slate Relaunch" · **Last verified:** 2026-08-24
+**Applies to:** v2.0.0 "Coverage & Correctness" · **Last verified:** 2026-09-16
 
 ---
 
 ## 1. Overview
 
-Bug-Free Umbrella is a collection of **539 PowerShell scripts** for enterprise IT management: endpoint management (Intune/Winget), server administration, security compliance, M365, cloud (Azure/AWS), databases, and CI/CD automation.
+Bug-Free Umbrella is a collection of **566 PowerShell scripts on disk** for enterprise IT management — **381 catalogued** in `scripts/.catalog/metadata.json` plus **185 deprecated forwarding shims** excluded from the catalog (`onDiskScripts = totalScripts + excludedScripts`): endpoint management (Intune/Winget), server administration, security compliance, M365, cloud (Azure/AWS), databases, and CI/CD automation.
 
 - **PowerShell:** developed on PowerShell 7 (5.1-compatible where noted)
 - **Style:** enforced by PSScriptAnalyzer + a CI gate (see [§3 CI/CD](#3-cicd-pipeline))
@@ -19,7 +19,7 @@ Bug-Free Umbrella is a collection of **539 PowerShell scripts** for enterprise I
 
 ```text
 bug-free-umbrella/
-├── scripts/                  # 539 PowerShell scripts, organized by domain
+├── scripts/                  # 566 scripts on disk (381 catalogued), organized by domain
 │   ├── automation/           #   CI/CD pipelines, Infrastructure as Code
 │   ├── cloud/                #   Azure (incl. AVD), AWS, containers
 │   ├── collaboration/        #   M365, Exchange, Teams, SharePoint
@@ -31,7 +31,7 @@ bug-free-umbrella/
 │   └── .catalog/             #   Machine-readable script metadata + compatibility matrix
 ├── docs/                     # All documentation (this tree) — single source of truth
 ├── examples/                 # End-to-end workflow examples (onboarding, incident response, …)
-├── Tests/                    # Pester 5 test suites (plus tests colocated with scripts)
+├── Tests/                    # Pester 5 suites, mirroring scripts/ 1:1
 ├── templates/                # Script templates (e.g. Intune app detection)
 └── .github/                  # Issue/PR templates, workflows, CODEOWNERS
 ```
@@ -51,40 +51,38 @@ flowchart LR
     CAT[.catalog<br/>metadata + compatibility] -. indexes .-> SCRIPTS
     MOD[Module<br/>BugFreeUmbrella.psd1 + .psm1] -. exports .-> SCRIPTS
     DOC[docs/ · Architecture · Catalog · Guides] -. documents .-> SCRIPTS
-    TST[Tests/ + colocated Pester suites] -. validates .-> SCRIPTS
+    TST[Tests/ — mirrors scripts/ 1:1] -. validates .-> SCRIPTS
 ```
 
 ## 3. CI/CD Pipeline
 
-Every push/PR runs three gating jobs (`validate-powershell.yml` — PSSA + syntax + Pester); supporting workflows keep the repo tidy and docs healthy.
+Every push/PR runs **four jobs** in `validate-powershell.yml` — `analyze` (PSScriptAnalyzer), `syntax-check` (Language.Parser), `test` (Pester + per-script test mirror + module smoke) and `summary` (the aggregate merge gate); supporting workflows keep the repo tidy and docs healthy.
 
 ```mermaid
 flowchart TD
     PUSH[Push / Pull Request] --> CO[Checkout]
-    CO --> PSSA[PSScriptAnalyzer<br/>curated settings]
-    CO --> SYN[Syntax check<br/>Language.Parser]
-    CO --> PESTER[Pester tests<br/>ubuntu-latest]
+    CO --> PSSA[analyze<br/>PSScriptAnalyzer · curated settings]
+    CO --> SYN[syntax-check<br/>Language.Parser]
+    CO --> PESTER[test<br/>Pester + test mirror + module smoke]
     PSSA -->|Error findings| FAIL[❌ Fail]
     PSSA -->|Warnings only| OK1[✅ Pass]
     SYN -->|Parse errors| FAIL
     SYN -->|Clean| OK1
     PESTER -->|Failed tests| FAIL
     PESTER -->|Passed| OK1
-    OK1 --> MERGE[Merge to main]
+    OK1 --> SUM[summary<br/>aggregate merge gate]
+    SUM --> MERGE[Merge to main]
     MERGE --> LABELER[issue-labeler<br/>auto-labels new issues<br/>resilient fallback]
     MERGE --> STALE[stale<br/>closes inactive issues/PRs]
-    MERGE --> REVIEW[claude-code-review<br/>AI review on PRs]
     PUSH -.->|PRs touching *.md / weekly| LINK[markdown-link-check<br/>lychee]
 ```
 
 | Workflow | Trigger | Role |
 |---|---|---|
 | `validate-powershell.yml` | PRs + pushes to main | **Gating:** PSSA (fails on Error) + syntax check + **Pester tests** (fails on test failures; coverage informational) |
-| `issue-labeler.yml` | Issue open/edit | Auto-applies 48 technology/type/priority labels (resilient: bulk → per-label fallback → auto-create missing) |
+| `issue-labeler.yml` | Issue open/edit | Auto-applies 36 technology/type/priority labels (28 technology + 6 issue type + 2 priority; resilient: bulk → per-label fallback → auto-create missing) |
 | `markdown-link-check.yml` | PRs touching `*.md`, push to main (`*.md`), weekly, manual | Checks markdown links via lychee (`fail: false` — warns on broken links, tolerates 429) |
 | `stale.yml` | Daily | Marks/closes inactive issues (60d) and PRs (30d) |
-| `claude.yml` | `@claude` mentions | AI assistance on issues/PRs |
-| `claude-code-review.yml` | PR open/sync | AI code review comments |
 
 > **Note:** Pester tests run both locally (`Invoke-Pester` via `Tests/Pester.Config.psd1`) and in CI (`test` job in `validate-powershell.yml`). Coverage is enabled but not gating — low coverage does not fail the pipeline.
 ## 4. Release Process
@@ -123,17 +121,18 @@ flowchart LR
 ## 6. Testing
 
 - **Pester 5.5.0+**, config in `Tests/Pester.Config.psd1`
-- Main suites under `Tests/` (per-category folders); additional suites colocated next to the scripts they test
+- One suite per script, mirrored 1:1: `scripts/X/Y/Z.ps1` → `Tests/X/Y/Z.Tests.ps1`, gated by the `test` job's mirror check. Never flatten to `Tests/<Name>.Tests.ps1` — basenames like `detect.ps1` collide.
 - Run locally: `Invoke-Pester -Configuration (New-PesterConfiguration -Hashtable (Import-PowerShellDataFile ./Tests/Pester.Config.psd1))`
 
 ## 7. Documentation Architecture
 
 Docs live **in the repository** — no external wiki (retired 2026-08-08). Benefits: versioned with code, PR-reviewable, link-checked by review, impossible to silently drift.
 
-`docs/Module.md` is auto-generated from the manifest + catalog (see `tools/Build-Docs.ps1`);
-it is the PSGallery-facing reference and is validated in CI via `Build-Docs.ps1 -Validate`.
+`docs/Module.md` is auto-generated from the manifest + catalog (see `tools/Build-Docs.ps1`)
+and is the PSGallery-facing reference. It is **not** currently validated in CI — issue #285
+tracks wiring `Build-Docs.ps1 -Validate` into the pipeline.
 
-Module loads 539 wrappers via Build-Module, version from CHANGELOG, PSSA 0
+Module loads 357 generated wrapper functions (+3 helpers = 360 exported commands) via Build-Module, version from CHANGELOG, PSSA 0
 
 ```mermaid
 flowchart LR

@@ -5,7 +5,7 @@ Describe "Monitor-MongoDBHealth" {
         # Mirrored layout: this file lives at Tests/data/databases/ -> script is two levels up + across.
         $scriptPath = Join-Path $PSScriptRoot "../../../scripts/data/databases/Monitor-MongoDBHealth.ps1"
 
-        # Safe: the script's top-level guard skips Main when dot-sourced (RELAUNCH-SPEC §3).
+        # Safe: the script's top-level guard skips Main when dot-sourced (STANDARDS §3).
         # All parameters are optional, so no binding is required here.
         . $scriptPath
     }
@@ -18,9 +18,9 @@ Describe "Monitor-MongoDBHealth" {
             $paramHelpCount = ([regex]::Matches($raw, '(?m)^\.PARAMETER')).Count
         }
 
-        It "Declares Version 1.0.0 and relaunch Date 2026-08-23 in .NOTES" {
-            $raw | Should -Match '(?m)^\s*Version\s*:\s*1\.0\.0\s*$'
-            $raw | Should -Match '(?m)^\s*Date\s*:\s*2026-08-23\s*$'
+        It "Declares Version 2.0.0 and relaunch Date 2026-09-16 in .NOTES" {
+            $raw | Should -Match '(?m)^\s*Version\s*:\s*2\.0\.0\s*$'
+            $raw | Should -Match '(?m)^\s*Date\s*:\s*2026-09-16\s*$'
         }
 
         It "Populates File Name matching the disk filename and preserves the original Author" {
