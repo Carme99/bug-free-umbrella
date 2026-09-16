@@ -14,7 +14,7 @@ Describe 'Invoke-RemediationCheckDiskHealth' {
         # with a reduced parameter set. Any that survive their own cleanup would reject the
         # arguments this script passes, so clear them before mocking.
         foreach ($leaked in 'Start-Process', 'Import-Module') {
-            Remove-Item -Path "Function:\global:$leaked" -ErrorAction SilentlyContinue
+            Remove-Item -Path "Function:$leaked" -ErrorAction SilentlyContinue
         }
 
         $scriptText = Get-Content $scriptPath -Raw

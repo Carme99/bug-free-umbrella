@@ -285,7 +285,7 @@ Describe "Get-DeviceHealthScore" {
         AfterAll {
             foreach ($name in 'Connect-MgGraph', 'Get-MgContext', 'Install-Module', 'Import-Module',
                 'Start-Process') {
-                Remove-Item -Path "Function:\global:$name" -ErrorAction SilentlyContinue
+                Remove-Item -Path "Function:$name" -ErrorAction SilentlyContinue
             }
             Remove-Variable -Name intuneGraphProbe -Scope Global -ErrorAction SilentlyContinue
         }
