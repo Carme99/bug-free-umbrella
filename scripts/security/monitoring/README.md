@@ -114,10 +114,10 @@ These monitoring scripts can be deployed as Intune Proactive Remediations for au
 
 ## Related Scripts
 
-- **[Security & Compliance](../security-compliance/)** - Security-specific health checks
-- **[Network Management](../network-management/)** - Network connectivity diagnostics
-- **[Server Management](../server/)** - Server-specific health tools
-- **[Proactive Remediations](../device-management/proactive-remediations/)** - Automated fixes
+- **[Security & Compliance](../compliance/)** - Security-specific health checks
+- **[Network Management](../../infrastructure/network/)** - Network connectivity diagnostics
+- **[Server Management](../../infrastructure/windows/)** - Server-specific health tools
+- **[Proactive Remediations](../../endpoints/devices/proactive-remediations/)** - Automated fixes
 
 ### Get-BatteryHealth.ps1
 

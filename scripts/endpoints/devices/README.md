@@ -56,18 +56,18 @@ Device management scripts provide tools for configuring, inventorying, and maint
 ## Related Categories
 
 - [Intune](../intune/) - Microsoft Intune endpoint management
-- [Server](../server/) - Server management scripts
-- [Security Compliance](../security-compliance/) - Compliance scanning
+- [Server](../../infrastructure/windows/) - Server management scripts
+- [Security Compliance](../../security/) - Compliance scanning
 
 ## Additional Resources
 
 - [Docs: Proactive Remediations](../../../docs/Proactive-Remediations.md)
-- [Examples: Device Management](../../examples/device-management/)
+- [Examples](../../../examples/) - worked examples for several domains
 
 ## Contributing
 
-See [CONTRIBUTING.md](../../CONTRIBUTING.md) for guidelines on adding new device management scripts.
+See [CONTRIBUTING.md](../../../CONTRIBUTING.md) for guidelines on adding new device management scripts.
 
 ## License
 
-Apache License 2.0 - See [LICENSE](../../LICENSE) for details
+Apache License 2.0 - See [LICENSE](../../../LICENSE) for details

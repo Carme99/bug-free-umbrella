@@ -241,9 +241,9 @@ ipconfig /all
 
 ## Related Scripts
 
-- **[Monitoring](../monitoring/)** - System health checks
-- **[Server Management](../server/)** - Server network configuration
-- **[Proactive Remediations](../device-management/proactive-remediations/)** - Network adapter fixes
+- **[Monitoring](../windows/monitoring/)** - System health checks
+- **[Server Management](../windows/)** - Server network configuration
+- **[Proactive Remediations](../../endpoints/devices/proactive-remediations/)** - Network adapter fixes
 
 ### Test-NetworkDiagnostics.ps1
 
