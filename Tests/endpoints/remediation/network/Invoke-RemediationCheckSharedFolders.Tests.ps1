@@ -83,6 +83,34 @@ Describe "Invoke-RemediationCheckSharedFolders" {
             Should -Invoke Remove-SmbShare -Times 1 -Exactly
         }
 
+        It "Keeps the administrative share of every fixed volume, not just C$ and D$" {
+            # Windows creates one administrative share per fixed volume. An allowlist of
+            # literal names classified a device's E$ share as unauthorized and force-removed it.
+            Mock Get-SmbShare {
+                @(
+                    [pscustomobject]@{ Name = 'C$'; Path = 'C:\\' },
+                    [pscustomobject]@{ Name = 'E$'; Path = 'E:\\' },
+                    [pscustomobject]@{ Name = 'Z$'; Path = 'Z:\\' }
+                )
+            }
+            $out = Main *>&1
+            $out | Where-Object { $_ -is [int] } | Should -Be 0
+            Should -Invoke Remove-SmbShare -Times 0 -Exactly -Because "all are volume admin shares"
+        }
+
+        It "Still removes a share whose name merely resembles a drive-letter admin share" {
+            Mock Get-SmbShare {
+                @(
+                    [pscustomobject]@{ Name = 'EE$'; Path = 'C:\shares\EE$' },
+                    [pscustomobject]@{ Name = 'E1$'; Path = 'C:\shares\E1$' }
+                )
+            }
+            $out = Main *>&1
+            ($out | Out-String) | Should -Match '\[\+\]'
+            $out | Where-Object { $_ -is [int] } | Should -Be 0
+            Should -Invoke Remove-SmbShare -Times 2 -Exactly -Because "neither is a real admin share"
+        }
+
         It "Is idempotent: approved-only share list removes nothing and returns 0" {
             Mock Get-SmbShare {
                 @([pscustomobject]@{ Name = 'IPC$'; Path = 'Named pipe' })
