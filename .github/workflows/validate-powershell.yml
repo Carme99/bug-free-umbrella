@@ -20,7 +20,9 @@ jobs:
         shell: pwsh
         run: |
           # Keep PSGallery Untrusted; install only the required module for the current user
-          Install-Module -Name PSScriptAnalyzer -Force -SkipPublisherCheck -Scope CurrentUser
+          # Pinned: an unpinned install lets upstream rule changes flip this gate with no repo change.
+          Install-Module -Name PSScriptAnalyzer -RequiredVersion 1.25.0 -Force -SkipPublisherCheck -Scope CurrentUser
+          Import-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Force
 
       - name: Run PSScriptAnalyzer
         shell: pwsh
@@ -221,6 +223,8 @@ jobs:
           Write-Host "All Pester tests passed!" -ForegroundColor Green
 
       - name: Enforce per-script test mirror (gating)
+        # Run even when the Pester step failed, or a missing mirror is masked by a test failure.
+        if: always()
         shell: pwsh
         run: |
           $missing = @(Get-ChildItem -Recurse scripts -Filter *.ps1 |
@@ -257,6 +261,14 @@ jobs:
             Write-Host "::error::Module smoke check failed: no generated wrappers found in the psm1." -ForegroundColor Red
             exit 1
           }
+          # Parity with the catalog: dropping a wrapper together with its psd1 entry would
+          # otherwise leave exports == wrappers + helpers and slip through (b).
+          $catalog = Get-Content -LiteralPath './scripts/.catalog/metadata.json' -Raw | ConvertFrom-Json
+          if ($wrapperTargets.Count -ne $catalog.totalScripts) {
+            Write-Host "::error::Module smoke check failed: $($wrapperTargets.Count) generated wrapper(s) != $($catalog.totalScripts) catalogued script(s) - regenerate with 'pwsh -File tools/Build-Module.ps1'." -ForegroundColor Red
+            exit 1
+          }
+
           $dangling = @($wrapperTargets | Where-Object { -not (Test-Path -LiteralPath (Join-Path 'scripts' $_)) })
           if ($dangling.Count -gt 0) {
             Write-Host "::error::Module smoke check failed: $($dangling.Count) generated wrapper(s) point at scripts that do not exist on disk." -ForegroundColor Red
