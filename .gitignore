@@ -100,13 +100,14 @@ $RECYCLE.BIN/
 
 # BitLocker Recovery Keys
 *.bek
-recovery-keys/
-bitlocker-keys/
+/recovery-keys/
+/bitlocker-keys/
 
-# Backup Files
+# Backup Files (anchored: only repo-root backup output is ignored, not code trees
+# such as scripts/cloud/azure/backup/)
 *.backup
-backup/
-backups/
+/backup/
+/backups/
 
 # User-specific files
 *-local.ps1
