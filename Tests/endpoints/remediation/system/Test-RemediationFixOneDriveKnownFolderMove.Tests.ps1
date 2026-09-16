@@ -64,12 +64,12 @@ Describe "Test-RemediationFixOneDriveKnownFolderMove" -Tag Ep6SysA {
 
     Context "Behavior" {
         It "Returns 0 when OneDrive runs and all known folders are protected (converged)" {
-            function Get-WmiObject { }
+            function Get-CimInstance { }
             # Catch-all first: Pester applies the most recently defined matching mock.
             Mock Test-Path { $false }
             Mock Test-Path { $true } -ParameterFilter { $Path -like '*OneDrive.exe' }
             Mock Test-Path { $true } -ParameterFilter { $Path -like '*Business1*' }
-            Mock Get-WmiObject { [pscustomobject] @{ UserName = 'CONTOSO\alice' } }
+            Mock Get-CimInstance { [pscustomobject] @{ UserName = 'CONTOSO\alice' } }
             Mock Resolve-CurrentUserSid { 'S-1-5-21-1004336348' }
             Mock Get-ItemProperty {
                 [pscustomobject] @{
@@ -84,7 +84,7 @@ Describe "Test-RemediationFixOneDriveKnownFolderMove" -Tag Ep6SysA {
         }
 
         It "Returns 1 when OneDrive is not installed" {
-            function Get-WmiObject { }
+            function Get-CimInstance { }
             Mock Test-Path { $false }
             $out = Main *>&1
             $out | Where-Object { $_ -is [int] } | Should -Be 1
@@ -92,11 +92,11 @@ Describe "Test-RemediationFixOneDriveKnownFolderMove" -Tag Ep6SysA {
         }
 
         It "Returns 1 and lists each KFM issue found" {
-            function Get-WmiObject { }
+            function Get-CimInstance { }
             # Catch-all first: Pester applies the most recently defined matching mock.
             Mock Test-Path { $false }
             Mock Test-Path { $true } -ParameterFilter { $Path -like '*OneDrive.exe' }
-            Mock Get-WmiObject { [pscustomobject] @{ UserName = 'CONTOSO\alice' } }
+            Mock Get-CimInstance { [pscustomobject] @{ UserName = 'CONTOSO\alice' } }
             Mock Resolve-CurrentUserSid { 'S-1-5-21-1004336348' }
             Mock Get-Process { $null }
             $out = Main *>&1
@@ -108,12 +108,12 @@ Describe "Test-RemediationFixOneDriveKnownFolderMove" -Tag Ep6SysA {
         }
 
         It "Flags unprotected folders when protection statuses are not 2" {
-            function Get-WmiObject { }
+            function Get-CimInstance { }
             # Catch-all first: Pester applies the most recently defined matching mock.
             Mock Test-Path { $false }
             Mock Test-Path { $true } -ParameterFilter { $Path -like '*OneDrive.exe' }
             Mock Test-Path { $true } -ParameterFilter { $Path -like '*Business1*' }
-            Mock Get-WmiObject { [pscustomobject] @{ UserName = 'CONTOSO\alice' } }
+            Mock Get-CimInstance { [pscustomobject] @{ UserName = 'CONTOSO\alice' } }
             Mock Resolve-CurrentUserSid { 'S-1-5-21-1004336348' }
             Mock Get-ItemProperty {
                 [pscustomobject] @{
@@ -132,11 +132,11 @@ Describe "Test-RemediationFixOneDriveKnownFolderMove" -Tag Ep6SysA {
         }
 
         It "Returns 1 with [-] prefixed output when SID resolution fails" {
-            function Get-WmiObject { }
+            function Get-CimInstance { }
             # Catch-all first: Pester applies the most recently defined matching mock.
             Mock Test-Path { $false }
             Mock Test-Path { $true } -ParameterFilter { $Path -like '*OneDrive.exe' }
-            Mock Get-WmiObject { [pscustomobject] @{ UserName = 'CONTOSO\ghost' } }
+            Mock Get-CimInstance { [pscustomobject] @{ UserName = 'CONTOSO\ghost' } }
             Mock Resolve-CurrentUserSid { throw "no domain controller reachable" }
             Mock Get-Process { [pscustomobject] @{ ProcessName = 'OneDrive' } }
             $out = Main *>&1

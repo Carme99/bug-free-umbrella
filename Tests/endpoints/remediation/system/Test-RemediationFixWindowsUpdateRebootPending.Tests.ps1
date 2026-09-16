@@ -64,20 +64,20 @@ Describe "Test-RemediationFixWindowsUpdateRebootPending" {
     Context "Behavior" {
         It "Returns 0 when no reboot-pending indicators are present" {
             Mock Get-ItemProperty { $null }
-            function Get-WmiObject { }
-            Mock Get-WmiObject { throw "unexpected WMI call" }
+            function Get-CimInstance { }
+            Mock Get-CimInstance { throw "unexpected WMI call" }
             $out = Main *>&1
             ($out | Out-String) | Should -Match '\[\+\]'
             $out | Where-Object { $_ -is [int] } | Should -Be 0
-            Should -Invoke Get-WmiObject -Times 0 -Exactly -Because "no reboot-pending state exists"
+            Should -Invoke Get-CimInstance -Times 0 -Exactly -Because "no reboot-pending state exists"
         }
 
         It "Returns 1 and lists issues when a reboot-pending indicator is present" {
             Mock Get-ItemProperty { [pscustomobject]@{ PSChildName = 'RebootPending' } }
-            function Get-WmiObject { }
+            function Get-CimInstance { }
             $fakeOs = [pscustomobject]@{ LastBootUpTime = '20200101000000.000000+000' }
             $fakeOs | Add-Member -MemberType ScriptMethod -Name ConvertToDateTime -Value { [datetime]'2020-01-01' }
-            Mock Get-WmiObject { $fakeOs }
+            Mock Get-CimInstance { $fakeOs }
             $out = Main *>&1
             ($out | Out-String) | Should -Match '\[!\]'
             ($out | Out-String) | Should -Match 'Component-Based Servicing'
@@ -87,10 +87,10 @@ Describe "Test-RemediationFixWindowsUpdateRebootPending" {
         It "Adds an uptime issue when reboot pending for more than 7 days" {
             Mock Get-ItemProperty { $null } -ParameterFilter { $Name -eq 'PendingFileRenameOperations' }
             Mock Get-ItemProperty { [pscustomobject]@{ PSChildName = 'RebootPending' } }
-            function Get-WmiObject { }
+            function Get-CimInstance { }
             $fakeOs = [pscustomobject]@{ LastBootUpTime = 'x' }
             $fakeOs | Add-Member -MemberType ScriptMethod -Name ConvertToDateTime -Value { (Get-Date).AddDays(-30) }
-            Mock Get-WmiObject { $fakeOs }
+            Mock Get-CimInstance { $fakeOs }
             $out = Main *>&1
             ($out | Out-String) | Should -Match 'not been rebooted in \d+ days'
             $out | Where-Object { $_ -is [int] } | Should -Be 1
@@ -98,8 +98,8 @@ Describe "Test-RemediationFixWindowsUpdateRebootPending" {
 
         It "Returns 1 with [-] prefixed output when the WMI query fails" {
             Mock Get-ItemProperty { [pscustomobject]@{ PSChildName = 'RebootPending' } }
-            function Get-WmiObject { }
-            Mock Get-WmiObject { throw "WMI unavailable" }
+            function Get-CimInstance { }
+            Mock Get-CimInstance { throw "WMI unavailable" }
             $out = Main *>&1
             ($out | Out-String) | Should -Match '\[-\]'
             $out | Where-Object { $_ -is [int] } | Should -Be 1

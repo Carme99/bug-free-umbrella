@@ -118,7 +118,7 @@ function Main {
         # Reference: https://learn.microsoft.com/en-us/windows/package-manager/winget/troubleshooting
         if (Get-Module -ListAvailable -Name Microsoft.WinGet.Client) {
             try { Import-Module Microsoft.WinGet.Client -ErrorAction Stop }
-            catch { Write-Verbose \"Handled exception: $($_.Exception.Message)\" }
+            catch { Write-Verbose "Handled exception: $($_.Exception.Message)" }
             if (Get-Command Get-WinGetPackage -ErrorAction SilentlyContinue) {
                 $package = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -ErrorAction SilentlyContinue
                 if (-not $package) {

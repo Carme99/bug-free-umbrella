@@ -69,7 +69,7 @@ Describe "Test-RemediationCheckTPMStatus" {
 
         # Stub externals so Pester Mock can bind them offline.
         function Get-Tpm { }
-        function Get-WmiObject { }
+        function Get-CimInstance { }
         }
 
         It "Returns 0 with [+] output for a healthy TPM 2.0 (idempotent)" {
@@ -78,7 +78,7 @@ Describe "Test-RemediationCheckTPMStatus" {
                     TpmPresent = $true; TpmEnabled = $true; TpmActivated = $true; TpmReady = $true; TpmOwned = $false
                 }
             }
-            Mock Get-WmiObject { [pscustomobject]@{ SpecVersion = '2,0' } }
+            Mock Get-CimInstance { [pscustomobject]@{ SpecVersion = '2,0' } }
 
             $out = Main *>&1
             ($out | Out-String) | Should -Match '\[\+\]'
@@ -92,7 +92,7 @@ Describe "Test-RemediationCheckTPMStatus" {
                     TpmPresent = $true; TpmEnabled = $true; TpmActivated = $true; TpmReady = $true; TpmOwned = $false
                 }
             }
-            Mock Get-WmiObject { $null }
+            Mock Get-CimInstance { $null }
 
             $out = Main *>&1
             $out | Where-Object { $_ -is [int] } | Should -Be 0
@@ -105,7 +105,7 @@ Describe "Test-RemediationCheckTPMStatus" {
                     TpmPresent = $true; TpmEnabled = $false; TpmActivated = $false; TpmReady = $false; TpmOwned = $false
                 }
             }
-            Mock Get-WmiObject { $null }
+            Mock Get-CimInstance { $null }
 
             $out = Main *>&1
             $text = $out | Out-String
@@ -120,7 +120,7 @@ Describe "Test-RemediationCheckTPMStatus" {
             Mock Get-Tpm {
                 [pscustomobject]@{ TpmPresent = $true; TpmEnabled = $true; TpmActivated = $true; TpmReady = $true }
             }
-            Mock Get-WmiObject { [pscustomobject]@{ SpecVersion = '1,2' } }
+            Mock Get-CimInstance { [pscustomobject]@{ SpecVersion = '1,2' } }
 
             $out = Main *>&1
             ($out | Out-String) | Should -Match 'TPM version is 1,2'
@@ -129,7 +129,7 @@ Describe "Test-RemediationCheckTPMStatus" {
 
         It "Returns 1 with [!] output when no TPM is present at all" {
             Mock Get-Tpm { $null }
-            Mock Get-WmiObject { $null }
+            Mock Get-CimInstance { $null }
 
             $out = Main *>&1
             ($out | Out-String) | Should -Match '\[!\]'

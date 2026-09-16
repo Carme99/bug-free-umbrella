@@ -2,7 +2,7 @@
 /**
  * Bug-Free Umbrella MCP Server
  *
- * Exposes 358 PowerShell scripts as MCP tools for AI-native discovery.
+ * Exposes the catalogued PowerShell scripts as MCP tools for AI-native discovery.
  * Transport: stdio. Catalog: filesystem scan with optional metadata.json.
  */
 
@@ -475,7 +475,7 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
       {
         uri: "catalog://scripts",
         name: "Script Catalog",
-        description: "JSON listing of all 358 scripts with path, category, and synopsis",
+        description: "JSON listing of all catalogued scripts with path, category, and synopsis",
         mimeType: "application/json",
       },
     ],

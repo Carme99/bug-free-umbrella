@@ -87,7 +87,7 @@ function Main {
         }
 
         # Additional check using WMI.
-                $licensingStatus = Get-WmiObject -Class SoftwareLicensingProduct `
+                $licensingStatus = Get-CimInstance -ClassName SoftwareLicensingProduct `
                     -Filter "ApplicationID='55c92734-d682-4d71-983e-d6ec3f16059f' `
             AND PartialProductKey <> null" `
             -ErrorAction SilentlyContinue

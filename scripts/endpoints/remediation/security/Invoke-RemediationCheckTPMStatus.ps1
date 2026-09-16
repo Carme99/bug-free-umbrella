@@ -67,17 +67,18 @@ function Main {
         # Clear TPM if it's in a bad state (use with caution)
         if ($tpm.TpmPresent -and $tpm.TpmEnabled -and -not $tpm.TpmOwned) {
             try {
-                # Take ownership
-                $owner = Get-TpmOwnerInfo -ErrorAction SilentlyContinue
-                if (-not $owner) {
-                    # Try to provision TPM
-                    if ($PSCmdlet.ShouldProcess("TPM", "Take TPM ownership via Win32_Tpm")) {
-                        $provisionResult = Invoke-CimMethod -Namespace "root\cimv2\Security\MicrosoftTpm" `
-                            -ClassName "Win32_Tpm" -MethodName "TakeOwnership" -ErrorAction Stop
-                    }
+                # Take ownership. The Get-Tpm result read earlier already carries the ownership
+                # flag, so re-querying the cmdlet here would always return an object and make this
+                # branch unreachable.
+                if ($PSCmdlet.ShouldProcess("TPM", "Take TPM ownership via Win32_Tpm")) {
+                    $provisionResult = Invoke-CimMethod -Namespace "root\cimv2\Security\MicrosoftTpm" `
+                        -ClassName "Win32_Tpm" -MethodName "TakeOwnership" -ErrorAction Stop
                     if ($provisionResult) {
                         $remediationActions += "Attempted to take TPM ownership"
                     }
+                }
+                else {
+                    Write-Host "[!] Skipped: taking TPM ownership was declined" -ForegroundColor Yellow
                 }
             }
             catch {

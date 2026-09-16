@@ -1,10 +1,10 @@
 ﻿<#
 .SYNOPSIS
-    Detects pending VCRedist updates for winget package Microsoft.VCRedist.2015+.x64 for Intune Proactive Remediations.
+    Detects pending VCRedist updates for winget package Microsoft.VCRedist.2015+.x86 for Intune Proactive Remediations.
 
 .DESCRIPTION
     Detection half of the Visual C++ Redistributable update pair. Checks whether an update is available for
-    winget package Microsoft.VCRedist.2015+.x64 and exits non-compliant so remediation can be triggered. Prefers the
+    winget package Microsoft.VCRedist.2015+.x86 and exits non-compliant so remediation can be triggered. Prefers the
     Microsoft.WinGet.Client PowerShell module because the winget CLI is not supported in the SYSTEM context
     that Intune Proactive Remediations use; when the module is unavailable it falls back to the winget.exe
     CLI through the Invoke-WingetWithRetry wrapper (the only place a native executable is called).
@@ -37,7 +37,7 @@
 $ErrorActionPreference = 'Stop'
 
 #region Configuration
-$ID = 'Microsoft.VCRedist.2015+.x64'
+$ID = 'Microsoft.VCRedist.2015+.x86'
 $ConnectivityHost = 'www.microsoft.com'
 $MaxRetries = 3
 $CheckNetworkConnectivity = $true

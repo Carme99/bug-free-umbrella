@@ -114,6 +114,8 @@ function Add-LenovoFriendlyModelNames {
         [Parameter()]
         [String]$NotesPrefix,
         [Parameter()]
+        [String]$OutputPath,
+        [Parameter()]
         [String]$NotesSeparator,
         [Parameter()]
         [switch]$VerboseOutput,
@@ -10184,7 +10186,7 @@ function Invoke-WingetCpp2013RedistX86 {
 function Invoke-WingetCpp20152019RedistX64 {
     <#
     .SYNOPSIS
-        Silently updates the Visual C++ Redistributable package Microsoft.VCRedist.2015+.x86 for Intune remediations.
+        Silently updates the Visual C++ Redistributable package Microsoft.VCRedist.2015+.x64 for Intune remediations.
     .DESCRIPTION
         Proxies to scripts/endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x64/Invoke-WingetCpp20152019RedistX64.ps1.
         Original category: endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x64
@@ -10236,7 +10238,7 @@ function Invoke-WingetCpp20152019RedistX64 {
 function Invoke-WingetCpp20152019RedistX86 {
     <#
     .SYNOPSIS
-        Silently updates the Visual C++ Redistributable package Microsoft.VCRedist.2015+.x64 for Intune remediations.
+        Silently updates the Visual C++ Redistributable package Microsoft.VCRedist.2015+.x86 for Intune remediations.
     .DESCRIPTION
         Proxies to scripts/endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x86/Invoke-WingetCpp20152019RedistX86.ps1.
         Original category: endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x86
@@ -11904,7 +11906,7 @@ function New-Win32AppTemplate {
 function New-WingetRemediationScript {
     <#
     .SYNOPSIS
-        Generates Intune Proactive Remediation scripts for Winget package updates.
+        DEPRECATED: use New-BulkWingetUpdater.ps1 Generates Intune Proactive Remediation scripts for Winget package updates.
     .DESCRIPTION
         Proxies to scripts/endpoints/intune/deployment/New-WingetRemediationScript.ps1.
         Original category: endpoints/intune/deployment
@@ -17589,7 +17591,7 @@ function Test-WingetCpp2013RedistX86 {
 function Test-WingetCpp20152019RedistX64 {
     <#
     .SYNOPSIS
-        Detects pending VCRedist updates for winget package Microsoft.VCRedist.2015+.x86 for Intune Proactive Remediations.
+        Detects pending VCRedist updates for winget package Microsoft.VCRedist.2015+.x64 for Intune Proactive Remediations.
     .DESCRIPTION
         Proxies to scripts/endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x64/Test-WingetCpp20152019RedistX64.ps1.
         Original category: endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x64
@@ -17641,7 +17643,7 @@ function Test-WingetCpp20152019RedistX64 {
 function Test-WingetCpp20152019RedistX86 {
     <#
     .SYNOPSIS
-        Detects pending VCRedist updates for winget package Microsoft.VCRedist.2015+.x64 for Intune Proactive Remediations.
+        Detects pending VCRedist updates for winget package Microsoft.VCRedist.2015+.x86 for Intune Proactive Remediations.
     .DESCRIPTION
         Proxies to scripts/endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x86/Test-WingetCpp20152019RedistX86.ps1.
         Original category: endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x86

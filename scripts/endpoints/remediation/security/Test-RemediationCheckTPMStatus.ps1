@@ -68,7 +68,7 @@ function Main {
         }
 
         # Check TPM version (TPM 2.0 is preferred)
-        $tpmWmi = Get-WmiObject -Namespace "root\cimv2\Security\MicrosoftTpm" -Class Win32_Tpm `
+        $tpmWmi = Get-CimInstance -Namespace "root\cimv2\Security\MicrosoftTpm" -ClassName Win32_Tpm `
             -ErrorAction SilentlyContinue
         $tpmVersion = $tpmWmi.SpecVersion
         if ($tpmVersion) {

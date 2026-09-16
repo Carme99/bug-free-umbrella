@@ -1,10 +1,10 @@
 ﻿<#
 .SYNOPSIS
-    Silently updates the Visual C++ Redistributable package Microsoft.VCRedist.2015+.x86 for Intune remediations.
+    Silently updates the Visual C++ Redistributable package Microsoft.VCRedist.2015+.x64 for Intune remediations.
 
 .DESCRIPTION
     Remediation half of the Visual C++ Redistributable update pair. Checks whether an update is available
-    for winget package Microsoft.VCRedist.2015+.x86 and installs it silently. When the redistributable installer process
+    for winget package Microsoft.VCRedist.2015+.x64 and installs it silently. When the redistributable installer process
     is running, the update is skipped this run and non-compliance is reported so Intune can retry
     later (the script never force closes a process). Prefers the Microsoft.WinGet.Client PowerShell
     module because the winget CLI is not supported in the SYSTEM context that Intune Proactive
@@ -26,7 +26,7 @@
 
 .EXAMPLE
     PS C:\> .\Invoke-WingetCpp20152019RedistX64.ps1
-    Updates Microsoft.VCRedist.2015+.x86 silently; exits 0 on success or when already up to date.
+    Updates Microsoft.VCRedist.2015+.x64 silently; exits 0 on success or when already up to date.
 
 .EXAMPLE
     PS C:\> .\Invoke-WingetCpp20152019RedistX64.ps1 -WhatIf
@@ -40,8 +40,8 @@
 $ErrorActionPreference = 'Stop'
 
 #region Configuration
-$ID = 'Microsoft.VCRedist.2015+.x86'
-$AppProcess = 'Microsoft.VCRedist.2015+.x86'
+$ID = 'Microsoft.VCRedist.2015+.x64'
+$AppProcess = 'Microsoft.VCRedist.2015+.x64'
 $MaxRetries = 3
 $VerifyWaitSeconds = 5
 $EnableLogging = $false

@@ -135,6 +135,7 @@ docs/.doctrees/
 
 # Package manager locks (keep manifests)
 package-lock.json
+!mcp-server/package-lock.json
 yarn.lock
 pnpm-lock.yaml
 

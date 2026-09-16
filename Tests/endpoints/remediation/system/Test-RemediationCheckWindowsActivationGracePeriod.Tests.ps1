@@ -71,7 +71,9 @@ Describe 'Test-RemediationCheckWindowsActivationGracePeriod' {
             $scriptText | Should -Not -Match '\|\||&&|\?\?'
         }
 
-        It 'Does not use the PS5.1-only Get-WmiObject cmdlet' {
+        It 'Does not use Get-WmiObject, which was removed in PowerShell 6' {
+            # Get-CimInstance ships with PowerShell 3.0+ and is the supported cmdlet; Get-WmiObject
+            # is the one that no longer exists under the PS7 prerequisite this script declares.
             $scriptText | Should -Not -Match 'Get-WmiObject'
         }
     }

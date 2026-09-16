@@ -1,7 +1,7 @@
 {
   "name": "bug-free-umbrella-mcp",
-  "version": "1.0.0",
-  "description": "MCP server exposing 358 bug-free-umbrella PowerShell scripts as AI tools — search, preview, and validate from Claude Desktop",
+  "version": "2.0.0",
+  "description": "MCP server exposing the catalogued bug-free-umbrella PowerShell scripts as AI tools — search, preview, and validate from Claude Desktop",
   "type": "module",
   "author": "Carme99",
   "license": "Apache-2.0",

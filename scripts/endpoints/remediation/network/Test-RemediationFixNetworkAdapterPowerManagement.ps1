@@ -43,7 +43,8 @@ function Main {
 
         foreach ($adapter in $adapters) {
             # Tolerated read: a missing MSPower_DeviceEnable instance is not an issue.
-            $powerMgmt = Get-WmiObject -Class MSPower_DeviceEnable -Namespace root\wmi -ErrorAction SilentlyContinue |
+            $powerMgmt = Get-CimInstance -ClassName MSPower_DeviceEnable -Namespace root\wmi `
+                -ErrorAction SilentlyContinue |
                 Where-Object { $_.InstanceName -like "*$($adapter.InterfaceGuid)*" }
 
             if ($powerMgmt -and $powerMgmt.Enable -eq $true) {

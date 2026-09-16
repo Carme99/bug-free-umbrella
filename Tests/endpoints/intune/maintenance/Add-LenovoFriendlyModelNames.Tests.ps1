@@ -45,9 +45,10 @@ Describe "Add-LenovoFriendlyModelNames.ps1" {
         }
 
         It "Has one .PARAMETER entry per declared parameter" {
+            # The contract is one documented .PARAMETER per declared parameter; the absolute
+            # count is incidental and must not be pinned, or every added parameter breaks it.
             $paramCount = $ast.ParamBlock.Parameters.Count
             $helpParams = ([regex]::Matches($rawText, '(?m)^\.PARAMETER')).Count
-            $paramCount | Should -Be 8
             $helpParams | Should -Be $paramCount
         }
 

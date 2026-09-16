@@ -54,6 +54,11 @@
     If provided, format is "Prefix: FriendlyName"
     If empty, format is "FriendlyName"
 
+.PARAMETER OutputPath
+    Directory for the error-log CSV written when one or more devices fail to update.
+    Defaults to the system temp directory. The script never writes to the current
+    working directory.
+
 .PARAMETER NotesSeparator
     Separator used when appending to existing Notes
     Default: newline character
@@ -150,6 +155,9 @@ param(
 
     [Parameter(Mandatory = $false)]
     [string]$NotesPrefix = "",
+
+    [Parameter(Mandatory = $false)]
+    [string]$OutputPath = [IO.Path]::GetTempPath(),
 
     [Parameter(Mandatory = $false)]
     [string]$NotesSeparator = "`n",
@@ -769,7 +777,9 @@ function Main {
 
         # Export error log if errors occurred
         if ($errorLog.Count -gt 0) {
-            $errorLogPath = Join-Path $PWD "LenovoUpdateErrors_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
+            $logDir = $OutputPath
+            if (-not (Test-Path -LiteralPath $logDir)) { New-Item -ItemType Directory -Path $logDir -Force | Out-Null }
+            $errorLogPath = Join-Path $logDir "LenovoUpdateErrors_$(Get-Date -Format 'yyyyMMdd_HHmmss').csv"
             $errorLog | Export-Csv -Path $errorLogPath -NoTypeInformation -Encoding UTF8 -ErrorAction Stop
             Write-Host ""
             Write-Log "Error log exported to: $errorLogPath" "Warn"

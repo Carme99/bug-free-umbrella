@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/Carme99/bug-free-umbrella/main/scripts/.catalog/metadata.schema.json",
   "version": "2.0.0",
-  "generated": "2026-09-16T23:03:48.5896829+01:00",
+  "generated": "2026-09-16T23:15:56.1399520+01:00",
   "totalScripts": 381,
   "excludedScripts": 185,
   "onDiskScripts": 566,
@@ -4165,8 +4165,8 @@
       "path": "endpoints/intune/deployment/New-WingetRemediationScript.ps1",
       "name": "New-WingetRemediationScript.ps1",
       "category": "endpoints/intune/deployment",
-      "synopsis": "Generates Intune Proactive Remediation scripts for Winget package updates.",
-      "description": "Creates a pair of detection and remediation scripts for use with Intune Proactive Remediations to keep applications up-to-date using Winget in SYSTEM context. The generated scripts will: - Detect if t",
+      "synopsis": "DEPRECATED: use New-BulkWingetUpdater.ps1 Generates Intune Proactive Remediation scripts for Winget package updates.",
+      "description": "DEPRECATED: New-BulkWingetUpdater.ps1 is the authoritative generator - it emits the same Intune proactive-remediation detect/remediate pair and additionally accepts batch CSV input. This script is ret",
       "tags": [
         "intune",
         "winget"
@@ -4313,6 +4313,11 @@
         },
         {
           "name": "NotesPrefix",
+          "type": "String",
+          "mandatory": false
+        },
+        {
+          "name": "OutputPath",
           "type": "String",
           "mandatory": false
         },
@@ -9373,8 +9378,8 @@
       "path": "endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x64/Invoke-WingetCpp20152019RedistX64.ps1",
       "name": "Invoke-WingetCpp20152019RedistX64.ps1",
       "category": "endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x64",
-      "synopsis": "Silently updates the Visual C++ Redistributable package Microsoft.VCRedist.2015+.x86 for Intune remediations.",
-      "description": "Remediation half of the Visual C++ Redistributable update pair. Checks whether an update is available for winget package Microsoft.VCRedist.2015+.x86 and installs it silently. When the redistributable",
+      "synopsis": "Silently updates the Visual C++ Redistributable package Microsoft.VCRedist.2015+.x64 for Intune remediations.",
+      "description": "Remediation half of the Visual C++ Redistributable update pair. Checks whether an update is available for winget package Microsoft.VCRedist.2015+.x64 and installs it silently. When the redistributable",
       "tags": [
         "intune"
       ],
@@ -9412,8 +9417,8 @@
       "path": "endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x64/Test-WingetCpp20152019RedistX64.ps1",
       "name": "Test-WingetCpp20152019RedistX64.ps1",
       "category": "endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x64",
-      "synopsis": "Detects pending VCRedist updates for winget package Microsoft.VCRedist.2015+.x86 for Intune Proactive Remediations.",
-      "description": "Detection half of the Visual C++ Redistributable update pair. Checks whether an update is available for winget package Microsoft.VCRedist.2015+.x86 and exits non-compliant so remediation can be trigge",
+      "synopsis": "Detects pending VCRedist updates for winget package Microsoft.VCRedist.2015+.x64 for Intune Proactive Remediations.",
+      "description": "Detection half of the Visual C++ Redistributable update pair. Checks whether an update is available for winget package Microsoft.VCRedist.2015+.x64 and exits non-compliant so remediation can be trigge",
       "tags": [
         "intune",
         "winget"
@@ -9453,8 +9458,8 @@
       "path": "endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x86/Invoke-WingetCpp20152019RedistX86.ps1",
       "name": "Invoke-WingetCpp20152019RedistX86.ps1",
       "category": "endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x86",
-      "synopsis": "Silently updates the Visual C++ Redistributable package Microsoft.VCRedist.2015+.x64 for Intune remediations.",
-      "description": "Remediation half of the Visual C++ Redistributable update pair. Checks whether an update is available for winget package Microsoft.VCRedist.2015+.x64 and installs it silently. When the redistributable",
+      "synopsis": "Silently updates the Visual C++ Redistributable package Microsoft.VCRedist.2015+.x86 for Intune remediations.",
+      "description": "Remediation half of the Visual C++ Redistributable update pair. Checks whether an update is available for winget package Microsoft.VCRedist.2015+.x86 and installs it silently. When the redistributable",
       "tags": [
         "intune"
       ],
@@ -9492,8 +9497,8 @@
       "path": "endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x86/Test-WingetCpp20152019RedistX86.ps1",
       "name": "Test-WingetCpp20152019RedistX86.ps1",
       "category": "endpoints/remediation/winget/runtimes/Cpp2015-2019Redist-x86",
-      "synopsis": "Detects pending VCRedist updates for winget package Microsoft.VCRedist.2015+.x64 for Intune Proactive Remediations.",
-      "description": "Detection half of the Visual C++ Redistributable update pair. Checks whether an update is available for winget package Microsoft.VCRedist.2015+.x64 and exits non-compliant so remediation can be trigge",
+      "synopsis": "Detects pending VCRedist updates for winget package Microsoft.VCRedist.2015+.x86 for Intune Proactive Remediations.",
+      "description": "Detection half of the Visual C++ Redistributable update pair. Checks whether an update is available for winget package Microsoft.VCRedist.2015+.x86 and exits non-compliant so remediation can be trigge",
       "tags": [
         "intune",
         "winget"

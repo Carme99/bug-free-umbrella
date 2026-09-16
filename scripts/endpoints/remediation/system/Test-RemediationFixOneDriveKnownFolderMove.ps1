@@ -68,9 +68,8 @@ function Main {
         }
 
         # Get the current user SID (need to check per-user settings)
-        # PSAvoidUsingWMICmdlet justified: Get-WmiObject kept deliberately to preserve this
         # detection's original runtime behavior on Windows PowerShell-based Intune hosts.
-        $currentUser = (Get-WmiObject -Class Win32_ComputerSystem -ErrorAction SilentlyContinue).UserName
+        $currentUser = (Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue).UserName
         if ($currentUser) {
             $userSid = Resolve-CurrentUserSid -UserName $currentUser
 

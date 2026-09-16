@@ -66,23 +66,23 @@ Describe "Test-RemediationFixWindowsLicenseActivation" {
         }
 
         It "Returns 1 with [!] output when Windows is in notification mode" {
-            # Get-WmiObject does not exist on Linux: stub it inline so Pester can Mock it.
-            function Get-WmiObject { }
+            # Get-CimInstance does not exist on Linux: stub it inline so Pester can Mock it.
+            function Get-CimInstance { }
             Mock Invoke-WindowsActivationQuery {
                 [pscustomobject]@{ ExitCode = 0; Output = "License Status: Notification" }
             }
-            Mock Get-WmiObject { $null }
+            Mock Get-CimInstance { $null }
             $out = Main *>&1
             ($out | Out-String) | Should -Match '\[!\]'
             $out | Where-Object { $_ -is [int] } | Should -Be 1
         }
 
         It "Returns 1 with [!] output when WMI reports a non-licensed status code" {
-            function Get-WmiObject { }
+            function Get-CimInstance { }
             Mock Invoke-WindowsActivationQuery {
                 [pscustomobject]@{ ExitCode = 0; Output = "License Status: Unlicensed" }
             }
-            Mock Get-WmiObject { [pscustomobject]@{ LicenseStatus = 0 } }
+            Mock Get-CimInstance { [pscustomobject]@{ LicenseStatus = 0 } }
             $out = Main *>&1
             ($out | Out-String) | Should -Match '\[!\]'
             ($out | Out-String) | Should -Match 'license status code: 0'

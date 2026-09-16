@@ -64,16 +64,16 @@ Describe "Test-RemediationFixOutdatedDrivers" -Tag Ep6SysA {
 
     Context "Behavior" {
         It "Returns 0 when no problem devices exist and no driver updates are offered (converged)" {
-            function Get-WmiObject { }
-            Mock Get-WmiObject { $null } -ParameterFilter { $Class -eq 'Win32_PnPEntity' }
+            function Get-CimInstance { }
+            Mock Get-CimInstance { $null } -ParameterFilter { $Class -eq 'Win32_PnPEntity' }
             Mock Find-DriverUpdate { [pscustomobject] @{ Updates = @() } }
             Main *>&1 | Where-Object { $_ -is [int] } | Should -Be 0
             Should -Invoke Find-DriverUpdate -Times 1 -Exactly
         }
 
         It "Returns 1 and lists titles when Windows Update offers driver updates" {
-            function Get-WmiObject { }
-            Mock Get-WmiObject { $null } -ParameterFilter { $Class -eq 'Win32_PnPEntity' }
+            function Get-CimInstance { }
+            Mock Get-CimInstance { $null } -ParameterFilter { $Class -eq 'Win32_PnPEntity' }
             Mock Find-DriverUpdate {
                 [pscustomobject] @{
                     Updates = @(
@@ -90,8 +90,8 @@ Describe "Test-RemediationFixOutdatedDrivers" -Tag Ep6SysA {
         }
 
         It "Returns 1 for problem devices even when the update search fails (warning tolerated)" {
-            function Get-WmiObject { }
-            Mock Get-WmiObject {
+            function Get-CimInstance { }
+            Mock Get-CimInstance {
                 @([pscustomobject] @{ Name = 'Ethernet Controller'; ConfigManagerErrorCode = 28 })
             }
             Mock Find-DriverUpdate { throw "Windows Update unreachable" }
@@ -103,8 +103,8 @@ Describe "Test-RemediationFixOutdatedDrivers" -Tag Ep6SysA {
         }
 
         It "Returns 0 with a warning when only the update search fails and devices are healthy" {
-            function Get-WmiObject { }
-            Mock Get-WmiObject { $null } -ParameterFilter { $Class -eq 'Win32_PnPEntity' }
+            function Get-CimInstance { }
+            Mock Get-CimInstance { $null } -ParameterFilter { $Class -eq 'Win32_PnPEntity' }
             Mock Find-DriverUpdate { throw "COM class not registered" }
             $out = Main *>&1
             ($out | Out-String) | Should -Match '\[\!\]'

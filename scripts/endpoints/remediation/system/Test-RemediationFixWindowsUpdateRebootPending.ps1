@@ -71,7 +71,7 @@ function Main {
         # Check if reboot has been pending for too long (more than 7 days)
         if ($rebootPending) {
             # Get last boot time
-            $os = Get-WmiObject -Class Win32_OperatingSystem -ErrorAction Stop
+            $os = Get-CimInstance -ClassName Win32_OperatingSystem -ErrorAction Stop
             $lastBoot = $os.ConvertToDateTime($os.LastBootUpTime)
             $daysSinceBoot = ((Get-Date) - $lastBoot).Days
 
