@@ -489,4 +489,4 @@ PSSA 0 — generator and module pass PSScriptAnalyzer with 0 findings.
 | Update-AllAppsWinget | utilities | Update all winget-managed applications in SYSTEM or Administrator context. | [scripts/utilities/Update-AllAppsWinget.ps1](../scripts/utilities/Update-AllAppsWinget.ps1) |
 | Update-DotNetRuntimes | utilities | Update installed .NET runtimes, remove EOL channels, and clean lower patches safely. | [scripts/utilities/Update-DotNetRuntimes.ps1](../scripts/utilities/Update-DotNetRuntimes.ps1) |
 
-*Generated from scripts/.catalog/metadata.json (2026-09-16T22:48:57Z) — do not edit. Run `pwsh -File tools/Build-Docs.ps1` to regenerate.*
+*Generated from scripts/.catalog/metadata.json (2026-09-16T23:23:24Z) — do not edit. Run `pwsh -File tools/Build-Docs.ps1` to regenerate.*

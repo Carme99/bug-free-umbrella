@@ -189,8 +189,10 @@ Bug-Free Umbrella historically used **weather-themed codenames** for releases. A
 - **CI gates wired** for catalog, docs and module freshness; the module smoke test asserts export
   parity and that every generated wrapper resolves to a real file, rather than a `>= 350` floor that
   could not detect wrapper loss.
-- **`markdown-link-check`** now fails on a broken link; it previously branched on a step outcome that
-  `fail: false` made permanently successful.
+- **`markdown-link-check`** now detects broken links for real and reports them truthfully; it
+  previously branched on a step outcome that `fail: false` made permanently successful. The lychee
+  step carries a commented `continue-on-error` while the pre-existing link debt (#317) is cleared, so
+  a broken link is reported but does not block the merge.
 - Documentation corrected across `README.md`, `docs/ARCHITECTURE.md`, `docs/MCP-Server.md`,
   `docs/Catalog-Automation.md`, `WARP.md`, `AGENTS.md`, `install.ps1`, `Invoke-Umbrella.ps1` and the
   workflow README: removed Claude workflow references, corrected label and export counts, and

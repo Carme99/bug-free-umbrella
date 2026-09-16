@@ -94,4 +94,4 @@ Contributors should follow the guidance in [CONTRIBUTING.md](./CONTRIBUTING.md) 
 
 ---
 
-**Maintainers:** [Carme99](https://github.com/Carme99) with Claude Code.
+**Maintainers:** [Carme99](https://github.com/Carme99).

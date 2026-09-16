@@ -106,7 +106,7 @@ Describe 'Invoke-RemediationCheckSystemEventErrors' {
             )) {
             $existing = Get-Command $cmd -ErrorAction SilentlyContinue
             if ($existing -and $existing.CommandType -eq 'Function') {
-                Remove-Item -LiteralPath "Function:global:$cmd" -Force
+                Remove-Item -LiteralPath "Function:$cmd" -Force
             }
         }
         Set-Location $PSScriptRoot

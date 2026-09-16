@@ -4,7 +4,7 @@
 
 .DESCRIPTION
     Loads scripts/.catalog/metadata.json and provides search, filter and
-    interactive discovery of all all catalogued scripts. Supports fuzzy search on
+    interactive discovery of all catalogued scripts. Supports fuzzy search on
     path/synopsis/category, category prefix filtering, exact-name lookup
     (-Name), direct invocation (-Invoke with ShouldProcess), bulk export
     (-Export), and a cross-platform picker tier: Out-GridView -> fzf

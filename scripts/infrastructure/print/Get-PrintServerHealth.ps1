@@ -136,35 +136,50 @@ function Main {
 
         $systemRoot = if ($env:SystemRoot) { $env:SystemRoot } else { 'C:\Windows' }
         $spoolPath = "$systemRoot\System32\spool\PRINTERS"
-        $spoolDrive = Split-Path -Path $spoolPath -Qualifier
+        # Split-Path -Qualifier THROWS when the path carries no drive qualifier (for example a
+        # Unix-shaped $env:SystemRoot). This call sits outside the try below, so an unqualified
+        # value aborted the entire health check with no diagnostic. Derive it defensively instead
+        # and skip the disk check when there is no drive to query.
+        $spoolDrive = Split-Path -Path $spoolPath -Qualifier -ErrorAction SilentlyContinue
 
-        try {
-            $drive = Get-PSDrive -Name ($spoolDrive -replace ':', '') -ErrorAction Stop
-            $freeSpaceGB = [math]::Round($drive.Free / 1GB, 2)
-            $usedPercent = [math]::Round(($drive.Used / ($drive.Used + $drive.Free)) * 100, 2)
-
-            Write-Host "[+] Spool directory: $spoolPath" -ForegroundColor Green
-            Write-Host "    Free space: $freeSpaceGB GB ($usedPercent% used)" -ForegroundColor Gray
-
-            if ($freeSpaceGB -lt 1) {
-                Write-Host "[-]     Low disk space!" -ForegroundColor Red
-                $issueCount++
-            }
-            elseif ($freeSpaceGB -lt 5) {
-                Write-Host "[!]     Disk space getting low" -ForegroundColor Yellow
-                $warningCount++
-            }
-
-            $results += [PSCustomObject]@{
-                Category = "Spool Directory"
-                Item     = $spoolPath
-                Status   = if ($freeSpaceGB -lt 1) { "Fail" } elseif ($freeSpaceGB -lt 5) { "Warning" } else { "Pass" }
-                Finding  = "Free space: $freeSpaceGB GB"
-                Details  = "Used: $usedPercent%"
-            }
+        if ([string]::IsNullOrWhiteSpace($spoolDrive)) {
+            Write-Host "[!] Spool directory has no drive qualifier ($spoolPath); skipping disk-space check" `
+                -ForegroundColor Yellow
         }
-        catch {
-            Write-Host "[!] Could not check spool directory" -ForegroundColor Yellow
+        else {
+            try {
+                $drive = Get-PSDrive -Name ($spoolDrive -replace ':', '') -ErrorAction Stop
+                $freeSpaceGB = [math]::Round($drive.Free / 1GB, 2)
+                $usedPercent = [math]::Round(($drive.Used / ($drive.Used + $drive.Free)) * 100, 2)
+
+                Write-Host "[+] Spool directory: $spoolPath" -ForegroundColor Green
+                Write-Host "    Free space: $freeSpaceGB GB ($usedPercent% used)" -ForegroundColor Gray
+
+                if ($freeSpaceGB -lt 1) {
+                    Write-Host "[-]     Low disk space!" -ForegroundColor Red
+                    $issueCount++
+                }
+                elseif ($freeSpaceGB -lt 5) {
+                    Write-Host "[!]     Disk space getting low" -ForegroundColor Yellow
+                    $warningCount++
+                }
+
+                $spoolStatus = if ($freeSpaceGB -lt 1) { "Fail" }
+                elseif ($freeSpaceGB -lt 5) { "Warning" }
+                else { "Pass" }
+
+                $results += [PSCustomObject]@{
+                    Category = "Spool Directory"
+                    Item     = $spoolPath
+                    Status   = $spoolStatus
+                    Finding  = "Free space: $freeSpaceGB GB"
+                    Details  = "Used: $usedPercent%"
+                }
+            }
+            catch {
+                Write-Host "[!] Could not check spool directory" -ForegroundColor Yellow
+            }
+
         }
 
         Write-Host ""

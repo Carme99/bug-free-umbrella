@@ -328,6 +328,18 @@ jobs:
             exit 1
           }
 
+      - name: Standards contract is enforced (tools/Test-Standards.ps1)
+        shell: pwsh
+        run: |
+          # Mechanical subset of docs/STANDARDS.md: help fields, script shape, encoding,
+          # formatting, dot-source guard, exit placement, approved verbs, ShouldProcess
+          # coverage, PS7-syntax opt-out, and per-script test-mirror presence.
+          pwsh -NoProfile -File tools/Test-Standards.ps1
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "::error::Standards contract violations found - see the findings above and docs/STANDARDS.md." -ForegroundColor Red
+            exit 1
+          }
+
       - name: Module is fresh (Build-Module -Validate)
         shell: pwsh
         run: |
@@ -391,6 +403,7 @@ jobs:
           echo "Pester Tests: ${{ needs.test.result }} (gating - fails on test failures)"
           echo "Module Smoke: ${{ needs.test.outputs.module_smoke }} (gating - module must import with wrapper/manifest parity)"
           echo "Artifact Freshness: ${{ needs.freshness.result }} (gating - catalog/docs/module must not be stale)"
+          echo "Standards Contract: ${{ needs.freshness.result }} (gating - tools/Test-Standards.ps1 must report zero findings)"
           echo "MCP Server Build: ${{ needs.mcp-server.result }} (gating - mcp-server must install, build, and emit build/index.js)"
           echo ""
           if [ "${{ needs.analyze.result }}" != "success" ] || [ "${{ needs.syntax-check.result }}" != "success" ] || [ "${{ needs.test.result }}" != "success" ] || [ "${{ needs.test.outputs.module_smoke }}" != "success" ] || [ "${{ needs.freshness.result }}" != "success" ] || [ "${{ needs.mcp-server.result }}" != "success" ]; then

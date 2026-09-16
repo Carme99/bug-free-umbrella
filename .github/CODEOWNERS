@@ -5,7 +5,7 @@
 # Any PR will automatically request review from @Carme99
 * @Carme99
 
-# Documentation - Maintained with Claude Code assistance
+# Documentation
 *.md @Carme99
 /wiki/ @Carme99
 /docs/ @Carme99
