@@ -34,7 +34,7 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
-$canonicalScript = Join-Path $PSScriptRoot '../../../remediation/system'
+$canonicalScript = Join-Path $PSScriptRoot '../../../remediation/system/Invoke-RemediationCheckMicrosoftStoreAppsHealth.ps1'
 $forwardArgs = @($args | Where-Object { $null -ne $_ })
 
 function Invoke-ForwardedScript {

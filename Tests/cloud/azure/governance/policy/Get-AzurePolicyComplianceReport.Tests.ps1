@@ -182,8 +182,7 @@ Describe 'Get-AzurePolicyComplianceReport' {
         }
 
         It 'Cites Microsoft Learn and drives the documented PolicyInsights cmdlets' {
-            $raw | Should -Match 'learn\.microsoft\.com'+ '/en-us/azure/governance/policy/how-to/' +
-                'get-compliance-data'
+            $raw | Should -Match 'learn\.microsoft\.com/en-us/azure/governance/policy/how-to/get-compliance-data'
             $raw | Should -Match 'get-azpolicystate'
             $raw | Should -Match 'get-azpolicystatesummary'
             $raw | Should -Match 'start-azpolicycompliancescan'

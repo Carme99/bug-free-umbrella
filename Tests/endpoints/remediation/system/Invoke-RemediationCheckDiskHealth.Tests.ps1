@@ -10,6 +10,13 @@ Describe 'Invoke-RemediationCheckDiskHealth' {
         # depends on which file ran last.
         Set-Location -LiteralPath $PSScriptRoot
 
+        # Sibling suites define global function shims (e.g. `function global:Start-Process`)
+        # with a reduced parameter set. Any that survive their own cleanup would reject the
+        # arguments this script passes, so clear them before mocking.
+        foreach ($leaked in 'Start-Process', 'Import-Module') {
+            Remove-Item -Path "Function:\global:$leaked" -ErrorAction SilentlyContinue
+        }
+
         $scriptText = Get-Content $scriptPath -Raw
 
         # Safe: the script's top-level guard skips Main when dot-sourced (spec §3).
