@@ -304,7 +304,10 @@ foreach ($grp in $sortedGroups) {
 
 # Reproducible footer: derive from catalog mtime, not wall clock, so -Validate compares equal across runs.
 $catalogFile = Join-Path $RepoRoot 'scripts' '.catalog' 'metadata.json'
-$stamp = if (Test-Path -LiteralPath $catalogFile) { (Get-Item -LiteralPath $catalogFile).LastWriteTimeUtc.ToString('yyyy-MM-ddTHH:mm:ssZ') } else { 'unknown' }
+# The stamp must be deterministic: it is derived from the committed catalog's own
+# `generated` field, never from the file's mtime. Git does not preserve mtimes, so a
+# fresh CI checkout would render a different stamp and the -Validate gate could never pass.
+$stamp = if ($catalog.generated) { ([datetime]$catalog.generated).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ') } else { 'unknown' }
 [void]$sb.AppendLine("*Generated from scripts/.catalog/metadata.json ($stamp) — do not edit. Run ``pwsh -File tools/Build-Docs.ps1`` to regenerate.*")
 
 $rendered = $sb.ToString()
