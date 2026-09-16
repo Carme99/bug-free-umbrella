@@ -159,7 +159,10 @@ function Resolve-ReportDir {
     param()
 
     # Fall back to a temp base on hosts where MyDocuments is not resolvable (e.g. Linux CI).
-    $docs = [Environment]::GetFolderPath('MyDocuments')
+    $docs = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+            elseif ($env:USERPROFILE) { $env:USERPROFILE }
+            elseif ($env:HOME) { $env:HOME }
+            else { [IO.Path]::GetTempPath() })
     $base = if (-not [string]::IsNullOrWhiteSpace($docs)) { $docs } else { [System.IO.Path]::GetTempPath() }
     $dir = Join-Path $base 'Reports'
     if ([string]::IsNullOrWhiteSpace($dir) -or

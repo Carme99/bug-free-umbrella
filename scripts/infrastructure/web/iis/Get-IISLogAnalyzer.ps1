@@ -207,7 +207,10 @@ function Main {
         $script:parseErrors = 0
 
         # Resolve report output directory (default: MyDocuments\Reports) and validate against traversal/UNC paths
-        $documentsFolder = [Environment]::GetFolderPath('MyDocuments')
+        $documentsFolder = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })
         if ([string]::IsNullOrWhiteSpace($documentsFolder)) {
             # Non-Windows hosts can return an empty MyDocuments path; fall back for portability.
             $documentsFolder = if ($env:HOME) { $env:HOME } else { (Get-Location).Path }

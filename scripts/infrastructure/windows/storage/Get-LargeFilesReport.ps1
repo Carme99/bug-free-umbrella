@@ -150,7 +150,10 @@ function Test-ReportDirectory {
     [CmdletBinding()]
     param()
 
-    $myDocs = [Environment]::GetFolderPath('MyDocuments')
+    $myDocs = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+            elseif ($env:USERPROFILE) { $env:USERPROFILE }
+            elseif ($env:HOME) { $env:HOME }
+            else { [IO.Path]::GetTempPath() })
     if ([string]::IsNullOrWhiteSpace($myDocs)) {
         $myDocs = [Environment]::GetFolderPath('UserProfile')
     }

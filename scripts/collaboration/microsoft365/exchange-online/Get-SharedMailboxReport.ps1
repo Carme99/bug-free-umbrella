@@ -74,7 +74,10 @@ $ErrorActionPreference = 'Stop'
 function Main {
     try {
         $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-        $ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+        $ReportDir = Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })) 'Reports'
         if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
             New-Item -ItemType Directory -Path $ReportDir -Force -ErrorAction Stop | Out-Null
         }

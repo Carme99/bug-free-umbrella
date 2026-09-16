@@ -71,7 +71,10 @@ function Main {
         $script:Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
         # Resolve report output directory (default: MyDocuments\Reports) and validate against traversal/UNC paths
-        $documentsFolder = [Environment]::GetFolderPath('MyDocuments')
+        $documentsFolder = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })
         $baseDir = if ($documentsFolder) { $documentsFolder } else { (Get-Location).Path }
         $reportDir = Join-Path $baseDir 'Reports'
         if ([string]::IsNullOrWhiteSpace($reportDir) -or

@@ -408,7 +408,10 @@ function Main {
         # Export results
         if ($ExportHTML) {
             $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-            $reportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+            $reportDir = Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                    elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                    elseif ($env:HOME) { $env:HOME }
+                    else { [IO.Path]::GetTempPath() })) 'Reports'
             if (-not (Test-Path -LiteralPath $reportDir -PathType Container)) {
                 New-Item -ItemType Directory -Path $reportDir -Force -ErrorAction Stop | Out-Null
             }
@@ -498,7 +501,10 @@ function Main {
 
         if ($ExportCSV) {
             $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-            $reportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+            $reportDir = Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                    elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                    elseif ($env:HOME) { $env:HOME }
+                    else { [IO.Path]::GetTempPath() })) 'Reports'
             if (-not (Test-Path -LiteralPath $reportDir -PathType Container)) {
                 New-Item -ItemType Directory -Path $reportDir -Force -ErrorAction Stop | Out-Null
             }

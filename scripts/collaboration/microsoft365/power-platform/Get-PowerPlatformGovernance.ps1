@@ -96,7 +96,10 @@ function Main {
         # Default output location: Documents\Reports. The Documents folder may be
         # unavailable on non-Windows hosts; fall back to the system temp path.
         if ([string]::IsNullOrWhiteSpace($OutputPath)) {
-            $documentsFolder = [Environment]::GetFolderPath('MyDocuments')
+            $documentsFolder = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                    elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                    elseif ($env:HOME) { $env:HOME }
+                    else { [IO.Path]::GetTempPath() })
             if ([string]::IsNullOrWhiteSpace($documentsFolder)) {
                 $documentsFolder = [System.IO.Path]::GetTempPath()
             }

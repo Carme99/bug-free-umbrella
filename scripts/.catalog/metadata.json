@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/Carme99/bug-free-umbrella/main/scripts/.catalog/metadata.schema.json",
   "version": "2.0.0",
-  "generated": "2026-09-16T23:15:56.1399520+01:00",
+  "generated": "2026-09-16T23:31:07.5368408+01:00",
   "totalScripts": 381,
   "excludedScripts": 185,
   "onDiskScripts": 566,

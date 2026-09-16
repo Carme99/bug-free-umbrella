@@ -63,7 +63,10 @@ $ErrorActionPreference = 'Stop'
 
 # Resolve (and create if needed) the Documents\Reports directory used by export switches.
 function Get-ReportDirectory {
-    $reportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+    $reportDir = Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+            elseif ($env:USERPROFILE) { $env:USERPROFILE }
+            elseif ($env:HOME) { $env:HOME }
+            else { [IO.Path]::GetTempPath() })) 'Reports'
     if ([string]::IsNullOrWhiteSpace($reportDir) -or
         $reportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
         $reportDir -match '^(\\\\|//)') {

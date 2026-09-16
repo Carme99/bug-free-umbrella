@@ -80,7 +80,10 @@ function Write-ReportTextFile {
 function Main {
     try {
         $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-        $documentsFolder = [Environment]::GetFolderPath('MyDocuments')
+        $documentsFolder = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })
         if ([string]::IsNullOrWhiteSpace($documentsFolder)) {
             $documentsFolder = [System.IO.Path]::GetTempPath()
         }

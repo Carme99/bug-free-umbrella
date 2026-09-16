@@ -92,7 +92,10 @@ function Write-ColorOutput {
 
 function Main {
     try {
-        $ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+        $ReportDir = Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })) 'Reports'
         if ([string]::IsNullOrWhiteSpace($ReportDir) -or
             $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
             $ReportDir -match '^(\\\\|//)') {

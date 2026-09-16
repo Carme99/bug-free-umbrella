@@ -49,11 +49,17 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = $(if ($documentsFolder = [Environment]::GetFolderPath('MyDocuments')) {
-            Join-Path $documentsFolder 'Reports'
+    [string]$OutputPath = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) {
+            Join-Path $bfuMyDocs 'Reports'
+        }
+        elseif ($env:USERPROFILE) {
+            Join-Path $env:USERPROFILE 'Reports'
+        }
+        elseif ($env:HOME) {
+            Join-Path $env:HOME 'Reports'
         }
         else {
-            Join-Path (Get-Location).Path 'Reports'
+            Join-Path ([IO.Path]::GetTempPath()) 'Reports'
         }),
 
     [Parameter(Mandatory = $false)]

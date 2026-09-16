@@ -72,7 +72,10 @@ function Main {
         if ($AlertThreshold -le 0) { $AlertThreshold = 80 }
         # Resolve default output location first (MyDocuments is unavailable on non-Windows hosts)
         if ([string]::IsNullOrWhiteSpace($OutputPath)) {
-            $documentsDir = [Environment]::GetFolderPath('MyDocuments')
+            $documentsDir = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                    elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                    elseif ($env:HOME) { $env:HOME }
+                    else { [IO.Path]::GetTempPath() })
             if ([string]::IsNullOrWhiteSpace($documentsDir)) {
                 $documentsDir = (Get-Location).Path
             }

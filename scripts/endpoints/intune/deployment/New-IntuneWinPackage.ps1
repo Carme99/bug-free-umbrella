@@ -338,7 +338,10 @@ function Main {
 
         # Set output folder
         if (-not $OutputFolder) {
-            $reportsRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+            $reportsRoot = Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                    elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                    elseif ($env:HOME) { $env:HOME }
+                    else { [IO.Path]::GetTempPath() })) 'Reports'
             $OutputFolder = Join-Path $reportsRoot 'IntuneWinPackages'
         }
 

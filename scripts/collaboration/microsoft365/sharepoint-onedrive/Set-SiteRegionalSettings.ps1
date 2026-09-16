@@ -198,7 +198,10 @@ function Set-SiteRegionalConfiguration {
 function Main {
     try {
         # Prepare report directory (local absolute path only, no traversal).
-        $documentsRoot = [Environment]::GetFolderPath('MyDocuments')
+        $documentsRoot = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })
         if ([string]::IsNullOrWhiteSpace($documentsRoot)) {
             $documentsRoot = [System.IO.Path]::Combine($HOME, 'Documents')
         }

@@ -447,7 +447,10 @@ function Main {
         # Export reports if requested
         if ($ExportReport) {
             if ($PSCmdlet.ShouldProcess("MyDocuments\Reports", "Write security features CSV and HTML reports")) {
-                $ReportPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
+                $ReportPath = (Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                        elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                        elseif ($env:HOME) { $env:HOME }
+                        else { [IO.Path]::GetTempPath() })) 'Reports')
                 # Reject '..' traversal and UNC remote paths before resolution
                 if ([string]::IsNullOrWhiteSpace($ReportPath) -or
                     $ReportPath -match '(^|[\\/])\.\.([\\/]|$)' -or

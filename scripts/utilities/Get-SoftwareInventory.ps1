@@ -123,7 +123,10 @@ function Main {
     try {
         $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 
-        $documentsPath = [Environment]::GetFolderPath('MyDocuments')
+        $documentsPath = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })
         if ([string]::IsNullOrWhiteSpace($documentsPath)) {
             # Fallback for non-Windows/non-interactive hosts (e.g. offline CI)
             $documentsPath = Join-Path $HOME 'Documents'

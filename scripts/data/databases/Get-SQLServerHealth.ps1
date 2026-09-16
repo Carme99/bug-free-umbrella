@@ -335,7 +335,10 @@ function Main {
     Write-Host ""
 
     # Export results
-    $myDocs = [Environment]::GetFolderPath('MyDocuments')
+    $myDocs = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+            elseif ($env:USERPROFILE) { $env:USERPROFILE }
+            elseif ($env:HOME) { $env:HOME }
+            else { [IO.Path]::GetTempPath() })
     if ([string]::IsNullOrWhiteSpace($myDocs)) {
         # Profile-less contexts (CI runners, SYSTEM services): MyDocuments resolves empty;
         # fall back so report writing degrades gracefully instead of crashing.

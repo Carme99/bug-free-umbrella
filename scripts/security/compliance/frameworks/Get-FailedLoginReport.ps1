@@ -355,7 +355,10 @@ function Main {
 
         # Export reports if requested
         if ($ExportReport) {
-            $ReportPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
+            $ReportPath = (Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                    elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                    elseif ($env:HOME) { $env:HOME }
+                    else { [IO.Path]::GetTempPath() })) 'Reports')
             if ($PSCmdlet.ShouldProcess($ReportPath, "Write failed login CSV and HTML reports")) {
                 # Validate report directory: reject '..' traversal and UNC remote paths before resolution
                 if ([string]::IsNullOrWhiteSpace($ReportPath) -or

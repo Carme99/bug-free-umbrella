@@ -88,7 +88,10 @@ function Resolve-AuditOutputDir {
     # not resolvable (e.g. Linux CI). Reject '..' traversal and UNC remote paths.
     $root = $OutputPath
     if ([string]::IsNullOrWhiteSpace($root)) {
-        $docs = [Environment]::GetFolderPath('MyDocuments')
+        $docs = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })
         $base = if (-not [string]::IsNullOrWhiteSpace($docs)) { $docs } else { [System.IO.Path]::GetTempPath() }
         $root = Join-Path $base 'Reports'
     }

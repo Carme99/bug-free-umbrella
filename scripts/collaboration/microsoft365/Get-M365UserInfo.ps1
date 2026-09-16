@@ -608,7 +608,10 @@ function Export-UserReport {
 
     # Use safe filename to prevent path traversal
     $safeEmail = Get-SafeFileName $script:UserData.UserPrincipalName
-    $reportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+    $reportDir = Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+            elseif ($env:USERPROFILE) { $env:USERPROFILE }
+            elseif ($env:HOME) { $env:HOME }
+            else { [IO.Path]::GetTempPath() })) 'Reports'
     if (-not (Test-Path -LiteralPath $reportDir -PathType Container)) {
         New-Item -ItemType Directory -Path $reportDir -Force -ErrorAction Stop | Out-Null
     }
