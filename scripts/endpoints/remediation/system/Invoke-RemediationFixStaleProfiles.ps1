@@ -33,8 +33,8 @@
     File Name  : Invoke-RemediationFixStaleProfiles.ps1
     Author     : Intune / Proactive Remediations
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -104,7 +104,8 @@ function Main {
             Write-Host "[+] Removed $($removed.Count) stale profile(s): $($removed -join '; ')" -ForegroundColor Green
         }
         else {
-            Write-Host "[+] Already clean: no profiles unused for more than $removalAgeDays days found" -ForegroundColor Green
+            Write-Host ("[+] Already clean: no profiles unused for more than $removalAgeDays days " +
+            "found") -ForegroundColor Green
         }
         return 0
     }

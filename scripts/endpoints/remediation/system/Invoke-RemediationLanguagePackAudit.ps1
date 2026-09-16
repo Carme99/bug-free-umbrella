@@ -27,8 +27,8 @@
     File Name  : Invoke-RemediationLanguagePackAudit.ps1
     Author     : Intune / Proactive Remediations
     Prerequisite: PowerShell 7.0, elevated (SYSTEM) context
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 
     See https://learn.microsoft.com/en-us/previous-versions/windows/it-pro/windows-8.1-and-8/hh825679(v=win.10)
 #>
@@ -79,7 +79,8 @@ function Main {
         }
 
         if ($removed.Count -gt 0) {
-            Write-Host "[+] Removed $($removed.Count) unnecessary language pack(s): $($removed -join ', ')" -ForegroundColor Green
+            Write-Host ("[+] Removed $($removed.Count) unnecessary language pack(s): " +
+            "$($removed -join ', ')") -ForegroundColor Green
         }
         else {
             Write-Host "[+] Already compliant: no unnecessary OS language packs found" -ForegroundColor Green

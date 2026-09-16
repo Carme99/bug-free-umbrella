@@ -44,8 +44,8 @@
     File Name: Optimize-WindowsServices.ps1
     Author: Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 
     Requires Administrator privileges.
     Creates a backup before making changes.
@@ -112,7 +112,10 @@ function Main {
 
         $timestamp = Get-Date -Format 'yyyyMMdd_HHmmss'
 
-        $documentsPath = [Environment]::GetFolderPath('MyDocuments')
+        $documentsPath = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })
         if ([string]::IsNullOrWhiteSpace($documentsPath)) {
             # Fallback for non-Windows/non-interactive hosts (e.g. offline CI)
             $documentsPath = Join-Path $HOME 'Documents'

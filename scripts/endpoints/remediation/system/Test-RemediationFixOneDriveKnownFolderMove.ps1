@@ -14,8 +14,8 @@
     File Name: Test-RemediationFixOneDriveKnownFolderMove.ps1
     Author: Intune Admin
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 
 .EXAMPLE
     PS C:\> .\Test-RemediationFixOneDriveKnownFolderMove.ps1
@@ -68,9 +68,8 @@ function Main {
         }
 
         # Get the current user SID (need to check per-user settings)
-        # PSAvoidUsingWMICmdlet justified: Get-WmiObject kept deliberately to preserve this
         # detection's original runtime behavior on Windows PowerShell-based Intune hosts.
-        $currentUser = (Get-WmiObject -Class Win32_ComputerSystem -ErrorAction SilentlyContinue).UserName
+        $currentUser = (Get-CimInstance -ClassName Win32_ComputerSystem -ErrorAction SilentlyContinue).UserName
         if ($currentUser) {
             $userSid = Resolve-CurrentUserSid -UserName $currentUser
 

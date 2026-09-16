@@ -123,7 +123,7 @@ Use `Invoke-Umbrella.ps1` at the repo root for interactive discovery:
 
 ## Roadmap
 
-- [x] Complete metadata.json with all 357 scripts
+- [x] Complete metadata.json with all 381 catalogued scripts
 - [ ] Automated compatibility testing in CI/CD
 - [ ] Platform-specific script bundles
 - [ ] Interactive web-based script browser

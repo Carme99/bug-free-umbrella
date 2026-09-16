@@ -14,8 +14,8 @@
     File Name: New-AzureComputeGalleryImage.Tests.ps1
     Author: Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 #>
 
 Describe "New-AzureComputeGalleryImage" {
@@ -148,8 +148,8 @@ Describe "New-AzureComputeGalleryImage" {
             $content | Should -Match ([regex]::Escape('File Name: New-AzureComputeGalleryImage.ps1'))
             $content | Should -Match '(?m)^\s*Author:\s+\S'
             $content | Should -Match ([regex]::Escape('Prerequisite: PowerShell 7.0'))
-            $content | Should -Match ([regex]::Escape('Version: 1.0.0'))
-            $content | Should -Match ([regex]::Escape('Date: 2026-08-23'))
+            $content | Should -Match ([regex]::Escape('Version: 2.0.0'))
+            $content | Should -Match ([regex]::Escape('Date: 2026-09-16'))
         }
 
         It "Documents one .PARAMETER per declared parameter, in param() order" {

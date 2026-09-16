@@ -64,7 +64,7 @@ This directory contains automated workflows for repository management and qualit
 **Purpose:** Validates PowerShell scripts for syntax and best practices
 
 **Triggers:**
-- Push to main, develop, or claude/* branches
+- Push to main or develop, or run the workflow manually
 - Pull requests targeting main or develop
 - Manual trigger via workflow_dispatch
 
@@ -83,52 +83,10 @@ This directory contains automated workflows for repository management and qualit
 
 ---
 
-### 4. **Claude Code** (`claude.yml`)
-
-**Purpose:** AI-powered code review and assistance via Claude Code
-
-**Triggers:**
-- Issue comments containing `@claude`
-- PR review comments containing `@claude`
-- PR reviews containing `@claude`
-- New issues with `@claude` in title or body
-
-**What it does:**
-- Responds to Claude Code mentions in issues and PRs
-- Provides AI-powered code review and suggestions
-- Can read CI results on PRs (requires `actions: read` permission)
-
-**Configuration:**
-- Requires `CLAUDE_CODE_OAUTH_TOKEN` secret
-- Has access to: contents (read), pull-requests (read), issues (read), actions (read)
-
 ---
 
-### 5. **Claude Code Review** (`claude-code-review.yml`)
 
-**Purpose:** Automated AI code review for pull requests
-
-**Triggers:**
-- When a PR is opened
-- When a PR is synchronized (new commits)
-
-**What it does:**
-- Reviews PR changes for code quality and best practices
-- Checks for potential bugs and security issues
-- Evaluates performance considerations
-- Assesses test coverage
-- Posts review as PR comment using `gh pr comment`
-
-**Configuration:**
-- Requires `CLAUDE_CODE_OAUTH_TOKEN` secret
-- Restricted tool access for security: only specific `gh` commands allowed
-- Uses repository's `AGENTS.md` for style guidance
-
-**Note:** Currently configured to run on all PRs. Can be filtered by author or file paths if needed.
-
----
-
-### 6. **Markdown Link Check** (`markdown-link-check.yml`)
+### 4. **Markdown Link Check** (`markdown-link-check.yml`)
 
 **Purpose:** Validates links across all repository markdown files
 
@@ -144,7 +102,7 @@ This directory contains automated workflows for repository management and qualit
 
 ---
 
-### 7. **Release Module** (`release-module.yml`)
+### 5. **Release Module** (`release-module.yml`)
 
 **Purpose:** Builds and publishes the `BugFreeUmbrella` module on release tags
 
@@ -167,7 +125,6 @@ This directory contains automated workflows for repository management and qualit
 ### Prerequisites
 
 All workflows require these secrets to be configured in repository settings:
-- `CLAUDE_CODE_OAUTH_TOKEN` - For Claude Code workflows (claude.yml, claude-code-review.yml)
 - `PSGALLERY_API_KEY` - For PSGallery publishing on `v*` tags (release-module.yml)
 
 ### Creating Labels
@@ -178,7 +135,7 @@ The issue-labeler workflow requires labels to exist. Create them using:
 pwsh .github/scripts/create-labels.ps1
 ```
 
-This creates all 46 labels with descriptions and color codes.
+This creates all 36 labels with descriptions and color codes.
 
 ### Manual Triggers
 
@@ -268,5 +225,5 @@ Edit `stale.yml`:
 
 ---
 
-**Last Updated:** 2026-01-05
-**Maintained by:** @Carme99 with Claude Code
+**Last Updated:** 2026-09-16
+**Maintained by:** @Carme99

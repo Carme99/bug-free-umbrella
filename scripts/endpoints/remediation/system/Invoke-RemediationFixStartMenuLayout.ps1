@@ -31,8 +31,8 @@
     File Name  : Invoke-RemediationFixStartMenuLayout.ps1
     Author     : Intune Admin
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -102,7 +102,8 @@ function Main {
                 Start-Process 'explorer.exe' -ErrorAction SilentlyContinue
                 Write-Host "[*] Restarted Windows Explorer" -ForegroundColor Cyan
             }
-            Write-Host "[+] Start Menu remediation completed; users may need to sign out and back in for changes to take full effect" -ForegroundColor Green
+            Write-Host ("[+] Start Menu remediation completed; users may need to sign out and back in " +
+                "for changes to take full effect") -ForegroundColor Green
         }
         else {
             Write-Host "[+] Already clean: no Start Menu remediation was necessary" -ForegroundColor Green

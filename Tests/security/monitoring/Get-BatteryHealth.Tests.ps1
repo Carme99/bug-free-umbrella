@@ -31,9 +31,9 @@ Describe "Get-BatteryHealth" {
     }
 
     Context "Help & Metadata" {
-        It "Declares Version 1.0.0 and the relaunch Date in NOTES" {
-            $rawScript | Should -Match '(?m)^\s*Version\s*:\s*1\.0\.0\s*$'
-            $rawScript | Should -Match '(?m)^\s*Date\s*:\s*2026-08-23\s*$'
+        It "Declares Version 2.0.0 and the relaunch Date in NOTES" {
+            $rawScript | Should -Match '(?m)^\s*Version\s*:\s*2\.0\.0\s*$'
+            $rawScript | Should -Match '(?m)^\s*Date\s*:\s*2026-09-16\s*$'
         }
 
         It "Matches File Name to the disk filename and declares all five NOTES fields" {

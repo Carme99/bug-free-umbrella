@@ -13,11 +13,11 @@ Describe "Invoke-RemediationCheckSecurityBaseline" {
     }
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $raw | Should -Match 'File Name:\s*Invoke-RemediationCheckSecurityBaseline\.ps1'
-            $raw | Should -Match 'Version:\s*1\.0\.0'
-            $raw | Should -Match 'Date:\s*2026-08-23'
+            $raw | Should -Match 'Version:\s*2\.0\.0'
+            $raw | Should -Match 'Date:\s*2026-09-16'
             $raw | Should -Match 'Author:'
             $raw | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
         }
@@ -58,7 +58,7 @@ Describe "Invoke-RemediationCheckSecurityBaseline" {
     }
 
     Context "Behavior" {
-        It "Returns 0 on a converged baseline, refreshing only signatures" {
+        It "Returns 0 on a converged baseline without mutating anything" {
             function Get-NetFirewallProfile { }
             function Set-NetFirewallProfile { }
             function Get-MpComputerStatus { }
@@ -72,7 +72,10 @@ Describe "Invoke-RemediationCheckSecurityBaseline" {
                     [pscustomobject]@{ Name = 'Public'; Enabled = $true }
                 )
             }
-            Mock Get-MpComputerStatus { [pscustomobject]@{ RealTimeProtectionEnabled = $true } }
+            # AntivirusSignatureAge is in days; 0 means the signatures are current.
+            Mock Get-MpComputerStatus {
+                [pscustomobject]@{ RealTimeProtectionEnabled = $true; AntivirusSignatureAge = 0 }
+            }
             Mock Get-ItemProperty { [pscustomobject]@{ EnableLUA = 1 } }
             Mock Set-NetFirewallProfile { }
             Mock Set-MpPreference { }
@@ -80,7 +83,7 @@ Describe "Invoke-RemediationCheckSecurityBaseline" {
             Mock Set-ItemProperty { }
             $out = Main *>&1
             $out | Where-Object { $_ -is [int] } | Should -Be 0
-            Should -Invoke Update-MpSignature -Exactly 1 -Scope It
+            Should -Invoke Update-MpSignature -Times 0 -Exactly -Because "current signatures need no refresh"
             Should -Invoke Set-NetFirewallProfile -Exactly 0 -Scope It
             Should -Invoke Set-MpPreference -Exactly 0 -Scope It
             Should -Invoke Set-ItemProperty -Exactly 0 -Scope It
@@ -100,7 +103,9 @@ Describe "Invoke-RemediationCheckSecurityBaseline" {
                     [pscustomobject]@{ Name = 'Public'; Enabled = $false }
                 )
             }
-            Mock Get-MpComputerStatus { [pscustomobject]@{ RealTimeProtectionEnabled = $false } }
+            Mock Get-MpComputerStatus {
+                [pscustomobject]@{ RealTimeProtectionEnabled = $false; AntivirusSignatureAge = 5 }
+            }
             Mock Get-ItemProperty { [pscustomobject]@{ EnableLUA = 0 } }
             Mock Set-NetFirewallProfile { }
             Mock Set-MpPreference { }

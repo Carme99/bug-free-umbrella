@@ -419,7 +419,7 @@ These scripts can be deployed via Intune Proactive Remediations:
 3. **Schedule**: Weekly or monthly for compliance monitoring
 4. **Reporting**: Centralized compliance status in Intune portal
 
-See the [Proactive Remediations guide](../device-management/proactive-remediations/README.md) for deployment details.
+See the [Proactive Remediations guide](../../../endpoints/devices/proactive-remediations/README.md) for deployment details.
 
 ## Best Practices
 
@@ -450,4 +450,4 @@ For issues or questions:
 
 ## License
 
-Licensed under the Apache License 2.0. See [LICENSE](../../LICENSE) for details.
+Licensed under the Apache License 2.0. See [LICENSE](../../../../LICENSE) for details.

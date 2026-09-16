@@ -27,14 +27,14 @@
     File Name   : Test-SecurityFeatures.ps1
     Author      : Security & Compliance Team
     Prerequisite: PowerShell 5.1+
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 
     Compatible: Windows 10/11, Server 2016+
     Best results on UEFI systems with TPM 2.0
 #>
 
-# Write-Host is intentional: RELAUNCH-SPEC section 3 mandates prefixed colored console output.
+# Write-Host is intentional: STANDARDS section 3 mandates prefixed colored console output.
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter()]
@@ -447,7 +447,10 @@ function Main {
         # Export reports if requested
         if ($ExportReport) {
             if ($PSCmdlet.ShouldProcess("MyDocuments\Reports", "Write security features CSV and HTML reports")) {
-                $ReportPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
+                $ReportPath = (Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                        elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                        elseif ($env:HOME) { $env:HOME }
+                        else { [IO.Path]::GetTempPath() })) 'Reports')
                 # Reject '..' traversal and UNC remote paths before resolution
                 if ([string]::IsNullOrWhiteSpace($ReportPath) -or
                     $ReportPath -match '(^|[\\/])\.\.([\\/]|$)' -or

@@ -56,8 +56,8 @@
     File Name     : Manage-FirewallRules.ps1
     Author        : Bug-Free Umbrella
     Prerequisite  : PowerShell 5.1+
-    Version       : 1.0.0
-    Date          : 2026-08-23
+    Version       : 2.0.0
+    Date          : 2026-09-16
 
     Requires elevation (Administrator).
     Compatible with Windows Server 2016, 2019, 2022, and Windows 10/11.
@@ -103,7 +103,7 @@ param(
 
 # PSSA warning justifications (all remaining diagnostics are reviewed and intentional):
 # - PSAvoidUsingWriteHost: operator-facing console UI with [+] [!] [-] [*] prefixes is the
-#   mandated reporting channel (RELAUNCH-SPEC §1/§3); output is not consumed downstream.
+#   mandated reporting channel (STANDARDS §1/§3); output is not consumed downstream.
 # - PSReviewUnusedParameter: script-level parameters are read inside Main/helpers via
 #   PowerShell dynamic scoping; PSSA cannot trace those references.
 # - PSUseSingularNouns: plural nouns describe report collections and are kept for clarity.
@@ -126,7 +126,10 @@ function Test-ReportDirectory {
     [CmdletBinding()]
     param()
 
-    $myDocs = [Environment]::GetFolderPath('MyDocuments')
+    $myDocs = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+            elseif ($env:USERPROFILE) { $env:USERPROFILE }
+            elseif ($env:HOME) { $env:HOME }
+            else { [IO.Path]::GetTempPath() })
     if ([string]::IsNullOrWhiteSpace($myDocs)) {
         $myDocs = [Environment]::GetFolderPath('UserProfile')
     }

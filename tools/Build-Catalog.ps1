@@ -156,13 +156,44 @@ function Get-TagsFromSynopsis {
 }
 
 # -------------------------------------------------------------------------
+# Catalog scope
+# -------------------------------------------------------------------------
+#
+# The trees below are deliberately kept out of the generated catalog, and hence
+# out of the generated module and docs/Module.md. Every file in them is a
+# deprecated forwarding shim to the canonical implementation under
+# scripts/endpoints/remediation/, so cataloging them would create a second,
+# drifting source of truth for the same operation.
+#
+# They are NOT excluded from CI (analyzer, syntax and test-mirror gates all scan
+# them) and they are NOT removed from the on-disk count: metadata.json reports
+# `totalScripts` (cataloged), `excludedScripts` and `onDiskScripts` so every
+# consumer can state both numbers from one source.
+$script:ExcludedTrees = @(
+    'scripts/endpoints/devices/winget'
+    'scripts/endpoints/devices/proactive-remediations'
+)
+
+function Test-ScriptExcluded {
+    param([string]$FullName)
+
+    $relative = [System.IO.Path]::GetRelativePath($script:RepoRoot, $FullName) -replace '\\', '/'
+    foreach ($tree in $script:ExcludedTrees) {
+        if ($relative.StartsWith("$tree/", [System.StringComparison]::Ordinal)) { return $true }
+    }
+    return $false
+}
+
+# -------------------------------------------------------------------------
 # Scan
 # -------------------------------------------------------------------------
 
-$psFiles = Get-ChildItem -Path $scriptsRoot -Filter '*.ps1' -Recurse -File |
-    Where-Object { $_.FullName -notmatch '/devices/(winget|proactive-remediations)/' } |
-    Where-Object { $_.Name -notlike '*.Tests.ps1' } |
-    Sort-Object FullName
+$onDiskFiles = @(Get-ChildItem -Path $scriptsRoot -Filter '*.ps1' -Recurse -File |
+    Where-Object { $_.Name -notlike '*.Tests.ps1' })
+$excludedFiles = @($onDiskFiles | Where-Object { Test-ScriptExcluded $_.FullName })
+$psFiles = @($onDiskFiles |
+    Where-Object { -not (Test-ScriptExcluded $_.FullName) } |
+    Sort-Object FullName)
 
 $entries = [System.Collections.Generic.List[object]]::new()
 $withoutSynopsis = 0
@@ -318,11 +349,15 @@ foreach ($file in $psFiles) {
 $sortedEntries = $entries | Sort-Object { $_['path'] }
 
 $catalog = [ordered]@{
-    '$schema'     = 'https://raw.githubusercontent.com/Carme99/bug-free-umbrella/main/scripts/.catalog/metadata.schema.json'
-    version       = '1.0.0'
-    generated     = (Get-Date).ToString('o')
-    totalScripts  = $sortedEntries.Count
-    scripts       = @($sortedEntries)
+    '$schema'          = 'https://raw.githubusercontent.com/Carme99/bug-free-umbrella/main/scripts/.catalog/metadata.schema.json'
+    version            = '2.0.0'
+    generated          = (Get-Date).ToString('o')
+    totalScripts       = $sortedEntries.Count
+    excludedScripts    = $excludedFiles.Count
+    onDiskScripts      = $sortedEntries.Count + $excludedFiles.Count
+    excludedPaths      = @($script:ExcludedTrees)
+    countingConvention = 'onDiskScripts = totalScripts + excludedScripts; the excluded trees are deprecated forwarding shims to scripts/endpoints/remediation'
+    scripts            = @($sortedEntries)
 }
 
 $json = ($catalog | ConvertTo-Json -Depth 6) -replace "`r`n", "`n"
@@ -349,7 +384,9 @@ if ($Validate) {
     }
 
     $stale = $false
-    if ($existingObj.totalScripts -ne $freshObj.totalScripts) {
+    if ($existingObj.totalScripts -ne $freshObj.totalScripts -or
+        $existingObj.excludedScripts -ne $freshObj.excludedScripts -or
+        $existingObj.onDiskScripts -ne $freshObj.onDiskScripts) {
         $stale = $true
     } else {
         $existingJson = ($existingObj.scripts | ConvertTo-Json -Depth 6 -Compress)
@@ -384,7 +421,9 @@ if (-not (Test-Path -LiteralPath $outDir)) {
 [System.IO.File]::WriteAllText($OutputPath, $json + "`n", [System.Text.UTF8Encoding]::new($false))
 
 Write-Host "[+] Catalog generated: $OutputPath" -ForegroundColor Green
-Write-Host ("    totalScripts={0}  withoutSynopsis={1}" -f $sortedEntries.Count, $withoutSynopsis) -ForegroundColor Cyan
+Write-Host ("    totalScripts={0}  excludedScripts={1}  onDiskScripts={2}  withoutSynopsis={3}" -f `
+        $sortedEntries.Count, $excludedFiles.Count,
+        ($sortedEntries.Count + $excludedFiles.Count), $withoutSynopsis) -ForegroundColor Cyan
 if ($withoutSynopsis -gt 0) {
     $pct = [math]::Round((($sortedEntries.Count - $withoutSynopsis) / $sortedEntries.Count) * 100, 1)
     Write-Host ("    synopsis coverage: {0}% ({1}/{2})" -f $pct, ($sortedEntries.Count - $withoutSynopsis), $sortedEntries.Count) -ForegroundColor Cyan

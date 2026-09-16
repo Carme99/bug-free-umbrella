@@ -200,32 +200,6 @@ foreach ($item in $catalog.scripts) {
         })
 }
 
-# Pad to 358 if catalog is short (handles filter edge during reorg)
-if ($entries.Count -lt 358) {
-    $existingLinks = @($entries | ForEach-Object { $_.Link })
-    $existingRel = @($existingLinks | ForEach-Object { $_ -replace '^\.\./scripts/', '' })
-    $scriptsRootForPad = Join-Path $script:RepoRoot 'scripts'
-    $extraFiles = Get-ChildItem -Path $scriptsRootForPad -Filter '*.ps1' -Recurse -File | Sort-Object FullName
-    foreach ($ef in $extraFiles) {
-        $rel = $ef.FullName.Substring($scriptsRootForPad.Length + 1) -replace '\\', '/'
-        if ($rel -notin $existingRel) {
-            $padName = [System.IO.Path]::GetFileNameWithoutExtension($rel)
-            $padDir = Split-Path -Parent $rel
-            $padCat = if ([string]::IsNullOrWhiteSpace($padDir)) { 'utilities' } else { $padDir -replace '\\', '/' }
-            $padTop = ($padCat -split '/')[0]
-            if ([string]::IsNullOrWhiteSpace($padTop)) { $padTop = 'utilities'; $padCat = 'utilities' }
-            $entries.Add([PSCustomObject]@{
-                    Name = $padName
-                    Category = $padCat
-                    Synopsis = Get-TruncatedSynopsis -Text '' -MaxLength 120
-                    Link = "../scripts/$rel"
-                    TopDomain = $padTop.ToLowerInvariant()
-                })
-            if ($entries.Count -ge 358) { break }
-        }
-    }
-}
-
 $grouped = $entries | Group-Object -Property TopDomain | Sort-Object Name
 $sortedGroups = $grouped | Sort-Object Name
 
@@ -238,7 +212,7 @@ $sb = [System.Text.StringBuilder]::new()
 [void]$sb.AppendLine('')
 [void]$sb.AppendLine('# 📦 BugFreeUmbrella Module')
 [void]$sb.AppendLine('')
-[void]$sb.AppendLine('> Installable PowerShell module — 358 functions across 8 domains. Auto-generated from')
+[void]$sb.AppendLine("> Installable PowerShell module — $($entries.Count) catalogued scripts across 8 domains. Auto-generated from")
 [void]$sb.AppendLine('> `src/BugFreeUmbrella/BugFreeUmbrella.psd1` + `scripts/.catalog/metadata.json`.')
 [void]$sb.AppendLine('> Do not edit by hand — run `pwsh -File tools/Build-Docs.ps1`.')
 [void]$sb.AppendLine('')
@@ -253,7 +227,7 @@ $badgeVersionEncoded = $badgeVersion -replace '\+', '%2B'
 [void]$sb.AppendLine('```powershell')
 [void]$sb.AppendLine('Install-Module BugFreeUmbrella -Scope CurrentUser')
 [void]$sb.AppendLine('Import-Module  BugFreeUmbrella')
-[void]$sb.AppendLine('Get-Command -Module BugFreeUmbrella | Measure-Object  # → 358')
+[void]$sb.AppendLine("Get-Command -Module BugFreeUmbrella | Measure-Object  # → $($entries.Count + 3)")
 [void]$sb.AppendLine('```')
 [void]$sb.AppendLine('')
 [void]$sb.AppendLine('## Quick Usage')
@@ -296,7 +270,7 @@ $badgeVersionEncoded = $badgeVersion -replace '\+', '%2B'
 [void]$sb.AppendLine('```mermaid')
 [void]$sb.AppendLine('flowchart LR')
 [void]$sb.AppendLine('    User --> MOD[Module]')
-[void]$sb.AppendLine('    MOD --> SCRIPTS[scripts/ — 358 scripts · 8 domains]')
+[void]$sb.AppendLine("    MOD --> SCRIPTS[scripts/ — $($catalog.totalScripts) catalogued · $($catalog.onDiskScripts) on disk · 8 domains]")
 [void]$sb.AppendLine('    SCRIPTS --> CAT[.catalog/metadata.json]')
 [void]$sb.AppendLine('```')
 [void]$sb.AppendLine('')
@@ -304,7 +278,7 @@ $badgeVersionEncoded = $badgeVersion -replace '\+', '%2B'
 [void]$sb.AppendLine('')
 [void]$sb.AppendLine('## Function Reference')
 [void]$sb.AppendLine('')
-[void]$sb.AppendLine('> 358 functions grouped by top-level domain. Synopsis truncated to 120 characters.')
+[void]$sb.AppendLine("> $($entries.Count) catalogued scripts grouped by top-level domain. Synopsis truncated to 120 characters.")
 [void]$sb.AppendLine('')
 
 foreach ($grp in $sortedGroups) {
@@ -330,7 +304,10 @@ foreach ($grp in $sortedGroups) {
 
 # Reproducible footer: derive from catalog mtime, not wall clock, so -Validate compares equal across runs.
 $catalogFile = Join-Path $RepoRoot 'scripts' '.catalog' 'metadata.json'
-$stamp = if (Test-Path -LiteralPath $catalogFile) { (Get-Item -LiteralPath $catalogFile).LastWriteTimeUtc.ToString('yyyy-MM-ddTHH:mm:ssZ') } else { 'unknown' }
+# The stamp must be deterministic: it is derived from the committed catalog's own
+# `generated` field, never from the file's mtime. Git does not preserve mtimes, so a
+# fresh CI checkout would render a different stamp and the -Validate gate could never pass.
+$stamp = if ($catalog.generated) { ([datetime]$catalog.generated).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ') } else { 'unknown' }
 [void]$sb.AppendLine("*Generated from scripts/.catalog/metadata.json ($stamp) — do not edit. Run ``pwsh -File tools/Build-Docs.ps1`` to regenerate.*")
 
 $rendered = $sb.ToString()
@@ -360,7 +337,7 @@ if ($Validate) {
         }
         $crlf = $rendered -replace "`n", "`r`n"
         [System.IO.File]::WriteAllText($OutputPath, $crlf, [System.Text.UTF8Encoding]::new($true))
-        Write-Host "[+] Module.md generated: $OutputPath (358 entries, 8 domains)" -ForegroundColor Green
+        Write-Host "[+] Module.md generated: $OutputPath ($($entries.Count) entries across 8 domains; catalog totalScripts=$($catalog.totalScripts))" -ForegroundColor Green
     }
 }
 
@@ -370,8 +347,8 @@ if ($Validate) {
 
 if (-not $Validate -and (Test-Path -LiteralPath $OutputPath)) {
     $checkContent = Get-Content -Raw -LiteralPath $OutputPath
-    if ($checkContent -notmatch '358') {
-        Write-Warning 'Self-check: generated file does not contain 358'
+    if ($checkContent -notmatch [regex]::Escape("$($entries.Count) catalogued scripts")) {
+        Write-Warning "Self-check: generated file does not state the catalogued-script total ($($entries.Count))"
     }
     if ($checkContent -notmatch 'flowchart LR') {
         Write-Warning 'Self-check: generated file does not contain flowchart LR'

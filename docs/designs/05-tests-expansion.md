@@ -409,7 +409,7 @@ Describe "Umbrella CLI" -Tag 'CLI' {
             @($a | Where-Object { $_.path -match 'intune' -or $_.synopsis -match 'intune' -or $_.category -match 'intune' }).Count | Should -Be @($a).Count
         }
 
-        It "Get-BUScript without filters returns all 358 scripts" {
+        It "Get-BUScript without filters returns all 384 exported commands" {
             $all = Get-BUScript
             @($all).Count | Should -Be 358
         }

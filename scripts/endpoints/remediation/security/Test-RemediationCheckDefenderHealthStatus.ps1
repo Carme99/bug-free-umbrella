@@ -23,8 +23,8 @@
     File Name: Test-RemediationCheckDefenderHealthStatus.ps1
     Author: Intune Admin
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 #>
 
 [CmdletBinding()]
@@ -39,7 +39,13 @@ function Main {
 
         # Check if Defender service is running
         $defenderService = Get-Service -Name "WinDefend" -ErrorAction SilentlyContinue
-        if ($defenderService.Status -ne "Running") {
+        if ($null -eq $defenderService) {
+            # A failed read is not drift. Without this guard $null.Status -ne "Running" is
+            # $true, so a device with no WinDefend service reported non-compliant forever and
+            # the paired remediation looped without converging.
+            Write-Host "[!] Could not query the Windows Defender service (WinDefend)" -ForegroundColor Yellow
+        }
+        elseif ($defenderService.Status -ne "Running") {
             $issues += "Windows Defender service is not running"
         }
 

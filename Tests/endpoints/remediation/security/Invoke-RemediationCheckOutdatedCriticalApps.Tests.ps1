@@ -16,11 +16,11 @@ Describe "Invoke-RemediationCheckOutdatedCriticalApps" {
     }
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $raw | Should -Match 'File Name:\s*Invoke-RemediationCheckOutdatedCriticalApps\.ps1'
-            $raw | Should -Match 'Version:\s*1\.0\.0'
-            $raw | Should -Match 'Date:\s*2026-08-23'
+            $raw | Should -Match 'Version:\s*2\.0\.0'
+            $raw | Should -Match 'Date:\s*2026-09-16'
             $raw | Should -Match 'Author:'
             $raw | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
         }
@@ -145,13 +145,17 @@ Describe "Invoke-RemediationCheckOutdatedCriticalApps" {
             Should -Invoke Start-Sleep -Exactly 2 -Scope It
         }
 
-        It "Returns 0 when the winget inventory fails (no outdated apps to act on)" {
+        It "Returns 1 and reports the failure when the winget inventory cannot be read" {
+            # A detection failure must never be reported as "nothing to update": that is the
+            # fail-open mode in which security patching stops fleet-wide with a green exit code.
             Mock Invoke-Winget {
                 [PSCustomObject]@{ Output = @('winget: command not found'); ExitCode = 9009 }
             }
             $out = Main *>&1
-            ($out | Out-String) | Should -Match 'No outdated applications found'
-            $out | Where-Object { $_ -is [int] } | Should -Be 0
+            $text = $out | Out-String
+            $text | Should -Match 'could not be completed'
+            $text | Should -Not -Match 'No outdated applications found'
+            $out | Where-Object { $_ -is [int] } | Should -Be 1
         }
     }
 }

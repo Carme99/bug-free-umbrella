@@ -49,8 +49,8 @@
     File Name     : Test-ServerConnectivity.ps1
     Author        : Bug-Free Umbrella
     Prerequisite  : PowerShell 5.1+
-    Version       : 1.0.0
-    Date          : 2026-08-23
+    Version       : 2.0.0
+    Date          : 2026-09-16
 
     Requires network access to target systems. Compatible with Windows Server 2016, 2019,
     and 2022. Some tests may require firewall rules on the target systems.
@@ -494,7 +494,10 @@ function Main {
             throw "Parameter -ComputerName is required"
         }
 
-        $myDocs = [Environment]::GetFolderPath('MyDocuments')
+        $myDocs = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })
         if ([string]::IsNullOrWhiteSpace($myDocs)) {
             # Profile-less contexts (CI runners, SYSTEM services): MyDocuments resolves empty;
             # fall back so report writing degrades gracefully instead of crashing.

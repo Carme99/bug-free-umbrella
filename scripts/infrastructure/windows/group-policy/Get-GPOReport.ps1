@@ -36,8 +36,8 @@
     File Name: Get-GPOReport.ps1
     Author: Server Management Team
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 #>
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Justification='Spec 3 requirement')]
@@ -46,7 +46,10 @@
 param(
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'),
+    [string]$OutputPath = (Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+            elseif ($env:USERPROFILE) { $env:USERPROFILE }
+            elseif ($env:HOME) { $env:HOME }
+            else { [IO.Path]::GetTempPath() })) 'Reports'),
 
     [Parameter(Mandatory = $false)]
     [ValidateSet('HTML', 'XML', 'Both')]

@@ -33,8 +33,8 @@
     File Name  : Get-UserMailRules.ps1
     Author     : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 
     Requires: ExchangeOnlineManagement module
     Permissions: Exchange Administrator or Global Reader
@@ -55,7 +55,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 # ScriptAnalyzer note: PSAvoidUsingWriteHost is accepted by design - the Bug-Free Umbrella output
-# standard (RELAUNCH-SPEC section 3 / AGENTS.md) mandates Write-Host with prefix/color output.
+# standard (STANDARDS section 3 / AGENTS.md) mandates Write-Host with prefix/color output.
 # PSReviewUnusedParameter findings are false positives: parameters are read inside Main via the
 # script scope. PSUseSingularNouns findings reflect legacy function nouns retained for conformance.
 
@@ -319,7 +319,10 @@ function Main {
 
             # Use safe filename
             $safeEmailFile = Get-SafeFileName $UserEmail
-            $reportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+            $reportDir = Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                    elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                    elseif ($env:HOME) { $env:HOME }
+                    else { [IO.Path]::GetTempPath() })) 'Reports'
             if (-not (Test-Path -LiteralPath $reportDir -PathType Container)) {
                 New-Item -ItemType Directory -Path $reportDir -Force -ErrorAction Stop | Out-Null
             }

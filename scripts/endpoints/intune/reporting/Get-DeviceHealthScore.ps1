@@ -21,7 +21,8 @@
     Output format: HTML or CSV (default: HTML)
 
 .PARAMETER MinHealthScore
-    Filter devices below this health score (0-100, default: 0 = show all)
+    Minimum health score percentage (0-100) a device must reach to be included
+    in the report (default: 0 = show all devices)
 
 .EXAMPLE
     PS C:\> .\Get-DeviceHealthScore.ps1 -MinHealthScore 75
@@ -35,20 +36,22 @@
     File Name: Get-DeviceHealthScore.ps1
     Author: Intune Admin
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 
     Requires: Microsoft.Graph (PowerShell SDK) module
     Permissions: DeviceManagementManagedDevices.Read.All
 
-    Health Score Calculation:
+    Health Score Calculation (maximum 90 points):
     - Compliance Status: 25 points
     - BitLocker Encryption: 20 points
-    - Windows Update Current: 20 points
-    - Recent Check-in (7 days): 15 points
-    - No Critical Alerts: 10 points
-    - Defender Status: 10 points
-    Total: 100 points
+    - Windows Update Current: 15 points
+    - Recent Check-in (7 days): 15 points, or 10 points when the last check-in
+      was 8-14 days ago
+    - Device Health Attestation Supported: 5 points
+    - Defender Status (compliant device): 5 points
+    - Management State (managed): 5 points
+    Total: 90 points
 #>
 
 [CmdletBinding()]
@@ -74,7 +77,7 @@ function Measure-DeviceHealthScore {
     param($device)
 
     $score = 0
-    $maxScore = 100
+    $maxScore = 90
     $issues = @()
 
     # Compliance Status (25 points)
@@ -93,7 +96,7 @@ function Measure-DeviceHealthScore {
         $issues += "Not encrypted"
     }
 
-    # Windows Update Current (20 points)
+    # Windows Update Current (15 points)
     # Device should have checked in recently and have no pending critical updates
     if ($device.osVersion) {
         # Simplified check - in production, you'd compare against known current versions
@@ -117,14 +120,14 @@ function Measure-DeviceHealthScore {
         }
     }
 
-    # Device Health Attestation (10 points)
+    # Device Health Attestation (5 points)
     if ($device.deviceHealthAttestationState) {
         if ($device.deviceHealthAttestationState.healthAttestationSupportedStatus -eq "Supported") {
             $score += 5
         }
     }
 
-    # Defender Status (10 points)
+    # Defender Status (5 points)
     # This would require additional API call to get Defender status
     # For now, we'll add partial points if device is compliant
     if ($device.complianceState -eq "compliant") {

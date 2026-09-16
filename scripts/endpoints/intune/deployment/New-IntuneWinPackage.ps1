@@ -35,8 +35,8 @@
     File Name   : New-IntuneWinPackage.ps1
     Author      : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 
     Requires IntuneWinAppUtil.exe (Microsoft Win32 Content Prep Tool)
     Download from: https://github.com/Microsoft/Microsoft-Win32-Content-Prep-Tool
@@ -338,7 +338,10 @@ function Main {
 
         # Set output folder
         if (-not $OutputFolder) {
-            $reportsRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+            $reportsRoot = Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                    elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                    elseif ($env:HOME) { $env:HOME }
+                    else { [IO.Path]::GetTempPath() })) 'Reports'
             $OutputFolder = Join-Path $reportsRoot 'IntuneWinPackages'
         }
 

@@ -45,8 +45,8 @@ Describe "Export-IntuneConfiguration.ps1" {
             $rawText | Should -Match 'File Name:\s*Export-IntuneConfiguration\.ps1'
             $rawText | Should -Match 'Author:\s*\S+'
             $rawText | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
-            $rawText | Should -Match 'Version:\s*1\.0\.0'
-            $rawText | Should -Match 'Date:\s*2026-08-23'
+            $rawText | Should -Match 'Version:\s*2\.0\.0'
+            $rawText | Should -Match 'Date:\s*2026-09-16'
         }
 
         It "Has one .PARAMETER entry per declared parameter" {

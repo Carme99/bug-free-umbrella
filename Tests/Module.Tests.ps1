@@ -6,7 +6,9 @@
 
 .DESCRIPTION
     Exercises src/BugFreeUmbrella/BugFreeUmbrella.psd1 + .psm1 as an installable PSGallery module:
-    import, manifest ModuleVersion parity with CHANGELOG.md, exported command count 358, loader hygiene, and PSScriptAnalyzer clean.
+    import, manifest ModuleVersion parity with CHANGELOG.md, exported command parity with the generated
+    wrappers (wrapper count derived from the psm1 at runtime — never a hardcoded count), loader
+    hygiene, and PSScriptAnalyzer clean.
     Designed to run on Ubuntu (CI) without Windows-only modules — Windows-specific imports are mocked.
 
 .NOTES
@@ -114,14 +116,28 @@ Describe "BugFreeUmbrella Module" -Tag 'Module' {
             @($hits).Count | Should -Be 0 -Because "psm1 must not contain plaintext password/apikey assignments (found: $(@($hits).Line -join '; '))"
         }
 
-        It "should export 358 functions" {
+        It "exports the generated wrapper count plus the 3 helpers, each backed by a real script" {
             if (-not (Get-Module BugFreeUmbrella)) {
                 Import-Module $script:ManifestPath -Force -ErrorAction Stop
             }
-            $catalog = Get-Content -LiteralPath $script:CatalogPath -Raw | ConvertFrom-Json
-            $expected = $catalog.totalScripts
-            $exported = (Get-Command -Module BugFreeUmbrella).Count
-            $exported | Should -BeGreaterOrEqual $expected -Because "Get-Command count $exported should be at least catalog totalScripts $expected — re-run tools/Build-Catalog.ps1 or adjust export surface."
+            $loader = Get-Content -LiteralPath $script:LoaderPath -Raw
+            $wrapperTargets = @(
+                [regex]::Matches($loader, "Join-Path \`$script:ScriptsRoot '([^']+)'") |
+                    ForEach-Object { $_.Groups[1].Value }
+            )
+            $wrapperTargets.Count | Should -BeGreaterThan 0 -Because "the generated psm1 should contain at least one wrapper"
+
+            $dangling = @($wrapperTargets | Where-Object {
+                    -not (Test-Path -LiteralPath (Join-Path $script:RepoRoot (Join-Path 'scripts' $_)))
+                })
+            $dangling | Should -BeNullOrEmpty -Because "every generated wrapper must point at a real script under scripts/ (dangling: $($dangling -join ', '))"
+
+            $helpers = @('Get-BUScript', 'Invoke-BUScript', 'Register-BUCompleter')
+            $exported = @(Get-Command -Module BugFreeUmbrella)
+            foreach ($helper in $helpers) {
+                @($exported.Name) | Should -Contain $helper -Because "$helper is one of the 3 module helpers in the declared export surface"
+            }
+            $exported.Count | Should -Be ($wrapperTargets.Count + $helpers.Count) -Because "exported commands ($($exported.Count)) must equal generated wrappers ($($wrapperTargets.Count)) plus the $($helpers.Count) helpers"
         }
     }
 

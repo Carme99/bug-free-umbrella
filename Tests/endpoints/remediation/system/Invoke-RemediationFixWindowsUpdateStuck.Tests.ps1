@@ -10,8 +10,20 @@ Describe 'Invoke-RemediationFixWindowsUpdateStuck' {
         # Safe: the script's top-level guard skips Main when dot-sourced (spec §3).
         . $scriptPath
 
-        # No Windows-only cmdlets are used: Get-Service / Stop-Service / Rename-Item /
-        # Start-Service all exist on Linux pwsh and are mocked per test.
+        # Stop-Service and Start-Service do NOT exist on Linux pwsh (only the cross-platform
+        # cmdlets Get-Service/Rename-Item/Remove-Item/Test-Path resolve there), so they must be
+        # declared as stub functions before Pester can Mock them. Declaring them here also makes
+        # this suite self-sufficient: it previously passed only because a sibling suite leaked a
+        # global stub for them.
+        function Stop-Service {
+            [CmdletBinding()]
+            param([string[]]$Name, [switch]$Force, [switch]$PassThru)
+        }
+        function Start-Service {
+            [CmdletBinding()]
+            param([string[]]$Name, [switch]$PassThru)
+        }
+
         # Cache paths resolve under %SystemRoot%; Linux CI has no such variable.
         $env:SystemRoot = "$TestDrive/Windows"
 
@@ -22,8 +34,8 @@ Describe 'Invoke-RemediationFixWindowsUpdateStuck' {
             $scriptText | Should -Match 'File Name\s*:\s*Invoke-RemediationFixWindowsUpdateStuck\.ps1'
             $scriptText | Should -Match 'Author\s*:'
             $scriptText | Should -Match 'Prerequisite\s*:\s*PowerShell 7\.0'
-            $scriptText | Should -Match 'Version\s*:\s*1\.0\.0'
-            $scriptText | Should -Match 'Date\s*:\s*2026-08-23'
+            $scriptText | Should -Match 'Version\s*:\s*2\.0\.0'
+            $scriptText | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It 'Has comment-based help with SYNOPSIS, DESCRIPTION and >=2 EXAMPLES' {
@@ -162,7 +174,7 @@ Describe 'Invoke-RemediationFixWindowsUpdateStuck' {
             )) {
             $existing = Get-Command $cmd -ErrorAction SilentlyContinue
             if ($existing -and $existing.CommandType -eq 'Function') {
-                Remove-Item -LiteralPath "Function:global:$cmd" -Force
+                Remove-Item -LiteralPath "Function:$cmd" -Force
             }
         }
         Set-Location $PSScriptRoot

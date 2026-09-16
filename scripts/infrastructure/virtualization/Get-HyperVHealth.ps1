@@ -38,12 +38,12 @@
     File Name    : Get-HyperVHealth.ps1
     Author       : Bug-Free Umbrella
     Prerequisite : PowerShell 5.1+, Hyper-V PowerShell module, Administrator privileges; Windows Server 2016/2019/2022
-    Version      : 1.0.0
-    Date         : 2026-08-23
+    Version      : 2.0.0
+    Date         : 2026-09-16
 #>
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
-    Justification = 'RELAUNCH-SPEC requires colored console output via Write-Host with [+]/[!]/[-]/[*] prefixes.')]
+    Justification = 'STANDARDS requires colored console output via Write-Host with [+]/[!]/[-]/[*] prefixes.')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '',
     Justification = 'Script parameters are consumed inside function Main through dynamic scoping.')]
 [CmdletBinding()]
@@ -71,7 +71,10 @@ function Main {
         $script:Timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
 
         # Resolve report output directory (default: MyDocuments\Reports) and validate against traversal/UNC paths
-        $documentsFolder = [Environment]::GetFolderPath('MyDocuments')
+        $documentsFolder = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })
         $baseDir = if ($documentsFolder) { $documentsFolder } else { (Get-Location).Path }
         $reportDir = Join-Path $baseDir 'Reports'
         if ([string]::IsNullOrWhiteSpace($reportDir) -or

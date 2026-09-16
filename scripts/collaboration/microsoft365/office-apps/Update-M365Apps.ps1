@@ -22,8 +22,8 @@
     File Name  : Update-M365Apps.ps1
     Author     : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 
     Requires: Administrator privileges
     ODT Path: C:\AVD\M365Apps\setup.exe

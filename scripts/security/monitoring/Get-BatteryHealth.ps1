@@ -33,8 +33,8 @@
     File Name   : Get-BatteryHealth.ps1
     Author      : Server Management Team
     Prerequisite: PowerShell 5.1+
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -56,7 +56,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # PSSA note: Write-Host is mandated here for colorized [+]/[!]/[-]/[*] console status prefixes
-# (RELAUNCH-SPEC section 3); PSAvoidUsingWriteHost warnings are accepted by design.
+# (STANDARDS section 3); PSAvoidUsingWriteHost warnings are accepted by design.
 
 function Main {
     [CmdletBinding()]
@@ -72,7 +72,10 @@ function Main {
         if ($AlertThreshold -le 0) { $AlertThreshold = 80 }
         # Resolve default output location first (MyDocuments is unavailable on non-Windows hosts)
         if ([string]::IsNullOrWhiteSpace($OutputPath)) {
-            $documentsDir = [Environment]::GetFolderPath('MyDocuments')
+            $documentsDir = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                    elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                    elseif ($env:HOME) { $env:HOME }
+                    else { [IO.Path]::GetTempPath() })
             if ([string]::IsNullOrWhiteSpace($documentsDir)) {
                 $documentsDir = (Get-Location).Path
             }

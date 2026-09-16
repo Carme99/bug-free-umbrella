@@ -42,8 +42,8 @@
     File Name   : Remove-SysprepBlockers.ps1
     Author      : Sysprep Blocker Removal Tool
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -115,7 +115,10 @@ function Initialize-ScriptState {
     param()
 
     if ([string]::IsNullOrWhiteSpace($LogPath)) {
-        $documentsDir = [Environment]::GetFolderPath('MyDocuments')
+        $documentsDir = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })
         $script:LogPath = Join-Path (Join-Path $documentsDir 'Reports') `
             "SysprepBlockerRemoval_$(Get-Date -Format 'yyyyMMdd_HHmmss').log"
     }
@@ -127,7 +130,10 @@ function Initialize-ScriptState {
     $script:BlockersRemoved = @()
     $script:BlockersFailed = @()
 
-    $reportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+    $reportDir = Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+            elseif ($env:USERPROFILE) { $env:USERPROFILE }
+            elseif ($env:HOME) { $env:HOME }
+            else { [IO.Path]::GetTempPath() })) 'Reports'
     if ([string]::IsNullOrWhiteSpace($reportDir) -or
         $reportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
         $reportDir -match '^(\\\\|//)') {

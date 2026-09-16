@@ -3,8 +3,7 @@
     Detects expired or expiring certificates.
 
 .DESCRIPTION
-    Checks for expired certificates or certificates expiring within 30 days in
-    the Personal (My) certificate store of:
+    Checks for expired certificates in the Personal (My) certificate store of:
       - the local machine (Cert:\LocalMachine\My)
       - the current process user (Cert:\CurrentUser\My - under Intune proactive
         remediations this is the SYSTEM account)
@@ -13,10 +12,16 @@
         My\Certificates registry entries are parsed, so real user certificates
         are examined even though the script runs as SYSTEM.
 
+    Certificates that are merely expiring within the warning window are reported
+    as an informational warning and do NOT affect the exit code: the companion
+    remediation can only act on certificates that have already expired, so
+    flagging expiring ones would make the pair loop without converging.
+
     Trusted Root stores are intentionally NOT scanned and NOT modified.
-    Exit codes: 0 = compliant (no expired or expiring certificates found),
-    1 = non-compliant (expired or expiring certificates found, or an unexpected
-    error occurred). The script is read-only apart from temporarily loading and
+    Exit codes: 0 = compliant (no expired certificates found; expiring
+    certificates are reported but do not fail the check), 1 = non-compliant
+    (expired certificates found, or an unexpected error occurred). The script is
+    read-only apart from temporarily loading and
     unloading user hives under HKU\Temp-<SID>, so re-running it on a converged
     device converges to exit 0 (idempotent).
     Configuration: $daysBeforeExpiry sets the warning threshold in days
@@ -36,8 +41,8 @@
     File Name: Test-RemediationFixCertificateExpiry.ps1
     Author: Intune Admin
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 
     Limitations (SYSTEM context):
       - Certificate registry blobs are CAPI_CERT_BLOB_HEADER records; the record
@@ -210,12 +215,15 @@ function Main {
         }
 
         if ($script:expiringSoon.Count -gt 0) {
-            Write-Host "[!] Certificates expiring within $daysBeforeExpiry days:" -ForegroundColor Yellow
+            # Informational only. The companion remediation can only act on certificates that
+            # have already expired, so reporting an expiring certificate as non-compliant makes
+            # the detect/remediate pair loop forever without ever converging.
+            Write-Host "[!] Certificates expiring within $daysBeforeExpiry days (informational):" `
+                -ForegroundColor Yellow
             foreach ($cert in $script:expiringSoon) {
                 Write-Host "  - $($cert.Subject) (Expires in $($cert.DaysUntilExpiry) days, Store: $($cert.Store))" `
                     -ForegroundColor Yellow
             }
-            $issuesFound = $true
         }
 
         if ($script:skippedProfiles -gt 0) {
@@ -226,7 +234,7 @@ function Main {
             return 1
         }
 
-        Write-Host "[+] No expired or expiring certificates found" -ForegroundColor Green
+        Write-Host "[+] No expired certificates found" -ForegroundColor Green
         return 0
     }
     catch {

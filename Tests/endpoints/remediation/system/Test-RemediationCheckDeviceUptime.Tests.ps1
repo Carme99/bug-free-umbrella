@@ -22,8 +22,8 @@ Describe 'Test-RemediationCheckDeviceUptime' {
             $scriptText | Should -Match 'File Name\s*:\s*Test-RemediationCheckDeviceUptime\.ps1'
             $scriptText | Should -Match 'Author\s*:'
             $scriptText | Should -Match 'Prerequisite\s*:\s*PowerShell 7\.0'
-            $scriptText | Should -Match 'Version\s*:\s*1\.0\.0'
-            $scriptText | Should -Match 'Date\s*:\s*2026-08-23'
+            $scriptText | Should -Match 'Version\s*:\s*2\.0\.0'
+            $scriptText | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It 'Documents its detect exit-code contract in DESCRIPTION' {
@@ -133,7 +133,7 @@ Describe 'Test-RemediationCheckDeviceUptime' {
             )) {
             $existing = Get-Command $cmd -ErrorAction SilentlyContinue
             if ($existing -and $existing.CommandType -eq 'Function') {
-                Remove-Item -LiteralPath "Function:global:$cmd" -Force
+                Remove-Item -LiteralPath "Function:$cmd" -Force
             }
         }
         Set-Location $PSScriptRoot

@@ -20,8 +20,8 @@
     File Name: Test-RemediationFixNetworkAdapterPowerManagement.ps1
     Author: Intune Admin
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 #>
 
 [CmdletBinding()]
@@ -43,7 +43,8 @@ function Main {
 
         foreach ($adapter in $adapters) {
             # Tolerated read: a missing MSPower_DeviceEnable instance is not an issue.
-            $powerMgmt = Get-WmiObject -Class MSPower_DeviceEnable -Namespace root\wmi -ErrorAction SilentlyContinue |
+            $powerMgmt = Get-CimInstance -ClassName MSPower_DeviceEnable -Namespace root\wmi `
+                -ErrorAction SilentlyContinue |
                 Where-Object { $_.InstanceName -like "*$($adapter.InterfaceGuid)*" }
 
             if ($powerMgmt -and $powerMgmt.Enable -eq $true) {

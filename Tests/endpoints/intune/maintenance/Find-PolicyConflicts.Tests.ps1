@@ -10,11 +10,29 @@ Describe "Find-PolicyConflicts" {
         $bytes = [System.IO.File]::ReadAllBytes($scriptPath)
         $parseErrors = $null
 
-        function Connect-IntuneGraph { param([string[]]$Scopes) $true }
-        function Disconnect-IntuneGraph { }
-        function Export-IntuneReportToHTML { param($Data, $Title, $FilePath) }
-        function Export-IntuneReportToCSV { param($Data, $Title, $FilePath) }
-        function Invoke-MgGraphRequest { param([string]$Uri) }
+        # Stubs for the helper module's advanced functions. Declared [CmdletBinding()] and with the
+        # module's real parameter sets (IntuneGraphHelper.psm1) so a parameter the real function
+        # does not have fails the test instead of being silently accepted.
+        function Connect-IntuneGraph {
+            [CmdletBinding()]
+            param([string[]]$Scopes, [string]$TenantId)
+        }
+        function Disconnect-IntuneGraph {
+            [CmdletBinding()]
+            param()
+        }
+        function Export-IntuneReportToHTML {
+            [CmdletBinding()]
+            param([object[]]$Data, [string]$Title, [string]$FilePath, [string]$Description)
+        }
+        function Export-IntuneReportToCSV {
+            [CmdletBinding()]
+            param([object[]]$Data, [string]$Title, [string]$FilePath)
+        }
+        function Invoke-MgGraphRequest {
+            [CmdletBinding()]
+            param([string]$Uri, [string]$Method)
+        }
 
         # Safe: the script's top-level guard skips Main when dot-sourced.
         . $scriptPath
@@ -61,8 +79,8 @@ Describe "Find-PolicyConflicts" {
             $rawScript | Should -Match 'File Name:\s*Find-PolicyConflicts\.ps1'
             $rawScript | Should -Match 'Author:\s*\S+'
             $rawScript | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
-            $rawScript | Should -Match 'Version:\s*1\.0\.0'
-            $rawScript | Should -Match 'Date:\s*2026-08-23'
+            $rawScript | Should -Match 'Version:\s*2\.0\.0'
+            $rawScript | Should -Match 'Date:\s*2026-09-16'
         }
 
         It "Has one .PARAMETER entry per declared param, in order" {
@@ -128,6 +146,40 @@ Describe "Find-PolicyConflicts" {
             Should -Invoke Export-IntuneReportToHTML -Exactly 1 -Because "default ExportFormat is HTML"
             Should -Invoke Export-IntuneReportToCSV -Times 0
             Should -Invoke Disconnect-IntuneGraph -Exactly 1
+        }
+
+        It "Reports a same-type overlap exactly once, not once per severity" {
+            Mock Invoke-MgGraphRequest -ParameterFilter { $Uri -like "*deviceConfigurations" } {
+                @{ value = @($configProfileA, $configProfileB) }
+            }
+            Mock Invoke-MgGraphRequest -ParameterFilter { $Uri -like "*deviceConfigurations/*/assignments" } {
+                $assignmentFixture
+            }
+
+            $out = Main *>&1
+
+            ($out | Where-Object { $_ -is [int] }) | Should -Be 0
+            Should -Invoke Export-IntuneReportToHTML -Exactly 1 -ParameterFilter {
+                @($Data).Count -eq 1 -and
+                @($Data | Where-Object { $_.ConflictType -eq 'Same Type Overlap' }).Count -eq 1 -and
+                @($Data | Where-Object { $_.ConflictType -eq 'Overlapping Assignment' }).Count -eq 0
+            } -Because 'one assignment overlap must produce one conflict entry at one severity'
+        }
+
+        It "Keeps the reported totals and severity breakdown consistent with the entry count" {
+            Mock Invoke-MgGraphRequest -ParameterFilter { $Uri -like "*deviceConfigurations" } {
+                @{ value = @($configProfileA, $configProfileB) }
+            }
+            Mock Invoke-MgGraphRequest -ParameterFilter { $Uri -like "*deviceConfigurations/*/assignments" } {
+                $assignmentFixture
+            }
+
+            $text = (Main *>&1) | Out-String
+
+            $text | Should -Match 'Potential Conflicts:\s+1'
+            $text | Should -Match 'High:\s+1'
+            $text | Should -Match 'Medium:\s+0'
+            $text | Should -Match 'Same Type Overlap: 1'
         }
 
         It "Is idempotent on a converged tenant: no conflicts means no report and return 0" {

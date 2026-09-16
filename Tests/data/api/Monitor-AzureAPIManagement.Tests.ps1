@@ -79,8 +79,8 @@ Describe "Monitor-AzureAPIManagement" {
             $raw | Should -Match 'File Name\s*:\s*Monitor-AzureAPIManagement\.ps1'
             $raw | Should -Match 'Author\s*:\s*\S+'
             $raw | Should -Match 'Prerequisite\s*:\s*PowerShell'
-            $raw | Should -Match 'Version\s*:\s*1\.0\.0'
-            $raw | Should -Match 'Date\s*:\s*2026-08-23'
+            $raw | Should -Match 'Version\s*:\s*2\.0\.0'
+            $raw | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It "Documents exactly one .PARAMETER per declared parameter, in declaration order" {

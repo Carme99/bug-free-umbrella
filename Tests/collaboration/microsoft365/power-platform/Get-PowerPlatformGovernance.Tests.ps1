@@ -61,10 +61,10 @@ Describe 'Get-PowerPlatformGovernance' {
     }
 
     Context 'Help & Metadata' {
-        It 'Declares Version 1.0.0 and relaunch Date 2026-08-23 in .NOTES' {
+        It 'Declares Version 2.0.0 and relaunch Date 2026-09-16 in .NOTES' {
             $raw = Get-Content -Path $scriptPath -Raw
-            $raw | Should -Match '(?m)^\s*Version\s*:\s*1\.0\.0\s*$'
-            $raw | Should -Match '(?m)^\s*Date\s*:\s*2026-08-23\s*$'
+            $raw | Should -Match '(?m)^\s*Version\s*:\s*2\.0\.0\s*$'
+            $raw | Should -Match '(?m)^\s*Date\s*:\s*2026-09-16\s*$'
         }
 
         It 'Records File Name matching the disk filename and PowerShell 7.0 prerequisite' {

@@ -14,8 +14,8 @@
     File Name: Test-RemediationFixOutdatedDrivers.ps1
     Author: Intune Admin
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 
 .EXAMPLE
     PS C:\> .\Test-RemediationFixOutdatedDrivers.ps1
@@ -50,9 +50,8 @@ function Main {
         $issues = @()
 
         # Check for devices with driver problems
-        # PSAvoidUsingWMICmdlet justified: Get-WmiObject kept deliberately to preserve this
         # detection's original runtime behavior on Windows PowerShell-based Intune hosts.
-        $problemDevices = Get-WmiObject -Class Win32_PnPEntity -ErrorAction SilentlyContinue |
+        $problemDevices = Get-CimInstance -ClassName Win32_PnPEntity -ErrorAction SilentlyContinue |
             Where-Object { $_.ConfigManagerErrorCode -ne 0 }
 
         if ($problemDevices) {

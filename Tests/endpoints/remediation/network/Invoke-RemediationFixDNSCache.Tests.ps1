@@ -13,12 +13,12 @@ Describe "Invoke-RemediationFixDNSCache" {
     }
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $raw | Should -Match 'File Name:\s*Invoke-RemediationFixDNSCache\.ps1'
             $raw | Should -Match 'Author:'
-            $raw | Should -Match 'Version:\s*1\.0\.0'
-            $raw | Should -Match 'Date:\s*2026-08-23'
+            $raw | Should -Match 'Version:\s*2\.0\.0'
+            $raw | Should -Match 'Date:\s*2026-09-16'
             $raw | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
         }
 
@@ -74,14 +74,23 @@ Describe "Invoke-RemediationFixDNSCache" {
             Mock Restart-Service { }
         }
 
-        It "Flushes the cache and restarts a running Dnscache service, returning 0" {
+        It "Flushes the cache but leaves an already-running Dnscache service alone" {
+            # Dnscache runs on every healthy client, so restarting it on the converged path
+            # bounced the DNS resolver on every remediation cycle.
             Mock Get-Service { [pscustomobject]@{ Name = 'Dnscache'; Status = 'Running' } }
             $out = Main *>&1
-            ($out | Out-String) | Should -Match '\[\+\]'
+            ($out | Out-String) | Should -Match 'Already running'
             $out | Where-Object { $_ -is [int] } | Should -Be 0
             Should -Invoke Clear-DnsClientCache -Times 1 -Exactly
-            Should -Invoke Restart-Service -Times 1 -Exactly
+            Should -Invoke Restart-Service -Times 0 -Exactly -Because "a converged system is left alone"
             Should -Invoke Start-Service -Times 0 -Exactly
+        }
+
+        It "Returns 1 when the Dnscache service cannot be queried" {
+            Mock Get-Service { $null }
+            $out = Main *>&1
+            ($out | Out-String) | Should -Match '\[-\]'
+            $out | Where-Object { $_ -is [int] } | Should -Be 1
         }
 
         It "Starts a stopped Dnscache service instead of restarting it" {

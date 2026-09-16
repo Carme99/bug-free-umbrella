@@ -11,12 +11,32 @@ Describe "Get-DeviceHealthScore" {
         . $scriptPath
 
         # Stub helper-module commands (the module import itself is mocked) so Pester can attach mocks.
-        function Connect-IntuneGraph { param([string]$TenantId, [string[]]$Scopes) }
-        function Disconnect-IntuneGraph { }
-        function Invoke-MgGraphRequest { param([string]$Uri, [string]$Method) }
-        function Get-AllIntuneDevices { }
-        function Export-IntuneReportToHTML { param($Data, [string]$Title, [string]$Description, [string]$FilePath) }
-        function Export-IntuneReportToCSV { param($Data, [string]$Title, [string]$FilePath) }
+        # Each stub is advanced and mirrors the helper's real parameter set, so a parameter the
+        # helper does not declare fails binding instead of being silently swallowed.
+        function Connect-IntuneGraph {
+            [CmdletBinding()]
+            param([string[]]$Scopes, [string]$TenantId)
+        }
+        function Disconnect-IntuneGraph {
+            [CmdletBinding()]
+            param()
+        }
+        function Get-AllIntuneDevices {
+            [CmdletBinding()]
+            param()
+        }
+        function Invoke-MgGraphRequest {
+            [CmdletBinding()]
+            param([string]$Uri, [string]$Method)
+        }
+        function Export-IntuneReportToHTML {
+            [CmdletBinding()]
+            param([object[]]$Data, [string]$Title, [string]$FilePath, [string]$Description)
+        }
+        function Export-IntuneReportToCSV {
+            [CmdletBinding()]
+            param([object[]]$Data, [string]$Title, [string]$FilePath)
+        }
 
         # Mock the helper module import and every Graph entry point so nothing leaves the machine.
         Mock Import-Module { }
@@ -64,8 +84,8 @@ Describe "Get-DeviceHealthScore" {
             $raw | Should -Match 'File Name\s*:\s*Get-DeviceHealthScore\.ps1'
             $raw | Should -Match 'Author\s*:\s*\S+'
             $raw | Should -Match 'Prerequisite\s*:\s*PowerShell'
-            $raw | Should -Match 'Version\s*:\s*1\.0\.0'
-            $raw | Should -Match 'Date\s*:\s*2026-08-23'
+            $raw | Should -Match 'Version\s*:\s*2\.0\.0'
+            $raw | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It "Documents exactly one .PARAMETER per declared parameter, in declaration order" {
@@ -138,7 +158,7 @@ Describe "Get-DeviceHealthScore" {
             $rows[0].DeviceName | Should -Be 'PC-BAD'    # lowest score first
             $rows[0].HealthScore | Should -Be '0'
             $rows[1].DeviceName | Should -Be 'PC-GOOD'
-            $rows[1].HealthScore | Should -Be '85'
+            $rows[1].HealthScore | Should -Be '94.4'
         }
 
         It "Honours -MinHealthScore by excluding low-scoring devices from the report" {
@@ -153,6 +173,35 @@ Describe "Get-DeviceHealthScore" {
             $rows = @((Import-Csv -Path $csvFile.FullName))
             $rows.Count | Should -Be 1
             $rows[0].DeviceName | Should -Be 'PC-GOOD'
+        }
+
+        It "Scores a device meeting every documented component at 100 percent" {
+            $OutputPath = Join-Path $TestDrive ([guid]::NewGuid().Guid)
+            New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+            $Format = 'CSV'
+            $MinHealthScore = 0
+
+            Mock Get-AllIntuneDevices {
+                @([pscustomobject]@{
+                    deviceName = 'PC-PERFECT'; userPrincipalName = 'perfect@contoso.com'
+                    operatingSystem = 'Windows'; osVersion = '10.0.22631'
+                    complianceState = 'compliant'; isEncrypted = $true
+                    lastSyncDateTime = (Get-Date).AddDays(-1).ToString('o')
+                    deviceHealthAttestationState = [pscustomobject]@{
+                        healthAttestationSupportedStatus = 'Supported'
+                    }
+                    serialNumber = 'SN-PERFECT'; model = 'Model Z'
+                    managementState = 'managed'
+                })
+            }
+
+            Main | Should -Be 0
+
+            $csvFile = Get-ChildItem -Path $OutputPath -Filter 'DeviceHealthScore-*.csv' | Select-Object -First 1
+            $rows = @((Import-Csv -Path $csvFile.FullName))
+            $rows.Count | Should -Be 1
+            $rows[0].HealthScore | Should -Be '100'
+            $rows[0].HealthRating | Should -Be 'Excellent'
         }
 
         It "Renders an HTML report through the helper exporter when Format is HTML" {
@@ -186,6 +235,87 @@ Describe "Get-DeviceHealthScore" {
             $out = Main *>&1
             @($out | Where-Object { $_ -is [int] }) | Should -Be 1
             ($out | Out-String) | Should -Match '\[-\]'
+        }
+    }
+
+    Context "Helper module contract" {
+        # This script passes -TenantId to Connect-IntuneGraph and -Description to
+        # Export-IntuneReportToHTML, so the real helper module's signature and behaviour are
+        # asserted here rather than only through the mirrored stubs.
+        BeforeAll {
+            $helperPath = [IO.Path]::GetFullPath(
+                (Join-Path $PSScriptRoot "../../../../scripts/endpoints/intune/IntuneGraphHelper.psm1"))
+
+            # Module-scoped code resolves commands through the global scope, so these global
+            # shadows intercept everything the real helper hands to the Graph SDK.
+            $global:intuneGraphProbe = @{}
+            function global:Connect-MgGraph {
+                [CmdletBinding()]
+                param([string[]]$Scopes, [string]$TenantId, [switch]$NoWelcome)
+                $global:intuneGraphProbe = $PSBoundParameters
+            }
+            function global:Get-MgContext {
+                [CmdletBinding()]
+                param()
+                [pscustomobject]@{ TenantId = 'tenant-1'; Account = 'admin@contoso.com' }
+            }
+            function global:Install-Module {
+                [CmdletBinding()]
+                param([string[]]$Name, [string]$Scope, [switch]$Force)
+            }
+            function global:Import-Module {
+                [CmdletBinding()]
+                param([string[]]$Name, [switch]$Force, [switch]$PassThru)
+            }
+            function global:Start-Process {
+                [CmdletBinding()]
+                param([string]$FilePath)
+            }
+
+            # Pester's Import-Module mock intercepts even module-qualified Import-Module calls, so
+            # the helper is loaded as a dynamic module from its own text. Its exported FunctionInfo
+            # objects invoke in the module's session state and bypass the same-named stubs above.
+            $helperText = Get-Content -LiteralPath $helperPath -Raw
+            $script:helperModule = New-Module -Name IntuneGraphHelperProbe `
+                -ScriptBlock ([scriptblock]::Create($helperText))
+            $script:connectHelper = $script:helperModule.ExportedFunctions['Connect-IntuneGraph']
+            $script:exportHelper = $script:helperModule.ExportedFunctions['Export-IntuneReportToHTML']
+        }
+
+        AfterAll {
+            foreach ($name in 'Connect-MgGraph', 'Get-MgContext', 'Install-Module', 'Import-Module',
+                'Start-Process') {
+                Remove-Item -Path "Function:$name" -ErrorAction SilentlyContinue
+            }
+            Remove-Variable -Name intuneGraphProbe -Scope Global -ErrorAction SilentlyContinue
+        }
+
+        It "Declares the helper parameters this script passes" {
+            @($script:connectHelper.Parameters.Keys) | Should -Contain 'Scopes'
+            @($script:connectHelper.Parameters.Keys) | Should -Contain 'TenantId'
+
+            foreach ($name in 'Data', 'Title', 'FilePath', 'Description') {
+                @($script:exportHelper.Parameters.Keys) | Should -Contain $name
+            }
+        }
+
+        It "Forwards -TenantId to Connect-MgGraph and omits it when the caller supplies none" {
+            & $script:connectHelper -TenantId 'tenant-42' | Should -BeTrue
+            $global:intuneGraphProbe['TenantId'] | Should -Be 'tenant-42'
+            @($global:intuneGraphProbe['Scopes']) | Should -Contain 'DeviceManagementManagedDevices.Read.All'
+
+            & $script:connectHelper | Should -BeTrue
+            $global:intuneGraphProbe.ContainsKey('TenantId') | Should -BeFalse
+        }
+
+        It "Renders -Description into the HTML report header" {
+            $reportFile = Join-Path $TestDrive 'description.html'
+            $null = & $script:exportHelper -Data @([pscustomobject]@{ DeviceName = 'PC-1' }) `
+                -Title 'Probe Report' -Description 'Minimum Score: 75' -FilePath $reportFile
+
+            $html = Get-Content -LiteralPath $reportFile -Raw
+            $html | Should -Match 'Minimum Score: 75'
+            $html | Should -Match 'Probe Report'
         }
     }
 }

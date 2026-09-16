@@ -72,9 +72,9 @@ Describe "Set-MailboxRegionalSettings" {
 
     Context "Help & Metadata" {
 
-        It "Declares Version 1.0.0 and relaunch Date 2026-08-23 in .NOTES" {
-            $rawContent | Should -Match '(?m)^\s*Version\s*:\s*1\.0\.0\b'
-            $rawContent | Should -Match '(?m)^\s*Date\s*:\s*2026-08-23\b'
+        It "Declares Version 2.0.0 and relaunch Date 2026-09-16 in .NOTES" {
+            $rawContent | Should -Match '(?m)^\s*Version\s*:\s*2\.0\.0\b'
+            $rawContent | Should -Match '(?m)^\s*Date\s*:\s*2026-09-16\b'
         }
 
         It "Declares the actual filename and PowerShell 7.0 prerequisite" {

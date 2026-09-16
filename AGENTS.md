@@ -1,6 +1,6 @@
 # AGENTS.md - Bug-Free Umbrella
 
-> PowerShell enterprise automation toolkit (539 scripts). PowerShell 7.0+, Pester 5.5.0+, PSScriptAnalyzer.
+> PowerShell enterprise automation toolkit (566 scripts on disk (381 catalogued)). PowerShell 7.0+, Pester 5.5.0+, PSScriptAnalyzer.
 
 ---
 
@@ -88,21 +88,29 @@ param(
 ```powershell
 $ErrorActionPreference = 'Stop'
 
-try {
-    Write-Host "[*] Processing..." -ForegroundColor Cyan
+function Main {
+    try {
+        Write-Host "[*] Processing..." -ForegroundColor Cyan
 
-    if (-not $Param) { throw "Parameter required" }
+        if (-not $Param) { throw "Parameter required" }
 
-    $result = Get-Something -ErrorAction Stop
+        $result = Get-Something -ErrorAction Stop
 
-    Write-Host "[+] Success" -ForegroundColor Green
-    exit 0
+        Write-Host "[+] Success" -ForegroundColor Green
+        return 0
+    }
+    catch {
+        Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
+        return 1
+    }
 }
-catch {
-    Write-Host "[-] Error: $($_.Exception.Message)" -ForegroundColor Red
-    exit 1
-}
+
+# Execute only when run as a script; dot-sourcing (Pester tests, module builds) skips execution.
+if ($MyInvocation.InvocationName -ne '.') { exit (Main) }
 ```
+
+`exit` appears only in the guard line — never inside `Main` and never at top level unguarded.
+See [docs/STANDARDS.md](docs/STANDARDS.md) section 3 for the full contract.
 
 ### Output Messages
 ```powershell

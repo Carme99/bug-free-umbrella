@@ -54,8 +54,8 @@
     File Name  : Get-M365UserInfo.ps1
     Author     : IT Operations
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 
     Required Modules:
     - ExchangeOnlineManagement (Exchange operations)
@@ -608,7 +608,10 @@ function Export-UserReport {
 
     # Use safe filename to prevent path traversal
     $safeEmail = Get-SafeFileName $script:UserData.UserPrincipalName
-    $reportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+    $reportDir = Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+            elseif ($env:USERPROFILE) { $env:USERPROFILE }
+            elseif ($env:HOME) { $env:HOME }
+            else { [IO.Path]::GetTempPath() })) 'Reports'
     if (-not (Test-Path -LiteralPath $reportDir -PathType Container)) {
         New-Item -ItemType Directory -Path $reportDir -Force -ErrorAction Stop | Out-Null
     }

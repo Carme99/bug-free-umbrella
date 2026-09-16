@@ -21,11 +21,11 @@ Describe "Test-WingetCpp20152019RedistX64" {
     }
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $raw | Should -Match 'File Name:\s*Test-WingetCpp20152019RedistX64.ps1'
-            $raw | Should -Match 'Version:\s*1\.0\.0'
-            $raw | Should -Match 'Date:\s*2026-08-23'
+            $raw | Should -Match 'Version:\s*2\.0\.0'
+            $raw | Should -Match 'Date:\s*2026-09-16'
             $raw | Should -Match 'Author:'
             $raw | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
         }
@@ -37,9 +37,9 @@ Describe "Test-WingetCpp20152019RedistX64" {
             @($help.Examples.Example).Count | Should -BeGreaterOrEqual 2
         }
 
-        It "Documents the exact package ID Microsoft.VCRedist.2015+.x86 in help and configuration" {
+        It "Documents the exact package ID Microsoft.VCRedist.2015+.x64 in help and configuration" {
             $raw = Get-Content -Path $scriptPath -Raw
-            $raw | Should -Match ([regex]::Escape("Microsoft.VCRedist.2015+.x86"))
+            $raw | Should -Match ([regex]::Escape("Microsoft.VCRedist.2015+.x64"))
         }
 
         It "Declares one .PARAMETER per param() parameter" {
@@ -79,7 +79,7 @@ Describe "Test-WingetCpp20152019RedistX64" {
             Mock Invoke-WingetWithRetry { throw "unexpected winget.exe CLI call" }
             Mock Get-WinGetPackage {
                 [pscustomobject] @{
-                    Name              = 'Microsoft.VCRedist.2015+.x86'
+                    Name              = 'Microsoft.VCRedist.2015+.x64'
                     InstalledVersion  = '14.0.1'
                     AvailableVersions = @('14.0.1', '14.0.2')
                     IsUpdateAvailable = $true
@@ -99,7 +99,7 @@ Describe "Test-WingetCpp20152019RedistX64" {
             Mock Invoke-WingetWithRetry { throw "unexpected winget.exe CLI call" }
             Mock Get-WinGetPackage {
                 [pscustomobject] @{
-                    Name              = 'Microsoft.VCRedist.2015+.x86'
+                    Name              = 'Microsoft.VCRedist.2015+.x64'
                     InstalledVersion  = '14.0.2'
                     AvailableVersions = @('14.0.2')
                     IsUpdateAvailable = $false
@@ -142,7 +142,7 @@ Describe "Test-WingetCpp20152019RedistX64" {
                 @(
                     'Name                Version Available'
                     '-------------------- ------- ---------'
-                    "Microsoft.VCRedist.2015+.x86 14.0.1    14.0.2"
+                    "Microsoft.VCRedist.2015+.x64 14.0.1    14.0.2"
                 ) -join "`n"
             }
             $out = Main *>&1

@@ -11,12 +11,32 @@ Describe "Get-PolicyAssignmentReport" {
         . $scriptPath
 
         # Stub helper-module commands (the module import itself is mocked) so Pester can attach mocks.
-        function Connect-IntuneGraph { param([string]$TenantId, [string[]]$Scopes) }
-        function Disconnect-IntuneGraph { }
-        function Invoke-MgGraphRequest { param([string]$Uri, [string]$Method) }
-        function Get-AllIntuneDevices { }
-        function Export-IntuneReportToHTML { param($Data, [string]$Title, [string]$Description, [string]$FilePath) }
-        function Export-IntuneReportToCSV { param($Data, [string]$Title, [string]$FilePath) }
+        # Each stub is advanced and mirrors the helper's real parameter set, so a parameter the
+        # helper does not declare fails binding instead of being silently swallowed.
+        function Connect-IntuneGraph {
+            [CmdletBinding()]
+            param([string[]]$Scopes, [string]$TenantId)
+        }
+        function Disconnect-IntuneGraph {
+            [CmdletBinding()]
+            param()
+        }
+        function Get-AllIntuneDevices {
+            [CmdletBinding()]
+            param()
+        }
+        function Invoke-MgGraphRequest {
+            [CmdletBinding()]
+            param([string]$Uri, [string]$Method)
+        }
+        function Export-IntuneReportToHTML {
+            [CmdletBinding()]
+            param([object[]]$Data, [string]$Title, [string]$FilePath, [string]$Description)
+        }
+        function Export-IntuneReportToCSV {
+            [CmdletBinding()]
+            param([object[]]$Data, [string]$Title, [string]$FilePath)
+        }
 
         # Mock the helper module import and every Graph entry point so nothing leaves the machine.
         Mock Import-Module { }
@@ -24,7 +44,8 @@ Describe "Get-PolicyAssignmentReport" {
         Mock Export-IntuneReportToHTML { }
 
         # Graph payload: two device configuration policies sharing one group target (a conflict),
-        # one Settings Catalog profile assigned to all devices; no compliance or app protection.
+        # one Settings Catalog profile assigned to all devices, one iOS app protection policy
+        # assigned to a group; no compliance policies.
         Mock Invoke-MgGraphRequest {
             param($Uri)
             if ($Uri -match 'deviceConfigurations/[^/]+/assignments') {
@@ -58,7 +79,21 @@ Describe "Get-PolicyAssignmentReport" {
                     createdDateTime = [datetime]'2026-01-01Z'; lastModifiedDateTime = [datetime]'2026-01-02Z'
                 }) }
             }
-            return @{ value = @() }   # compliance policies, app protection, anything else
+            if ($Uri -match 'iosManagedAppProtections/[^/]+/assignments') {
+                return @{ value = @([pscustomobject]@{
+                    target = [pscustomobject]@{
+                        '@odata.type' = '#microsoft.graph.groupAssignmentTarget'; groupId = 'grp-app'
+                    }
+                }) }
+            }
+            if ($Uri -match '/managedAppPolicies$') {
+                return @{ value = @([pscustomobject]@{
+                    '@odata.type' = '#microsoft.graph.iosManagedAppProtection'
+                    id = 'app-1'; displayName = 'iOS App Protection'
+                    createdDateTime = [datetime]'2026-01-01Z'; lastModifiedDateTime = [datetime]'2026-01-02Z'
+                }) }
+            }
+            return @{ value = @() }   # compliance policies and anything else
         }
     }
 
@@ -81,8 +116,8 @@ Describe "Get-PolicyAssignmentReport" {
             $raw | Should -Match 'File Name\s*:\s*Get-PolicyAssignmentReport\.ps1'
             $raw | Should -Match 'Author\s*:\s*\S+'
             $raw | Should -Match 'Prerequisite\s*:\s*PowerShell'
-            $raw | Should -Match 'Version\s*:\s*1\.0\.0'
-            $raw | Should -Match 'Date\s*:\s*2026-08-23'
+            $raw | Should -Match 'Version\s*:\s*2\.0\.0'
+            $raw | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It "Documents exactly one .PARAMETER per declared parameter, in declaration order" {
@@ -150,9 +185,24 @@ Describe "Get-PolicyAssignmentReport" {
             $csvFile = Get-ChildItem -Path $OutputPath -Filter 'PolicyAssignmentReport-*.csv' | Select-Object -First 1
             $csvFile | Should -Not -BeNullOrEmpty
             $rows = @((Import-Csv -Path $csvFile.FullName))
-            $rows.Count | Should -Be 3   # 2 config + 1 settings catalog
+            $rows.Count | Should -Be 4   # 2 config + 1 settings catalog + 1 app protection
             ($rows | Where-Object { $_.PolicyType -eq 'Device Configuration' }).Count | Should -Be 2
             ($rows | Where-Object { $_.AssignmentTarget -eq 'All Devices' }).Count | Should -Be 1
+        }
+
+        It "Reports app protection policies with their group assignment" {
+            $OutputPath = Join-Path $TestDrive ([guid]::NewGuid().Guid)
+            New-Item -ItemType Directory -Path $OutputPath -Force | Out-Null
+            $Format = 'CSV'
+
+            Main | Should -Be 0
+
+            $csvFile = Get-ChildItem -Path $OutputPath -Filter 'PolicyAssignmentReport-*.csv' | Select-Object -First 1
+            $rows = @((Import-Csv -Path $csvFile.FullName))
+            $appRows = @($rows | Where-Object { $_.PolicyType -eq 'App Protection' })
+            $appRows.Count | Should -Be 1
+            $appRows[0].PolicyName | Should -Be 'iOS App Protection'
+            $appRows[0].AssignmentTarget | Should -Be 'Group: grp-app'
         }
 
         It "Flags potential conflicts when one group receives multiple policies of the same type" {

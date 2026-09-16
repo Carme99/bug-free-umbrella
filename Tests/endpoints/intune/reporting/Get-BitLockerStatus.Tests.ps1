@@ -91,14 +91,14 @@ Describe "Get-BitLockerStatus" {
             ($raw -split "`n" | Where-Object { $_ -notmatch "`r$" }) | Should -BeNullOrEmpty
         }
 
-        It "Has required header fields: File Name, Author, Prerequisite, Version 1.0.0, Date 2026-08-23" {
+        It "Has required header fields: File Name, Author, Prerequisite, Version 2.0.0, Date 2026-09-16" {
             $raw = Get-Content -Raw $scriptPath
             $raw | Should -Match '\.NOTES'
             $raw | Should -Match 'File Name\s*:\s*Get-BitLockerStatus\.ps1'
             $raw | Should -Match 'Author\s*:'
             $raw | Should -Match 'Prerequisite\s*:\s*PowerShell 7\.0'
-            $raw | Should -Match 'Version\s*:\s*1\.0\.0'
-            $raw | Should -Match 'Date\s*:\s*2026-08-23'
+            $raw | Should -Match 'Version\s*:\s*2\.0\.0'
+            $raw | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It "Has complete help: SYNOPSIS, DESCRIPTION, >=2 EXAMPLES with PS C:\> prompts" {

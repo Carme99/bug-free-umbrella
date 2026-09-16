@@ -32,8 +32,8 @@ Describe "Test-IntuneConnectivity" {
             $rawScript | Should -Match 'File Name:\s*Test-IntuneConnectivity\.ps1'
             $rawScript | Should -Match 'Author:\s*\S+'
             $rawScript | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
-            $rawScript | Should -Match 'Version:\s*1\.0\.0'
-            $rawScript | Should -Match 'Date:\s*2026-08-23'
+            $rawScript | Should -Match 'Version:\s*2\.0\.0'
+            $rawScript | Should -Match 'Date:\s*2026-09-16'
         }
 
         It "Has one .PARAMETER entry per declared param, in order" {

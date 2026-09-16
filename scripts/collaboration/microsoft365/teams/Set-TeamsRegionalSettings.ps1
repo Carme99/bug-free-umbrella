@@ -43,8 +43,8 @@
     File Name  : Set-TeamsRegionalSettings.ps1
     Author     : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 
     Requires the MicrosoftTeams module and the Teams Administrator role.
     Most Teams regional settings are inherited from Exchange Online mailbox settings;

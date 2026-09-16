@@ -13,12 +13,12 @@ Describe "Invoke-RemediationFixNetworkAdapterPowerManagement" {
     }
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $raw | Should -Match 'File Name:\s*Invoke-RemediationFixNetworkAdapterPowerManagement\.ps1'
             $raw | Should -Match 'Author:'
-            $raw | Should -Match 'Version:\s*1\.0\.0'
-            $raw | Should -Match 'Date:\s*2026-08-23'
+            $raw | Should -Match 'Version:\s*2\.0\.0'
+            $raw | Should -Match 'Date:\s*2026-09-16'
             $raw | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
         }
 
@@ -80,11 +80,29 @@ Describe "Invoke-RemediationFixNetworkAdapterPowerManagement" {
                     [pscustomobject]@{ Name = 'Loopback Pseudo'; Status = 'Up'; Virtual = $false }
                 )
             }
+            function Get-NetAdapterPowerManagement { }
+            Mock Get-NetAdapterPowerManagement {
+                [pscustomobject]@{ AllowComputerToTurnOffDevice = 'Enabled' }
+            }
             $out = Main *>&1
             ($out | Out-String) | Should -Match '\[\+\]'
             $out | Where-Object { $_ -is [int] } | Should -Be 0
             Should -Invoke Disable-NetAdapterPowerManagement -Times 1 -Exactly `
                 -ParameterFilter { $Name -eq 'Ethernet' }
+        }
+
+        It "Is idempotent: an adapter whose power management is already disabled is untouched" {
+            Mock Get-NetAdapter {
+                @([pscustomobject]@{ Name = 'Ethernet'; Status = 'Up'; Virtual = $false })
+            }
+            function Get-NetAdapterPowerManagement { }
+            Mock Get-NetAdapterPowerManagement {
+                [pscustomobject]@{ AllowComputerToTurnOffDevice = 'Disabled' }
+            }
+            $out = Main *>&1
+            ($out | Out-String) | Should -Match 'Already disabled'
+            $out | Where-Object { $_ -is [int] } | Should -Be 0
+            Should -Invoke Disable-NetAdapterPowerManagement -Times 0 -Exactly
         }
 
         It "Is idempotent: no eligible adapters means no changes and returns 0" {

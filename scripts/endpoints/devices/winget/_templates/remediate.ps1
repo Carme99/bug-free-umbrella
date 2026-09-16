@@ -5,7 +5,7 @@
 .DESCRIPTION
     DEPRECATED: this legacy template is superseded by remediate_v3_standard.ps1 in this directory.
     Existing Intune Proactive Remediations assignments may still reference this path, so the filename
-    and location are preserved (docs/RELAUNCH-SPEC.md section 6 forbids renames); new deployments
+    and location are preserved (docs/STANDARDS.md section 6 forbids renames); new deployments
     should use the V3 standard template instead.
     Template for winget application update remediation scripts. Checks whether the configured package
     has a winget update available and installs it silently when the application process is not running;
@@ -27,15 +27,15 @@
     File Name  : remediate.ps1
     Author     : Intune / Proactive Remediations
     Prerequisite: PowerShell 5.1+
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
-[CmdletBinding()]
+[CmdletBinding(SupportsShouldProcess)]
 param()
 
 # PSAvoidUsingWriteHost is intentionally accepted: prefixed, colored console output is the mandated
-# output convention of docs/RELAUNCH-SPEC.md section 3.
+# output convention of docs/STANDARDS.md section 3.
 # PSUseOutputTypeCorrectly is intentionally accepted: internal helper functions return plain
 # values (bool/string/object[]) by design; only Main's exit code (int) is a public contract.
 $ErrorActionPreference = 'Stop'
@@ -65,7 +65,7 @@ function Get-WingetExecutable {
 function Invoke-WingetCommand {
     # Thin wrapper seam: EVERY native winget.exe invocation (the sysget alias target) routes through
     # this function so Pester can mock the wrapper; the executable is never called elsewhere.
-    # docs/RELAUNCH-SPEC.md section 3: check $LASTEXITCODE and translate non-zero into failure handling.
+    # docs/STANDARDS.md section 3: check $LASTEXITCODE and translate non-zero into failure handling.
     [CmdletBinding()]
     param(
         [Parameter(Mandatory)]
@@ -89,7 +89,7 @@ function Invoke-WingetCommand {
 function Invoke-ModuleRemediation {
     # Microsoft.WinGet.Client path: the winget CLI is NOT supported in the SYSTEM context that Intune
     # Proactive Remediations run in.
-    [CmdletBinding()]
+    [CmdletBinding(SupportsShouldProcess)]
     param()
 
     $package = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -ErrorAction SilentlyContinue
@@ -110,7 +110,9 @@ function Invoke-ModuleRemediation {
     }
 
     Write-Host "[*] Installing $name update..." -ForegroundColor Cyan
-    Update-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -Mode Silent -Force -ErrorAction Stop
+    if ($PSCmdlet.ShouldProcess($ID, "Update package $ID silently")) {
+        Update-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -Mode Silent -Force -ErrorAction Stop
+    }
 
     $updated = Get-WinGetPackage -Id $ID -MatchOption EqualsCaseInsensitive -ErrorAction SilentlyContinue
     if (-not $updated) {

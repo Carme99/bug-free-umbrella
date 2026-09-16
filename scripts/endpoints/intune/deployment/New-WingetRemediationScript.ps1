@@ -1,7 +1,11 @@
 ﻿<#
 .SYNOPSIS
+    DEPRECATED: use New-BulkWingetUpdater.ps1
     Generates Intune Proactive Remediation scripts for Winget package updates.
 .DESCRIPTION
+    DEPRECATED: New-BulkWingetUpdater.ps1 is the authoritative generator - it emits the
+    same Intune proactive-remediation detect/remediate pair and additionally accepts batch CSV
+    input. This script is retained for compatibility and will be removed in a future major.
     Creates a pair of detection and remediation scripts for use with Intune Proactive
     Remediations to keep applications up-to-date using Winget in SYSTEM context.
 
@@ -36,8 +40,8 @@
     File Name   : New-WingetRemediationScript.ps1
     Author      : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 
     No Graph API connection needed - this is a local script generator.
     Output scripts are ready to upload to Intune Proactive Remediations.

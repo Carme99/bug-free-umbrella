@@ -40,8 +40,8 @@
     File Name: Find-StaleDevices.ps1
     Author: Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -71,7 +71,10 @@ function Main {
     try {
         Write-Host "[*] Starting stale device detection..." -ForegroundColor Cyan
 
-        $ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+        $ReportDir = Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })) 'Reports'
         if ([string]::IsNullOrWhiteSpace($ReportDir) -or
             $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
             $ReportDir -match '^(\\\\|//)') {

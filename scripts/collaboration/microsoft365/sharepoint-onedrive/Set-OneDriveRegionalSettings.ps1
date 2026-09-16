@@ -43,8 +43,8 @@
     File Name  : Set-OneDriveRegionalSettings.ps1
     Author     : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 
     Requires the PnP.PowerShell module and the SharePoint Administrator role.
     OneDrive sites are user-specific SharePoint site collections.
@@ -111,7 +111,10 @@ function Set-OneDriveRegionalConfiguration {
 function Main {
     try {
         # Prepare report directory (local absolute path only, no traversal).
-        $documentsRoot = [Environment]::GetFolderPath('MyDocuments')
+        $documentsRoot = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })
         if ([string]::IsNullOrWhiteSpace($documentsRoot)) {
             $documentsRoot = [System.IO.Path]::Combine($HOME, 'Documents')
         }

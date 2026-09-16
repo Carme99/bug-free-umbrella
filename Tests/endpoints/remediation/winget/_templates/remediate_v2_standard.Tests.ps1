@@ -7,7 +7,7 @@ Describe "remediate_v2_standard.ps1" {
         $relative = "scripts/endpoints/remediation/winget/_templates/remediate_v2_standard.ps1"
         $scriptPath = Join-Path $repoRoot $relative
 
-        # Safe: the top-level guard skips Main when dot-sourced (docs/RELAUNCH-SPEC.md section 3).
+        # Safe: the top-level guard skips Main when dot-sourced (docs/STANDARDS.md section 3).
         . $scriptPath
 
         # Offline stubs for the Microsoft.WinGet.Client surface (module is absent on Linux CI)
@@ -16,7 +16,7 @@ Describe "remediate_v2_standard.ps1" {
         function Update-WinGetPackage { }
 
         # Shared offline mocks: every external surface is mocked; native executables are reached only
-        # through the script's wrapper functions, never by name (docs/RELAUNCH-SPEC.md section 5).
+        # through the script's wrapper functions, never by name (docs/STANDARDS.md section 5).
         # Write-Host is silenced (not passed through): a passthrough mock would leak objects into the
         # pipeline and pollute helper-function boolean return values.
         Mock Write-Host { }
@@ -33,10 +33,10 @@ Describe "remediate_v2_standard.ps1" {
     }
 
     Context "Help & Metadata" {
-        It "Declares Version 1.0.0 and relaunch Date 2026-08-23" {
+        It "Declares Version 2.0.0 and relaunch Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
-            ($raw -match '(?m)^\s*Version\s*:\s*1\.0\.0\s*$') | Should -BeTrue
-            ($raw -match '(?m)^\s*Date\s*:\s*2026-08-23\s*$') | Should -BeTrue
+            ($raw -match '(?m)^\s*Version\s*:\s*2\.0\.0\s*$') | Should -BeTrue
+            ($raw -match '(?m)^\s*Date\s*:\s*2026-09-16\s*$') | Should -BeTrue
         }
 
         It "Declares File Name matching the on-disk filename with no orphaned parameters documented" {
@@ -88,11 +88,11 @@ Describe "remediate_v2_standard.ps1" {
         It "Returns 0 and reports [+] Already up to date with no changes on a converged system" {
             Mock Get-Module { $true }
             Mock Get-WinGetPackage {
-                [pscustomobject]@{ Name = 'Google Chrome'; InstalledVersion = '1.0.0'; IsUpdateAvailable = $false }
+                [pscustomobject]@{ Name = 'Google Chrome'; InstalledVersion = '2.0.0'; IsUpdateAvailable = $false }
             }
             Main *>&1 | Out-Null
             Should -Invoke Write-Host -ParameterFilter {
-                ($Object -match 'Already up to date: Google Chrome \(version 1\.0\.0\)') -and
+                ($Object -match 'Already up to date: Google Chrome \(version 2\.0\.0\)') -and
                 ($Object -match '^\[\+\]')
             }
             Should -Invoke Update-WinGetPackage -Times 0 -Exactly
@@ -105,7 +105,7 @@ Describe "remediate_v2_standard.ps1" {
                 [pscustomobject]@{
                     Name = 'Google Chrome'
                     InstalledVersion = '120.0.0.0'
-                    AvailableVersions = @('121.0.0.0')
+                    AvailableVersions = @('122.0.0.0')
                     IsUpdateAvailable = $true
                 }
             }
@@ -124,7 +124,7 @@ Describe "remediate_v2_standard.ps1" {
                 [pscustomobject]@{
                     Name = 'Google Chrome'
                     InstalledVersion = '120.0.0.0'
-                    AvailableVersions = @('121.0.0.0')
+                    AvailableVersions = @('122.0.0.0')
                     IsUpdateAvailable = $true
                 }
             }
@@ -157,7 +157,7 @@ Describe "remediate_v2_standard.ps1" {
 
         It "Reports an already-current package through the CLI seam with no upgrade call" {
             Mock Invoke-WingetCommand {
-                @('Name Id Version Source', '---- -- ------- ------', 'WINGETID GoogleChrome 1.0.0 winget')
+                @('Name Id Version Source', '---- -- ------- ------', 'WINGETID GoogleChrome 2.0.0 winget')
             }
             Main *>&1 | Out-Null
             Should -Invoke Write-Host -ParameterFilter {

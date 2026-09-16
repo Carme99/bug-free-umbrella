@@ -55,8 +55,8 @@
     File Name   : Get-IISHealthCheck.ps1
     Author      : IT Infrastructure Team
     Prerequisite: PowerShell 5.1+, IISAdministration module (Windows), Administrator privileges
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 #>
 
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
@@ -164,7 +164,10 @@ function Main {
         $computerName = $env:COMPUTERNAME
 
         # Resolve report output directory (default: MyDocuments\Reports) and validate against traversal/UNC paths
-        $documentsFolder = [Environment]::GetFolderPath('MyDocuments')
+        $documentsFolder = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })
         if ([string]::IsNullOrWhiteSpace($documentsFolder)) {
             # Non-Windows hosts can return an empty MyDocuments path; fall back for portability.
             $documentsFolder = if ($env:HOME) { $env:HOME } else { (Get-Location).Path }

@@ -40,8 +40,8 @@
     File Name   : removeUSlangpack.ps1
     Author      : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 
     Requires Administrator privileges (enforced by #Requires -RunAsAdministrator).
     Compatible with Windows 11 24H2.
@@ -49,7 +49,7 @@
     Sign-out/restart may be required.
 #>
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
-    Justification = 'RELAUNCH-SPEC §3 mandates console status output via Write-Host with [+]/[!]/[-]/[*] prefixes.')]
+    Justification = 'STANDARDS §3 mandates console status output via Write-Host with [+]/[!]/[-]/[*] prefixes.')]
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(
     [Parameter(Mandatory = $false)]

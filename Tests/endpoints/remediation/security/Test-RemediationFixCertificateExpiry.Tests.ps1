@@ -26,8 +26,8 @@ Describe 'Test-RemediationFixCertificateExpiry' {
             $scriptText | Should -Match 'File Name\s*:\s*Test-RemediationFixCertificateExpiry\.ps1'
             $scriptText | Should -Match 'Author\s*:'
             $scriptText | Should -Match 'Prerequisite\s*:\s*PowerShell 7\.0'
-            $scriptText | Should -Match 'Version\s*:\s*1\.0\.0'
-            $scriptText | Should -Match 'Date\s*:\s*2026-08-23'
+            $scriptText | Should -Match 'Version\s*:\s*2\.0\.0'
+            $scriptText | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It 'Documents its detect exit-code contract in DESCRIPTION' {
@@ -107,7 +107,7 @@ Describe 'Test-RemediationFixCertificateExpiry' {
             Mock Get-CimInstance { @() }
             $out = Main *>&1
             ($out | Out-String) | Should -Match '\[\+\]'
-            ($out | Out-String) | Should -Match 'No expired or expiring certificates found'
+            ($out | Out-String) | Should -Match 'No expired certificates found'
             $out | Where-Object { $_ -is [int] } | Should -Be 0
         }
 
@@ -128,7 +128,11 @@ Describe 'Test-RemediationFixCertificateExpiry' {
             $out | Where-Object { $_ -is [int] } | Should -Be 1
         }
 
-        It 'Returns 1 and flags certificates expiring within the warning window' {
+        It 'Reports certificates expiring within the warning window without failing the check' {
+            # The companion remediation can only act on already-expired certificates, so an
+            # expiring certificate must not be reported non-compliant: that is the state that
+            # made the detect/remediate pair loop forever without converging. It is surfaced as
+            # an informational warning instead, and the exit code stays 0.
             Mock Test-Path { param($Path) $Path -eq 'Cert:\CurrentUser\My' }
             Mock Get-ChildItem {
                 @([pscustomobject]@{
@@ -139,9 +143,10 @@ Describe 'Test-RemediationFixCertificateExpiry' {
             }
             Mock Get-CimInstance { @() }
             $out = Main *>&1
-            ($out | Out-String) | Should -Match '\[!\]'
-            ($out | Out-String) | Should -Match 'Certificates expiring within 30 days'
-            $out | Where-Object { $_ -is [int] } | Should -Be 1
+            $text = $out | Out-String
+            $text | Should -Match 'Certificates expiring within 30 days \(informational\)'
+            $text | Should -Match '\[\+\] No expired certificates found'
+            $out | Where-Object { $_ -is [int] } | Should -Be 0
         }
 
         It 'Skips profiles whose NTUSER.DAT hive cannot be loaded and still returns 0' {
@@ -153,7 +158,7 @@ Describe 'Test-RemediationFixCertificateExpiry' {
             Mock Invoke-RegExe { 1 }
             $out = Main *>&1
             ($out | Out-String) | Should -Match '\[\+\]'
-            ($out | Out-String) | Should -Match 'No expired or expiring certificates found'
+            ($out | Out-String) | Should -Match 'No expired certificates found'
             ($out | Out-String) | Should -Match '1 user profile\(s\) were skipped'
             $out | Where-Object { $_ -is [int] } | Should -Be 0
             # Only the failed load attempt; no unload of a hive we did not mount.
@@ -186,7 +191,7 @@ Describe 'Test-RemediationFixCertificateExpiry' {
         foreach ($cmd in @('Get-CimInstance')) {
             $existing = Get-Command $cmd -ErrorAction SilentlyContinue
             if ($existing -and $existing.CommandType -eq 'Function') {
-                Remove-Item -LiteralPath "Function:global:$cmd" -Force
+                Remove-Item -LiteralPath "Function:$cmd" -Force
             }
         }
         Set-Location $PSScriptRoot

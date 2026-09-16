@@ -28,8 +28,8 @@
     File Name  : Invoke-RemediationFixOneDriveKnownFolderMove.ps1
     Author     : Intune Admin
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -93,13 +93,16 @@ function Main {
         # These settings will be picked up by OneDrive on next sync and work in
         # conjunction with Intune policies.
         $currentValues = Get-ItemProperty -Path $odRegPath -ErrorAction SilentlyContinue
-        if ($currentValues -and $currentValues.KFMSilentOptIn -eq '1' -and $currentValues.KFMSilentOptInWithNotification -eq 1) {
+        if ($currentValues -and
+            $currentValues.KFMSilentOptIn -eq '1' -and
+            $currentValues.KFMSilentOptInWithNotification -eq 1) {
             Write-Host "[+] Already configured: OneDrive KFM registry settings present" -ForegroundColor Green
         }
         else {
             if ($PSCmdlet.ShouldProcess($odRegPath, 'Set OneDrive KFM silent opt-in registry values')) {
                 Set-ItemProperty -Path $odRegPath -Name "KFMSilentOptIn" -Value "1" -Type String -ErrorAction Stop
-                Set-ItemProperty -Path $odRegPath -Name "KFMSilentOptInWithNotification" -Value "1" -Type DWord -ErrorAction Stop
+                Set-ItemProperty -Path $odRegPath -Name "KFMSilentOptInWithNotification" `
+                    -Value "1" -Type DWord -ErrorAction Stop
                 Write-Host "[+] Configured OneDrive KFM registry settings" -ForegroundColor Green
 
                 # Restart OneDrive to apply settings

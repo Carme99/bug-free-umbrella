@@ -65,9 +65,9 @@ Describe "Umbrella CLI" -Tag 'CLI' {
             $matched | Should -Be @($a).Count -Because "every result should match intune in path/synopsis/category"
         }
 
-        It "Get-BUScript without filters returns all 358 scripts" {
+        It "Get-BUScript without filters returns every cataloged script (totalScripts)" {
             $all = Get-BUScript
-            @($all).Count | Should -Be $script:Catalog.totalScripts -Because "unfiltered Get-BUScript should return all 358 scripts"
+            @($all).Count | Should -Be $script:Catalog.totalScripts -Because "unfiltered Get-BUScript returns exactly the cataloged scripts (totalScripts); deprecated forwarding shims outside the catalog are never returned"
         }
 
         It "Get-BUScript -Name exact match returns single entry" {

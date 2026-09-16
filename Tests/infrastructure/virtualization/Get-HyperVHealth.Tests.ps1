@@ -4,7 +4,7 @@ Describe "Get-HyperVHealth" {
     BeforeAll {
         $scriptPath = Join-Path $PSScriptRoot "../../../scripts/infrastructure/virtualization/Get-HyperVHealth.ps1"
 
-        # Safe: the script's top-level guard skips Main when dot-sourced (RELAUNCH-SPEC §3).
+        # Safe: the script's top-level guard skips Main when dot-sourced (STANDARDS §3).
         . $scriptPath
         # Stub Hyper-V/Windows-only commands up front so Pester can mock them on Linux.
         function Get-Service { }
@@ -60,10 +60,10 @@ Describe "Get-HyperVHealth" {
             $helpText | Should -Match 'Prerequisite\s*:\s*PowerShell'
         }
 
-        It "Declares Version 1.0.0 and Date 2026-08-23" {
+        It "Declares Version 2.0.0 and Date 2026-09-16" {
             $helpText = Get-Content -Raw $scriptPath
-            $helpText | Should -Match 'Version\s*:\s*1\.0\.0'
-            $helpText | Should -Match 'Date\s*:\s*2026-08-23'
+            $helpText | Should -Match 'Version\s*:\s*2\.0\.0'
+            $helpText | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It "Has one .PARAMETER block per declared parameter, in order" {

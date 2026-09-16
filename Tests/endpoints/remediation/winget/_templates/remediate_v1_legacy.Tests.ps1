@@ -7,7 +7,7 @@ Describe "remediate_v1_legacy.ps1" {
         $relative = "scripts/endpoints/remediation/winget/_templates/remediate_v1_legacy.ps1"
         $scriptPath = Join-Path $repoRoot $relative
 
-        # Safe: the top-level guard skips Main when dot-sourced (docs/RELAUNCH-SPEC.md section 3).
+        # Safe: the top-level guard skips Main when dot-sourced (docs/STANDARDS.md section 3).
         . $scriptPath
 
         # Offline stubs for the Microsoft.WinGet.Client surface (module is absent on Linux CI)
@@ -16,7 +16,7 @@ Describe "remediate_v1_legacy.ps1" {
         function Update-WinGetPackage { }
 
         # Shared offline mocks: every external surface is mocked; native executables are reached only
-        # through the script's wrapper functions, never by name (docs/RELAUNCH-SPEC.md section 5).
+        # through the script's wrapper functions, never by name (docs/STANDARDS.md section 5).
         # Write-Host is silenced (not passed through): a passthrough mock would leak objects into the
         # pipeline and pollute helper-function boolean return values.
         Mock Write-Host { }
@@ -33,10 +33,10 @@ Describe "remediate_v1_legacy.ps1" {
     }
 
     Context "Help & Metadata" {
-        It "Declares Version 1.0.0 and relaunch Date 2026-08-23" {
+        It "Declares Version 2.0.0 and relaunch Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
-            ($raw -match '(?m)^\s*Version\s*:\s*1\.0\.0\s*$') | Should -BeTrue
-            ($raw -match '(?m)^\s*Date\s*:\s*2026-08-23\s*$') | Should -BeTrue
+            ($raw -match '(?m)^\s*Version\s*:\s*2\.0\.0\s*$') | Should -BeTrue
+            ($raw -match '(?m)^\s*Date\s*:\s*2026-09-16\s*$') | Should -BeTrue
         }
 
         It "Declares File Name matching the on-disk filename with no orphaned parameters documented" {
@@ -88,7 +88,7 @@ Describe "remediate_v1_legacy.ps1" {
         It "Warns that the template is deprecated" {
             Mock Get-Module { $true }
             Mock Get-WinGetPackage {
-                [pscustomobject]@{ Name = 'AppName'; InstalledVersion = '1.0.0'; IsUpdateAvailable = $false }
+                [pscustomobject]@{ Name = 'AppName'; InstalledVersion = '2.0.0'; IsUpdateAvailable = $false }
             }
             Main *>&1 | Out-Null
             Should -Invoke Write-Warning -Times 1 -Exactly -ParameterFilter { $Message -match 'DEPRECATED' }
@@ -97,7 +97,7 @@ Describe "remediate_v1_legacy.ps1" {
         It "Returns 0 and reports [+] Already up to date with no changes on a converged system" {
             Mock Get-Module { $true }
             Mock Get-WinGetPackage {
-                [pscustomobject]@{ Name = 'AppName'; InstalledVersion = '1.0.0'; IsUpdateAvailable = $false }
+                [pscustomobject]@{ Name = 'AppName'; InstalledVersion = '2.0.0'; IsUpdateAvailable = $false }
             }
             Main *>&1 | Out-Null
             Should -Invoke Write-Host -ParameterFilter {
@@ -123,7 +123,7 @@ Describe "remediate_v1_legacy.ps1" {
         It "Returns 1 and skips the update with [!] output while the application runs" {
             Mock Get-Module { $true }
             Mock Get-WinGetPackage {
-                [pscustomobject]@{ Name = 'AppName'; InstalledVersion = '1.0.0'; IsUpdateAvailable = $true }
+                [pscustomobject]@{ Name = 'AppName'; InstalledVersion = '2.0.0'; IsUpdateAvailable = $true }
             }
             Mock Get-Process { @([pscustomobject]@{ Id = 4242 }) }
             Main *>&1 | Out-Null
@@ -147,7 +147,7 @@ Describe "remediate_v1_legacy.ps1" {
 
         It "Reports an already-current package through the CLI seam with no upgrade call" {
             Mock Invoke-WingetCommand {
-                @('Name Id Version Source', '---- -- ------- ------', 'AppName WINGETID 1.0.0 winget')
+                @('Name Id Version Source', '---- -- ------- ------', 'AppName WINGETID 2.0.0 winget')
             }
             Main *>&1 | Out-Null
             Should -Invoke Write-Host -ParameterFilter {

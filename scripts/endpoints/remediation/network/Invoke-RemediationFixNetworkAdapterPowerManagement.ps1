@@ -24,8 +24,8 @@
     File Name: Invoke-RemediationFixNetworkAdapterPowerManagement.ps1
     Author: Intune Admin
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -55,6 +55,28 @@ function Main {
             # turn off this device to save power" setting (and the other power
             # management features) that the detect script flags.
             try {
+                # Check-then-act: read the current power-management settings and act only when
+                # a feature is still enabled, so a converged adapter is not re-touched on every
+                # cycle (the documented "no adapter required a change" outcome was unreachable).
+                $powerMgmt = Get-NetAdapterPowerManagement -Name $adapter.Name -ErrorAction SilentlyContinue
+                if ($null -eq $powerMgmt) {
+                    Write-Host "[!] Could not read power management for $($adapter.Name); skipping" `
+                        -ForegroundColor Yellow
+                    continue
+                }
+
+                $enabledFeatures = @($powerMgmt | Where-Object {
+                        $_.AllowComputerToTurnOffDevice -eq 'Enabled' -or
+                        $_.WakeOnMagicPacket -eq 'Enabled' -or
+                        $_.WakeOnPattern -eq 'Enabled'
+                    }).Count
+
+                if ($enabledFeatures -eq 0) {
+                    Write-Host "[+] Already disabled: power management on $($adapter.Name)" `
+                        -ForegroundColor Green
+                    continue
+                }
+
                 if ($PSCmdlet.ShouldProcess($adapter.Name, "Disable network adapter power management")) {
                     Disable-NetAdapterPowerManagement -Name $adapter.Name -ErrorAction Stop
                     $remediationActions += "Disabled power management on $($adapter.Name)"

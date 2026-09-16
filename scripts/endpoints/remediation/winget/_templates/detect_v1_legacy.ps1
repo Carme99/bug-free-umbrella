@@ -25,15 +25,15 @@
     File Name  : detect_v1_legacy.ps1
     Author     : Intune / Proactive Remediations
     Prerequisite: PowerShell 5.1+ (run in the Intune Proactive Remediation context)
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 #>
 
 [CmdletBinding()]
 param()
 
 # PSAvoidUsingWriteHost is intentionally accepted: prefixed, colored console output is the mandated
-# output convention of docs/RELAUNCH-SPEC.md section 3.
+# output convention of docs/STANDARDS.md section 3.
 $ErrorActionPreference = 'Stop'
 
 #region Configuration - replace the placeholders below before use

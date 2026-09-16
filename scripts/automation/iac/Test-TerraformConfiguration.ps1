@@ -30,8 +30,8 @@
     File Name   : Test-TerraformConfiguration.ps1
     Author      : IT Operations
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 #>
 
 [CmdletBinding()]
@@ -51,7 +51,10 @@ param(
     [string]$OutputFormat = 'HTML',
 
     [Parameter(Mandatory = $false)]
-    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
+    [string]$OutputPath = (Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+            elseif ($env:USERPROFILE) { $env:USERPROFILE }
+            elseif ($env:HOME) { $env:HOME }
+            else { [IO.Path]::GetTempPath() })) 'Reports')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -183,6 +186,8 @@ function Main {
                     }
                     $changeCount = @($planShow.resource_changes).Count
                     Write-Host "  [+] Plan generated: $changeCount resource changes" -ForegroundColor Green
+                    # Exempt from the ShouldProcess rule (STANDARDS section 1): tfplan is an ephemeral
+                    # artifact this script created earlier in its own temp working directory.
                     Remove-Item tfplan -Force -ErrorAction SilentlyContinue
                 }
                 else {

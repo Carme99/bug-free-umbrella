@@ -44,8 +44,8 @@
     File Name:     Get-UserAccessReport.ps1
     Author:        Server Management Team
     Prerequisite:  PowerShell 5.1+
-    Version:       1.0.0
-    Date:          2026-08-23
+    Version:       2.0.0
+    Date:          2026-09-16
 
     Requires the Active Directory PowerShell module at runtime (mocked in tests)
     and appropriate permissions.
@@ -66,7 +66,10 @@ param(
 
     [Parameter(Mandatory = $false)]
     [string]$OutputPath = $(
-        $myDocs = [Environment]::GetFolderPath('MyDocuments')
+        $myDocs = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })
         if ([string]::IsNullOrWhiteSpace($myDocs)) {
             # Profile-less contexts (CI runners, SYSTEM services): MyDocuments resolves
             # empty; fall back so the default path degrades gracefully instead of crashing.
@@ -99,7 +102,10 @@ function Main {
 
         [Parameter(Mandatory = $false)]
         [string]$OutputPath = $(
-        $myDocs = [Environment]::GetFolderPath('MyDocuments')
+        $myDocs = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })
         if ([string]::IsNullOrWhiteSpace($myDocs)) {
             # Profile-less contexts (CI runners, SYSTEM services): MyDocuments resolves
             # empty; fall back so the default path degrades gracefully instead of crashing.

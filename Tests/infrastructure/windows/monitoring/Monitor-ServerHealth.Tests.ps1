@@ -76,12 +76,12 @@ Describe "Monitor-ServerHealth" {
     }
 
     Context "Help & Metadata" {
-        It "Declares Version 1.0.0" {
-            $scriptText | Should -Match '(?m)^\s*Version\s*:\s*1\.0\.0\s*$'
+        It "Declares Version 2.0.0" {
+            $scriptText | Should -Match '(?m)^\s*Version\s*:\s*2\.0\.0\s*$'
         }
 
-        It "Declares relaunch Date 2026-08-23" {
-            $scriptText | Should -Match '(?m)^\s*Date\s*:\s*2026-08-23\s*$'
+        It "Declares relaunch Date 2026-09-16" {
+            $scriptText | Should -Match '(?m)^\s*Date\s*:\s*2026-09-16\s*$'
         }
 
         It "Declares File Name matching the disk filename" {

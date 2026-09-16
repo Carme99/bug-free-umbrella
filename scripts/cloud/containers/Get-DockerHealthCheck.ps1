@@ -44,13 +44,13 @@
     File Name: Get-DockerHealthCheck.ps1
     Author: IT Infrastructure Team
     Prerequisite: PowerShell 7.0, Docker Desktop/Engine installed and running
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 #>
 
 #Requires -Version 7.0
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '',
-    Justification = 'RELAUNCH-SPEC section 3 mandates Write-Host output with [+]/[!]/[-]/[*] prefixes')]
+    Justification = 'STANDARDS section 3 mandates Write-Host output with [+]/[!]/[-]/[*] prefixes')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', '',
     Justification = 'Params consumed inside Main via scoping; see help')]
 [CmdletBinding()]
@@ -316,7 +316,10 @@ function Main {
 
         # Export HTML
         if ($ExportHTML) {
-            $ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+            $ReportDir = Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                    elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                    elseif ($env:HOME) { $env:HOME }
+                    else { [IO.Path]::GetTempPath() })) 'Reports'
             # Validate report directory: reject '..' traversal and UNC remote paths before resolution
             if ([string]::IsNullOrWhiteSpace($ReportDir) -or
                 $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or

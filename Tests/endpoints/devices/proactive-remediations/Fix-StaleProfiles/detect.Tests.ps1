@@ -10,7 +10,7 @@ Describe "Fix-StaleProfiles/detect.ps1 (deprecated shim)" {
         $canonicalRepoPath =
             'scripts/endpoints/remediation/system/Test-RemediationFixStaleProfiles.ps1'
 
-        # Safe: the top-level guard skips Main when dot-sourced (RELAUNCH-SPEC §3).
+        # Safe: the top-level guard skips Main when dot-sourced (STANDARDS §3).
         . $scriptPath
 
         # Mock seam: all forwarding goes through Invoke-ForwardedScript; never through the real canonical script.
@@ -22,8 +22,8 @@ Describe "Fix-StaleProfiles/detect.ps1 (deprecated shim)" {
             $raw = Get-Content -LiteralPath $scriptPath -Raw
             $fileName = Split-Path $scriptPath -Leaf
             $raw | Should -Match ("File Name\s*:\s*" + [regex]::Escape($fileName))
-            $raw | Should -Match 'Version\s*:\s*1\.0\.0'
-            $raw | Should -Match 'Date\s*:\s*2026-08-23'
+            $raw | Should -Match 'Version\s*:\s*2\.0\.0'
+            $raw | Should -Match 'Date\s*:\s*2026-09-16'
             $raw | Should -Match 'Author\s*:'
             $raw | Should -Match 'Prerequisite\s*:'
         }

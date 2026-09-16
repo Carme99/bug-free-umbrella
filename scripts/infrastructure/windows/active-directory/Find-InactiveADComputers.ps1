@@ -57,8 +57,8 @@
     File Name     : Find-InactiveADComputers.ps1
     Author        : Bug-Free Umbrella
     Prerequisite  : PowerShell 5.1+
-    Version       : 1.0.0
-    Date          : 2026-08-23
+    Version       : 2.0.0
+    Date          : 2026-09-16
     Requires      : ActiveDirectory PowerShell module and appropriate AD permissions (modify if using -DisableInactive)
     Compatibility : Windows Server 2016, 2019, and 2022
 #>
@@ -95,7 +95,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # Write-Host is intentional: interactive console reporting with the color/prefix convention
-# mandated by RELAUNCH-SPEC §3 (justifies PSAvoidUsingWriteHost).
+# mandated by STANDARDS §3 (justifies PSAvoidUsingWriteHost).
 function Write-ColorOutput {
     [CmdletBinding()]
     param(
@@ -159,7 +159,10 @@ function Resolve-ReportDir {
     param()
 
     # Fall back to a temp base on hosts where MyDocuments is not resolvable (e.g. Linux CI).
-    $docs = [Environment]::GetFolderPath('MyDocuments')
+    $docs = $(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+            elseif ($env:USERPROFILE) { $env:USERPROFILE }
+            elseif ($env:HOME) { $env:HOME }
+            else { [IO.Path]::GetTempPath() })
     $base = if (-not [string]::IsNullOrWhiteSpace($docs)) { $docs } else { [System.IO.Path]::GetTempPath() }
     $dir = Join-Path $base 'Reports'
     if ([string]::IsNullOrWhiteSpace($dir) -or

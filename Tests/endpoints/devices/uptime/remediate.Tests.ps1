@@ -6,12 +6,12 @@ Describe "remediate.ps1 (uptime)" {
         $repoRoot = (Get-Item (Join-Path $PSScriptRoot "../../../../")).FullName
         $scriptPath = Join-Path $repoRoot "scripts/endpoints/devices/uptime/remediate.ps1"
 
-        # Safe: the top-level guard skips Main when dot-sourced (docs/RELAUNCH-SPEC.md section 3).
+        # Safe: the top-level guard skips Main when dot-sourced (docs/STANDARDS.md section 3).
         . $scriptPath
 
 
         # Windows-only ScheduledTasks cmdlets do not exist on Linux pwsh; stub them so
-        # Pester has a command surface to mock (docs/RELAUNCH-SPEC.md section 5).
+        # Pester has a command surface to mock (docs/STANDARDS.md section 5).
         # Full parameter signatures so Pester can bind named parameters for ParameterFilters.
         function Get-ScheduledTask {
             [CmdletBinding()]
@@ -58,10 +58,10 @@ Describe "remediate.ps1 (uptime)" {
     }
 
     Context "Help & Metadata" {
-        It "Declares Version 1.0.0 and relaunch Date 2026-08-23" {
+        It "Declares Version 2.0.0 and relaunch Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
-            ($raw -match '(?m)^\s*Version\s*:\s*1\.0\.0\s*$') | Should -BeTrue
-            ($raw -match '(?m)^\s*Date\s*:\s*2026-08-23\s*$') | Should -BeTrue
+            ($raw -match '(?m)^\s*Version\s*:\s*2\.0\.0\s*$') | Should -BeTrue
+            ($raw -match '(?m)^\s*Date\s*:\s*2026-09-16\s*$') | Should -BeTrue
         }
 
         It "Declares File Name matching the on-disk filename" {

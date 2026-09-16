@@ -1,6 +1,6 @@
 # WARP.md - Bug-Free Umbrella Working Agreement & Repository Practices
 
-> Working agreement and repository practices for the Bug-Free Umbrella PowerShell enterprise automation toolkit (539 scripts).
+> Working agreement and repository practices for the Bug-Free Umbrella PowerShell enterprise automation toolkit (566 scripts on disk (381 catalogued)).
 
 ---
 
@@ -47,7 +47,7 @@ scripts/
 ├── infrastructure/ # Windows servers, monitoring, AD
 ├── security/      # Compliance, hardening
 └── utilities/     # General tools
-Tests/             # Pester tests (focused suites; does NOT mirror the scripts/ layout)
+Tests/             # Pester tests, 1:1 mirror of scripts/ (enforced by CI)
 ```
 
 Examples of the concrete layout:
@@ -62,8 +62,8 @@ The layout was restructured in **v3.0.0** to group scripts by technology domain 
 
 ## Testing Strategy
 
-- The existing test files use **Pester 5.5.0+**. Test files live under `./Tests`, with a few additional suites colocated next to the scripts they test.
-- Test coverage targets **every script**: all 539 scripts in the repository have a Pester test file under `./Tests` that mirrors the script's repo-relative directory (e.g. `scripts/endpoints/devices/autopatch/V3/detect.ps1` → `Tests/endpoints/devices/autopatch/V3/detect.Tests.ps1`). Never write flat `Tests/<Name>.Tests.ps1` files — many scripts share basenames and flat paths collide.
+- The existing test files use **Pester 5.7.1** (pinned in CI). Test files live under `./Tests` and mirror the scripts layout 1:1; there are no test files under `scripts/`.
+- Test coverage targets **every script**: all 566 scripts on disk (381 catalogued) in the repository have a Pester test file under `./Tests` that mirrors the script's repo-relative directory (e.g. `scripts/endpoints/devices/autopatch/V3/detect.ps1` → `Tests/endpoints/devices/autopatch/V3/detect.Tests.ps1`). Never write flat `Tests/<Name>.Tests.ps1` files — many scripts share basenames and flat paths collide.
 - Configuration for running the suite locally is centralised in `./Tests/Pester.Config.psd1`, which enables **code coverage** against `./scripts` and excludes `Integration`-tagged tests by default.
 - Each test file follows the `Describe` / `Context` / `It` structure with `#Requires -Modules Pester` at the top.
 - See the `Tests/Common/HelperFunctions.Tests.ps1` file for the shared helper test conventions.
@@ -94,4 +94,4 @@ Contributors should follow the guidance in [CONTRIBUTING.md](./CONTRIBUTING.md) 
 
 ---
 
-**Maintainers:** [Carme99](https://github.com/Carme99) with Claude Code.
+**Maintainers:** [Carme99](https://github.com/Carme99).

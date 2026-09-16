@@ -42,8 +42,8 @@
     File Name  : Get-SharedMailboxReport.ps1
     Author     : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 
     Requires Exchange Administrator or Global Reader role.
     Compatible with Exchange Online (Microsoft 365).
@@ -74,7 +74,10 @@ $ErrorActionPreference = 'Stop'
 function Main {
     try {
         $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
-        $ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+        $ReportDir = Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })) 'Reports'
         if (-not (Test-Path -LiteralPath $ReportDir -PathType Container)) {
             New-Item -ItemType Directory -Path $ReportDir -Force -ErrorAction Stop | Out-Null
         }

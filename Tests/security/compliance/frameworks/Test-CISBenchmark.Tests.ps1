@@ -55,8 +55,8 @@ ResetLockoutCount = 15
         It "Has the required header fields" {
             $raw | Should -Match '(?m)^\.SYNOPSIS'
             $raw | Should -Match '(?m)^\.DESCRIPTION'
-            $raw | Should -Match '(?m)^\s*Version\s*:\s*1\.0\.0\s*$'
-            $raw | Should -Match '(?m)^\s*Date\s*:\s*2026-08-23\s*$'
+            $raw | Should -Match '(?m)^\s*Version\s*:\s*2\.0\.0\s*$'
+            $raw | Should -Match '(?m)^\s*Date\s*:\s*2026-09-16\s*$'
         }
 
         It "Has a File Name field matching the disk filename" {

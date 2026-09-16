@@ -24,8 +24,8 @@
     File Name: Test-RemediationFixWindowsLicenseActivation.ps1
     Author: Intune Admin
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 #>
 
 [CmdletBinding()]
@@ -87,7 +87,7 @@ function Main {
         }
 
         # Additional check using WMI.
-                $licensingStatus = Get-WmiObject -Class SoftwareLicensingProduct `
+                $licensingStatus = Get-CimInstance -ClassName SoftwareLicensingProduct `
                     -Filter "ApplicationID='55c92734-d682-4d71-983e-d6ec3f16059f' `
             AND PartialProductKey <> null" `
             -ErrorAction SilentlyContinue

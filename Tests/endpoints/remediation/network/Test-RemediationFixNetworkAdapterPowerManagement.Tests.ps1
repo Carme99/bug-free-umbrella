@@ -13,26 +13,26 @@ Describe "Test-RemediationFixNetworkAdapterPowerManagement" {
 
         # Stub Windows-only cmdlets so Pester can mock them on Linux pwsh.
         function Get-NetAdapter { }
-        function Get-WmiObject { }
+        function Get-CimInstance { }
 
         # Default mock: one healthy physical adapter with power saving disabled.
         Mock Get-NetAdapter {
             @([pscustomobject]@{ Name = 'Ethernet'; Status = 'Up'; Virtual = $false;
                 InterfaceGuid = '{11111111-1111}' })
         }
-        Mock Get-WmiObject {
+        Mock Get-CimInstance {
             @([pscustomobject]@{ InstanceName = 'ROOT\WMI\{11111111-1111}_0'; Enable = $false })
         }
     }
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $raw | Should -Match 'File Name:\s*Test-RemediationFixNetworkAdapterPowerManagement\.ps1'
             $raw | Should -Match 'Author:'
             $raw | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
-            $raw | Should -Match 'Version:\s*1\.0\.0'
-            $raw | Should -Match 'Date:\s*2026-08-23'
+            $raw | Should -Match 'Version:\s*2\.0\.0'
+            $raw | Should -Match 'Date:\s*2026-09-16'
         }
 
         It "Has SYNOPSIS, DESCRIPTION and at least two EXAMPLES" {
@@ -78,7 +78,7 @@ Describe "Test-RemediationFixNetworkAdapterPowerManagement" {
         }
 
         It "Returns 1 with [!] output naming adapters with power saving enabled" {
-            Mock Get-WmiObject {
+            Mock Get-CimInstance {
                 @([pscustomobject]@{ InstanceName = 'ROOT\WMI\{11111111-1111}_0'; Enable = $true })
             }
             $out = Main *>&1
@@ -99,17 +99,17 @@ Describe "Test-RemediationFixNetworkAdapterPowerManagement" {
                         InterfaceGuid = '{CCCC}' }
                 )
             }
-            Mock Get-WmiObject {
+            Mock Get-CimInstance {
                 @([pscustomobject]@{ InstanceName = 'ROOT\WMI\{BBBB}_0'; Enable = $true })
             }
             $out = Main *>&1
             ($out | Out-String) | Should -Not -Match 'Bluetooth Device'
             $out | Where-Object { $_ -is [int] } | Should -Be 0
-            Should -Invoke Get-WmiObject -Times 1 -Exactly
+            Should -Invoke Get-CimInstance -Times 1 -Exactly
         }
 
         It "Tolerates a missing MSPower_DeviceEnable instance as compliant" {
-            Mock Get-WmiObject { @() }
+            Mock Get-CimInstance { @() }
             $out = Main *>&1
             $out | Where-Object { $_ -is [int] } | Should -Be 0
         }

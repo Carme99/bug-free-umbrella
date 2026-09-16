@@ -54,9 +54,9 @@ Describe "Get-AntivirusStatus" {
             $raw | Should -Match ([regex]::Escape("File Name   : $scriptName"))
         }
 
-        It "Pins Version 1.0.0 and relaunch Date 2026-08-23" {
-            $raw | Should -Match 'Version\s*:\s*1\.0\.0'
-            $raw | Should -Match 'Date\s*:\s*2026-08-23'
+        It "Pins Version 2.0.0 and relaunch Date 2026-09-16" {
+            $raw | Should -Match 'Version\s*:\s*2\.0\.0'
+            $raw | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It "Documents every declared parameter in declaration order" {

@@ -36,8 +36,8 @@
     File Name   : Get-ExpiredCertificates.ps1
     Author      : Security & Compliance Team
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -254,7 +254,10 @@ function Main {
         # Export reports if requested
         if ($ExportReport) {
             if ($PSCmdlet.ShouldProcess($Results, "Write certificate expiration CSV and HTML reports")) {
-                $ReportPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
+                $ReportPath = (Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                        elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                        elseif ($env:HOME) { $env:HOME }
+                        else { [IO.Path]::GetTempPath() })) 'Reports')
                 # Validate report directory: reject '..' traversal and UNC remote paths before resolution
                 if ([string]::IsNullOrWhiteSpace($ReportPath) -or
                     $ReportPath -match '(^|[\\/])\.\.([\\/]|$)' -or

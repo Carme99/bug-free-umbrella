@@ -23,8 +23,8 @@
     File Name   : Get-SystemResourceTrends.ps1
     Author      : Bug-Free Umbrella
     Prerequisite: PowerShell 5.1+
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -36,7 +36,7 @@ param(
 $ErrorActionPreference = 'Stop'
 
 # PSSA note: Write-Host is mandated here for colorized [+]/[!]/[-]/[*] console status prefixes
-# (RELAUNCH-SPEC section 3); PSAvoidUsingWriteHost warnings are accepted by design.
+# (STANDARDS section 3); PSAvoidUsingWriteHost warnings are accepted by design.
 
 function Main {
     [CmdletBinding()]

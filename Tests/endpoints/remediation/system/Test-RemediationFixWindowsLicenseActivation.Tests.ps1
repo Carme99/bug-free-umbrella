@@ -13,11 +13,11 @@ Describe "Test-RemediationFixWindowsLicenseActivation" {
     }
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $raw | Should -Match 'File Name:\s*Test-RemediationFixWindowsLicenseActivation\.ps1'
-            $raw | Should -Match 'Version:\s*1\.0\.0'
-            $raw | Should -Match 'Date:\s*2026-08-23'
+            $raw | Should -Match 'Version:\s*2\.0\.0'
+            $raw | Should -Match 'Date:\s*2026-09-16'
             $raw | Should -Match 'Author:'
             $raw | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
         }
@@ -66,23 +66,23 @@ Describe "Test-RemediationFixWindowsLicenseActivation" {
         }
 
         It "Returns 1 with [!] output when Windows is in notification mode" {
-            # Get-WmiObject does not exist on Linux: stub it inline so Pester can Mock it.
-            function Get-WmiObject { }
+            # Get-CimInstance does not exist on Linux: stub it inline so Pester can Mock it.
+            function Get-CimInstance { }
             Mock Invoke-WindowsActivationQuery {
                 [pscustomobject]@{ ExitCode = 0; Output = "License Status: Notification" }
             }
-            Mock Get-WmiObject { $null }
+            Mock Get-CimInstance { $null }
             $out = Main *>&1
             ($out | Out-String) | Should -Match '\[!\]'
             $out | Where-Object { $_ -is [int] } | Should -Be 1
         }
 
         It "Returns 1 with [!] output when WMI reports a non-licensed status code" {
-            function Get-WmiObject { }
+            function Get-CimInstance { }
             Mock Invoke-WindowsActivationQuery {
                 [pscustomobject]@{ ExitCode = 0; Output = "License Status: Unlicensed" }
             }
-            Mock Get-WmiObject { [pscustomobject]@{ LicenseStatus = 0 } }
+            Mock Get-CimInstance { [pscustomobject]@{ LicenseStatus = 0 } }
             $out = Main *>&1
             ($out | Out-String) | Should -Match '\[!\]'
             ($out | Out-String) | Should -Match 'license status code: 0'

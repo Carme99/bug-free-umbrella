@@ -23,8 +23,8 @@
     File Name: Invoke-RemediationCheckDefenderHealthStatus.ps1
     Author: Intune Admin
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -45,11 +45,16 @@ function Main {
 
         # Start Windows Defender service if stopped
         $defenderService = Get-Service -Name "WinDefend" -ErrorAction SilentlyContinue
-        if ($defenderService.Status -ne "Running") {
+        if ($null -eq $defenderService) {
+            # $null.Status -ne "Running" is $true, so an unreadable service would be treated
+            # as stopped and Start-Service would throw on every cycle.
+            Write-Host "[!] Could not query the Windows Defender service (WinDefend)" -ForegroundColor Yellow
+        }
+        elseif ($defenderService.Status -ne "Running") {
             if ($PSCmdlet.ShouldProcess("WinDefend", "Start Windows Defender service")) {
                 Start-Service -Name "WinDefend" -ErrorAction Stop
+                $remediationActions += "Started Windows Defender service"
             }
-            $remediationActions += "Started Windows Defender service"
         }
 
         # Enable real-time protection

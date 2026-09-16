@@ -20,11 +20,11 @@ Describe "Test-WingetOBS" {
 
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $raw | Should -Match 'File Name:\s*Test-WingetOBS\.ps1'
-            $raw | Should -Match 'Version:\s*1\.0\.0'
-            $raw | Should -Match 'Date:\s*2026-08-23'
+            $raw | Should -Match 'Version:\s*2\.0\.0'
+            $raw | Should -Match 'Date:\s*2026-09-16'
             $raw | Should -Match 'Author:'
             $raw | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
         }
@@ -76,7 +76,7 @@ Describe "Test-WingetOBS" {
                 [pscustomobject] @{
                     Name                 = 'OBS Studio'
                     InstalledVersion     = '30.0.0'
-                    AvailableVersions    = @('30.0.0', '31.0.0')
+                    AvailableVersions    = @('30.0.0', '32.0.0')
                     IsUpdateAvailable    = $true
                 }
             }
@@ -94,8 +94,8 @@ Describe "Test-WingetOBS" {
             Mock Get-WinGetPackage {
                 [pscustomobject] @{
                     Name                 = 'OBS Studio'
-                    InstalledVersion     = '31.0.0'
-                    AvailableVersions    = @('31.0.0')
+                    InstalledVersion     = '32.0.0'
+                    AvailableVersions    = @('32.0.0')
                     IsUpdateAvailable    = $false
                 }
             }

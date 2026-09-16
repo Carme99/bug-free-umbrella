@@ -39,14 +39,14 @@
     File Name   : Invoke-SecurityComplianceScan.ps1
     Author      : IT Operations
     Prerequisite: PowerShell 5.1+
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 
     WARNING: This script has not been thoroughly tested in production environments.
     Please test in a non-production environment first and validate results before relying on this data.
 #>
 
-# Write-Host is intentional: RELAUNCH-SPEC section 3 mandates prefixed colored console output.
+# Write-Host is intentional: STANDARDS section 3 mandates prefixed colored console output.
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory = $false)]
@@ -67,7 +67,10 @@ param(
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'),
+    [string]$OutputPath = (Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+            elseif ($env:USERPROFILE) { $env:USERPROFILE }
+            elseif ($env:HOME) { $env:HOME }
+            else { [IO.Path]::GetTempPath() })) 'Reports'),
 
     [Parameter(Mandatory = $false)]
     [switch]$RemediationGuidance
@@ -394,7 +397,10 @@ function Main {
         [ValidateSet('Console', 'HTML', 'CSV', 'JSON')]
         [string]$OutputFormat = 'HTML',
 
-        [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'),
+        [string]$OutputPath = (Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })) 'Reports'),
 
         [switch]$RemediationGuidance
     )

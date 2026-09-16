@@ -31,11 +31,11 @@
     File Name   : Get-MySQLHealth.ps1
     Author      : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
     Requires the mysql command-line client in PATH (or MySQL.Data.dll).
     Note: Invoke-ScriptAnalyzer PSAvoidUsingWriteHost warnings are intentional;
-    RELAUNCH-SPEC section 3 mandates Write-Host-based [+] / [!] / [-] / [*] status output.
+    STANDARDS section 3 mandates Write-Host-based [+] / [!] / [-] / [*] status output.
 #>
 [CmdletBinding()]
 param(
@@ -68,7 +68,7 @@ function Invoke-MySqlCommand {
         [string[]]$ArgumentList
     )
 
-    # Thin wrapper around the native mysql CLI; the mock seam for Pester tests (RELAUNCH-SPEC §3/§5).
+    # Thin wrapper around the native mysql CLI; the mock seam for Pester tests (STANDARDS §3/§5).
     $output = & mysql @ArgumentList 2>$null
     if ($LASTEXITCODE -ne 0) {
         Write-Host "[-] mysql exited with code $LASTEXITCODE" -ForegroundColor Red
@@ -150,5 +150,5 @@ function Main {
     }
 }
 
-# Execute only when run as a script; dot-sourcing (Pester tests) skips execution (RELAUNCH-SPEC §3).
+# Execute only when run as a script; dot-sourcing (Pester tests) skips execution (STANDARDS §3).
 if ($MyInvocation.InvocationName -ne '.') { exit (Main) }

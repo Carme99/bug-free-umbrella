@@ -23,8 +23,8 @@
     File Name: Invoke-RemediationCheckSharedFolders.ps1
     Author: Intune Admin
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -38,31 +38,34 @@ function Main {
     try {
         Write-Host "[*] Checking network shares..." -ForegroundColor Cyan
 
-        # Configuration - Add your approved share names here.
+        # Configuration - additional approved share names.
+        # Windows creates one administrative share per fixed volume (C$, D$, E$, ...), so they
+        # cannot be enumerated literally: a device with an E: drive would otherwise have its E$
+        # administrative share classified as unauthorized and force-removed.
         $approvedShares = @(
             "ADMIN$",
-            "C$",
-            "D$",
             "IPC$",
             "print$"
         )
 
+        function Test-ApprovedShare {
+            param([string]$Name)
+            if ($Name -match '^[A-Za-z]\$$') { return $true }  # per-volume administrative share
+            foreach ($approved in $approvedShares) {
+                if ($Name -like $approved) { return $true }
+            }
+            return $false
+        }
+
         $remediationActions = @()
 
         # Get all network shares.
-        $shares = Get-SmbShare -ErrorAction SilentlyContinue
+        # A failed enumeration must abort: reporting "no unauthorized shares" while the SMB
+        # module is unavailable would claim success with shares still exposed.
+        $shares = Get-SmbShare -ErrorAction Stop
 
         foreach ($share in $shares) {
-            $isApproved = $false
-
-            foreach ($approved in $approvedShares) {
-                if ($share.Name -like $approved) {
-                    $isApproved = $true
-                    break
-                }
-            }
-
-            if (-not $isApproved) {
+            if (-not (Test-ApprovedShare -Name $share.Name)) {
                 try {
                     if ($PSCmdlet.ShouldProcess($share.Name, "Remove unauthorized SMB share")) {
                         Remove-SmbShare -Name $share.Name -Force -ErrorAction Stop

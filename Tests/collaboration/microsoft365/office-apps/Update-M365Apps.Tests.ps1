@@ -84,10 +84,10 @@ Describe "Update-M365Apps" {
     }
 
     Context "Help & Metadata" {
-        It "Declares Version 1.0.0 and relaunch Date 2026-08-23 in .NOTES" {
+        It "Declares Version 2.0.0 and relaunch Date 2026-09-16 in .NOTES" {
             $raw = Get-Content -Raw $scriptPath
-            $raw | Should -Match 'Version\s*:\s*1\.0\.0'
-            $raw | Should -Match 'Date\s*:\s*2026-08-23'
+            $raw | Should -Match 'Version\s*:\s*2\.0\.0'
+            $raw | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It "Matches .NOTES File Name to the disk filename and declares the prerequisite" {

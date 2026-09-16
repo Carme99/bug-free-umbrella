@@ -108,7 +108,7 @@ Every script MUST include:
 
 .NOTES
     Author: Your Name
-    Version: 1.0.0
+    Version: 2.0.0
     Last Updated: YYYY-MM-DD
 
     Requirements:
@@ -134,7 +134,7 @@ param(
 )
 
 #region Variables
-$ScriptVersion = "1.0.0"
+$ScriptVersion = "2.0.0"
 $ErrorActionPreference = "Stop"
 #endregion
 

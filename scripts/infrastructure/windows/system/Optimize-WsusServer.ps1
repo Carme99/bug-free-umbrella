@@ -56,8 +56,8 @@
     File Name:      Optimize-WsusServer.ps1
     Author:         Modernized by Carme99 for 2025
     Prerequisite:   PowerShell 5.1+
-    Version:        1.0.0
-    Date:           2026-08-23
+    Version:        2.0.0
+    Date:           2026-09-16
     Original:       Austin Warren (awarre/Optimize-WsusServer v1.2.1)
                     https://github.com/awarre/Optimize-WsusServer
     Last Updated:   2026-08-23

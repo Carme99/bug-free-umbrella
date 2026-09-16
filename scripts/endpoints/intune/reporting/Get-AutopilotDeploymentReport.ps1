@@ -46,11 +46,15 @@
     File Name   : Get-AutopilotDeploymentReport.ps1
     Author      : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 
     Requires the Microsoft.Graph PowerShell module (Authentication and DeviceManagement).
     Requires permissions: DeviceManagementManagedDevices.Read.All, DeviceManagementServiceConfig.Read.All
+
+    The deviceEnrollmentType filter accepts only members of the intune-shared deviceEnrollmentType
+    enum; any other literal is rejected by Intune with HTTP 400:
+    https://learn.microsoft.com/graph/api/resources/intune-shared-deviceenrollmenttype?view=graph-rest-1.0
 #>
 
 [CmdletBinding()]
@@ -88,7 +92,10 @@ function Write-ColorOutput {
 
 function Main {
     try {
-        $ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+        $ReportDir = Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })) 'Reports'
         if ([string]::IsNullOrWhiteSpace($ReportDir) -or
             $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
             $ReportDir -match '^(\\\\|//)') {
@@ -144,8 +151,8 @@ function Main {
         $cutoffDate = (Get-Date).AddDays(-$Days)
 
         try {
+            # 'windowsAutopilotEnrollment' is not a member of the deviceEnrollmentType enum.
             $enrollmentFilter = "deviceEnrollmentType eq 'windowsAutoEnrollment' or " +
-                "deviceEnrollmentType eq 'windowsAutopilotEnrollment' or " +
                 "deviceEnrollmentType eq 'windowsBulkAzureDomainJoin'"
             $devices = Get-MgDeviceManagementManagedDevice -Filter $enrollmentFilter -All -ErrorAction Stop
 

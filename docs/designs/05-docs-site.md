@@ -4,7 +4,7 @@
 > **Concern:** Docs site (auto-gen from help + catalog, Module.md)
 > **Author:** DesignDocs · **Date:** 2026-08-20 · **Status:** Draft — Implementation consumes this spec
 > **Depends on:** `05-module-manifest-build.md` (manifest path `src/BugFreeUmbrella/BugFreeUmbrella.psd1` + version), `05-reorg-breaking.md` (final 8 categories), `scripts/.catalog/metadata.json` (358 entries)
-> **Upstream fact:** v4.4.0 Nimbus — 358 scripts, 8 domains (`automation 6 · cloud 16 · collaboration 24 · data 6 · endpoints 243 · infrastructure 42 · security 16 · utilities 5`), 100% synopsis coverage (max 182 chars), `tools/Build-Catalog.ps1` pattern to mirror
+> **Upstream fact:** v4.4.0 Nimbus — 384 exported commands, 8 domains (`automation 6 · cloud 16 · collaboration 24 · data 6 · endpoints 243 · infrastructure 42 · security 16 · utilities 5`), 100% synopsis coverage (max 182 chars), `tools/Build-Catalog.ps1` pattern to mirror
 
 ---
 
@@ -134,7 +134,7 @@ flowchart LR
 ```mermaid
 flowchart LR
     User --> MOD[BugFreeUmbrella Module]
-    MOD --> SCRIPTS[scripts/ — 358 scripts · 8 domains]
+    MOD --> SCRIPTS[scripts/ — 384 exported commands · 8 domains]
     SCRIPTS --> CAT[.catalog/metadata.json]
 ```
 ````

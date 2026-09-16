@@ -27,8 +27,8 @@
     File Name: Invoke-RemediationFixCertificateExpiry.ps1
     Author: Intune Admin
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 
     Limitations (SYSTEM context): certificate registry blobs whose record with
     PropertyId 0x20 cannot be parsed are skipped; user hives that cannot be

@@ -19,11 +19,11 @@ Describe "Invoke-WingetTeamViewerFullForceClose" {
     }
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $raw | Should -Match 'File Name:\s*Invoke-WingetTeamViewerFullForceClose\.ps1'
-            $raw | Should -Match 'Version:\s*1\.0\.0'
-            $raw | Should -Match 'Date:\s*2026-08-23'
+            $raw | Should -Match 'Version:\s*2\.0\.0'
+            $raw | Should -Match 'Date:\s*2026-09-16'
             $raw | Should -Match 'Author:'
             $raw | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
         }
@@ -105,7 +105,7 @@ Describe "Invoke-WingetTeamViewerFullForceClose" {
             Should -Invoke Update-WinGetPackage -Times 0 -Exactly -Because "nothing to update"
         }
 
-        It "Defers with exit 1 and no update while TeamViewer Full is running" {
+        It "Force-closes the running application, installs the update and returns 0" {
             function Get-WinGetPackage { }
             function Update-WinGetPackage { }
             Mock Update-WinGetPackage { }
@@ -113,6 +113,42 @@ Describe "Invoke-WingetTeamViewerFullForceClose" {
             Mock Get-Module { $wingetModuleStub } `
                 -ParameterFilter { $ListAvailable -and $Name -eq 'Microsoft.WinGet.Client' }
             Mock Invoke-WingetWithRetry { throw "unexpected winget.exe CLI call" }
+            Mock Stop-Process { }
+            Mock Start-Sleep { }
+            # Running on first observation, gone once the force close has run: this is the
+            # force-close contract, and the sibling non-force-close script is the one that defers.
+            $script:processReads = 0
+            Mock Get-Process {
+                $script:processReads++
+                if ($script:processReads -eq 1) {
+                    [pscustomobject] @{ Id = 4242; ProcessName = 'TeamViewer' }
+                }
+            }
+            Mock Get-WinGetPackage {
+                [pscustomobject] @{
+                    Name              = 'TeamViewer Full'
+                    InstalledVersion  = '14.0.0'
+                    AvailableVersions = @('14.0.0', '15.0.0')
+                    IsUpdateAvailable = $true
+                }
+            }
+            $out = Main *>&1
+            ($out | Out-String) | Should -Match '\[\+\] Force closed TeamViewer Full'
+            $out | Where-Object { $_ -is [int] } | Should -Be 0
+            Should -Invoke Stop-Process -Times 1 -Exactly -Because "the running app is force closed once"
+            Should -Invoke Update-WinGetPackage -Times 1 -Exactly -Because "the update proceeds after the close"
+        }
+
+        It "Returns 1 when the application survives both force-close attempts" {
+            function Get-WinGetPackage { }
+            function Update-WinGetPackage { }
+            Mock Update-WinGetPackage { }
+            $wingetModuleStub = [pscustomobject] @{ Name = 'Microsoft.WinGet.Client' }
+            Mock Get-Module { $wingetModuleStub } `
+                -ParameterFilter { $ListAvailable -and $Name -eq 'Microsoft.WinGet.Client' }
+            Mock Invoke-WingetWithRetry { throw "unexpected winget.exe CLI call" }
+            Mock Stop-Process { }
+            Mock Start-Sleep { }
             Mock Get-Process { [pscustomobject] @{ Id = 4242; ProcessName = 'TeamViewer' } }
             Mock Get-WinGetPackage {
                 [pscustomobject] @{
@@ -123,9 +159,10 @@ Describe "Invoke-WingetTeamViewerFullForceClose" {
                 }
             }
             $out = Main *>&1
-            ($out | Out-String) | Should -Match '\[!\]'
+            ($out | Out-String) | Should -Match 'still running after force close'
             $out | Where-Object { $_ -is [int] } | Should -Be 1
-            Should -Invoke Update-WinGetPackage -Times 0 -Exactly -Because "the app is running"
+            Should -Invoke Stop-Process -Times 2 -Exactly -Because "it retries the force close once"
+            Should -Invoke Update-WinGetPackage -Times 0 -Exactly -Because "the app never closed"
         }
 
         It "Installs the pending update when the app is closed and returns 0 after verification" {

@@ -2,7 +2,12 @@
 
 ![Tier](https://img.shields.io/badge/Tier-1-green) ![Category](https://img.shields.io/badge/Category-Foundation-blue) ![Status](https://img.shields.io/badge/Status-Stable-brightgreen)
 
-> **Catalog is auto-generated from `scripts/.catalog/metadata.json` via `tools/Build-Catalog.ps1`** — see [Catalog Automation](Catalog-Automation.md). The generated catalog covers the **356 cataloged scripts** in that metadata file; the `endpoints/devices/winget/` and `endpoints/devices/proactive-remediations/` trees are inventoried separately and are not part of it.
+> **This page is curated, not generated.** It is a task-oriented entry point to the most commonly used
+> automation. The machine-readable index of the **381 catalogued scripts** is
+> `scripts/.catalog/metadata.json` (see [Catalog Automation](Catalog-Automation.md)), and the complete
+> generated index is [Module.md](Module.md). The `endpoints/devices/winget/` and
+> `endpoints/devices/proactive-remediations/` trees hold 185 deprecated forwarding shims and are excluded
+> from the catalog so each operation has exactly one entry.
 
 > **Your roadmap to finding exactly what you need, fast!**
 
@@ -426,13 +431,14 @@ Organized by category:
 
 | Metric | Count |
 |--------|-------|
-| **Total Scripts** | 539 |
+| **Scripts on disk** | 566 |
+| **Catalogued scripts** | 381 |
 | **Top-Level Domains** | 8 |
 | **Subcategories** | 94 |
 | **Proactive Remediations** | 51 pairs (102 scripts) |
 | **Winget-Managed Applications** | 35 |
 | **Documentation Files** | 45 |
-| **Latest Release** | [v1.0.0 "Clean-Slate Relaunch"](../CHANGELOG.md) |
+| **Latest Release** | [v2.0.0 "Coverage & Correctness"](../CHANGELOG.md) |
 
 ---
 

@@ -19,8 +19,8 @@
     File Name: Invoke-WingetTeamViewerFullForceClose.ps1
     Author: Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 
 .EXAMPLE
     PS C:\> .\Invoke-WingetTeamViewerFullForceClose.ps1
@@ -40,6 +40,8 @@ $ID = 'TeamViewer.TeamViewer'
 $AppProcess = 'TeamViewer'
 $MaxRetries = 3
 $VerifyWaitSeconds = 5
+# Grace period between the two force-close attempts.
+$ForceCloseWaitSeconds = 2
 #endregion
 
 #region Functions
@@ -166,12 +168,34 @@ function Main {
                     $verInstalled = $package.InstalledVersion
                     $verAvailable = $package.AvailableVersions | Select-Object -Last 1
 
-                    # Defer while the application is running; Intune retries later.
+                    # Force-close the running application, then update. This is the force-close variant;
+                    # the sibling Invoke-WingetTeamViewerFull defers instead and lets Intune retry.
                     $process = Get-Process -Name $AppProcess -ErrorAction SilentlyContinue
                     if ($process) {
-                        $outputMsg = "[!] $name is currently running, will try again later."
-                        Write-Host $outputMsg -ForegroundColor Yellow
-                        return 1
+                        if ($PSCmdlet.ShouldProcess($AppProcess, 'Force close the running application')) {
+                            $outputMsg = "[*] $name is running; force-closing before update..."
+                            Write-Host $outputMsg -ForegroundColor Cyan
+                            Stop-Process -Name $AppProcess -Force -ErrorAction SilentlyContinue
+                            Start-Sleep -Seconds $ForceCloseWaitSeconds
+                            $process = Get-Process -Name $AppProcess -ErrorAction SilentlyContinue
+                            if ($process) {
+                                Stop-Process -Name $AppProcess -Force -ErrorAction SilentlyContinue
+                                Start-Sleep -Seconds $ForceCloseWaitSeconds
+                                $process = Get-Process -Name $AppProcess -ErrorAction SilentlyContinue
+                            }
+                            if ($process) {
+                                $outputMsg = "[!] $name is still running after force close, will try again later."
+                                Write-Host $outputMsg -ForegroundColor Yellow
+                                return 1
+                            }
+                            $outputMsg = "[+] Force closed $name."
+                            Write-Host $outputMsg -ForegroundColor Green
+                        }
+                        else {
+                            $outputMsg = "[!] $name is running; force close declined, will try again later."
+                            Write-Host $outputMsg -ForegroundColor Yellow
+                            return 1
+                        }
                     }
 
                     $outputMsg = "[*] Installing $name update ($verInstalled -> $verAvailable)..."
@@ -232,12 +256,34 @@ function Main {
         if ($packageInfo -match '\bVersion\s+Available\b') {
             $v = (-split $packageInfo[-1])[-3, -2]
 
-            # Defer while the application is running; Intune retries later.
+            # Force-close the running application, then update. This is the force-close variant;
+            # the sibling Invoke-WingetTeamViewerFull defers instead and lets Intune retry.
             $process = Get-Process -Name $AppProcess -ErrorAction SilentlyContinue
             if ($process) {
-                $outputMsg = "[!] $name is currently running, will try again later."
-                Write-Host $outputMsg -ForegroundColor Yellow
-                return 1
+                if ($PSCmdlet.ShouldProcess($AppProcess, 'Force close the running application')) {
+                    $outputMsg = "[*] $name is running; force-closing before update..."
+                    Write-Host $outputMsg -ForegroundColor Cyan
+                    Stop-Process -Name $AppProcess -Force -ErrorAction SilentlyContinue
+                    Start-Sleep -Seconds $ForceCloseWaitSeconds
+                    $process = Get-Process -Name $AppProcess -ErrorAction SilentlyContinue
+                    if ($process) {
+                        Stop-Process -Name $AppProcess -Force -ErrorAction SilentlyContinue
+                        Start-Sleep -Seconds $ForceCloseWaitSeconds
+                        $process = Get-Process -Name $AppProcess -ErrorAction SilentlyContinue
+                    }
+                    if ($process) {
+                        $outputMsg = "[!] $name is still running after force close, will try again later."
+                        Write-Host $outputMsg -ForegroundColor Yellow
+                        return 1
+                    }
+                    $outputMsg = "[+] Force closed $name."
+                    Write-Host $outputMsg -ForegroundColor Green
+                }
+                else {
+                    $outputMsg = "[!] $name is running; force close declined, will try again later."
+                    Write-Host $outputMsg -ForegroundColor Yellow
+                    return 1
+                }
             }
 
             $outputMsg = "[*] Installing $name update ($($v[0]) -> $($v[1]))..."

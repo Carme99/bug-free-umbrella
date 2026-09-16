@@ -35,8 +35,8 @@ Describe "Reset-WindowsUpdate" {
             $text | Should -Match '\.SYNOPSIS'
             $text | Should -Match '\.DESCRIPTION'
             $text | Should -Match 'File Name:\s*Reset-WindowsUpdate\.ps1'
-            $text | Should -Match 'Version:\s*1\.0\.0'
-            $text | Should -Match 'Date:\s*2026-08-23'
+            $text | Should -Match 'Version:\s*2\.0\.0'
+            $text | Should -Match 'Date:\s*2026-09-16'
             $text | Should -Match 'Prerequisite:\s*PowerShell'
             $text | Should -Match 'Author:\s*\S'
         }

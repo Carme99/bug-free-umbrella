@@ -33,8 +33,8 @@
     File Name: Find-PolicyConflicts.ps1
     Author: Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 #>
 
 [CmdletBinding()]
@@ -59,7 +59,10 @@ function Main {
     try {
         Write-Host "[*] Starting policy conflict detection..." -ForegroundColor Cyan
 
-        $ReportDir = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports'
+        $ReportDir = Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })) 'Reports'
         if ([string]::IsNullOrWhiteSpace($ReportDir) -or
             $ReportDir -match '(^|[\\/])\.\.([\\/]|$)' -or
             $ReportDir -match '^(\\\\|//)') {
@@ -181,7 +184,7 @@ function Main {
             # Analyze for conflicts
             Write-Host "[*] Analyzing for conflicts..." -ForegroundColor Cyan
 
-            # Check 1: Multiple policies assigned to same groups
+            # Check 1: Map each assignment target to the policies assigned to it (used by Check 3)
             Write-Host "  Checking for overlapping assignments..." -ForegroundColor Gray
 
             $assignmentMap = @{}
@@ -208,33 +211,6 @@ function Main {
                 }
             }
 
-            # Find groups with multiple policies
-            foreach ($target in $assignmentMap.Keys) {
-                $policies = $assignmentMap[$target]
-
-                if ($policies.Count -gt 1) {
-                    # Group by policy type
-                    $typeGroups = $policies | Group-Object -Property ODataType
-
-                    foreach ($typeGroup in $typeGroups) {
-                        if ($typeGroup.Count -gt 1) {
-                            $conflicts += [PSCustomObject]@{
-                                ConflictType   = "Overlapping Assignment"
-                                Severity       = "Medium"
-                                TargetGroup    = $target
-                                PolicyCount    = $typeGroup.Count
-                                PolicyType     = $typeGroup.Name
-                                Policies       = ($typeGroup.Group.PolicyName -join "; ")
-                                Description    = ("$($typeGroup.Count) policies of type '$($typeGroup.Name)' " +
-                                    "assigned to same target")
-                                Recommendation = ("Review policies to ensure settings don't conflict. " +
-                                    "Consider consolidating.")
-                            }
-                        }
-                    }
-                }
-            }
-
             # Check 2: Similar policy names (possible duplicates)
             Write-Host "  Checking for duplicate or similar policies..." -ForegroundColor Gray
 
@@ -255,16 +231,15 @@ function Main {
                 }
             }
 
-            # Check 3: Same ODataType assigned to same groups (likely conflicts)
+            # Check 3: Same policy type assigned to the same target. This is the single
+            # detection for an assignment overlap: one conflict entry per target/type.
             Write-Host "  Checking for same policy types on same targets..." -ForegroundColor Gray
 
             foreach ($target in $assignmentMap.Keys) {
-                $policies = $assignmentMap[$target]
-                $odataGroups = $policies | Group-Object -Property ODataType
+                $odataGroups = $assignmentMap[$target] | Group-Object -Property ODataType
 
                 foreach ($odataGroup in $odataGroups) {
                     if ($odataGroup.Count -gt 1) {
-                        # Check if policies are the same type and might conflict
                         $policyNames = $odataGroup.Group.PolicyName
 
                         $conflicts += [PSCustomObject]@{

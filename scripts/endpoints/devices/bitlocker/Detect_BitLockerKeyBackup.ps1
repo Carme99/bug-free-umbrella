@@ -26,8 +26,8 @@
     File Name  : Detect_BitLockerKeyBackup.ps1
     Author     : Intune / Proactive Remediations
     Prerequisite: PowerShell 5.1+
-    Version    : 1.0.0
-    Date       : 2026-08-23
+    Version    : 2.0.0
+    Date       : 2026-09-16
 
     Run as administrator/SYSTEM on Windows with the BitLocker management cmdlets available.
     Reference:
@@ -39,7 +39,7 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
-# PSScriptAnalyzer: Write-Host with prefix/color output is mandated by docs/RELAUNCH-SPEC.md section 3.
+# PSScriptAnalyzer: Write-Host with prefix/color output is mandated by docs/STANDARDS.md section 3.
 
 #region Functions
 

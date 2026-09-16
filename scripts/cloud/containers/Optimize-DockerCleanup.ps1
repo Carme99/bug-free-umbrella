@@ -29,8 +29,8 @@
     File Name   : Optimize-DockerCleanup.ps1
     Author      : IT Infrastructure Team
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(

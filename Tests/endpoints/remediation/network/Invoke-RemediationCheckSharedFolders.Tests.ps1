@@ -13,12 +13,12 @@ Describe "Invoke-RemediationCheckSharedFolders" {
     }
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $raw | Should -Match 'File Name:\s*Invoke-RemediationCheckSharedFolders\.ps1'
             $raw | Should -Match 'Author:'
-            $raw | Should -Match 'Version:\s*1\.0\.0'
-            $raw | Should -Match 'Date:\s*2026-08-23'
+            $raw | Should -Match 'Version:\s*2\.0\.0'
+            $raw | Should -Match 'Date:\s*2026-09-16'
             $raw | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
         }
 
@@ -81,6 +81,34 @@ Describe "Invoke-RemediationCheckSharedFolders" {
             ($out | Out-String) | Should -Match '\[\+\]'
             $out | Where-Object { $_ -is [int] } | Should -Be 0
             Should -Invoke Remove-SmbShare -Times 1 -Exactly
+        }
+
+        It "Keeps the administrative share of every fixed volume, not just C$ and D$" {
+            # Windows creates one administrative share per fixed volume. An allowlist of
+            # literal names classified a device's E$ share as unauthorized and force-removed it.
+            Mock Get-SmbShare {
+                @(
+                    [pscustomobject]@{ Name = 'C$'; Path = 'C:\\' },
+                    [pscustomobject]@{ Name = 'E$'; Path = 'E:\\' },
+                    [pscustomobject]@{ Name = 'Z$'; Path = 'Z:\\' }
+                )
+            }
+            $out = Main *>&1
+            $out | Where-Object { $_ -is [int] } | Should -Be 0
+            Should -Invoke Remove-SmbShare -Times 0 -Exactly -Because "all are volume admin shares"
+        }
+
+        It "Still removes a share whose name merely resembles a drive-letter admin share" {
+            Mock Get-SmbShare {
+                @(
+                    [pscustomobject]@{ Name = 'EE$'; Path = 'C:\shares\EE$' },
+                    [pscustomobject]@{ Name = 'E1$'; Path = 'C:\shares\E1$' }
+                )
+            }
+            $out = Main *>&1
+            ($out | Out-String) | Should -Match '\[\+\]'
+            $out | Where-Object { $_ -is [int] } | Should -Be 0
+            Should -Invoke Remove-SmbShare -Times 2 -Exactly -Because "neither is a real admin share"
         }
 
         It "Is idempotent: approved-only share list removes nothing and returns 0" {

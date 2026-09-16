@@ -13,8 +13,9 @@
     - Isolation status
 
     This script is a FRAMEWORK TEMPLATE: it produces no live API data until Microsoft Graph or
-    Microsoft Defender for Endpoint API integration is implemented. It writes HTML/JSON reports
-    under -OutputPath when requested. No network calls are made by the current implementation.
+    Microsoft Defender for Endpoint API integration is implemented. It writes HTML/CSV/JSON
+    reports under -OutputPath when requested. No network calls are made by the current
+    implementation.
 
     Exit codes: 0 = framework report produced; 1 = missing required input (-TenantId), unsafe
     output path, or a report write failure.
@@ -45,8 +46,8 @@
     File Name   : Get-MDEDeviceHealth.ps1
     Author      : IT Operations
     Prerequisite: PowerShell 5.1+
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 
     Requires (for future live data): Microsoft.Graph or API access to MDE
 
@@ -54,7 +55,7 @@
     Please test in a non-production environment first and validate results before relying on this data.
 #>
 
-# Write-Host is intentional: RELAUNCH-SPEC section 3 mandates prefixed colored console output.
+# Write-Host is intentional: STANDARDS section 3 mandates prefixed colored console output.
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [Parameter(Mandatory = $false)]
@@ -76,7 +77,10 @@ param(
 
     [Parameter(Mandatory = $false)]
     [ValidateNotNullOrEmpty()]
-    [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
+    [string]$OutputPath = (Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+            elseif ($env:USERPROFILE) { $env:USERPROFILE }
+            elseif ($env:HOME) { $env:HOME }
+            else { [IO.Path]::GetTempPath() })) 'Reports')
 )
 
 $ErrorActionPreference = 'Stop'
@@ -96,7 +100,10 @@ function Main {
         [ValidateSet('Console', 'HTML', 'CSV', 'JSON')]
         [string]$OutputFormat = 'HTML',
 
-        [string]$OutputPath = (Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Reports')
+        [string]$OutputPath = (Join-Path ($(if ($bfuMyDocs = [Environment]::GetFolderPath('MyDocuments')) { $bfuMyDocs }
+                elseif ($env:USERPROFILE) { $env:USERPROFILE }
+                elseif ($env:HOME) { $env:HOME }
+                else { [IO.Path]::GetTempPath() })) 'Reports')
     )
 
     try {
@@ -311,6 +318,26 @@ function Main {
                 if ($PSCmdlet.ShouldProcess($jsonFile, "Write MDE device health JSON report")) {
                     $results | ConvertTo-Json -Depth 10 | Out-File -FilePath $jsonFile -ErrorAction Stop
                     Write-Host "`n[+] JSON framework saved to: $jsonFile" -ForegroundColor Green
+                }
+            }
+
+            'CSV' {
+                $csvFile = Join-Path $resolvedOutputPath "MDE-DeviceHealth-${RunTimestamp}_${RunId}.csv"
+                if ($PSCmdlet.ShouldProcess($csvFile, "Write MDE device health CSV report")) {
+                    # Same report rows the HTML/JSON branches emit: one row per report run carrying
+                    # the run metadata and every summary counter.
+                    $csvRow = [ordered]@{
+                        Timestamp = $results.Timestamp.ToString('yyyy-MM-dd HH:mm:ss')
+                        TenantId  = $TenantId
+                        RunId     = $RunId
+                    }
+                    foreach ($counter in $results.Summary.Keys) {
+                        $csvRow[$counter] = $results.Summary[$counter]
+                    }
+
+                    [PSCustomObject]$csvRow | Export-Csv -Path $csvFile -NoTypeInformation `
+                        -Encoding UTF8 -ErrorAction Stop
+                    Write-Host "`n[+] CSV report saved to: $csvFile" -ForegroundColor Green
                 }
             }
         }

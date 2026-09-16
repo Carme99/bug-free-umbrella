@@ -19,8 +19,8 @@ Describe 'Test-RemediationCheckWindowsActivationGracePeriod' {
             $scriptText | Should -Match 'File Name\s*:\s*Test-RemediationCheckWindowsActivationGracePeriod\.ps1'
             $scriptText | Should -Match 'Author\s*:'
             $scriptText | Should -Match 'Prerequisite\s*:\s*PowerShell 7\.0'
-            $scriptText | Should -Match 'Version\s*:\s*1\.0\.0'
-            $scriptText | Should -Match 'Date\s*:\s*2026-08-23'
+            $scriptText | Should -Match 'Version\s*:\s*2\.0\.0'
+            $scriptText | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It 'Documents its detect exit-code contract in DESCRIPTION' {
@@ -71,7 +71,9 @@ Describe 'Test-RemediationCheckWindowsActivationGracePeriod' {
             $scriptText | Should -Not -Match '\|\||&&|\?\?'
         }
 
-        It 'Does not use the PS5.1-only Get-WmiObject cmdlet' {
+        It 'Does not use Get-WmiObject, which was removed in PowerShell 6' {
+            # Get-CimInstance ships with PowerShell 3.0+ and is the supported cmdlet; Get-WmiObject
+            # is the one that no longer exists under the PS7 prerequisite this script declares.
             $scriptText | Should -Not -Match 'Get-WmiObject'
         }
     }
@@ -146,7 +148,7 @@ Describe 'Test-RemediationCheckWindowsActivationGracePeriod' {
             )) {
             $existing = Get-Command $cmd -ErrorAction SilentlyContinue
             if ($existing -and $existing.CommandType -eq 'Function') {
-                Remove-Item -LiteralPath "Function:global:$cmd" -Force
+                Remove-Item -LiteralPath "Function:$cmd" -Force
             }
         }
         Set-Location $PSScriptRoot

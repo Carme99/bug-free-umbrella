@@ -25,8 +25,8 @@
     File Name: Test-RemediationCheckTPMStatus.ps1
     Author: Intune Admin
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 
     TPM version reference: https://learn.microsoft.com/en-us/windows/security/hardware-security/
     tpm/initialize-and-configure-ownership-of-the-tpm
@@ -68,7 +68,7 @@ function Main {
         }
 
         # Check TPM version (TPM 2.0 is preferred)
-        $tpmWmi = Get-WmiObject -Namespace "root\cimv2\Security\MicrosoftTpm" -Class Win32_Tpm `
+        $tpmWmi = Get-CimInstance -Namespace "root\cimv2\Security\MicrosoftTpm" -ClassName Win32_Tpm `
             -ErrorAction SilentlyContinue
         $tpmVersion = $tpmWmi.SpecVersion
         if ($tpmVersion) {

@@ -23,8 +23,8 @@
     File Name: Invoke-RemediationCheckSecurityBaseline.ps1
     Author: Intune / Proactive Remediations
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 #>
 
 [CmdletBinding(SupportsShouldProcess)]
@@ -64,15 +64,26 @@ function Main {
             $remediated += "Enabled real-time protection"
         }
 
-        # Update Defender signatures
-        if ($PSCmdlet.ShouldProcess("Windows Defender", "Update antivirus signatures")) {
-            Update-MpSignature -ErrorAction Stop
+        # Update Defender signatures only when they are actually stale. The age is already
+        # available from the Get-MpComputerStatus read above, so a converged device is not
+        # mutated. The bookkeeping stays inside the gate: reporting a change under -WhatIf
+        # would make a dry run misstate its own plan.
+        $signatureAge = if ($defenderStatus) { $defenderStatus.AntivirusSignatureAge } else { $null }
+        if ($null -ne $signatureAge -and $signatureAge -ge 1) {
+            if ($PSCmdlet.ShouldProcess("Windows Defender", "Update antivirus signatures")) {
+                Update-MpSignature -ErrorAction Stop
+                $remediated += "Updated antivirus signatures"
+            }
         }
-        $remediated += "Updated antivirus signatures"
 
         # Enable UAC
         $uacKey = Get-ItemProperty -Path $uacRegistryPath -ErrorAction SilentlyContinue
-        if ($uacKey.EnableLUA -ne 1) {
+        if ($null -eq $uacKey) {
+            # $null.EnableLUA is $null and $null -ne 1 is $true, so an unreadable key would be
+            # scored as drift and rewritten on every cycle.
+            Write-Host "[!] Could not read UAC configuration at $uacRegistryPath" -ForegroundColor Yellow
+        }
+        elseif ($uacKey.EnableLUA -ne 1) {
             if ($PSCmdlet.ShouldProcess($uacRegistryPath, "Set EnableLUA to 1 (enable UAC)")) {
                 Set-ItemProperty -Path $uacRegistryPath -Name "EnableLUA" -Value 1 -ErrorAction Stop
             }

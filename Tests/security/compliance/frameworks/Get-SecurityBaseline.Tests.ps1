@@ -112,10 +112,10 @@ Describe "Get-SecurityBaseline" {
     }
 
     Context "Help & Metadata" {
-        It "Declares required NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $rawText | Should -Match '(?m)^\.NOTES\r?$'
-            $rawText | Should -Match 'Version\s*:\s*1\.0\.0'
-            $rawText | Should -Match 'Date\s*:\s*2026-08-23'
+            $rawText | Should -Match 'Version\s*:\s*2\.0\.0'
+            $rawText | Should -Match 'Date\s*:\s*2026-09-16'
             $rawText | Should -Match 'Prerequisite\s*:\s*PowerShell'
             $rawText | Should -Match 'Author\s*:\s*\S'
         }

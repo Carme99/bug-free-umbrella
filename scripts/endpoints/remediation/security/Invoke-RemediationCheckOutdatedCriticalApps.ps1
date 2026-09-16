@@ -41,8 +41,8 @@
     File Name: Invoke-RemediationCheckOutdatedCriticalApps.ps1
     Author: Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 
     USAGE RECOMMENDATION:
     Deploy with the standard maintenance cadence for comprehensive updates. Use
@@ -448,6 +448,7 @@ function Get-OutdatedApps {
         $wingetResult = Invoke-Winget -ArgumentList @('list', '--upgrade-available', '--source', 'winget')
         if ($wingetResult.ExitCode -ne 0) {
             Write-Log "winget list exited with code $($wingetResult.ExitCode)" "ERROR"
+            $script:DetectionFailed = $true
             return @()
         }
         $wingetOutput = $wingetResult.Output | Out-String
@@ -475,6 +476,7 @@ function Get-OutdatedApps {
     }
     catch {
         Write-Log "Error detecting outdated apps: $_" "ERROR"
+        $script:DetectionFailed = $true
         return @()
     }
 }
@@ -486,6 +488,8 @@ function Main {
     param()
 
     try {
+        # Reset per run: detection failure is a property of this invocation, not the session.
+        $script:DetectionFailed = $false
         Write-Log "=== Winget Critical App Update Remediation Started ==="
         Write-Log "Priority Apps Only: $PriorityAppsOnly"
         Write-Log "Update Only If Not Running: $UpdateOnlyIfNotRunning"
@@ -493,6 +497,11 @@ function Main {
 
         # Get outdated applications
         $outdatedApps = Get-OutdatedApps
+
+        if ($script:DetectionFailed) {
+            Write-Log "Update detection could not be completed - winget output could not be read" "ERROR"
+            return 1
+        }
 
         if ($outdatedApps.Count -eq 0) {
             Write-Log "No outdated applications found"

@@ -11,8 +11,8 @@
     File Name   : Get-VMSecurityConfig.Tests.ps1
     Author      : Bug-Free Umbrella
     Prerequisite: PowerShell 7.0
-    Version     : 1.0.0
-    Date        : 2026-08-23
+    Version     : 2.0.0
+    Date        : 2026-09-16
 #>
 
 #Requires -Modules Pester
@@ -22,7 +22,7 @@ Describe "Get-VMSecurityConfig" {
         $scriptPath = Join-Path $PSScriptRoot "../../../../../scripts/cloud/azure/compute/Azure-VirtualMachines/Get-VMSecurityConfig.ps1"
         $scriptContent = Get-Content -Path $scriptPath -Raw
 
-        # Safe: the script's top-level guard skips Main when dot-sourced (RELAUNCH-SPEC §3).
+        # Safe: the script's top-level guard skips Main when dot-sourced (STANDARDS §3).
         . $scriptPath
 
         # Az cmdlets are absent offline; Pester needs a stub before it can mock by name.
@@ -74,8 +74,8 @@ Describe "Get-VMSecurityConfig" {
             $scriptContent | Should -Match 'File Name\s*:\s*Get-VMSecurityConfig\.ps1'
             $scriptContent | Should -Match 'Author\s*:\s*\S+'
             $scriptContent | Should -Match 'Prerequisite\s*:\s*PowerShell 7\.0'
-            $scriptContent | Should -Match 'Version\s*:\s*1\.0\.0'
-            $scriptContent | Should -Match 'Date\s*:\s*2026-08-23'
+            $scriptContent | Should -Match 'Version\s*:\s*2\.0\.0'
+            $scriptContent | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It "Documents one .PARAMETER per declared parameter" {

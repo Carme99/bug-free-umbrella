@@ -61,8 +61,8 @@ Describe "Install-TeamsAVD" {
             $raw | Should -Match 'File Name\s*:\s*Install-TeamsAVD\.ps1'
             $raw | Should -Match 'Author\s*:\s*\S'
             $raw | Should -Match 'Prerequisite\s*:\s*PowerShell 7\.0'
-            $raw | Should -Match 'Version\s*:\s*1\.0\.0'
-            $raw | Should -Match 'Date\s*:\s*2026-08-23'
+            $raw | Should -Match 'Version\s*:\s*2\.0\.0'
+            $raw | Should -Match 'Date\s*:\s*2026-09-16'
         }
 
         It "Documents one .PARAMETER per declared parameter, in declaration order" {
@@ -143,7 +143,7 @@ Describe "Install-TeamsAVD" {
                 $false)
             $approvedVerbs = (Get-Verb).Verb
             foreach ($fn in $functions) {
-                if ($fn.Name -eq 'Main') { continue }  # entry-point helper per RELAUNCH-SPEC §3
+                if ($fn.Name -eq 'Main') { continue }  # entry-point helper per STANDARDS §3
                 $verb = ($fn.Name -split '-')[0]
                 $approvedVerbs | Should -Contain $verb -Because "$($fn.Name) must use an approved verb"
             }

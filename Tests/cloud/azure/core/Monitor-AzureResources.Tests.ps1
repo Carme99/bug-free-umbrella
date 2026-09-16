@@ -13,8 +13,8 @@
     File Name: Monitor-AzureResources.Tests.ps1
     Author: Bug-Free Umbrella
     Prerequisite: PowerShell 7.0, Pester 5.7.1
-    Version: 1.0.0
-    Date: 2026-08-23
+    Version: 2.0.0
+    Date: 2026-09-16
 #>
 
 Describe "Monitor-AzureResources" {
@@ -88,9 +88,9 @@ Describe "Monitor-AzureResources" {
             $raw | Should -Match '(?m)^\s*File Name:\s*Monitor-AzureResources\.ps1\s*$'
         }
 
-        It "declares Version 1.0.0 and Date 2026-08-23" {
-            $raw | Should -Match '(?m)^\s*Version:\s*1\.0\.0\s*$'
-            $raw | Should -Match '(?m)^\s*Date:\s*2026-08-23\s*$'
+        It "declares Version 2.0.0 and Date 2026-09-16" {
+            $raw | Should -Match '(?m)^\s*Version:\s*2\.0\.0\s*$'
+            $raw | Should -Match '(?m)^\s*Date:\s*2026-09-16\s*$'
         }
 
         It "declares Author and PowerShell 7.0 prerequisite" {

@@ -21,11 +21,11 @@ Describe "Invoke-WingetCpp20152019RedistX86" {
     }
 
     Context "Help & Metadata" {
-        It "Declares required .NOTES fields with Version 1.0.0 and Date 2026-08-23" {
+        It "Declares required .NOTES fields with Version 2.0.0 and Date 2026-09-16" {
             $raw = Get-Content -Path $scriptPath -Raw
             $raw | Should -Match 'File Name:\s*Invoke-WingetCpp20152019RedistX86.ps1'
-            $raw | Should -Match 'Version:\s*1\.0\.0'
-            $raw | Should -Match 'Date:\s*2026-08-23'
+            $raw | Should -Match 'Version:\s*2\.0\.0'
+            $raw | Should -Match 'Date:\s*2026-09-16'
             $raw | Should -Match 'Author:'
             $raw | Should -Match 'Prerequisite:\s*PowerShell 7\.0'
         }
@@ -37,9 +37,9 @@ Describe "Invoke-WingetCpp20152019RedistX86" {
             @($help.Examples.Example).Count | Should -BeGreaterOrEqual 2
         }
 
-        It "Documents the exact package ID Microsoft.VCRedist.2015+.x64 in help and configuration" {
+        It "Documents the exact package ID Microsoft.VCRedist.2015+.x86 in help and configuration" {
             $raw = Get-Content -Path $scriptPath -Raw
-            $raw | Should -Match ([regex]::Escape("Microsoft.VCRedist.2015+.x64"))
+            $raw | Should -Match ([regex]::Escape("Microsoft.VCRedist.2015+.x86"))
         }
 
         It "Declares one .PARAMETER per param() parameter" {
@@ -101,7 +101,7 @@ Describe "Invoke-WingetCpp20152019RedistX86" {
             Mock Get-Process { $null }
             Mock Get-WinGetPackage {
                 [pscustomobject] @{
-                    Name              = 'Microsoft.VCRedist.2015+.x64'
+                    Name              = 'Microsoft.VCRedist.2015+.x86'
                     InstalledVersion  = '14.0.2'
                     AvailableVersions = @('14.0.2')
                     IsUpdateAvailable = $false
@@ -121,10 +121,10 @@ Describe "Invoke-WingetCpp20152019RedistX86" {
             Mock Get-Module { $wingetModuleStub } `
                 -ParameterFilter { $ListAvailable -and $Name -eq 'Microsoft.WinGet.Client' }
             Mock Invoke-WingetWithRetry { throw "unexpected winget.exe CLI call" }
-            Mock Get-Process { [pscustomobject] @{ Id = 4321; ProcessName = 'Microsoft.VCRedist.2015+.x64' } }
+            Mock Get-Process { [pscustomobject] @{ Id = 4321; ProcessName = 'Microsoft.VCRedist.2015+.x86' } }
             Mock Get-WinGetPackage {
                 [pscustomobject] @{
-                    Name              = 'Microsoft.VCRedist.2015+.x64'
+                    Name              = 'Microsoft.VCRedist.2015+.x86'
                     InstalledVersion  = '14.0.1'
                     AvailableVersions = @('14.0.1', '14.0.2')
                     IsUpdateAvailable = $true
@@ -150,7 +150,7 @@ Describe "Invoke-WingetCpp20152019RedistX86" {
                 $script:pkgCalls++
                 if ($script:pkgCalls -eq 1) {
                     [pscustomobject] @{
-                        Name              = 'Microsoft.VCRedist.2015+.x64'
+                        Name              = 'Microsoft.VCRedist.2015+.x86'
                         InstalledVersion  = '14.0.1'
                         AvailableVersions = @('14.0.1', '14.0.2')
                         IsUpdateAvailable = $true
@@ -158,7 +158,7 @@ Describe "Invoke-WingetCpp20152019RedistX86" {
                 }
                 else {
                     [pscustomobject] @{
-                        Name              = 'Microsoft.VCRedist.2015+.x64'
+                        Name              = 'Microsoft.VCRedist.2015+.x86'
                         InstalledVersion  = '14.0.2'
                         AvailableVersions = @('14.0.2')
                         IsUpdateAvailable = $false
@@ -182,7 +182,7 @@ Describe "Invoke-WingetCpp20152019RedistX86" {
             Mock Get-Process { $null }
             Mock Get-WinGetPackage {
                 [pscustomobject] @{
-                    Name              = 'Microsoft.VCRedist.2015+.x64'
+                    Name              = 'Microsoft.VCRedist.2015+.x86'
                     InstalledVersion  = '14.0.2'
                     AvailableVersions = @('14.0.2')
                     IsUpdateAvailable = $false
@@ -223,7 +223,7 @@ Describe "Invoke-WingetCpp20152019RedistX86" {
                     @(
                         'Name                Version Available'
                         '-------------------- ------- ---------'
-                        "Microsoft.VCRedist.2015+.x64 14.0.1    14.0.2"
+                        "Microsoft.VCRedist.2015+.x86 14.0.1    14.0.2"
                     ) -join "`n"
                 }
                 elseif ($script:wCalls -eq 2) { '' }
@@ -231,7 +231,7 @@ Describe "Invoke-WingetCpp20152019RedistX86" {
                     @(
                         'Name                Version',
                         '-------------------- -------',
-                        "Microsoft.VCRedist.2015+.x64 14.0.2"
+                        "Microsoft.VCRedist.2015+.x86 14.0.2"
                     ) -join "`n"
                 }
             }
