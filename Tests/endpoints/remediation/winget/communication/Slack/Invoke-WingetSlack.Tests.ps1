@@ -109,6 +109,34 @@ Describe "Invoke-WingetSlack" {
             Should -Invoke Update-WinGetPackage -Times 0 -Exactly -Because "nothing to update"
         }
 
+        It "Leaves a running app alone when no update is available" {
+            # The close used to run before the update check, so a fully patched device had its
+            # session discarded on every cycle for no benefit.
+            function Get-WinGetPackage { }
+            function Update-WinGetPackage { }
+            function Stop-ApplicationProcess { }
+            Mock Update-WinGetPackage { }
+            Mock Stop-ApplicationProcess { $true }
+            $wingetModuleStub = [pscustomobject] @{ Name = 'Microsoft.WinGet.Client' }
+            Mock Get-Module { $wingetModuleStub } `
+                -ParameterFilter { $ListAvailable -and $Name -eq 'Microsoft.WinGet.Client' }
+            Mock Invoke-WingetWithRetry { throw "unexpected winget.exe CLI call" }
+            Mock Get-LoggedOnUserSession { @() }
+            Mock Get-Process { [pscustomobject] @{ Id = 4321; ProcessName = 'Slack' } }
+            Mock Get-WinGetPackage {
+                [pscustomobject] @{
+                    Name              = 'Slack'
+                    InstalledVersion  = '1.0.9200'
+                    AvailableVersions = @('1.0.9200')
+                    IsUpdateAvailable = $false
+                }
+            }
+            $out = Main *>&1
+            $out | Where-Object { $_ -is [int] } | Should -Be 0
+            Should -Invoke Stop-ApplicationProcess -Times 0 -Exactly -Because "no update is available"
+            Should -Invoke Update-WinGetPackage -Times 0 -Exactly
+        }
+
         It "Notifies, force closes a running app, updates and returns 0" {
             function Get-WinGetPackage { }
             function Update-WinGetPackage { }

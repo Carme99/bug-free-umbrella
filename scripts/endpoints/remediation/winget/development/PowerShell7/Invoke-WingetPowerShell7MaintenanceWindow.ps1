@@ -211,11 +211,18 @@ function Close-AppProcessForMaintenance {
     .SYNOPSIS
         Force-closes the app process during the maintenance window, retrying once if it survives.
     #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
     $outputMsg = "$name is running. Force closing during maintenance window..."
     Write-Log $outputMsg -Level Info
     $outputMsg = "[*] $name is running. Force closing application during maintenance window..."
     Write-Host $outputMsg -ForegroundColor Cyan
 
+    # Gated: killing a user process is destructive, so a -WhatIf dry run must not do it.
+    if (-not $PSCmdlet.ShouldProcess($AppProcess, 'Force close application process')) {
+        return
+    }
     Stop-Process -Name "$AppProcess" -Force -ErrorAction SilentlyContinue
     Start-Sleep -Seconds $GracePeriodSeconds
 

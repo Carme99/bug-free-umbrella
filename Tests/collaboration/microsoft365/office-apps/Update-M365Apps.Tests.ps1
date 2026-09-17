@@ -65,10 +65,17 @@ Describe "Update-M365Apps" {
         # dot-sourcing is invisible to Main once an It runs. Re-seed it from inside each
         # behavioral test so Main's $script: lookups resolve in the active script scope.
         function Init-TestScriptState {
+            # Linux pwsh treats a Windows literal as a RELATIVE path, so XmlDocument.Save
+            # wrote a file literally named 'C:\AVD\M365Apps\download.xml' into the current
+            # directory. Anchor every writable path under the system temp directory so the
+            # write cannot escape whatever the working directory happens to be.
+            # The system temp directory always exists (New-Item is mocked in this suite, so a
+            # temp SUBdirectory could not be created). Unique file name avoids cross-test collisions.
+            $tempRoot = [IO.Path]::GetTempPath()
             $script:Config = @{
                 ODTPath          = 'C:\AVD\M365Apps\setup.exe'
                 InstallXMLPath   = 'C:\AVD\M365Apps\install.xml'
-                DownloadXMLPath  = 'C:\AVD\M365Apps\download.xml'
+                DownloadXMLPath  = Join-Path $tempRoot "download-$([guid]::NewGuid().ToString('N')).xml"
                 UpdatesPath      = 'C:\AVD\M365Apps\OfficeUpdates'
                 LogPath          = 'C:\AVD\M365Apps\Logs'
                 MaxLogAge        = 30

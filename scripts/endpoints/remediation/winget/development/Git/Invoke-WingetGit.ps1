@@ -105,9 +105,15 @@ function Stop-GitProcesses {
     .SYNOPSIS
         Force-closes any running git processes and waits out the grace period.
     #>
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
+
     $outputMsg = "[*] Closing git processes (safe: CLI operations are short-lived)..."
     Write-Host $outputMsg -ForegroundColor Cyan
-    Stop-Process -Name "$AppProcess" -Force -ErrorAction SilentlyContinue
+    # Gated: killing a user process is destructive, so a -WhatIf dry run must not do it.
+    if ($PSCmdlet.ShouldProcess($AppProcess, 'Force close running git processes')) {
+        Stop-Process -Name "$AppProcess" -Force -ErrorAction SilentlyContinue
+    }
     Start-Sleep -Seconds $GracePeriodSeconds
 }
 

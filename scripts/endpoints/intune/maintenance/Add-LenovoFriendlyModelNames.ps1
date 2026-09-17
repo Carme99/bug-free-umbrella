@@ -640,6 +640,44 @@ function Main {
 
         # Process each device
         Write-Host ""
+
+        # Extension attributes live on the Entra device resource, not on the Intune
+        # managedDevice resource, so they cannot be requested from the device query above.
+        # Fetch the Entra device inventory once, paged, and index it by BOTH keys the PATCH
+        # below may address a device by (object id, then deviceId).
+        $script:EntraDeviceByKey = @{}
+        if ($UpdateExtensionAttributes) {
+            Write-Log "Retrieving Entra device extension attributes..." "Info"
+            try {
+                $entraUri = "/v1.0/devices?`$select=id,deviceId,extensionAttributes&`$top=999"
+                $entraPaged = 0
+                while (-not [string]::IsNullOrWhiteSpace($entraUri)) {
+                    $entraPage = Invoke-MgGraphRequest -Uri $entraUri -Method GET -ErrorAction Stop
+                    if (-not $entraPage -or -not $entraPage.value) { break }
+                    foreach ($entraDevice in @($entraPage.value)) {
+                        $entraPaged++
+                        if (-not [string]::IsNullOrWhiteSpace($entraDevice.id)) {
+                            $script:EntraDeviceByKey[[string]$entraDevice.id] = $entraDevice
+                        }
+                        if (-not [string]::IsNullOrWhiteSpace($entraDevice.deviceId)) {
+                            $script:EntraDeviceByKey[[string]$entraDevice.deviceId] = $entraDevice
+                        }
+                    }
+                    # Set-StrictMode 2.0 throws on a reference to a property the API did not
+                    # return, so the next-link has to be probed rather than read directly -
+                    # a bare read on the last page threw and discarded the whole index.
+                    $nextLinkProperty = $entraPage.PSObject.Properties['@odata.nextLink']
+                    $entraUri = if ($nextLinkProperty) { [string]$nextLinkProperty.Value } else { $null }
+                }
+                Write-Log "Indexed $entraPaged Entra device(s) for extension-attribute comparison" "Verbose"
+            }
+            catch {
+                Write-Log "Could not retrieve Entra devices: $($_.Exception.Message)" "Warn"
+                Write-Log "Extension-attribute updates will proceed without convergence detection" "Warn"
+                $script:EntraDeviceByKey = @{}
+            }
+        }
+
         Write-Log "Processing devices..." "Info"
 
         $deviceIndex = 0
@@ -689,7 +727,23 @@ function Main {
             # Determine if Entra extension attribute update is needed
             $azureDeviceIdentifier = [string]$device.azureADDeviceId
             $hasAzureId = -not [string]::IsNullOrWhiteSpace($azureDeviceIdentifier)
-            $needsExtUpdate = $UpdateExtensionAttributes -and $hasAzureId
+            # Read the CURRENT value so a converged device is skipped rather than re-PATCHed on
+            # every run. The Intune managedDevice resource has no extensionAttributes property
+            # (they live on the Entra device resource), so the value comes from the Entra map
+            # built before the loop. Set-StrictMode 2.0 rejects a bare reference to a property the
+            # API did not return, so probe the property bag.
+            $currentExtValue = $null
+            $entraDevice = $null
+            if ($hasAzureId) {
+                $entraDevice = $script:EntraDeviceByKey[$azureDeviceIdentifier]
+            }
+            if ($entraDevice) {
+                $extAttributeProperty = $entraDevice.PSObject.Properties['extensionAttributes']
+                if ($extAttributeProperty -and $extAttributeProperty.Value) {
+                    $currentExtValue = [string]$extAttributeProperty.Value.$ExtensionAttributeName
+                }
+            }
+            $needsExtUpdate = $UpdateExtensionAttributes -and $hasAzureId -and ($currentExtValue -ne $familyName)
 
             # Skip device if no updates needed
             if (-not $needsNotesUpdate -and -not $needsExtUpdate) {
@@ -732,6 +786,10 @@ function Main {
                     $stats.ExtSkipped++
                     if (-not $hasAzureId) {
                         Write-Log "Skipping Entra update for $($device.deviceName): No azureADDeviceId" "Verbose"
+                    }
+                    elseif ($currentExtValue -eq $familyName) {
+                        Write-Log "Skipping Entra update for $($device.deviceName): "
+                        Write-Log "$ExtensionAttributeName already set to '$familyName'" "Verbose"
                     }
                 }
 

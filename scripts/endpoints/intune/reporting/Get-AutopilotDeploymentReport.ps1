@@ -1,17 +1,17 @@
 ﻿<#
 .SYNOPSIS
-    Track Windows Autopilot deployment status and failures from Microsoft Intune.
+    Report device enrolment and compliance state for Windows Autopilot profiles in Intune.
 
 .DESCRIPTION
-    Generates comprehensive Autopilot deployment reports:
-    - Deployment success/failure rates
-    - Device provisioning status
-    - ESP (Enrollment Status Page) errors
-    - Deployment duration analysis
-    - Failed deployments with error details
+    Reports the enrolment and compliance state of every device covered by the selected
+    Autopilot deployment profiles, one row per device:
+    - Device name, serial number and enrolment date
+    - Compliance state, OS version, primary user and last sync time
     - Export to HTML or CSV
 
-    The report reflects the actual device compliance state and is read-only: it never
+    This is Intune managedDevice compliance data, NOT Autopilot deployment success/failure:
+    the Graph API exposes no per-deployment ESP error or provisioning-duration stream here,
+    so none is claimed. The report is read-only: it never
     mutates tenant configuration, so it is safe to re-run (idempotent). Results can
     optionally be exported to HTML and/or CSV under Documents\Reports.
     Exit codes:

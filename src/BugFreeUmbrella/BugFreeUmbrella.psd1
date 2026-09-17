@@ -1,6 +1,6 @@
 ﻿@{
     # --- Identity ---
-    ModuleVersion      = '2.0.2'
+    ModuleVersion      = '2.0.3'
     GUID               = '7cc494cc-4523-4630-a69e-12b77001c0f0'
     Author             = 'Carme99'
     CompanyName        = 'Carme99'
@@ -421,7 +421,7 @@
             LicenseUri                 = 'https://github.com/Carme99/bug-free-umbrella/blob/main/LICENSE'
             ProjectUri                 = 'https://github.com/Carme99/bug-free-umbrella'
             IconUri                    = ''
-            ReleaseNotes               = '2.0.2 - - 2026-09-17 - Installation Path Correction > The documented headline install path never worked: the module is not published to the > PowerShell Gallery, and the tag-triggered release workflow skips its publish step because > `PSGALLERY_API_KEY` has never been configured. The docs told users to run `Install-Module`. ### Fixed - **Generated install instructions corrected at the source.** `tools/Build-Docs.ps1` emits the `docs/Module.md` installation block, so the document alone was not...'
+            ReleaseNotes               = '2.0.3 - - 2026-09-17 - Gale - Destructive-Operation Safety > A correctness pass over the operations that touch a user''s machine. Three of them could > discard work that had no reason to be discarded, one silently exported nothing, and one tool > reported a different inventory depending on how it was launched. ### Fixed - **`Invoke-WingetGit` killed git processes even under `-WhatIf`.** `Stop-GitProcesses` called `Stop-Process -Force` with no gate, so a dry run terminated the operator''s in-fli...'
             RequireLicenseAcceptance   = $false
             ExternalModuleDependencies = @()
         }

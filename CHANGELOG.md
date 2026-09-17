@@ -1,6 +1,6 @@
 # Changelog
 
-![Version](https://img.shields.io/badge/version-2.0.2-blue)
+![Version](https://img.shields.io/badge/version-2.0.3-blue)
 ![Release Date](https://img.shields.io/badge/release-2026--09--17-green)
 ![Catalogued Scripts](https://img.shields.io/badge/catalogued%20scripts-381-orange)
 ![Scripts on Disk](https://img.shields.io/badge/scripts%20on%20disk-566-orange)
@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [🌂 About Our Release Names](#-about-our-release-names)
 - **Latest Release:**
+  - [v2.0.3 (2026-09-17) - Gale - Destructive-Operation Safety](#203---2026-09-17---gale---destructive-operation-safety)
   - [v2.0.2 (2026-09-17) - Installation Path Correction](#202---2026-09-17---installation-path-correction)
   - [v2.0.1 (2026-09-17) - Documentation Alignment Patch](#201---2026-09-17---documentation-alignment-patch)
   - [v2.0.0 (2026-09-16) - Coverage & Correctness](#200---2026-09-16---coverage--correctness)
@@ -63,6 +64,95 @@ Bug-Free Umbrella historically used **weather-themed codenames** for releases. A
 | ⛈️ | **Thunderstorm** | Major (1.x.x) | Significant expansions |
 | 🌪️ | **Hurricane** | Breaking | Major overhauls, breaking changes |
 | 🌈 | **Rainbow** | Quality | Polish, documentation, testing |
+
+---
+
+## [2.0.3] - 2026-09-17 - Gale - Destructive-Operation Safety
+
+> A correctness pass over the operations that touch a user's machine. Three of them could
+> discard work that had no reason to be discarded, one silently exported nothing, and one tool
+> reported a different inventory depending on how it was launched.
+
+### Fixed
+
+- **`Invoke-WingetGit` killed git processes even under `-WhatIf`.** `Stop-GitProcesses` called
+  `Stop-Process -Force` with no gate, so a dry run terminated the operator's in-flight git
+  operations. The function is now `SupportsShouldProcess`-gated.
+- **`Invoke-WingetPowerShell7MaintenanceWindow` force-closed applications unconditionally.**
+  `Close-AppProcessForMaintenance` had the same defect and killed the process twice (initial
+  attempt plus retry). Both calls are gated now.
+- **`Invoke-WingetDiscord` / `Invoke-WingetSlack` closed running apps before checking for an
+  update.** The notify/close/grace-wait block ran ahead of the `IsUpdateAvailable` test, so a
+  fully patched fleet had Discord and Slack terminated and relaunched on every cycle for no
+  benefit. The block now runs only when an update will actually be applied. Regression tests
+  assert no close and no update when nothing is available, and both fail against the old code.
+- **`Add-LenovoFriendlyModelNames` re-wrote Entra extension attributes on every run.**
+  `$needsExtUpdate` was true for any device with an `azureADDeviceId`, which made the
+  "Already up to date" branch unreachable and issued a PATCH (plus a per-device delay) for every
+  Lenovo device on every pass.
+
+  The read needed care: **extension attributes are not on the Intune `managedDevice` resource** -
+  they live on the Entra `device` resource, so they cannot be requested from the device query at
+  all. The script now fetches the Entra device inventory once (`GET
+  /v1.0/devices?$select=id,deviceId,extensionAttributes`, paged), indexes it by both keys the
+  PATCH may address a device by, and compares the current value. A converged tenant now performs
+  no writes. Both new assertions **fail against the pre-fix script** (12/2) and pass against the
+  fixed one (14/0).
+- **`New-WingetSourceConfig` added its source unconditionally.** The Intune script this tool
+  *generates* checked for an existing source first, so a second run of the tool itself failed
+  with "source already exists". The live path now performs the same check.
+- **`mcp-server` reported two different inventories.** `metadata.json` indexes the curated trees
+  (381 scripts); the filesystem fallback additionally swept the mirrored `*.Tests.ps1` files and
+  the two trees the catalog deliberately excludes, reporting 566. `list_categories` now returns
+  381 whether or not the catalog file is present, and CI asserts the parity.
+- **`Update-M365Apps` test fixture wrote into the repository root.** The fixture seeded
+  `DownloadXMLPath` with a Windows literal, which Linux `pwsh` treats as a relative path, so
+  `XmlDocument.Save` created a file literally named `C:\AVD\M365Apps\download.xml` beside the
+  source tree during the suite. The path is now anchored under the system temp directory.
+
+### Added
+
+- **`Export-IntuneConfiguration` implements the three types its help advertised.** `Apps`,
+  `Scripts` and `Autopilot` were documented but had no export branch, so selecting them produced
+  an empty directory and a zero-item summary. Each now writes its own folder, and `-ConfigTypes`
+  carries a `ValidateSet` so a typo fails loudly instead of exporting nothing.
+- **`_generate-winget-scripts` refuses to fork a maintained script pair.** Two entries in its
+  app list already had `Test-Winget*`/`Invoke-Winget*` implementations; following the documented
+  example wrote `detect.ps1`/`remediate.ps1` beside them and split the logic in two.
+
+### Changed
+
+- **One canonical label catalog.** `tools/Sync-Labels.ps1` claimed 48 labels, the workflow README
+  claimed 46, `.github/scripts/create-labels.ps1` defined 46, and the auto-labeler applied 36.
+  Both scripts now read `.github/labels.json` (55 labels - the union, so nothing was dropped) and
+  agree on every run.
+- **`_templates/detect.ps1` and `remediate.ps1` are thin shims.** They were byte-identical to
+  `detect_v1_legacy.ps1` / `remediate_v1_legacy.ps1` apart from filename strings, so every fix
+  had to be made twice. The canonical bodies stay in the versioned files.
+- **Removed the stale `scripts/.catalog/compatibility-matrix.json`.** It described 6 scripts with
+  pre-relaunch data, was read by no tool, and contradicted the counts published everywhere else.
+  `COMPATIBILITY.md` already states that no machine-checked per-platform matrix exists.
+- **`scripts/cloud/azure/avd/Update-M365Apps.ps1` is marked deprecated.** It is the second
+  implementation of the same ODT update flow; the help now points at the office-apps copy.
+- **Deprecated shim-tree READMEs carry a deprecation banner.** `endpoints/devices/winget/` and
+  `endpoints/devices/proactive-remediations/` both presented themselves as live and linked a
+  migration table that only exists in `endpoints/remediation/README.md`.
+
+### Security
+
+- **Cleared all 9 open Dependabot advisories** in `mcp-server/package-lock.json` (4 high, 5
+  moderate): `fast-uri` host confusion and repeated-percent hostname SSRF, `hono` `toSSG()`
+  writing files outside the target directory plus query-parser and `parseBody` issues, and `qs`
+  array-limit bypass and `isBuffer` denial of service. Transitive dependencies only; `npm ci`,
+  `npm run build` and both inventory paths re-verified at 381 scripts.
+
+### Documentation
+
+- Corrected the README "By the Numbers" table: 566 scripts on disk (381 catalogued), 22
+  catalogued subcategories, 38 documentation pages - it asserted 539 / 94 / 45.
+- Corrected the same figures in `docs/Script-Catalog.md`.
+- `.github/workflows/README.md` now states the 36 labels the auto-labeler actually applies and
+  points at the canonical catalog, instead of listing 46 including five it never pushes.
 
 ---
 
@@ -287,11 +377,19 @@ See [Upgrading to 2.0.0](#upgrading-to-200-coverage--correctness) below.
 
 ## [1.0.0] - 2026-08-23 - Clean-Slate Relaunch
 
+> **Note:** the relaunch was never tagged. No `v1.0.0` git tag exists - the version counter
+> reset in this changelog, but the release artifact was not cut, so this entry cannot be checked
+> out. The first tagged release on the new lineage is `v2.0.0`.
+
 > The version counter resets to 1.0.0. Every script in the collection was brought to a single unified standard and re-baselined as BugFreeUmbrella 1.0.0; weather-themed release codenames are retired.
 
 ### Relaunch Scope
 
-- **Unified standard** — all **539 scripts** across 8 domains (automation 6, cloud 15, collaboration 23, data 6, endpoints 426, infrastructure 42, security 16, utilities 5) swept to the standard defined in `docs/STANDARDS.md`.
+- **Unified standard** — the whole collection swept to the standard defined in `docs/STANDARDS.md`.
+  Counted the way the repository counts now: **566** non-test `.ps1` files on disk, of which
+  **381** are catalogued and **185** are the deprecated forwarding shims under
+  `scripts/endpoints/devices/`. The relaunch predates that split, so its own figure was the
+  undivided total.
 - **Per-script test coverage** — every script has a Pester suite under `Tests/`, mirroring the script's repo-relative directory (e.g. `scripts/endpoints/devices/autopatch/V3/detect.ps1` → `Tests/endpoints/devices/autopatch/V3/detect.Tests.ps1`).
 - **Analyzer-clean** — PSScriptAnalyzer reports zero errors across the collection.
 - **Rebrand** — documentation tone moved from whimsical to ops-grade professional; weather-themed codenames dropped from release identity; the module manifest no longer carries `Prerelease` or codename fields. The module name remains `BugFreeUmbrella`.

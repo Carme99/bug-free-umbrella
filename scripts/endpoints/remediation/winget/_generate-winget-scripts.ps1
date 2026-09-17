@@ -175,12 +175,25 @@ function New-WingetScriptPair {
 
     $appPath = Join-Path $ScriptsBasePath "$Category\$FolderName"
 
+    # Refuse to fork a maintained pair: some entries in $AppDefinitions already have a
+    # Test-Winget<App>.ps1 / Invoke-Winget<App>.ps1 pair, and writing detect.ps1/remediate.ps1
+    # beside them silently splits the logic in two.
+    $maintainedPair = @(Get-ChildItem -Path $appPath -Filter '*.ps1' -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -like 'Test-Winget*.ps1' -or $_.Name -like 'Invoke-Winget*.ps1' })
+    if ($maintainedPair.Count -gt 0) {
+        $outputMsg = "[!] Skipping ${Category}\${FolderName}: maintained pair already present "
+        $outputMsg += "($($maintainedPair.Name -join ', ')). Refusing to overwrite it."
+        Write-Host $outputMsg -ForegroundColor Yellow
+        return
+    }
+
     # Create directory if it doesn't exist
     if (-not (Test-Path $appPath) -and $PSCmdlet.ShouldProcess($appPath, 'Create app directory')) {
         New-Item -Path $appPath -ItemType Directory -Force | Out-Null
         $outputMsg = "[+] Created directory: $appPath"
         Write-Host $outputMsg -ForegroundColor Green
     }
+
 
     # Read templates
     $detectTemplate = Get-Content (Join-Path $TemplatePath "detect_v3.ps1") -Raw

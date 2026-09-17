@@ -52,73 +52,23 @@ try {
 }
 
 # Define labels by category
-$labels = @(
-    # ========== TECHNOLOGY DOMAINS (Cloud & Infrastructure) ==========
-    @{ name = "azure"; color = "0078D4"; description = "Related to Microsoft Azure" }
-    @{ name = "aws"; color = "FF9900"; description = "Related to Amazon Web Services" }
-    @{ name = "containers"; color = "2496ED"; description = "Docker, Kubernetes, container technologies" }
 
-    # ========== TECHNOLOGY DOMAINS (Endpoints & Devices) ==========
-    @{ name = "intune"; color = "00BCF2"; description = "Microsoft Intune / Endpoint Manager" }
-    @{ name = "winget"; color = "0067C0"; description = "Windows Package Manager" }
-    @{ name = "proactive-remediations"; color = "00A4EF"; description = "Proactive remediation scripts" }
-    @{ name = "windows-update"; color = "0078D6"; description = "Windows Update / Autopatch" }
-    @{ name = "bitlocker"; color = "107C10"; description = "BitLocker encryption" }
+# Single source of truth: .github/labels.json, shared with tools/Sync-Labels.ps1.
+# This script previously defined its own 46-label list that had drifted from that one.
+$labelCatalogPath = Join-Path $PSScriptRoot ".." "labels.json"
+if (-not (Test-Path -LiteralPath $labelCatalogPath)) {
+    throw "Canonical label catalog not found at $labelCatalogPath"
+}
+$labelCatalog = Get-Content -LiteralPath $labelCatalogPath -Raw | ConvertFrom-Json
+$labels = @()
+foreach ($property in $labelCatalog.PSObject.Properties) {
+    $labels += @{
+        name        = $property.Name
+        color       = $property.Value.color
+        description = $property.Value.description
+    }
+}
 
-    # ========== TECHNOLOGY DOMAINS (Infrastructure) ==========
-    @{ name = "windows-server"; color = "0078D6"; description = "Windows Server administration" }
-    @{ name = "active-directory"; color = "006CB8"; description = "Active Directory / Domain Services" }
-    @{ name = "group-policy"; color = "0063B1"; description = "Group Policy Objects (GPO)" }
-    @{ name = "virtualization"; color = "652D90"; description = "Hyper-V, VMware, virtualization" }
-    @{ name = "iis"; color = "005A9E"; description = "Internet Information Services" }
-    @{ name = "linux"; color = "FCC624"; description = "Linux administration" }
-    @{ name = "networking"; color = "00758F"; description = "Network, DNS, DHCP, routing" }
-
-    # ========== TECHNOLOGY DOMAINS (Security & Compliance) ==========
-    @{ name = "security"; color = "D73A49"; description = "Security-related issues" }
-    @{ name = "compliance"; color = "B60205"; description = "Compliance frameworks (CIS, NIST, etc.)" }
-    @{ name = "hardening"; color = "C41E3A"; description = "Security hardening and baselines" }
-
-    # ========== TECHNOLOGY DOMAINS (Automation & DevOps) ==========
-    @{ name = "devops"; color = "0366D6"; description = "DevOps, CI/CD pipelines" }
-    @{ name = "iac"; color = "5C2D91"; description = "Infrastructure as Code (Terraform, Bicep)" }
-
-    # ========== TECHNOLOGY DOMAINS (Microsoft 365 & Collaboration) ==========
-    @{ name = "microsoft-365"; color = "D83B01"; description = "Microsoft 365 / Office 365" }
-    @{ name = "exchange"; color = "0072C6"; description = "Exchange Online / Exchange Server" }
-    @{ name = "teams"; color = "6264A7"; description = "Microsoft Teams" }
-    @{ name = "sharepoint"; color = "038387"; description = "SharePoint / OneDrive" }
-    @{ name = "azure-ad"; color = "0078D4"; description = "Azure AD / Entra ID" }
-    @{ name = "defender"; color = "00A4EF"; description = "Microsoft Defender" }
-
-    # ========== TECHNOLOGY DOMAINS (Data & Databases) ==========
-    @{ name = "database"; color = "336791"; description = "Databases (SQL, MySQL, PostgreSQL, MongoDB)" }
-    @{ name = "api"; color = "009688"; description = "REST API, Graph API" }
-
-    # ========== ISSUE TYPE (Secondary Categories) ==========
-    @{ name = "bug"; color = "D73A49"; description = "Something isn't working" }
-    @{ name = "enhancement"; color = "A2EEEF"; description = "New feature or improvement request" }
-    @{ name = "documentation"; color = "0075CA"; description = "Documentation improvements" }
-    @{ name = "question"; color = "D876E3"; description = "Questions or help needed" }
-    @{ name = "performance"; color = "FBCA04"; description = "Performance optimization" }
-    @{ name = "testing"; color = "BFD4F2"; description = "Testing, validation, Pester tests" }
-
-    # ========== PRIORITY LEVELS ==========
-    @{ name = "priority-high"; color = "B60205"; description = "High priority issue" }
-    @{ name = "good-first-issue"; color = "7057FF"; description = "Good for newcomers" }
-
-    # ========== PROCESS LABELS ==========
-    @{ name = "pinned"; color = "FEF2C0"; description = "Pinned issue/PR exempt from stale-closing" }
-    @{ name = "work-in-progress"; color = "FFD93D"; description = "PR or issue still in progress" }
-    @{ name = "help-wanted"; color = "008672"; description = "Help wanted from contributors" }
-    @{ name = "triage"; color = "B60205"; description = "Needs triage" }
-    @{ name = "new-script"; color = "0E8A16"; description = "New script submission" }
-    @{ name = "stale"; color = "EDEDED"; description = "Inactive issue/PR (auto-applied)" }
-    @{ name = "broken-links"; color = "D93F0B"; description = "Broken links in documentation" }
-    @{ name = "automated"; color = "BFDADC"; description = "Created by automation" }
-    @{ name = "dependencies"; color = "0366D6"; description = "Dependency updates" }
-    @{ name = "github-actions"; color = "2088FF"; description = "GitHub Actions workflows" }
-)
 
 Write-Host "`n🏷️  Creating $($labels.Count) GitHub Labels" -ForegroundColor Cyan
 Write-Host "=" * 60 -ForegroundColor Gray

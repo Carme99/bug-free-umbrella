@@ -312,42 +312,6 @@ function Main {
                     $AppProcess = ($ID -split '\.')[-1]
                 }
 
-                # Check if app is running and handle accordingly
-                $process = Get-Process -Name "$AppProcess" -ErrorAction SilentlyContinue
-                if ($process) {
-                    $outputMsg = "$name is currently running (PID: $($process.Id -join ', '))"
-                    Write-Log $outputMsg -Level Info
-
-                    # Send user notification if enabled
-                    if ($NotifyUserBeforeClose) {
-                        $outputMsg = "Sending user notification before closing $name..."
-                        Write-Log $outputMsg -Level Info
-                        Show-UserNotification -AppName $name -Seconds $UserNotificationSeconds
-                        $outputMsg = "[*] $name will be closed in $UserNotificationSeconds seconds. Notifying users..."
-                        Write-Host $outputMsg -ForegroundColor Cyan
-                        Start-Sleep -Seconds $UserNotificationSeconds
-                    }
-
-                    # Force close the application
-                    $outputMsg = "[*] $name is running. Force closing application..."
-                    Write-Host $outputMsg -ForegroundColor Cyan
-                    $closedSuccessfully = Stop-ApplicationProcess -ProcessName $AppProcess
-
-                    if (-not $closedSuccessfully) {
-                        $outputMsg = "[-] Failed to close $name process. Aborting update."
-                        Write-Host $outputMsg -ForegroundColor Red
-                        return 1
-                    }
-
-                    $outputMsg = "$name closed successfully. Waiting $GracePeriodSeconds seconds..."
-
-                    Write-Log $outputMsg -Level Info
-                    Start-Sleep -Seconds $GracePeriodSeconds
-                }
-                else {
-                    $outputMsg = "$name is not currently running."
-                    Write-Log $outputMsg -Level Info
-                }
 
                 # Check if update is available
                 if ($package.IsUpdateAvailable) {
@@ -355,6 +319,43 @@ function Main {
                     $verAvailable = $package.AvailableVersions | Select-Object -Last 1
                     $outputMsg = "Update available for $name | Installed: $verInstalled | Available: $verAvailable"
                     Write-Log $outputMsg -Level Info
+
+                    # Check if app is running and handle accordingly
+                    $process = Get-Process -Name "$AppProcess" -ErrorAction SilentlyContinue
+                    if ($process) {
+                        $outputMsg = "$name is currently running (PID: $($process.Id -join ', '))"
+                        Write-Log $outputMsg -Level Info
+
+                        # Send user notification if enabled
+                        if ($NotifyUserBeforeClose) {
+                            $outputMsg = "Sending user notification before closing $name..."
+                            Write-Log $outputMsg -Level Info
+                            Show-UserNotification -AppName $name -Seconds $UserNotificationSeconds
+                            $outputMsg = "[*] $name will be closed in $UserNotificationSeconds seconds. Notifying users..."
+                            Write-Host $outputMsg -ForegroundColor Cyan
+                            Start-Sleep -Seconds $UserNotificationSeconds
+                        }
+
+                        # Force close the application
+                        $outputMsg = "[*] $name is running. Force closing application..."
+                        Write-Host $outputMsg -ForegroundColor Cyan
+                        $closedSuccessfully = Stop-ApplicationProcess -ProcessName $AppProcess
+
+                        if (-not $closedSuccessfully) {
+                            $outputMsg = "[-] Failed to close $name process. Aborting update."
+                            Write-Host $outputMsg -ForegroundColor Red
+                            return 1
+                        }
+
+                        $outputMsg = "$name closed successfully. Waiting $GracePeriodSeconds seconds..."
+
+                        Write-Log $outputMsg -Level Info
+                        Start-Sleep -Seconds $GracePeriodSeconds
+                    }
+                    else {
+                        $outputMsg = "$name is not currently running."
+                        Write-Log $outputMsg -Level Info
+                    }
 
                     # Execute pre-update hook if defined
                     if ($PreUpdateScriptBlock) {

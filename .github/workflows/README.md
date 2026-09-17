@@ -20,16 +20,20 @@ This directory contains automated workflows for repository management and qualit
 - Adds a comment when multiple categories are detected
 - Adds a helpful comment when no labels match
 
-**Labels Applied** (46 total):
-- **Technology** (29): azure, aws, containers, intune, winget, windows-server, active-directory, security, etc.
+**Labels Applied** (36 total):
+- **Technology** (28): azure, aws, containers, intune, winget, windows-server, active-directory, security, etc.
 - **Issue Type** (6): bug, enhancement, documentation, question, performance, testing
 - **Priority** (2): priority-high, good-first-issue
-- **Process** (5): stale, broken-links, automated, dependencies, github-actions
+
+Every label this workflow can apply is defined in the canonical catalog, `.github/labels.json`,
+which is also what `tools/Sync-Labels.ps1` and `.github/scripts/create-labels.ps1` read.
+The catalog holds more labels than the labeler applies (its entries include process labels such
+as stale/dependencies that other workflows or maintainers set by hand).
 
 **Configuration:**
 - Runs automatically on every new or edited issue
 - No manual intervention required
-- Labels must exist in the repository (created via `.github/scripts/create-labels.ps1`)
+- Labels must exist in the repository (created via `.github/scripts/create-labels.ps1`, which reads `.github/labels.json`)
 
 ---
 

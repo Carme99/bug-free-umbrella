@@ -3,7 +3,7 @@
     Synchronizes GitHub repository labels from a canonical definition.
 
 .DESCRIPTION
-    Reads a hardcoded hashtable of 48 canonical labels (colors and descriptions)
+    Reads the canonical label catalog (.github/labels.json - colors and descriptions)
     and reconciles them with the live repository via the GitHub CLI (gh).
     Creates missing labels and updates existing ones where color or description
     has drifted. Useful for maintainers after adding new technology domains or
@@ -27,7 +27,7 @@
 .EXAMPLE
     PS C:\> .\tools\Sync-Labels.ps1 -Repo Carme99/bug-free-umbrella
 
-    Synchronizes all 48 canonical labels to the repository.
+    Synchronizes every canonical label to the repository.
 
 .NOTES
     File Name      : Sync-Labels.ps1
@@ -63,56 +63,21 @@ try {
 
     # Canonical label definitions — 48 labels (22 GitHub defaults + 27 domain + etc.)
     # Color values are 6-char hex without leading '#', as required by GitHub API.
-    $labelDefinitions = @{
-        'bug'                      = @{ Color = 'd73a4a'; Description = "Something isn't working" }
-        'documentation'            = @{ Color = '0075ca'; Description = 'Improvements or additions to documentation' }
-        'duplicate'                = @{ Color = 'cfd3d7'; Description = 'This issue or pull request already exists' }
-        'enhancement'              = @{ Color = 'a2eeef'; Description = 'New feature or request' }
-        'good first issue'         = @{ Color = '7057ff'; Description = 'Good for newcomers' }
-        'good-first-issue'         = @{ Color = '7057FF'; Description = 'Good first issue for contributors' }
-        'help wanted'              = @{ Color = '008672'; Description = 'Extra attention is needed' }
-        'invalid'                  = @{ Color = 'e4e669'; Description = "This doesn't seem right" }
-        'question'                 = @{ Color = 'd876e3'; Description = 'Further information is requested' }
-        'wontfix'                  = @{ Color = 'ffffff'; Description = 'This will not be worked on' }
-        'automated'                = @{ Color = 'ededed'; Description = 'Automated workflow' }
-        'broken-links'             = @{ Color = 'ededed'; Description = 'Broken link detected' }
-        'security'                 = @{ Color = 'D73A49'; Description = 'Security-related issues' }
-        'priority-high'            = @{ Color = 'B60205'; Description = 'High priority issue' }
-        'priority-medium'          = @{ Color = 'fbca04'; Description = 'Medium priority issue' }
-        'priority-low'             = @{ Color = '0e8a16'; Description = 'Low priority issue' }
-        'code-quality'             = @{ Color = '9400D3'; Description = 'Code quality and best practices' }
-        'stale'                    = @{ Color = 'ededed'; Description = 'Inactive issue or PR' }
-        'proactive-remediations'   = @{ Color = '00A4EF'; Description = 'Proactive remediation scripts' }
-        'github-actions'           = @{ Color = '2088FF'; Description = 'GitHub Actions workflows' }
-        'windows-update'           = @{ Color = '0078D6'; Description = 'Windows Update / Autopatch' }
-        'mslearn-review'           = @{ Color = '5319e7'; Description = 'Findings from the 2026-08-08 Microsoft Learn alignment review' }
-        'active-directory'         = @{ Color = '003366'; Description = 'Active Directory' }
-        'api'                      = @{ Color = '0052CC'; Description = 'API scripts' }
-        'aws'                      = @{ Color = 'FF9900'; Description = 'AWS cloud scripts' }
-        'azure'                    = @{ Color = '0078D4'; Description = 'Azure cloud scripts' }
-        'azure-ad'                 = @{ Color = '00BCF2'; Description = 'Azure AD/Entra ID' }
-        'compliance'               = @{ Color = 'B60205'; Description = 'Compliance frameworks' }
-        'containers'               = @{ Color = '0DB7ED'; Description = 'Docker/Kubernetes' }
-        'database'                 = @{ Color = '336791'; Description = 'Databases' }
-        'defender'                 = @{ Color = '00A4EF'; Description = 'Microsoft Defender' }
-        'devops'                   = @{ Color = '24292E'; Description = 'DevOps pipelines' }
-        'exchange'                 = @{ Color = '0078D4'; Description = 'Exchange' }
-        'group-policy'             = @{ Color = '4A90E2'; Description = 'Group Policy' }
-        'hardening'                = @{ Color = 'D93F0B'; Description = 'Security hardening' }
-        'iac'                      = @{ Color = '623CE4'; Description = 'Terraform/Bicep IaC' }
-        'iis'                      = @{ Color = '512BD4'; Description = 'IIS web server' }
-        'intune'                   = @{ Color = '0066CC'; Description = 'Intune management' }
-        'linux'                    = @{ Color = 'FCC624'; Description = 'Linux scripts' }
-        'microsoft-365'            = @{ Color = 'D83B01'; Description = 'Microsoft 365' }
-        'networking'               = @{ Color = '00B294'; Description = 'Networking' }
-        'performance'              = @{ Color = 'FEF2C0'; Description = 'Performance' }
-        'sharepoint'               = @{ Color = '03787C'; Description = 'SharePoint/OneDrive' }
-        'teams'                    = @{ Color = '6264A3'; Description = 'Microsoft Teams' }
-        'testing'                  = @{ Color = '0E8A16'; Description = 'Testing' }
-        'virtualization'           = @{ Color = '7B68EE'; Description = 'Hyper-V/VMware' }
-        'windows-server'           = @{ Color = '0078D6'; Description = 'Windows Server' }
-        'winget'                   = @{ Color = '00CC6A'; Description = 'Winget updates' }
+    # Single source of truth: .github/labels.json, shared with .github/scripts/create-labels.ps1.
+    # Both scripts previously carried their own copy (48 here, 46 there) and disagreed.
+    $labelCatalogPath = Join-Path $PSScriptRoot ".." ".github" "labels.json"
+    if (-not (Test-Path -LiteralPath $labelCatalogPath)) {
+        throw "Canonical label catalog not found at $labelCatalogPath"
     }
+    $labelCatalog = Get-Content -LiteralPath $labelCatalogPath -Raw | ConvertFrom-Json
+    $labelDefinitions = @{}
+    foreach ($property in $labelCatalog.PSObject.Properties) {
+        $labelDefinitions[$property.Name] = @{
+            Color       = $property.Value.color
+            Description = $property.Value.description
+        }
+    }
+
 
     Write-Host "[*] Fetching existing labels from $Repo..." -ForegroundColor Cyan
     $json = gh label list --repo $Repo --limit 100 --json name,color,description 2>&1

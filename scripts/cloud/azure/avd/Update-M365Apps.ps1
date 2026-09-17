@@ -7,6 +7,11 @@
     channel from the Office configuration service, downloads them locally, and optionally installs
     them. Designed for environments without Microsoft AutoUpdate.
 
+    DEPRECATED: use the office-apps implementation instead, which carries the maintained version of
+    this flow (scripts/collaboration/microsoft365/office-apps/Update-M365Apps.ps1, exported as
+    Update-M365AppsOfficeApps). This copy is the AVD-flavoured variant of the same design; fixes
+    have to be applied twice while both exist, and the two have already drifted.
+
     The script is check-then-act and idempotent: when the installed build already matches the latest
     published build it reports success without downloading or installing anything. Interactive
     prompts gate every mutation, and all mutations additionally honor -WhatIf/-Confirm.

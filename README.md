@@ -103,12 +103,12 @@ Read this before production use:
 
 | Metric | Count |
 |--------|-------|
-| Scripts | 539 |
+| Scripts | 566 on disk (381 catalogued) |
 | Technology domains | 8 |
-| Catalog subcategories | 94 |
+| Catalog subcategories | 22 |
 | Proactive remediation pairs | 51 (102 scripts) |
 | Winget-managed applications | 35 |
-| Documentation pages | 45 |
+| Documentation pages | 38 |
 
 ## AI Integration: MCP Server
 
