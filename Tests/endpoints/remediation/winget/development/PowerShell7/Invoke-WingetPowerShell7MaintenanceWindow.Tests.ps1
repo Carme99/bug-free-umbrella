@@ -147,6 +147,33 @@ Describe "Invoke-WingetPowerShell7MaintenanceWindow" {
             Should -Invoke Stop-Process -Times 1 -Exactly -Because "force close is enabled in the maintenance window"
             Should -Invoke Update-WinGetPackage -Times 1 -Exactly
         }
+        It "Does not force-close the application under -WhatIf (ShouldProcess gate)" {
+            # Close-AppProcessForMaintenance force-closed unconditionally and killed the process
+            # twice (initial attempt plus retry). The maintenance window is open and an update is
+            # available, so without the gate this run would stop the process.
+            Mock Get-Date { [datetime]'2026-08-22T03:00:00' }
+            Mock Get-Process { [pscustomobject] @{ ProcessName = 'pwsh' } }
+            function Get-WinGetPackage { }
+            function Update-WinGetPackage { }
+            Mock Update-WinGetPackage { }
+            Mock Stop-Process { }
+            $wingetModuleStub = [pscustomobject] @{ Name = 'Microsoft.WinGet.Client' }
+            Mock Get-Module { $wingetModuleStub } `
+                -ParameterFilter { $ListAvailable -and $Name -eq 'Microsoft.WinGet.Client' }
+            Mock Invoke-WingetWithRetry { throw "unexpected winget.exe CLI call" }
+            Mock Get-WinGetPackage {
+                [pscustomobject] @{
+                    Name              = 'PowerShell 7 (pwsh)'
+                    InstalledVersion  = '7.4.0'
+                    AvailableVersions = @('7.4.0', '7.5.0')
+                    IsUpdateAvailable = $true
+                }
+            }
+            $out = Main -WhatIf *>&1
+            $out | Where-Object { $_ -is [int] } | Should -Be 0
+            Should -Invoke Stop-Process -Times 0 -Exactly -Because "-WhatIf must not terminate a user process"
+        }
+
 
         It "Returns 1 with [-] prefixed output when verification fails after update" {
             Mock Get-Date { [datetime]'2026-08-22T03:00:00' }

@@ -115,6 +115,35 @@ Describe "New-WingetSourceConfig" {
             } -Times 1 -Exactly
         }
 
+        It "Does not re-add a source that is already configured (idempotent second run)" {
+            # Add-CustomSource added unconditionally while the Intune script this tool GENERATES
+            # checked first, so a second run of the tool itself failed with "source already
+            # exists". The source list is what the guard consults.
+            $SourceName = "CompanyRepo"
+            $SourceURL = "https://packages.company.com"
+
+            Mock Invoke-WingetCommand {
+                if ($ArgumentList -contains 'list') {
+                    return [pscustomobject] @{
+                        Output   = @(
+                            'Name         Id                                   Source',
+                            'CompanyRepo  https://packages.company.com        Microsoft.Rest'
+                        )
+                        ExitCode = 0
+                    }
+                }
+                return [pscustomobject] @{ Output = @(); ExitCode = 0 }
+            }
+
+            $out = (Main *>&1)
+
+            ($out | Where-Object { $_ -is [int] }) | Should -Be 0
+            ($out | Out-String) | Should -Match 'already configured'
+            Should -Invoke Invoke-WingetCommand -ParameterFilter {
+                $ArgumentList -contains 'add' -and $ArgumentList -contains 'CompanyRepo'
+            } -Times 0 -Exactly -Because "the source is already present"
+        }
+
         It "Honors -WhatIf: add flow applies no source changes but succeeds" {
             $SourceName = "WhatIfRepo"
             $SourceURL = "https://packages.whatif.com"

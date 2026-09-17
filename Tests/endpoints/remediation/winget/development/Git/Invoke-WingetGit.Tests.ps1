@@ -127,6 +127,32 @@ Describe "Invoke-WingetGit" {
             Should -Invoke Stop-Process -Times 1 -Exactly -Because "git processes are safe to force-close"
             Should -Invoke Update-WinGetPackage -Times 1 -Exactly
         }
+        It "Does not force-close git processes under -WhatIf (ShouldProcess gate)" {
+            # Stop-GitProcesses called Stop-Process -Force with no gate, so a dry run killed the
+            # operator's in-flight git operations. The fixture is the force-close case: an update
+            # IS available, so without the gate this run would kill the process.
+            function Get-WinGetPackage { }
+            function Update-WinGetPackage { }
+            Mock Update-WinGetPackage { }
+            Mock Stop-Process { }
+            $wingetModuleStub = [pscustomobject] @{ Name = 'Microsoft.WinGet.Client' }
+            Mock Get-Module { $wingetModuleStub } `
+                -ParameterFilter { $ListAvailable -and $Name -eq 'Microsoft.WinGet.Client' }
+            Mock Invoke-WingetWithRetry { throw "unexpected winget.exe CLI call" }
+            Mock Get-Process { [pscustomobject] @{ ProcessName = 'git' } }
+            Mock Get-WinGetPackage {
+                [pscustomobject] @{
+                    Name              = 'Git'
+                    InstalledVersion  = '2.49.0'
+                    AvailableVersions = @('2.49.0', '2.50.0')
+                    IsUpdateAvailable = $true
+                }
+            }
+            $out = Main -WhatIf *>&1
+            $out | Where-Object { $_ -is [int] } | Should -Be 0
+            Should -Invoke Stop-Process -Times 0 -Exactly -Because "-WhatIf must not terminate a user process"
+        }
+
 
         It "Returns 1 with [-] prefixed output when verification fails after update" {
             function Get-WinGetPackage { }
