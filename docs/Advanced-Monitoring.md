@@ -1,8 +1,8 @@
 # Advanced Monitoring
 
-[![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)]()
-[![Monitoring](https://img.shields.io/badge/Focus-Monitoring-brightgreen)]()
-[![Operations](https://img.shields.io/badge/Type-Operations-blue)]()
+![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)
+![Monitoring](https://img.shields.io/badge/Focus-Monitoring-brightgreen)
+![Operations](https://img.shields.io/badge/Type-Operations-blue)
 
 ## Table of Contents
 

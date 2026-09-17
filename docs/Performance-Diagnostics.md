@@ -1,8 +1,8 @@
 # Performance Diagnostics
 
-[![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)]()
-[![Diagnostics](https://img.shields.io/badge/Focus-Diagnostics-red)]()
-[![Troubleshooting](https://img.shields.io/badge/Type-Troubleshooting-yellow)]()
+![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)
+![Diagnostics](https://img.shields.io/badge/Focus-Diagnostics-red)
+![Troubleshooting](https://img.shields.io/badge/Type-Troubleshooting-yellow)
 
 ## Table of Contents
 

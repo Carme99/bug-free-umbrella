@@ -1,8 +1,8 @@
 # Best Practices Checklist
 
-[![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)]()
-[![Checklist](https://img.shields.io/badge/Type-Checklist-brightgreen)]()
-[![Best%20Practices](https://img.shields.io/badge/Category-Best%20Practices-green)]()
+![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)
+![Checklist](https://img.shields.io/badge/Type-Checklist-brightgreen)
+![Best%20Practices](https://img.shields.io/badge/Category-Best%20Practices-green)
 
 ## Table of Contents
 

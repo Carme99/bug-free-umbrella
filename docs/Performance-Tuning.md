@@ -1,8 +1,8 @@
 # Performance Tuning
 
-[![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)]()
-[![Optimization](https://img.shields.io/badge/Focus-Optimization-orange)]()
-[![Performance](https://img.shields.io/badge/Category-Performance-brightgreen)]()
+![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)
+![Optimization](https://img.shields.io/badge/Focus-Optimization-orange)
+![Performance](https://img.shields.io/badge/Category-Performance-brightgreen)
 
 ## Table of Contents
 

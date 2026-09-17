@@ -1,8 +1,8 @@
 # Security Troubleshooting
 
-[![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)]()
-[![Security](https://img.shields.io/badge/Focus-Security-red)]()
-[![Troubleshooting](https://img.shields.io/badge/Type-Troubleshooting-yellow)]()
+![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)
+![Security](https://img.shields.io/badge/Focus-Security-red)
+![Troubleshooting](https://img.shields.io/badge/Type-Troubleshooting-yellow)
 
 ## Table of Contents
 

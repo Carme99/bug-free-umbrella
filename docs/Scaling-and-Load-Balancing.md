@@ -1,8 +1,8 @@
 # Scaling & Load Balancing
 
-[![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)]()
-[![Scaling](https://img.shields.io/badge/Focus-Scaling-brightgreen)]()
-[![Performance](https://img.shields.io/badge/Type-Performance-orange)]()
+![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)
+![Scaling](https://img.shields.io/badge/Focus-Scaling-brightgreen)
+![Performance](https://img.shields.io/badge/Type-Performance-orange)
 
 ## Table of Contents
 

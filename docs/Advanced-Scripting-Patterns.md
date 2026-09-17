@@ -1,9 +1,9 @@
 # Advanced Scripting Patterns
 
-[![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)]()
-[![Advanced](https://img.shields.io/badge/Level-Advanced-red)]()
-[![PowerShell](https://img.shields.io/badge/Language-PowerShell-blue?logo=powershell)]()
-[![Patterns](https://img.shields.io/badge/Category-Design%20Patterns-green)]()
+![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)
+![Advanced](https://img.shields.io/badge/Level-Advanced-red)
+![PowerShell](https://img.shields.io/badge/Language-PowerShell-blue?logo=powershell)
+![Patterns](https://img.shields.io/badge/Category-Design%20Patterns-green)
 
 ## Table of Contents
 

@@ -1,8 +1,8 @@
 # Migration Strategy
 
-[![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)]()
-[![Migration](https://img.shields.io/badge/Focus-Migration-orange)]()
-[![Operations](https://img.shields.io/badge/Type-Operations-blue)]()
+![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)
+![Migration](https://img.shields.io/badge/Focus-Migration-orange)
+![Operations](https://img.shields.io/badge/Type-Operations-blue)
 
 ## Table of Contents
 

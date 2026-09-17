@@ -1,8 +1,8 @@
 # API Reference
 
-[![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)]()
-[![Reference](https://img.shields.io/badge/Type-Reference-informational)]()
-[![API](https://img.shields.io/badge/Category-API-blue)]()
+![Tier 3](https://img.shields.io/badge/Documentation-Tier%203-blue)
+![Reference](https://img.shields.io/badge/Type-Reference-informational)
+![API](https://img.shields.io/badge/Category-API-blue)
 
 ## Table of Contents
 
