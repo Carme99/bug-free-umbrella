@@ -438,7 +438,7 @@ Organized by category:
 | **Proactive Remediations** | 51 pairs (102 scripts) |
 | **Winget-Managed Applications** | 35 |
 | **Documentation Files** | 38 |
-| **Latest Release** | [v2.0.3 "Gale" - Destructive-Operation Safety](../CHANGELOG.md) |
+| **Latest Release** | [v2.0.4 "Squall" - Gate Integrity](../CHANGELOG.md) |
 
 ---
 

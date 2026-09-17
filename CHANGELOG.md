@@ -1,6 +1,6 @@
 # Changelog
 
-![Version](https://img.shields.io/badge/version-2.0.3-blue)
+![Version](https://img.shields.io/badge/version-2.0.4-blue)
 ![Release Date](https://img.shields.io/badge/release-2026--09--17-green)
 ![Catalogued Scripts](https://img.shields.io/badge/catalogued%20scripts-381-orange)
 ![Scripts on Disk](https://img.shields.io/badge/scripts%20on%20disk-566-orange)
@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [🌂 About Our Release Names](#-about-our-release-names)
 - **Latest Release:**
+  - [v2.0.4 (2026-09-17) - Squall - Gate Integrity](#204---2026-09-17---squall---gate-integrity)
   - [v2.0.3 (2026-09-17) - Gale - Destructive-Operation Safety](#203---2026-09-17---gale---destructive-operation-safety)
   - [v2.0.2 (2026-09-17) - Installation Path Correction](#202---2026-09-17---installation-path-correction)
   - [v2.0.1 (2026-09-17) - Documentation Alignment Patch](#201---2026-09-17---documentation-alignment-patch)
@@ -64,6 +65,43 @@ Bug-Free Umbrella historically used **weather-themed codenames** for releases. A
 | ⛈️ | **Thunderstorm** | Major (1.x.x) | Significant expansions |
 | 🌪️ | **Hurricane** | Breaking | Major overhauls, breaking changes |
 | 🌈 | **Rainbow** | Quality | Polish, documentation, testing |
+
+---
+
+## [2.0.4] - 2026-09-17 - Squall - Gate Integrity
+
+> Two checks that were reporting success without checking anything are now real, and the
+> suite that could not fail is now able to. No runtime behaviour changes.
+
+### Fixed
+
+- **`Invoke-ScriptAnalyzer` was not the problem - the link gate was.** The markdown link check
+  ran with `continue-on-error: true`, so it reported success whatever lychee said. Making it
+  honest surfaced 41 errors that had been hidden: 28 badge links with an **empty target**
+  (`[![alt](img)]()` across 9 docs), two `docs.microsoft.com` group-policy URLs that 301 to
+  `learn.microsoft.com` and then 404, and one placeholder that was never substituted
+  (`github.com/yourorg/bug-free-umbrella`). The badges are unwrapped rather than pointed
+  somewhere arbitrary; the moved Learn pages are repointed at verified-live URLs; the
+  placeholder names the real repository. Four hosts that answer 403 to any non-browser client
+  (reddit, `endpoint`/`intune.microsoft.com`, `support.lenovo.com`, `hhs.gov`) are excluded
+  with the reason recorded in the workflow, since those references are legitimate and rejected
+  by bot filtering rather than broken. The gate is now blocking and green: 1681 links, 0 errors.
+- **Azure and Intune cmdlet stubs could not fail.** A stub declared as a *simple* function
+  accepts arbitrary named parameters, so it cannot fail when a script passes a parameter the
+  real cmdlet does not have - the suite stays green while the script cannot run. Five Intune
+  mirrored suites and nineteen Azure mirrored suites had such stubs; all 24 files now declare
+  `[CmdletBinding()]` with the real parameter set, taken from `IntuneGraphHelper.psm1` for the
+  Intune helpers and from the published Microsoft Learn cmdlet references (Az 13.0.0) for the
+  Az cmdlets - not from the call sites, which is the distinction that matters. Of the eleven
+  Intune suites, the six that already carried advanced stubs are byte-identical after the
+  change.
+
+### Changed
+
+- **`GET /v1.0/devices?$select=id,deviceId,extensionAttributes`** is now followed through
+  `@odata.nextLink` correctly. A bare read of the next-link property threw under
+  `Set-StrictMode 2.0` on the last page, and the surrounding `catch` turned that into an empty
+  index - so the miss was silent rather than loud.
 
 ---
 

@@ -4,7 +4,7 @@
 
 Documentation lives **with the code** — every page here is versioned, reviewable in PRs, and ships with each release. There is no separate wiki to drift out of date.
 
-**Current release:** [v2.0.3 "Gale" - Destructive-Operation Safety](../CHANGELOG.md) · **Docs updated:** 2026-09-17
+**Current release:** [v2.0.4 "Squall" - Gate Integrity](../CHANGELOG.md) · **Docs updated:** 2026-09-17
 
 ---
 

@@ -1,6 +1,6 @@
 ﻿@{
     # --- Identity ---
-    ModuleVersion      = '2.0.3'
+    ModuleVersion      = '2.0.4'
     GUID               = '7cc494cc-4523-4630-a69e-12b77001c0f0'
     Author             = 'Carme99'
     CompanyName        = 'Carme99'
@@ -421,7 +421,7 @@
             LicenseUri                 = 'https://github.com/Carme99/bug-free-umbrella/blob/main/LICENSE'
             ProjectUri                 = 'https://github.com/Carme99/bug-free-umbrella'
             IconUri                    = ''
-            ReleaseNotes               = '2.0.3 - - 2026-09-17 - Gale - Destructive-Operation Safety > A correctness pass over the operations that touch a user''s machine. Three of them could > discard work that had no reason to be discarded, one silently exported nothing, and one tool > reported a different inventory depending on how it was launched. ### Fixed - **`Invoke-WingetGit` killed git processes even under `-WhatIf`.** `Stop-GitProcesses` called `Stop-Process -Force` with no gate, so a dry run terminated the operator''s in-fli...'
+            ReleaseNotes               = '2.0.4 - - 2026-09-17 - Squall - Gate Integrity > Two checks that were reporting success without checking anything are now real, and the > suite that could not fail is now able to. No runtime behaviour changes. ### Fixed - **`Invoke-ScriptAnalyzer` was not the problem - the link gate was.** The markdown link check ran with `continue-on-error: true`, so it reported success whatever lychee said. Making it honest surfaced 41 errors that had been hidden: 28 badge links with an **empty target** (`[...'
             RequireLicenseAcceptance   = $false
             ExternalModuleDependencies = @()
         }
