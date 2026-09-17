@@ -1,5 +1,10 @@
 # Design Spec — 05 Module Manifest & Build Pipeline
 
+> **Historical design record.** Written before the v5.0.0 platform work and the v1.0.0
+> relaunch; the counts, file names and code excerpts below describe the plan as it stood then
+> and are not kept in sync with the current tree. See [STANDARDS](../STANDARDS.md) and
+> [ARCHITECTURE](../ARCHITECTURE.md) for the current state.
+
 > **5.0 Hurricane — Platform & Distribution Release (Foundation Phase)**
 > **Concern:** Module Manifest & Build Pipeline
 > **Status:** Design (no code) — for Implementation consumption

@@ -4,7 +4,7 @@
 
 Documentation lives **with the code** — every page here is versioned, reviewable in PRs, and ships with each release. There is no separate wiki to drift out of date.
 
-**Current release:** [v2.0.0 "Coverage & Correctness"](../CHANGELOG.md) · **Docs updated:** 2026-08-24
+**Current release:** [v2.0.1 "Documentation Alignment Patch"](../CHANGELOG.md) · **Docs updated:** 2026-09-17
 
 ---
 

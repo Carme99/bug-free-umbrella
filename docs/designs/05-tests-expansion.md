@@ -1,5 +1,10 @@
 # Design: 5.0 Tests Expansion — Module / Catalog / CLI (6 → 30+)
 
+> **Historical design record.** Written before the v5.0.0 platform work and the v1.0.0
+> relaunch; the counts, file names and code excerpts below describe the plan as it stood then
+> and are not kept in sync with the current tree. See [STANDARDS](../STANDARDS.md) and
+> [ARCHITECTURE](../ARCHITECTURE.md) for the current state.
+
 > **Status:** Draft — Foundation phase (design only, no code)
 > **Version target:** 5.0.0 Hurricane (next after 4.4.0 Nimbus)
 > **Scope:** `Tests/Module.Tests.ps1` · `Tests/Catalog.Tests.ps1` · `Tests/CLI.Tests.ps1` · `Tests/Pester.Config.psd1`

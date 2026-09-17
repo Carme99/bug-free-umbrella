@@ -19,7 +19,7 @@
 .PARAMETER Name
     Exact filename match (case-insensitive, with or without .ps1 extension).
     Example: -Name Fix-TeamsCache  or  -Name Fix-TeamsCache.ps1.
-    Tab-completes to 358 script names via metadata.json.
+    Tab-completes to the catalogued script names from metadata.json.
 
 .PARAMETER List
     Alias for "return all" - when no filter is supplied, returns the full

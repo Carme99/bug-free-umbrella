@@ -1,5 +1,10 @@
 # 05 — Docs Site: Auto-generated Module.md from Help + Catalog
 
+> **Historical design record.** Written before the v5.0.0 platform work and the v1.0.0
+> relaunch; the counts, file names and code excerpts below describe the plan as it stood then
+> and are not kept in sync with the current tree. See [STANDARDS](../STANDARDS.md) and
+> [ARCHITECTURE](../ARCHITECTURE.md) for the current state.
+
 > **5.0 Hurricane — Platform & Distribution Release — Foundation phase (design, not code)**
 > **Concern:** Docs site (auto-gen from help + catalog, Module.md)
 > **Author:** DesignDocs · **Date:** 2026-08-20 · **Status:** Draft — Implementation consumes this spec

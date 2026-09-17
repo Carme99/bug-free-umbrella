@@ -2,7 +2,7 @@
 
 > How the repository is organized, built, and shipped. 566 PowerShell scripts on disk — 381 catalogued across 8 technology domains plus 185 deprecated forwarding shims excluded from the catalog.
 
-**Applies to:** v2.0.0 "Coverage & Correctness" · **Last verified:** 2026-09-16
+**Applies to:** v2.0.0 "Coverage & Correctness" · **Last verified:** 2026-09-17
 
 ---
 
@@ -56,7 +56,7 @@ flowchart LR
 
 ## 3. CI/CD Pipeline
 
-Every push/PR runs **four jobs** in `validate-powershell.yml` — `analyze` (PSScriptAnalyzer), `syntax-check` (Language.Parser), `test` (Pester + per-script test mirror + module smoke) and `summary` (the aggregate merge gate); supporting workflows keep the repo tidy and docs healthy.
+Every push/PR runs **six jobs** in `validate-powershell.yml` — `analyze` (PSScriptAnalyzer + policy rules + comment-based help), `syntax-check` (Language.Parser), `test` (Pester + per-script test mirror + module smoke with wrapper/catalog parity), `freshness` (Build-Catalog/-Docs/-Module `-Validate` plus `tools/Test-Standards.ps1`), `mcp-server` (install + build) and `summary` (the aggregate merge gate); supporting workflows keep the repo tidy and docs healthy.
 
 ```mermaid
 flowchart TD
@@ -81,7 +81,7 @@ flowchart TD
 |---|---|---|
 | `validate-powershell.yml` | PRs + pushes to main | **Gating:** PSSA (fails on Error) + syntax check + **Pester tests** (fails on test failures; coverage informational) |
 | `issue-labeler.yml` | Issue open/edit | Auto-applies 36 technology/type/priority labels (28 technology + 6 issue type + 2 priority; resilient: bulk → per-label fallback → auto-create missing) |
-| `markdown-link-check.yml` | PRs touching `*.md`, push to main (`*.md`), weekly, manual | Checks markdown links via lychee (`fail: false` — warns on broken links, tolerates 429) |
+| `markdown-link-check.yml` | PRs touching `*.md`, push to main (`*.md`), weekly, manual | Checks markdown links via lychee. `fail: true`, so a broken link fails the step; the step carries a commented `continue-on-error` while the pre-existing link debt in #317 is cleared. HTTP 429 is no longer treated as healthy |
 | `stale.yml` | Daily | Marks/closes inactive issues (60d) and PRs (30d) |
 
 > **Note:** Pester tests run both locally (`Invoke-Pester` via `Tests/Pester.Config.psd1`) and in CI (`test` job in `validate-powershell.yml`). Coverage is enabled but not gating — low coverage does not fail the pipeline.
@@ -129,10 +129,11 @@ flowchart LR
 Docs live **in the repository** — no external wiki (retired 2026-08-08). Benefits: versioned with code, PR-reviewable, link-checked by review, impossible to silently drift.
 
 `docs/Module.md` is auto-generated from the manifest + catalog (see `tools/Build-Docs.ps1`)
-and is the PSGallery-facing reference. It is **not** currently validated in CI — issue #285
-tracks wiring `Build-Docs.ps1 -Validate` into the pipeline.
+and is the PSGallery-facing reference. It **is** validated in CI: the `freshness` job runs
+`pwsh -File tools/Build-Docs.ps1 -Validate` and fails the pipeline when the committed
+document is stale.
 
-Module loads 357 generated wrapper functions (+3 helpers = 360 exported commands) via Build-Module, version from CHANGELOG, PSSA 0
+Module loads 381 generated wrapper functions (+3 helpers = 384 exported commands) via Build-Module, version from CHANGELOG, PSSA 0
 
 ```mermaid
 flowchart LR

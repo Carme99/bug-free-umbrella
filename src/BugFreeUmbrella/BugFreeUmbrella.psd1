@@ -1,6 +1,6 @@
 ﻿@{
     # --- Identity ---
-    ModuleVersion      = '2.0.0'
+    ModuleVersion      = '2.0.1'
     GUID               = '7cc494cc-4523-4630-a69e-12b77001c0f0'
     Author             = 'Carme99'
     CompanyName        = 'Carme99'
@@ -421,7 +421,7 @@
             LicenseUri                 = 'https://github.com/Carme99/bug-free-umbrella/blob/main/LICENSE'
             ProjectUri                 = 'https://github.com/Carme99/bug-free-umbrella'
             IconUri                    = ''
-            ReleaseNotes               = '2.0.0 - - 2026-09-16 - Coverage & Correctness > v2.0.0 expands the collection into the domains Microsoft documents but the toolkit did not > cover, repairs scripts that could not run at all, wires the documented CI gates so generated > artifacts can no longer drift, and makes the script-counting convention authoritative. > No script or path was renamed or removed. ### Release Scope - **16 new sub-categories** across Azure, Microsoft Entra, Microsoft Defender, Microsoft Purview, Intune and Win...'
+            ReleaseNotes               = '2.0.1 - - 2026-09-17 - Documentation Alignment Patch > Independent verification of v2.0.0 found that several documentation claims were falsified by > v2.0.0''s own changes, and that one compatibility page published figures no data source could > reproduce. Those are corrected here. No script behaviour changes. ### Fixed - **`docs/ARCHITECTURE.md` corrected against the workflow it documents.** It advertised four CI jobs (there are six - `freshness` and `mcp-server` were added in v2.0.0), descri...'
             RequireLicenseAcceptance   = $false
             ExternalModuleDependencies = @()
         }
