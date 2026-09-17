@@ -172,8 +172,8 @@ Include GPO backups in your disaster recovery plan:
 
 ## Additional Resources
 
-- [Group Policy Overview](https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/manage/group-policy)
-- [Group Policy Best Practices](https://docs.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-best-practices)
+- [Group Policy Overview](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/group-policy/group-policy-overview)
+- [Group Policy Best Practices](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/plan/security-best-practices/best-practices-for-securing-active-directory)
 - [GPO Backup and Restore](https://docs.microsoft.com/en-us/powershell/module/grouppolicy/)
 
 ---

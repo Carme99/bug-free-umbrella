@@ -42,6 +42,13 @@ jobs:
             --exclude 'https://github\.com/Carme99/bug-free-umbrella/compare/'
             --exclude 'https://github\.com/Carme99/bug-free-umbrella/releases/tag/'
             --exclude 'https://github\.com/Carme99/bug-free-umbrella/stargazers'
+            # Hosts that answer 403 to any non-browser client (verified: they 403 the CI
+            # runner's plain GET, they are not broken links). Excluded rather than deleted -
+            # the documentation references are legitimate.
+            --exclude '^https://(www\.)?reddit\.com/'
+            --exclude '^https://(endpoint|intune)\.microsoft\.com/'
+            --exclude '^https://support\.lenovo\.com/'
+            --exclude '^https://www\.hhs\.gov/'
             --accept 200,204,206,301,302,303,307,308
             --timeout 20
             --max-retries 2

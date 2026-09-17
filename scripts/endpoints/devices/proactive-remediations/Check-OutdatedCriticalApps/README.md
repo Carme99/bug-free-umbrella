@@ -406,7 +406,7 @@ winget upgrade --id FailingApp.Id --silent
 
 - **Winget Documentation**: [docs.microsoft.com/windows/package-manager/winget](https://docs.microsoft.com/windows/package-manager/winget/)
 - **Intune Proactive Remediations**: [learn.microsoft.com/mem/intune/fundamentals/remediations](https://learn.microsoft.com/mem/intune/fundamentals/remediations)
-- **Bug-Free Umbrella Repository**: [github.com/yourorg/bug-free-umbrella](https://github.com/yourorg/bug-free-umbrella)
+- **Bug-Free Umbrella Repository**: [github.com/Carme99/bug-free-umbrella](https://github.com/Carme99/bug-free-umbrella)
 
 ---
 
