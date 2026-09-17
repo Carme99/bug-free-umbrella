@@ -26,10 +26,22 @@ Describe "Get-VMBackupCompliance" {
         . $scriptPath
 
         # Az cmdlets are absent offline; Pester needs a stub before it can mock by name.
-        function Get-AzContext { }
-        function Get-AzSubscription { }
-        function Set-AzContext { }
-        function Get-AzVM { }
+        function Get-AzContext {
+            [CmdletBinding()]
+            param()
+        }
+        function Get-AzSubscription {
+            [CmdletBinding()]
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$TenantId)
+        }
+        function Set-AzContext {
+            [CmdletBinding()]
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$Name)
+        }
+        function Get-AzVM {
+            [CmdletBinding()]
+            param([string]$ResourceGroupName, [string]$Name, [switch]$Status)
+        }
         function Get-AzRecoveryServicesVault { }
         function Get-AzRecoveryServicesBackupContainer { }
         function Get-AzRecoveryServicesBackupItem { }

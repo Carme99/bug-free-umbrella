@@ -27,9 +27,18 @@ Describe "Monitor-AzureKeyVaults" {
         # Stub every mocked external command so Pester can resolve it offline.
         function Get-Module { }
         function Import-Module { }
-        function Get-AzContext { }
-        function Set-AzContext { }
-        function Get-AzSubscription { }
+        function Get-AzContext {
+            [CmdletBinding()]
+            param()
+        }
+        function Set-AzContext {
+            [CmdletBinding()]
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$Name)
+        }
+        function Get-AzSubscription {
+            [CmdletBinding()]
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$TenantId)
+        }
         function Get-AzKeyVault { }
         function Get-AzKeyVaultSecret { }
         function Get-AzKeyVaultCertificate { }

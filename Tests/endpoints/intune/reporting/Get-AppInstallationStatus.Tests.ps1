@@ -11,10 +11,25 @@ Describe "Get-AppInstallationStatus" {
         # IntuneGraphHelper.psm1 / Microsoft.Graph surfaces are mocked at command-name level.
         # Pester requires the command to exist before Mock, so declare minimal stubs first
         # (the real Import-Module is mocked below and never runs).
-        function Connect-IntuneGraph { param([string[]]$Scopes) $true }
-        function Disconnect-IntuneGraph { }
-        function Export-IntuneReportToHTML { param($Data, $Title, $FilePath) return $FilePath }
-        function Export-IntuneReportToCSV { param($Data, $Title, $FilePath) return $FilePath }
+        function Connect-IntuneGraph {
+            [CmdletBinding()]
+            param([string[]]$Scopes, [string]$TenantId)
+            $true
+        }
+        function Disconnect-IntuneGraph {
+            [CmdletBinding()]
+            param()
+        }
+        function Export-IntuneReportToHTML {
+            [CmdletBinding()]
+            param([object[]]$Data, [string]$Title, [string]$FilePath, [string]$Description)
+            return $FilePath
+        }
+        function Export-IntuneReportToCSV {
+            [CmdletBinding()]
+            param([object[]]$Data, [string]$Title, [string]$FilePath)
+            return $FilePath
+        }
         function Invoke-MgGraphRequest { param([string]$Uri) throw "Invoke-MgGraphRequest not mocked for URI: $Uri" }
         Mock Import-Module { }
 

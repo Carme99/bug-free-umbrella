@@ -34,23 +34,15 @@ Describe 'Get-AzureStorageAccountAudit' {
         # unsupported parameter fails instead of passing silently.
         function Get-AzContext {
             [CmdletBinding()]
-            param([Parameter()][object]$DefaultProfile)
+            param()
         }
         function Set-AzContext {
             [CmdletBinding()]
-            param(
-                [Parameter()][string]$SubscriptionId,
-                [Parameter()][object]$DefaultProfile
-            )
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$Name)
         }
         function Get-AzSubscription {
             [CmdletBinding()]
-            param(
-                [Parameter()][string]$SubscriptionId,
-                [Parameter()][string]$TenantId,
-                [Parameter()][string]$SubscriptionName,
-                [Parameter()][object]$DefaultProfile
-            )
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$TenantId)
         }
         function Get-AzStorageAccount {
             [CmdletBinding(DefaultParameterSetName = 'ResourceGroupParameterSet')]

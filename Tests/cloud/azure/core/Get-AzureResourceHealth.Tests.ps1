@@ -26,9 +26,18 @@ Describe 'Get-AzureResourceHealth' {
 
         # Mock ALL external module cmdlets so nothing leaves the machine.
         # The Az module is not installed offline: stub its cmdlets so Pester can mock them.
-        function Get-AzContext { }
-        function Set-AzContext { }
-        function Get-AzVM { }
+        function Get-AzContext {
+            [CmdletBinding()]
+            param()
+        }
+        function Set-AzContext {
+            [CmdletBinding()]
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$Name)
+        }
+        function Get-AzVM {
+            [CmdletBinding()]
+            param([string]$ResourceGroupName, [string]$Name, [switch]$Status)
+        }
         function Get-AzStorageAccount { }
         function Get-AzVirtualNetwork { }
         function Get-AzNetworkSecurityGroup { }

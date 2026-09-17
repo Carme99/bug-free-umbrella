@@ -12,12 +12,24 @@ Describe "Get-WindowsUpdateCompliance" {
         . $scriptPath
 
         # External commands mocked by name (works offline without the Graph SDK).
-        function Connect-IntuneGraph { }
-        function Disconnect-IntuneGraph { }
+        function Connect-IntuneGraph {
+            [CmdletBinding()]
+            param([string[]]$Scopes, [string]$TenantId)
+        }
+        function Disconnect-IntuneGraph {
+            [CmdletBinding()]
+            param()
+        }
         function Get-MgDeviceManagementManagedDevice { @() }
         function Invoke-MgGraphRequest { }
-        function Export-IntuneReportToHTML { }
-        function Export-IntuneReportToCSV { }
+        function Export-IntuneReportToHTML {
+            [CmdletBinding()]
+            param([object[]]$Data, [string]$Title, [string]$FilePath, [string]$Description)
+        }
+        function Export-IntuneReportToCSV {
+            [CmdletBinding()]
+            param([object[]]$Data, [string]$Title, [string]$FilePath)
+        }
 
         # Two devices: PC-A protected and reporting, PC-B unprotected with a stale AV report.
         function Get-TestDevices {

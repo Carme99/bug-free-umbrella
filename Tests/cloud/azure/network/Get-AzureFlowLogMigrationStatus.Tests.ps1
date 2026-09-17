@@ -38,15 +38,11 @@ Describe 'Get-AzureFlowLogMigrationStatus' {
         }
         function Set-AzContext {
             [CmdletBinding()]
-            param(
-                [Parameter(Mandatory = $false)][string]$SubscriptionId
-            )
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$Name)
         }
         function Get-AzSubscription {
             [CmdletBinding()]
-            param(
-                [Parameter(Mandatory = $false)][string]$SubscriptionId
-            )
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$TenantId)
         }
         function Get-AzVirtualNetwork {
             [CmdletBinding()]

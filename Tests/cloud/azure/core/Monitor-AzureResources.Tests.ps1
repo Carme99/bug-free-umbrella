@@ -25,14 +25,32 @@ Describe "Monitor-AzureResources" {
         # Stub every mocked external command so Pester can resolve it offline.
         function Get-Module { }
         function Import-Module { }
-        function Get-AzContext { }
-        function Set-AzContext { }
-        function Get-AzSubscription { }
+        function Get-AzContext {
+            [CmdletBinding()]
+            param()
+        }
+        function Set-AzContext {
+            [CmdletBinding()]
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$Name)
+        }
+        function Get-AzSubscription {
+            [CmdletBinding()]
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$TenantId)
+        }
         function Get-AzResourceGroup { }
         function Get-AzResource { }
-        function Get-AzVM { }
-        function Get-AzDisk { }
-        function Get-AzPublicIpAddress { }
+        function Get-AzVM {
+            [CmdletBinding()]
+            param([string]$ResourceGroupName, [string]$Name, [switch]$Status)
+        }
+        function Get-AzDisk {
+            [CmdletBinding()]
+            param([string]$ResourceGroupName, [string]$DiskName)
+        }
+        function Get-AzPublicIpAddress {
+            [CmdletBinding()]
+            param([string]$Name, [string]$ResourceGroupName)
+        }
 
         # Az modules are absent offline; mock the whole surface at command-name level.
         Mock Get-Module { $true }

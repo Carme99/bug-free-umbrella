@@ -34,23 +34,15 @@ Describe 'Get-AzureMonitorAlertCoverage' {
         # parameter throws instead of being silently ignored, then Mock each one.
         function Get-AzContext {
             [CmdletBinding()]
-            param([Parameter()][object]$DefaultProfile)
+            param()
         }
         function Get-AzSubscription {
             [CmdletBinding()]
-            param(
-                [Parameter()][string]$SubscriptionId,
-                [Parameter()][string]$SubscriptionName,
-                [Parameter()][string]$TenantId,
-                [Parameter()][object]$DefaultProfile
-            )
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$TenantId)
         }
         function Set-AzContext {
             [CmdletBinding()]
-            param(
-                [Parameter()][string]$SubscriptionId,
-                [Parameter()][object]$DefaultProfile
-            )
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$Name)
         }
         function Get-AzActionGroup {
             [CmdletBinding()]

@@ -41,15 +41,11 @@ Describe 'Get-AzureBackupComplianceReport' {
         }
         function Get-AzSubscription {
             [CmdletBinding()]
-            param(
-                [Parameter(Mandatory = $false)][string]$SubscriptionId
-            )
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$TenantId)
         }
         function Set-AzContext {
             [CmdletBinding()]
-            param(
-                [Parameter(Mandatory = $false)][string]$SubscriptionId
-            )
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$Name)
         }
         function Get-AzRecoveryServicesVault {
             [CmdletBinding()]
@@ -82,9 +78,7 @@ Describe 'Get-AzureBackupComplianceReport' {
         }
         function Get-AzVM {
             [CmdletBinding()]
-            param(
-                [Parameter(Mandatory = $false)][string]$ResourceGroupName
-            )
+            param([string]$ResourceGroupName, [string]$Name, [switch]$Status)
         }
 
         $script:vaultId = '/subscriptions/sub-1/resourceGroups/rg-backup/providers' +

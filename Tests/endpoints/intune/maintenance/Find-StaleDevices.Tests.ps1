@@ -11,10 +11,23 @@ Describe "Find-StaleDevices" {
 
         # Stub every external command the helper module / Graph SDK would provide,
         # so Pester can attach mocks even though no module is installed offline.
-        function Connect-IntuneGraph { param([string[]]$Scopes) $true }
-        function Disconnect-IntuneGraph { }
-        function Export-IntuneReportToHTML { param($Data, $Title, $FilePath) }
-        function Export-IntuneReportToCSV { param($Data, $Title, $FilePath) }
+        function Connect-IntuneGraph {
+            [CmdletBinding()]
+            param([string[]]$Scopes, [string]$TenantId)
+            $true
+        }
+        function Disconnect-IntuneGraph {
+            [CmdletBinding()]
+            param()
+        }
+        function Export-IntuneReportToHTML {
+            [CmdletBinding()]
+            param([object[]]$Data, [string]$Title, [string]$FilePath, [string]$Description)
+        }
+        function Export-IntuneReportToCSV {
+            [CmdletBinding()]
+            param([object[]]$Data, [string]$Title, [string]$FilePath)
+        }
         function Get-MgDeviceManagementManagedDevice { param($All) @() }
         function Remove-MgDeviceManagementManagedDevice { param($ManagedDeviceId) }
         function Invoke-MgGraphRequest { param($Method, $Uri) }

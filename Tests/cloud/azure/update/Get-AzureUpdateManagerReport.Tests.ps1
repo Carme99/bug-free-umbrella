@@ -31,11 +31,26 @@ Describe 'Get-AzureUpdateManagerReport' {
 
         # The Az modules are not installed offline: declare their cmdlets as empty functions so
         # Pester can mock them, then Mock each one.
-        function Get-AzContext { }
-        function Get-AzSubscription { }
-        function Set-AzContext { }
-        function Get-AzMaintenanceConfiguration { }
-        function Search-AzGraph { }
+        function Get-AzContext {
+            [CmdletBinding()]
+            param()
+        }
+        function Get-AzSubscription {
+            [CmdletBinding()]
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$TenantId)
+        }
+        function Set-AzContext {
+            [CmdletBinding()]
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$Name)
+        }
+        function Get-AzMaintenanceConfiguration {
+            [CmdletBinding()]
+            param([string]$ResourceGroupName, [string]$Name)
+        }
+        function Search-AzGraph {
+            [CmdletBinding()]
+            param([string]$Query, [string[]]$Subscription, [int]$First, [int]$Skip, [string]$SkipToken)
+        }
 
         Mock Import-Module { }
         Mock Get-AzContext { [pscustomobject]@{ Subscription = [pscustomobject]@{ Name = 'sub-prod' } } }

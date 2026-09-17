@@ -31,13 +31,34 @@ Describe 'Get-AzureCostOptimizationReport' {
 
         # The Az modules are not installed offline: declare their cmdlets as empty functions so
         # Pester can mock them, then Mock each one.
-        function Get-AzContext { }
-        function Get-AzSubscription { }
-        function Set-AzContext { }
-        function Invoke-AzRestMethod { }
-        function Get-AzVM { }
-        function Get-AzDisk { }
-        function Get-AzPublicIpAddress { }
+        function Get-AzContext {
+            [CmdletBinding()]
+            param()
+        }
+        function Get-AzSubscription {
+            [CmdletBinding()]
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$TenantId)
+        }
+        function Set-AzContext {
+            [CmdletBinding()]
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$Name)
+        }
+        function Invoke-AzRestMethod {
+            [CmdletBinding()]
+            param([string]$Path, [string]$Method, [string]$Payload, [string]$ApiVersion)
+        }
+        function Get-AzVM {
+            [CmdletBinding()]
+            param([string]$ResourceGroupName, [string]$Name, [switch]$Status)
+        }
+        function Get-AzDisk {
+            [CmdletBinding()]
+            param([string]$ResourceGroupName, [string]$DiskName)
+        }
+        function Get-AzPublicIpAddress {
+            [CmdletBinding()]
+            param([string]$Name, [string]$ResourceGroupName)
+        }
 
         Mock Import-Module { }
         Mock Get-AzContext { [pscustomobject]@{ Subscription = [pscustomobject]@{ Name = 'sub-prod' } } }

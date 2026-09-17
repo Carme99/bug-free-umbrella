@@ -30,18 +30,21 @@ Describe 'Update-AzureArcAgent' {
 
         # The product module is not installed offline: declare its cmdlets as empty
         # functions so Pester can mock them, then Mock each one.
-        function Get-AzContext { }
-        function Get-AzSubscription { }
+        function Get-AzContext {
+            [CmdletBinding()]
+            param()
+        }
+        function Get-AzSubscription {
+            [CmdletBinding()]
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$TenantId)
+        }
         function Get-AzConnectedMachine {
-            param([string[]]$SubscriptionId, [string]$ResourceGroupName)
+            [CmdletBinding()]
+            param([string[]]$SubscriptionId, [string]$ResourceGroupName, [string]$Name, [string]$Expand)
         }
         function Update-AzConnectedMachine {
-            param(
-                [string]$Name,
-                [string]$ResourceGroupName,
-                [string[]]$SubscriptionId,
-                [string]$AgentUpgradeDesiredVersion
-            )
+            [CmdletBinding()]
+            param([string]$Name, [string]$ResourceGroupName, [string]$SubscriptionId, [string]$AgentUpgradeDesiredVersion, [string]$AgentUpgradeCorrelationId, [string]$Kind, [hashtable]$Tag, [switch]$AgentUpgradeEnableAutomatic)
         }
 
         Mock Import-Module { }

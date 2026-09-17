@@ -30,13 +30,21 @@ Describe 'Get-AzureArcServerFleet' {
 
         # The product module is not installed offline: declare its cmdlets as empty
         # functions so Pester can mock them, then Mock each one.
-        function Get-AzContext { }
-        function Get-AzSubscription { }
+        function Get-AzContext {
+            [CmdletBinding()]
+            param()
+        }
+        function Get-AzSubscription {
+            [CmdletBinding()]
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$TenantId)
+        }
         function Get-AzConnectedMachine {
-            param([string[]]$SubscriptionId, [string]$ResourceGroupName)
+            [CmdletBinding()]
+            param([string[]]$SubscriptionId, [string]$ResourceGroupName, [string]$Name, [string]$Expand)
         }
         function Get-AzConnectedMachineExtension {
-            param([string]$ResourceGroupName, [string]$MachineName, [string[]]$SubscriptionId)
+            [CmdletBinding()]
+            param([string]$MachineName, [string]$ResourceGroupName, [string[]]$SubscriptionId, [string]$Name, [string]$Expand)
         }
 
         Mock Import-Module { }

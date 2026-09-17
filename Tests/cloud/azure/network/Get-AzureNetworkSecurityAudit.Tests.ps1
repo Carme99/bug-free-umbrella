@@ -38,15 +38,11 @@ Describe 'Get-AzureNetworkSecurityAudit' {
         }
         function Set-AzContext {
             [CmdletBinding()]
-            param(
-                [Parameter(Mandatory = $false)][string]$SubscriptionId
-            )
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$Name)
         }
         function Get-AzSubscription {
             [CmdletBinding()]
-            param(
-                [Parameter(Mandatory = $false)][string]$SubscriptionId
-            )
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$TenantId)
         }
         function Get-AzNetworkSecurityGroup {
             [CmdletBinding()]
@@ -71,10 +67,7 @@ Describe 'Get-AzureNetworkSecurityAudit' {
         }
         function Get-AzPublicIpAddress {
             [CmdletBinding()]
-            param(
-                [Parameter(Mandatory = $false)][string]$SubscriptionId,
-                [Parameter(Mandatory = $false)][string]$ResourceGroupName
-            )
+            param([string]$Name, [string]$ResourceGroupName)
         }
 
         $nsgCleanId = '/subscriptions/s1/resourceGroups/rg1/providers/Microsoft.Network' +

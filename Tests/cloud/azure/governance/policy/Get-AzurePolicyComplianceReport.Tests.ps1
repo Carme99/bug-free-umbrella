@@ -39,9 +39,7 @@ Describe 'Get-AzurePolicyComplianceReport' {
         }
         function Get-AzSubscription {
             [CmdletBinding()]
-            param(
-                [Parameter(Mandatory = $false)][string]$SubscriptionId
-            )
+            param([string]$SubscriptionId, [string]$SubscriptionName, [string]$TenantId)
         }
         function Get-AzPolicyState {
             [CmdletBinding()]
