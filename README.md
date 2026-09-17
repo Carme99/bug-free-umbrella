@@ -38,8 +38,8 @@ Development is AI-assisted ([Claude Code](https://github.com/anthropics/claude-c
 git clone https://github.com/Carme99/bug-free-umbrella.git
 cd bug-free-umbrella
 
-# Or install the generated module from the PowerShell Gallery
-Install-Module BugFreeUmbrella -Scope CurrentUser
+# The module is not published to the PowerShell Gallery. Build and import it from a clone:
+Import-Module ./src/BugFreeUmbrella
 
 # Read a script's help before running it
 Get-Help .\scripts\endpoints\intune\reporting\Get-DeviceComplianceReport.ps1 -Detailed

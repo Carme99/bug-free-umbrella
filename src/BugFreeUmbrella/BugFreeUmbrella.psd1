@@ -1,6 +1,6 @@
 ﻿@{
     # --- Identity ---
-    ModuleVersion      = '2.0.1'
+    ModuleVersion      = '2.0.2'
     GUID               = '7cc494cc-4523-4630-a69e-12b77001c0f0'
     Author             = 'Carme99'
     CompanyName        = 'Carme99'
@@ -421,7 +421,7 @@
             LicenseUri                 = 'https://github.com/Carme99/bug-free-umbrella/blob/main/LICENSE'
             ProjectUri                 = 'https://github.com/Carme99/bug-free-umbrella'
             IconUri                    = ''
-            ReleaseNotes               = '2.0.1 - - 2026-09-17 - Documentation Alignment Patch > Independent verification of v2.0.0 found that several documentation claims were falsified by > v2.0.0''s own changes, and that one compatibility page published figures no data source could > reproduce. Those are corrected here. No script behaviour changes. ### Fixed - **`docs/ARCHITECTURE.md` corrected against the workflow it documents.** It advertised four CI jobs (there are six - `freshness` and `mcp-server` were added in v2.0.0), descri...'
+            ReleaseNotes               = '2.0.2 - - 2026-09-17 - Installation Path Correction > The documented headline install path never worked: the module is not published to the > PowerShell Gallery, and the tag-triggered release workflow skips its publish step because > `PSGALLERY_API_KEY` has never been configured. The docs told users to run `Install-Module`. ### Fixed - **Generated install instructions corrected at the source.** `tools/Build-Docs.ps1` emits the `docs/Module.md` installation block, so the document alone was not...'
             RequireLicenseAcceptance   = $false
             ExternalModuleDependencies = @()
         }
