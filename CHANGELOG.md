@@ -89,8 +89,15 @@ Bug-Free Umbrella historically used **weather-themed codenames** for releases. A
 - **`Add-LenovoFriendlyModelNames` re-wrote Entra extension attributes on every run.**
   `$needsExtUpdate` was true for any device with an `azureADDeviceId`, which made the
   "Already up to date" branch unreachable and issued a PATCH (plus a per-device delay) for every
-  Lenovo device on every pass. The device query now requests `extensionAttributes` and compares
-  the current value, so a converged tenant performs no writes.
+  Lenovo device on every pass.
+
+  The read needed care: **extension attributes are not on the Intune `managedDevice` resource** -
+  they live on the Entra `device` resource, so they cannot be requested from the device query at
+  all. The script now fetches the Entra device inventory once (`GET
+  /v1.0/devices?$select=id,deviceId,extensionAttributes`, paged), indexes it by both keys the
+  PATCH may address a device by, and compares the current value. A converged tenant now performs
+  no writes. Both new assertions **fail against the pre-fix script** (12/2) and pass against the
+  fixed one (14/0).
 - **`New-WingetSourceConfig` added its source unconditionally.** The Intune script this tool
   *generates* checked for an existing source first, so a second run of the tool itself failed
   with "source already exists". The live path now performs the same check.

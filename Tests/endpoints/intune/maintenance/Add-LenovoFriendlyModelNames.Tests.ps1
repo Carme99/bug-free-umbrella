@@ -23,7 +23,12 @@ Describe "Add-LenovoFriendlyModelNames.ps1" {
         # Mock every external surface at command-name level (offline).
         Mock Disconnect-MgGraph { }
         Mock Connect-MgGraph { }
-        Mock Invoke-MgGraphRequest { }
+        # Full signature: an empty param() stub cannot expose -Uri/-Method to a
+        # -ParameterFilter, so assertions against specific Graph calls would silently
+        # match nothing.
+        Mock Invoke-MgGraphRequest {
+            param([string]$Uri, [string]$Method, $Body)
+        }
         Mock Start-Sleep { }
         Mock Invoke-RestMethod { }
         Mock Get-MgDeviceManagementManagedDevice { }
@@ -118,25 +123,57 @@ Describe "Add-LenovoFriendlyModelNames.ps1" {
                 @([pscustomobject]@{ name = 'ThinkPad T14 Gen 3 (Type 21AH, 21AJ)' })
             }
             Mock Update-MgDeviceManagementManagedDevice { }
+            # Record the Graph traffic rather than filtering the shared stub: the filter cannot see
+            # named parameters reliably and would silently match nothing.
+            $script:graphCalls = @()
+            Mock Invoke-MgGraphRequest {
+                param([string]$Uri, [string]$Method, $Body)
+                $script:graphCalls += [pscustomobject]@{ Uri = $Uri; Method = $Method }
+            }
             $AuditOnly = $false
             $UpdateExtensionAttributes = $true
             Main | Should -Be 0
-            Should -Invoke Update-MgDeviceManagementManagedDevice -Times 1 -Exactly
-            Should -Invoke Invoke-MgGraphRequest -Times 1 -Exactly
+            Should -Invoke Update-MgDeviceManagementManagedDevice -Times 1 -Exactly -Because "the note is empty"
+            # Extension attributes are not on the Intune managedDevice resource, so the read comes
+            # from /v1.0/devices and the write goes to the Entra device.
+            @($script:graphCalls | Where-Object { $_.Method -eq 'GET' -and $_.Uri -like '*/v1.0/devices*' }).Count |
+                Should -Be 1 -Because "the Entra device extension attributes are read once"
+            @($script:graphCalls | Where-Object { $_.Method -eq 'PATCH' -and $_.Uri -like '/v1.0/devices/*' }).Count |
+                Should -Be 1 -Because "the extension attribute is written to the Entra device"
         }
 
         It "Is idempotent with extension attributes enabled: a converged device is not re-PATCHed" {
-            # The extension-attribute path used to fire for every device with an azureADDeviceId,
-            # so a converged tenant was re-PATCHed on every run.
+            # The Intune managedDevice resource has NO extensionAttributes property, so the
+            # current value can only come from the Entra device resource. This fixture models
+            # both seams the way Graph actually behaves: the managed device carries no
+            # extensionAttributes, and they are supplied by the Entra /devices collection.
             Mock Get-MgDeviceManagementManagedDevice {
                 [pscustomobject]@{
-                    id               = 'dev-1'
-                    deviceName       = 'LAPTOP01'
-                    model            = '21AHS0AB00'
-                    notes            = 'ThinkPad T14 Gen 3'
-                    azureADDeviceId  = 'aad-1'
-                    extensionAttributes = [pscustomobject]@{ ExtensionAttribute1 = 'ThinkPad T14 Gen 3' }
+                    id = 'dev-1';
+                    deviceName = 'LAPTOP01';
+                    model = '21AHS0AB00';
+                    notes = 'ThinkPad T14 Gen 3';
+                    azureADDeviceId = 'aad-1'
                 }
+            }
+            # Pester mocks bind by the real cmdlet's parameter names; record via $PSBoundParameters
+            # so the assertion sees what the script actually asked for.
+            $script:graphCalls = @()
+            # Pester mock bodies do not populate $PSBoundParameters, so bind by name and read the
+            # variables directly - the pattern used by this repo's other stubs.
+            Mock Invoke-MgGraphRequest {
+                param([string]$Uri, [string]$Method, $Body)
+                $script:graphCalls += "$Method $Uri"
+                if ($Method -eq 'GET' -and $Uri -like '*/v1.0/devices*') {
+                    return [pscustomobject]@{
+                        value = @([pscustomobject]@{
+                            id = 'entra-obj-1'
+                            deviceId = 'aad-1'
+                            extensionAttributes = [pscustomobject]@{ ExtensionAttribute1 = 'ThinkPad T14 Gen 3' }
+                        })
+                    }
+                }
+                throw "unexpected Graph call: $Method $Uri"
             }
             Mock Invoke-RestMethod {
                 @([pscustomobject]@{ name = 'ThinkPad T14 Gen 3 (Type 21AH, 21AJ)' })
@@ -147,10 +184,10 @@ Describe "Add-LenovoFriendlyModelNames.ps1" {
             $ExtensionAttributeName = 'ExtensionAttribute1'
             $UpdateNotes = $true
             Main | Should -Be 0
-            Should -Invoke Update-MgDeviceManagementManagedDevice -Times 0 -Exactly -Because "the value already matches"
-            Should -Invoke Invoke-MgGraphRequest -Times 0 -Exactly -Because "no PATCH is needed"
+            Should -Invoke Update-MgDeviceManagementManagedDevice -Times 0 -Exactly -Because "the note already matches"
+            $script:graphCalls | Where-Object { $_ -like 'PATCH*' } | Should -BeNullOrEmpty `
+                -Because "the extension attribute already holds the target value"
         }
-
         It "Is idempotent: converged Notes and disabled extension attributes cause no writes" {
             Mock Get-MgDeviceManagementManagedDevice {
                 [pscustomobject]@{
