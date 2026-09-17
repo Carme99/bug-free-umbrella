@@ -1,5 +1,12 @@
 # Remediation Library
 
+> **⚠️ DEPRECATED TREE — do not deploy from these paths.**
+> Every script here is a deprecation shim that forwards to the canonical implementation under
+> [`scripts/endpoints/remediation/`](../../remediation/). The tree is retained through 5.x and is
+> scheduled for removal in 6.0.0. Use the migration table in
+> [scripts/endpoints/remediation/README.md](../../remediation/README.md) to repoint Intune
+> Proactive Remediation packages at the canonical scripts.
+
 
 > **⚠️ IMPORTANT NOTICE**: The vast majority of scripts in this repository have not been thoroughly tested in production environments. Please test all scripts in a non-production environment first and validate the results before relying on this data for operational decisions.
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/Carme99/bug-free-umbrella/main/scripts/.catalog/metadata.schema.json",
   "version": "2.0.0",
-  "generated": "2026-09-17T00:23:24.6608530+01:00",
+  "generated": "2026-09-17T02:10:40.8995957+01:00",
   "totalScripts": 381,
   "excludedScripts": 185,
   "onDiskScripts": 566,
@@ -4667,10 +4667,13 @@
       "path": "endpoints/intune/reporting/Get-AutopilotDeploymentReport.ps1",
       "name": "Get-AutopilotDeploymentReport.ps1",
       "category": "endpoints/intune/reporting",
-      "synopsis": "Track Windows Autopilot deployment status and failures from Microsoft Intune.",
-      "description": "Generates comprehensive Autopilot deployment reports: - Deployment success/failure rates - Device provisioning status - ESP (Enrollment Status Page) errors - Deployment duration analysis - Failed depl",
+      "synopsis": "Report device enrolment and compliance state for Windows Autopilot profiles in Intune.",
+      "description": "Reports the enrolment and compliance state of every device covered by the selected Autopilot deployment profiles, one row per device: - Device name, serial number and enrolment date - Compliance state",
       "tags": [
-        "intune"
+        "intune",
+        "compliance",
+        "device",
+        "report"
       ],
       "parameters": [
         {
@@ -7070,33 +7073,13 @@
       "path": "endpoints/remediation/winget/_templates/detect.ps1",
       "name": "detect.ps1",
       "category": "endpoints/remediation/winget/_templates",
-      "synopsis": "DEPRECATED: use detect_v3.ps1. Legacy winget update detection template (V1).",
-      "description": "Deprecated template generation retained so existing copies keep working; new deployments should use detect_v3.ps1 instead. Checks whether the configured package is installed (preferring the Microsoft.",
-      "tags": [
-        "winget"
-      ],
-      "parameters": [
-        {
-          "name": "Id",
-          "type": "String",
-          "mandatory": false
-        },
-        {
-          "name": "SysgetPath",
-          "type": "String",
-          "mandatory": false
-        },
-        {
-          "name": "PackageId",
-          "type": "String",
-          "mandatory": false
-        }
-      ],
+      "synopsis": "DEPRECATED: use detect_v3.ps1. Thin shim over detect_v1_legacy.ps1 (V1 detection).",
+      "description": "Historical entry-point name for the V1 detection template. The body lives in detect_v1_legacy.ps1; this file carries no logic of its own, it only loads that file so the original name keeps working. Su",
+      "tags": [],
+      "parameters": [],
       "hasCmdletBinding": true,
       "requiresModules": [],
       "functionsExported": [
-        "Invoke-WingetPackageLookup",
-        "Invoke-WingetList",
         "Main"
       ]
     },
@@ -7411,25 +7394,15 @@
       "path": "endpoints/remediation/winget/_templates/remediate.ps1",
       "name": "remediate.ps1",
       "category": "endpoints/remediation/winget/_templates",
-      "synopsis": "[DEPRECATED] Winget update remediation template - use remediate_v3_standard.ps1.",
-      "description": "DEPRECATED: this legacy template is superseded by remediate_v3_standard.ps1 in this directory. Existing Intune Proactive Remediations assignments may still reference this path, so the filename and loc",
+      "synopsis": "DEPRECATED V1 winget remediation template - thin shim over remediate_v1_legacy.ps1.",
+      "description": "Historical entry-point name for the V1 remediation template. The body lives in remediate_v1_legacy.ps1; this file carries no logic of its own, it only loads that file so the original name keeps workin",
       "tags": [
         "winget"
       ],
-      "parameters": [
-        {
-          "name": "Arguments",
-          "type": "String[]",
-          "mandatory": false
-        }
-      ],
+      "parameters": [],
       "hasCmdletBinding": true,
       "requiresModules": [],
       "functionsExported": [
-        "Get-WingetExecutable",
-        "Invoke-WingetCommand",
-        "Invoke-ModuleRemediation",
-        "Invoke-CliFallbackRemediation",
         "Main"
       ]
     },

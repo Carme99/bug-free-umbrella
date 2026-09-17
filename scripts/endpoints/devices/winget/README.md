@@ -1,5 +1,12 @@
 # Winget Update Scripts for Intune
 
+> **⚠️ DEPRECATED TREE — do not deploy from these paths.**
+> Every script here is a deprecation shim that forwards to the canonical implementation under
+> [`scripts/endpoints/remediation/`](../../remediation/). The tree is retained through 5.x and is
+> scheduled for removal in 6.0.0. Use the migration table in
+> [scripts/endpoints/remediation/README.md](../../remediation/README.md) to repoint Intune
+> Proactive Remediation packages at the canonical scripts.
+
 Automated application update management using Winget and Microsoft Intune Proactive Remediations.
 
 ## Overview
@@ -17,7 +24,7 @@ This repository contains PowerShell detection and remediation scripts for keepin
 ## Folder Structure
 
 ```
-winget-updates/
+scripts/endpoints/devices/winget/   # deprecated shim tree
 ├── _templates/          # Template files and documentation
 ├── browsers/            # Web browsers (Chrome, Firefox)
 ├── development/         # Dev tools (Git, VS Code, PowerShell)
