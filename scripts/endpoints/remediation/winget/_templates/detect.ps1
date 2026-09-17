@@ -28,6 +28,8 @@
 [CmdletBinding()]
 param()
 
+$ErrorActionPreference = 'Stop'
+
 # Single source of truth: the V1 body lives in detect_v1_legacy.ps1. Apart from filename strings the two files
 # were identical, so keeping both copies only guaranteed they would drift.
 # Loaded at top level (not inside a function) so the template's helpers and state are defined for
