@@ -23,6 +23,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v7
 
+      # Four hosts are excluded below because they answer 403 to any non-browser client
+      # (verified: they 403 the runner's plain GET). Those references are legitimate
+      # documentation links rejected by bot filtering, not broken links.
       # Gating. The pre-existing link debt (issue #317) is cleared: the 57 links the first
       # honest run reported were stale post-restructure paths plus 28 badge links with an
       # empty target, all fixed. A failure here now blocks the job.
@@ -42,9 +45,6 @@ jobs:
             --exclude 'https://github\.com/Carme99/bug-free-umbrella/compare/'
             --exclude 'https://github\.com/Carme99/bug-free-umbrella/releases/tag/'
             --exclude 'https://github\.com/Carme99/bug-free-umbrella/stargazers'
-            # Hosts that answer 403 to any non-browser client (verified: they 403 the CI
-            # runner's plain GET, they are not broken links). Excluded rather than deleted -
-            # the documentation references are legitimate.
             --exclude '^https://(www\.)?reddit\.com/'
             --exclude '^https://(endpoint|intune)\.microsoft\.com/'
             --exclude '^https://support\.lenovo\.com/'
