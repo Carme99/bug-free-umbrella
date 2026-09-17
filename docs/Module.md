@@ -6,15 +6,16 @@
 > `src/BugFreeUmbrella/BugFreeUmbrella.psd1` + `scripts/.catalog/metadata.json`.
 > Do not edit by hand — run `pwsh -File tools/Build-Docs.ps1`.
 
-![Version](https://img.shields.io/badge/version-2.0.1-blue)
+![Version](https://img.shields.io/badge/version-2.0.2-blue)
 ![PowerShell](https://img.shields.io/badge/PowerShell-7%2B-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-red)
 
 ## Installation
 
 ```powershell
-Install-Module BugFreeUmbrella -Scope CurrentUser
-Import-Module  BugFreeUmbrella
+# Not published to the PowerShell Gallery. Build and import it from a clone:
+git clone https://github.com/Carme99/bug-free-umbrella.git
+Import-Module ./bug-free-umbrella/src/BugFreeUmbrella
 Get-Command -Module BugFreeUmbrella | Measure-Object  # → 384
 ```
 
@@ -41,7 +42,9 @@ Invoke-Umbrella -Interactive
 ## Publishing (maintainers)
 
 ```powershell
-# One-time: set PSGallery API key (never commit)
+# Publication has never run: the tag-triggered release-module.yml workflow SKIPS its
+# publish step unless PSGALLERY_API_KEY is set, and uploads the module artifact instead.
+# One-time: set the PSGallery API key (never commit)
 $env:PSGALLERY_API_KEY = Read-Host -AsSecureString "PSGallery API key"
 
 # Publish — version comes from CHANGELOG.md via src/BugFreeUmbrella/BugFreeUmbrella.psd1

@@ -4,7 +4,7 @@
 
 Documentation lives **with the code** — every page here is versioned, reviewable in PRs, and ships with each release. There is no separate wiki to drift out of date.
 
-**Current release:** [v2.0.1 "Documentation Alignment Patch"](../CHANGELOG.md) · **Docs updated:** 2026-09-17
+**Current release:** [v2.0.2 "Installation Path Correction"](../CHANGELOG.md) · **Docs updated:** 2026-09-17
 
 ---
 
@@ -57,7 +57,7 @@ flowchart LR
 | **data/** (6) | Databases, APIs | [Database-Administration.md](Database-Administration.md) · [API-Reference.md](API-Reference.md) |
 | **automation/** (6) | CI/CD, IaC | [Workflows.md](Workflows.md) · [Integration-Patterns.md](Integration-Patterns.md) |
 | **utilities/** (5) | General-purpose helpers | Browse via [Script-Catalog.md](Script-Catalog.md) |
-| Module | Installable PSGallery module | [Module.md](Module.md) |
+| Module | Installable module (built from the catalog; not published to PSGallery) | [Module.md](Module.md) |
 
 ## Guides and Advanced Topics
 

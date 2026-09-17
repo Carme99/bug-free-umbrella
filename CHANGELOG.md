@@ -1,6 +1,6 @@
 # Changelog
 
-![Version](https://img.shields.io/badge/version-2.0.1-blue)
+![Version](https://img.shields.io/badge/version-2.0.2-blue)
 ![Release Date](https://img.shields.io/badge/release-2026--09--17-green)
 ![Catalogued Scripts](https://img.shields.io/badge/catalogued%20scripts-381-orange)
 ![Scripts on Disk](https://img.shields.io/badge/scripts%20on%20disk-566-orange)
@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - [🌂 About Our Release Names](#-about-our-release-names)
 - **Latest Release:**
+  - [v2.0.2 (2026-09-17) - Installation Path Correction](#202---2026-09-17---installation-path-correction)
   - [v2.0.1 (2026-09-17) - Documentation Alignment Patch](#201---2026-09-17---documentation-alignment-patch)
   - [v2.0.0 (2026-09-16) - Coverage & Correctness](#200---2026-09-16---coverage--correctness)
 - **Previous Releases** (historical, pre-relaunch versioning; dates are each release's own):
@@ -62,6 +63,43 @@ Bug-Free Umbrella historically used **weather-themed codenames** for releases. A
 | ⛈️ | **Thunderstorm** | Major (1.x.x) | Significant expansions |
 | 🌪️ | **Hurricane** | Breaking | Major overhauls, breaking changes |
 | 🌈 | **Rainbow** | Quality | Polish, documentation, testing |
+
+---
+
+## [2.0.2] - 2026-09-17 - Installation Path Correction
+
+> The documented headline install path never worked: the module is not published to the
+> PowerShell Gallery, and the tag-triggered release workflow skips its publish step because
+> `PSGALLERY_API_KEY` has never been configured. The docs told users to run `Install-Module`.
+
+### Fixed
+
+- **Generated install instructions corrected at the source.** `tools/Build-Docs.ps1` emits the
+  `docs/Module.md` installation block, so the document alone was not enough - the generator now
+  emits the real acquisition path (clone, then `Import-Module ./src/BugFreeUmbrella`) and states
+  that the tag workflow skips its publish step without `PSGALLERY_API_KEY`, uploading the module
+  as an artifact instead. Regenerated.
+- **`README.md` Quick Start** no longer tells readers to `Install-Module BugFreeUmbrella` from the
+  Gallery; it imports the module from a clone.
+- **`install.ps1`** no longer advertises a "published module on PSGallery".
+- **`docs/README.md`** describes the module as built from the catalog and not published, rather than
+  as an "Installable PSGallery module".
+- **`CHANGELOG` v1.0.0 entry** claimed the module was published to PSGallery. It was not; the entry
+  now records what the workflow actually does.
+
+### Verification of the absence, not an assumption
+
+- `https://www.powershellgallery.com/packages/BugFreeUmbrella` returns **HTTP 404**.
+- The v2 API `FindPackagesById()?id='BugFreeUmbrella'` returns an **empty** Atom feed, while the same
+  call for a known module returns entries.
+- The v2.0.1 release run ([35165734628](https://github.com/Carme99/bug-free-umbrella/actions/runs/35165734628))
+  shows step 7 `Publish to PSGallery` **skipped** and step 8 `Publish skipped - missing PSGALLERY_API_KEY`.
+
+### Notes
+
+- No script behaviour changes. v2.0.0 and v2.0.1 remain valid and unchanged.
+- To make the original claim true rather than removing it, set the `PSGALLERY_API_KEY` repository
+  secret and push a tag; the workflow will publish.
 
 ---
 
@@ -257,7 +295,7 @@ See [Upgrading to 2.0.0](#upgrading-to-200-coverage--correctness) below.
 - **Per-script test coverage** — every script has a Pester suite under `Tests/`, mirroring the script's repo-relative directory (e.g. `scripts/endpoints/devices/autopatch/V3/detect.ps1` → `Tests/endpoints/devices/autopatch/V3/detect.Tests.ps1`).
 - **Analyzer-clean** — PSScriptAnalyzer reports zero errors across the collection.
 - **Rebrand** — documentation tone moved from whimsical to ops-grade professional; weather-themed codenames dropped from release identity; the module manifest no longer carries `Prerelease` or codename fields. The module name remains `BugFreeUmbrella`.
-- **Module** — published to PSGallery as version 1.0.0 via the tag-triggered release workflow.
+- **Module** — the tag-triggered release workflow builds the module and uploads it as an artifact. Publication to PSGallery has **not** happened: the workflow skips its publish step unless `PSGALLERY_API_KEY` is configured, and it never has been. The docs said otherwise; corrected in v2.0.2.
 
 Platform groundwork delivered in the immediately preceding development cycle (installable PSGallery module, CLI v2 launcher, remediation reorg with forwarding shims) carries into this baseline; its historical entry follows below. All release history predating the relaunch is retained unchanged for reference.
 
@@ -1822,6 +1860,7 @@ Comprehensive documentation suite:
 
 | Version | Date | Codename | Type | Major Changes |
 |---------|------|----------|------|---------------|
+| **2.0.2** | 2026-09-17 | — | Patch | Installation instructions corrected: the module is not published to PSGallery |
 | **2.0.1** | 2026-09-17 | — | Patch | Documentation corrected against the shipped workflow; compatibility matrix rewritten with derivable facts |
 | **2.0.0** | 2026-09-16 | — | Major | 16 new sub-categories across Azure/Entra/Defender/Purview/Intune/Windows Server; 38 logged defects fixed; CI freshness + parity gates wired; counting convention published; STANDARDS v2 |
 | **1.0.0** | 2026-08-23 | — | Relaunch | Clean-slate relaunch: every script unified to the standards contract, per-script Pester coverage, analyzer-clean, rebrand |
@@ -1852,6 +1891,11 @@ Comprehensive documentation suite:
 ---
 
 ## Upgrade Notes
+
+### Upgrading to 2.0.2 (Installation Path)
+- ✅ **No breaking changes** and no script behaviour change: documentation only.
+- If you followed the previous Quick Start, `Install-Module BugFreeUmbrella` will 404. Import the
+  module from a clone instead: `Import-Module ./src/BugFreeUmbrella`.
 
 ### Upgrading to 2.0.1 (Documentation Alignment)
 - ✅ **No breaking changes** and no script behaviour change: documentation only.
