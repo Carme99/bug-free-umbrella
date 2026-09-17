@@ -6,8 +6,7 @@ This directory contains metadata and compatibility information for all scripts i
 
 | File | Description |
 |------|-------------|
-| **COMPATIBILITY.md** | Human-readable compatibility matrix showing platform, PowerShell version, and dependency compatibility for key scripts |
-| **compatibility-matrix.json** | Machine-readable JSON compatibility data for automated tooling and validation |
+| **COMPATIBILITY.md** | How compatibility claims are derived, and what is actually machine-checked |
 | **metadata.json** | Script index with tags, categories, parameters and quick reference (auto-generated via `tools/Build-Catalog.ps1`) |
 
 ## Purpose
@@ -35,63 +34,32 @@ The `.catalog` directory serves as a central registry for:
 
 ### For Developers
 
-**Automated compatibility checking:**
+**What is machine-checked:**
+
 ```powershell
-# Load compatibility data
-$compat = Get-Content "scripts/.catalog/compatibility-matrix.json" | ConvertFrom-Json
+# Every catalogued script, with its tags, parameters and required modules
+$catalog = (Get-Content "scripts/.catalog/metadata.json" -Raw | ConvertFrom-Json).scripts
 
-# Check if a script supports Linux
-$script = $compat.compatibility.'monitoring/Monitor-ServerHealth.ps1'
-$linuxSupported = $script.platforms.linux.supported
+# Scripts that need the Microsoft.Graph module
+$catalog | Where-Object { $_.requiresModules -contains 'Microsoft.Graph' } |
+    Select-Object -ExpandProperty path
 
-# Get all cross-platform scripts
-$crossPlatform = $compat.compatibility.PSObject.Properties | Where-Object {
-    $_.Value.platforms.linux.supported -eq $true -and
-    $_.Value.platforms.macos.supported -eq $true
-}
+# Scripts that took the IoC route (no native exe reachable outside a wrapper)
+$catalog | Where-Object { $_.hasCmdletBinding } | Measure-Object
 ```
 
-**CI/CD integration:**
-- Use `compatibility-matrix.json` in automated testing
-- Validate script compatibility before deployment
-- Generate platform-specific package lists
-
-## Compatibility Data Structure
-
-### compatibility-matrix.json Schema
-
-```json
-{
-  "compatibility": {
-    "category/ScriptName.ps1": {
-      "platforms": { ... },
-      "powershell": { ... },
-      "dependencies": { ... },
-      "tested": { ... }
-    }
-  },
-  "platformSummary": { ... },
-  "powershellVersions": { ... },
-  "categorySummary": { ... }
-}
-```
-
-### Key Fields
-
-- **platforms** - OS compatibility (windows, linux, macos)
-- **powershell** - PowerShell version requirements
-- **dependencies** - Required modules, features, permissions
-- **tested** - Production vs non-production testing status
-- **cloudServices** - Required cloud service dependencies
+`metadata.json` is the only machine-readable artifact here. There is no per-operating-system
+matrix: the earlier `compatibility-matrix.json` covered 6 scripts with pre-relaunch data, was
+consumed by nothing, and contradicted the counts reported everywhere else, so it was removed.
+Read [COMPATIBILITY.md](COMPATIBILITY.md) for what is and is not claimed.
 
 ## Contributing
 
 When adding new scripts:
 
-1. **Update compatibility-matrix.json** with full compatibility data
+1. **Regenerate metadata.json** with `tools/Build-Catalog.ps1` (never hand-edit it)
 2. **Add example to COMPATIBILITY.md** if the script is notable
-3. **Update category summaries** with new script counts
-4. **Test on target platforms** before marking as supported
+3. **State platform support honestly** - only claim what the script's tests actually exercise
 
 See [CONTRIBUTING.md](../../CONTRIBUTING.md) for detailed guidelines.
 

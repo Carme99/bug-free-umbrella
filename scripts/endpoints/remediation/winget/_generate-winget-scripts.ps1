@@ -175,13 +175,6 @@ function New-WingetScriptPair {
 
     $appPath = Join-Path $ScriptsBasePath "$Category\$FolderName"
 
-    # Create directory if it doesn't exist
-    if (-not (Test-Path $appPath) -and $PSCmdlet.ShouldProcess($appPath, 'Create app directory')) {
-        New-Item -Path $appPath -ItemType Directory -Force | Out-Null
-        $outputMsg = "[+] Created directory: $appPath"
-        Write-Host $outputMsg -ForegroundColor Green
-    }
-
     # Refuse to fork a maintained pair: some entries in $AppDefinitions already have a
     # Test-Winget<App>.ps1 / Invoke-Winget<App>.ps1 pair, and writing detect.ps1/remediate.ps1
     # beside them silently splits the logic in two.
@@ -193,6 +186,14 @@ function New-WingetScriptPair {
         Write-Host $outputMsg -ForegroundColor Yellow
         return
     }
+
+    # Create directory if it doesn't exist
+    if (-not (Test-Path $appPath) -and $PSCmdlet.ShouldProcess($appPath, 'Create app directory')) {
+        New-Item -Path $appPath -ItemType Directory -Force | Out-Null
+        $outputMsg = "[+] Created directory: $appPath"
+        Write-Host $outputMsg -ForegroundColor Green
+    }
+
 
     # Read templates
     $detectTemplate = Get-Content (Join-Path $TemplatePath "detect_v3.ps1") -Raw

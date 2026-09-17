@@ -434,11 +434,11 @@ Organized by category:
 | **Scripts on disk** | 566 |
 | **Catalogued scripts** | 381 |
 | **Top-Level Domains** | 8 |
-| **Subcategories** | 94 |
+| **Subcategories** | 22 |
 | **Proactive Remediations** | 51 pairs (102 scripts) |
 | **Winget-Managed Applications** | 35 |
-| **Documentation Files** | 45 |
-| **Latest Release** | [v2.0.0 "Coverage & Correctness"](../CHANGELOG.md) |
+| **Documentation Files** | 38 |
+| **Latest Release** | [v2.0.3 "Gale" - Destructive-Operation Safety](../CHANGELOG.md) |
 
 ---
 

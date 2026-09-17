@@ -106,16 +106,16 @@ Describe "_generate-winget-scripts" {
                 $script:written += [pscustomobject] @{ Path = $Path; Value = $Value }
             }
 
-            New-WingetScriptPair -WingetId 'Discord.Discord' -Category 'communication' -FolderName 'Discord' `
+            New-WingetScriptPair -WingetId 'Bitwarden.Bitwarden' -Category 'security' -FolderName 'Bitwarden' `
                 -ForceClose $true `
                 -NotifySeconds 60
 
             @($script:written).Count | Should -Be 2
             $detect = $script:written | Where-Object { $_.Path -like '*detect.ps1' }
             $remediate = $script:written | Where-Object { $_.Path -like '*remediate.ps1' }
-            $detect.Value | Should -Match 'Discord\.Discord'
+            $detect.Value | Should -Match 'Bitwarden\.Bitwarden'
             $detect.Value | Should -Not -Match 'WINGETID'
-            $remediate.Value | Should -Match 'Discord\.Discord'
+            $remediate.Value | Should -Match 'Bitwarden\.Bitwarden'
             $remediate.Value | Should -Match '\$NotifyUserBeforeClose = \$true'
             $remediate.Value | Should -Match '\$UserNotificationSeconds = 60'
             Should -Invoke New-Item -Times 1 -Exactly -Because "the app directory does not exist yet"
@@ -131,12 +131,12 @@ Describe "_generate-winget-scripts" {
             $script:values = @()
             Mock Set-Content { param([string]$Path, [AllowNull()][object]$Value) $script:values += $Value }
 
-            New-WingetScriptPair -WingetId 'AgileBits.1Password' -Category 'security' -FolderName '1Password' `
+            New-WingetScriptPair -WingetId 'KeePassXCTeam.KeePassXC' -Category 'security' -FolderName 'KeePass' `
                 -ForceClose $false `
                 -NotifySeconds 0
 
             @($script:values).Count | Should -Be 2
-            $script:values | Should -Contain 'remediate-standard AgileBits.1Password'
+            $script:values | Should -Contain 'remediate-standard KeePassXCTeam.KeePassXC'
         }
 
         It "Honors -WhatIf: no directories created and no scripts written" {
@@ -163,8 +163,16 @@ Describe "_generate-winget-scripts" {
 
             Main *>&1 | Where-Object { $_ -is [int] } | Should -Be 0
 
-            Should -Invoke Set-Content -Times (@($AppDefinitions).Count * 2) -Exactly
-            Should -Invoke New-Item -Times @($AppDefinitions).Count -Exactly
+            # Discord and 1Password already have maintained Test-Winget*/Invoke-Winget* pairs,
+            # so the generator refuses to fork them: 13 of 15 apps are written.
+            $maintained = @($AppDefinitions | Where-Object {
+                $_.FolderName -in @('Discord', '1Password')
+            })
+            $maintained.Count | Should -Be 2 -Because "these two are the maintained pairs"
+            $expected = (@($AppDefinitions).Count - $maintained.Count) * 2
+            Should -Invoke Set-Content -Times $expected -Exactly
+            Should -Invoke New-Item -Times (@($AppDefinitions).Count - $maintained.Count) -Exactly
+            ($out = Main *>&1) | Out-Null
         }
 
         It "Main returns 1 with [-] output and skips writes when generation fails for every app" {
