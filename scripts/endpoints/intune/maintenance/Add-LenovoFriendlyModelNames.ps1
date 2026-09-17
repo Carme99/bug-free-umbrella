@@ -556,7 +556,7 @@ function Main {
         $lenovoDevices = @(Get-MgDeviceManagementManagedDevice `
             -Filter "manufacturer eq 'LENOVO'" `
             -All `
-            -Property "id,deviceName,manufacturer,model,notes,azureADDeviceId" `
+            -Property "id,deviceName,manufacturer,model,notes,azureADDeviceId,extensionAttributes" `
             -ErrorAction Stop)
 
         if (-not $lenovoDevices -or $lenovoDevices.Count -eq 0) {
@@ -689,7 +689,15 @@ function Main {
             # Determine if Entra extension attribute update is needed
             $azureDeviceIdentifier = [string]$device.azureADDeviceId
             $hasAzureId = -not [string]::IsNullOrWhiteSpace($azureDeviceIdentifier)
-            $needsExtUpdate = $UpdateExtensionAttributes -and $hasAzureId
+            # Read the CURRENT value so a converged device is skipped rather than re-PATCHed on
+            # every run. Set-StrictMode 2.0 rejects a bare reference to a property the API did
+            # not return, so probe the property bag instead of touching it directly.
+            $currentExtValue = $null
+            $extAttributeProperty = $device.PSObject.Properties['extensionAttributes']
+            if ($extAttributeProperty -and $extAttributeProperty.Value) {
+                $currentExtValue = [string]$extAttributeProperty.Value.$ExtensionAttributeName
+            }
+            $needsExtUpdate = $UpdateExtensionAttributes -and $hasAzureId -and ($currentExtValue -ne $familyName)
 
             # Skip device if no updates needed
             if (-not $needsNotesUpdate -and -not $needsExtUpdate) {
@@ -732,6 +740,10 @@ function Main {
                     $stats.ExtSkipped++
                     if (-not $hasAzureId) {
                         Write-Log "Skipping Entra update for $($device.deviceName): No azureADDeviceId" "Verbose"
+                    }
+                    elseif ($currentExtValue -eq $familyName) {
+                        Write-Log "Skipping Entra update for $($device.deviceName): "
+                        Write-Log "$ExtensionAttributeName already set to '$familyName'" "Verbose"
                     }
                 }
 

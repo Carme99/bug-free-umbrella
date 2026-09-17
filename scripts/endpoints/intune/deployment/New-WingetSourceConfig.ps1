@@ -209,6 +209,14 @@ function Add-CustomSource {
     Write-Host "  Type: $SourceType" -ForegroundColor White
 
     try {
+        # Idempotency: the Intune script this tool GENERATES performs this check, so the live
+        # path must too - otherwise a second run fails with "source already exists".
+        $existingSources = Get-CurrentSources
+        if ($existingSources -and (($existingSources | Out-String) -match [regex]::Escape($SourceName))) {
+            Write-ColorOutput "Source '$SourceName' already configured" -Level Success
+            return
+        }
+
         if ($PSCmdlet.ShouldProcess("$SourceName ($SourceURL)", 'Add winget source')) {
             $result = Invoke-WingetCommand -WingetPath $wingetPath `
                 -ArgumentList @('source', 'add', '--name', $SourceName, '--arg', $SourceURL, '--type', $SourceType)

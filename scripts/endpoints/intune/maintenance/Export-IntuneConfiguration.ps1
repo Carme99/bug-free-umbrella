@@ -53,6 +53,7 @@ param(
     [string]$OutputPath,
 
     [Parameter(Mandatory = $false)]
+    [ValidateSet('DeviceConfig', 'Compliance', 'Apps', 'Scripts', 'Autopilot', 'All')]
     [string[]]$ConfigTypes = @('All'),
 
     [Parameter(Mandatory = $false)]
@@ -170,6 +171,84 @@ function Main {
             }
             catch {
                 Write-ColorOutput "Error exporting compliance policies: $($_.Exception.Message)" -Level Error
+            }
+        }
+
+        if ('All' -in $ConfigTypes -or 'Apps' -in $ConfigTypes) {
+            Write-Host "`nExporting managed applications..." -ForegroundColor Cyan
+            try {
+                $apps = Invoke-MgGraphRequest `
+                    -Uri "https://graph.microsoft.com/beta/deviceAppManagement/mobileApps" `
+                    -Method GET -ErrorAction Stop
+                $policyPath = Join-Path $OutputPath "Applications"
+                New-Item -ItemType Directory -Path $policyPath -Force -ErrorAction Stop | Out-Null
+
+                foreach ($app in $apps.value) {
+                    $safeName = ($app.displayName -replace '[\\/:*?"<>|]', '_').Trim()
+                    if ([string]::IsNullOrWhiteSpace($safeName)) {
+                        $safeName = "Application"
+                    }
+                    $fileName = "{0}_{1}.json" -f $safeName, $app.id
+                    $app | ConvertTo-Json -Depth 10 |
+                        Out-File (Join-Path $policyPath $fileName) -Encoding UTF8 -ErrorAction Stop
+                    $exportSummary.ItemsExported++
+                }
+                Write-ColorOutput "Exported $($apps.value.Count) managed applications" -Level Success
+            }
+            catch {
+                Write-ColorOutput "Error exporting managed applications: $($_.Exception.Message)" -Level Error
+            }
+        }
+
+        if ('All' -in $ConfigTypes -or 'Scripts' -in $ConfigTypes) {
+            Write-Host "`nExporting device management scripts..." -ForegroundColor Cyan
+            try {
+                $scripts = Invoke-MgGraphRequest `
+                    -Uri "https://graph.microsoft.com/beta/deviceManagement/deviceManagementScripts" `
+                    -Method GET -ErrorAction Stop
+                $policyPath = Join-Path $OutputPath "Scripts"
+                New-Item -ItemType Directory -Path $policyPath -Force -ErrorAction Stop | Out-Null
+
+                foreach ($script in $scripts.value) {
+                    $safeName = ($script.displayName -replace '[\\/:*?"<>|]', '_').Trim()
+                    if ([string]::IsNullOrWhiteSpace($safeName)) {
+                        $safeName = "Script"
+                    }
+                    $fileName = "{0}_{1}.json" -f $safeName, $script.id
+                    $script | ConvertTo-Json -Depth 10 |
+                        Out-File (Join-Path $policyPath $fileName) -Encoding UTF8 -ErrorAction Stop
+                    $exportSummary.ItemsExported++
+                }
+                Write-ColorOutput "Exported $($scripts.value.Count) device management scripts" -Level Success
+            }
+            catch {
+                Write-ColorOutput "Error exporting device management scripts: $($_.Exception.Message)" -Level Error
+            }
+        }
+
+        if ('All' -in $ConfigTypes -or 'Autopilot' -in $ConfigTypes) {
+            Write-Host "`nExporting Autopilot deployment profiles..." -ForegroundColor Cyan
+            try {
+                $profiles = Invoke-MgGraphRequest `
+                    -Uri "https://graph.microsoft.com/beta/deviceManagement/windowsAutopilotDeploymentProfiles" `
+                    -Method GET -ErrorAction Stop
+                $policyPath = Join-Path $OutputPath "AutopilotProfiles"
+                New-Item -ItemType Directory -Path $policyPath -Force -ErrorAction Stop | Out-Null
+
+                foreach ($profile in $profiles.value) {
+                    $safeName = ($profile.displayName -replace '[\\/:*?"<>|]', '_').Trim()
+                    if ([string]::IsNullOrWhiteSpace($safeName)) {
+                        $safeName = "AutopilotProfile"
+                    }
+                    $fileName = "{0}_{1}.json" -f $safeName, $profile.id
+                    $profile | ConvertTo-Json -Depth 10 |
+                        Out-File (Join-Path $policyPath $fileName) -Encoding UTF8 -ErrorAction Stop
+                    $exportSummary.ItemsExported++
+                }
+                Write-ColorOutput "Exported $($profiles.value.Count) Autopilot deployment profiles" -Level Success
+            }
+            catch {
+                Write-ColorOutput "Error exporting Autopilot deployment profiles: $($_.Exception.Message)" -Level Error
             }
         }
 

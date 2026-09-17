@@ -125,6 +125,32 @@ Describe "Add-LenovoFriendlyModelNames.ps1" {
             Should -Invoke Invoke-MgGraphRequest -Times 1 -Exactly
         }
 
+        It "Is idempotent with extension attributes enabled: a converged device is not re-PATCHed" {
+            # The extension-attribute path used to fire for every device with an azureADDeviceId,
+            # so a converged tenant was re-PATCHed on every run.
+            Mock Get-MgDeviceManagementManagedDevice {
+                [pscustomobject]@{
+                    id               = 'dev-1'
+                    deviceName       = 'LAPTOP01'
+                    model            = '21AHS0AB00'
+                    notes            = 'ThinkPad T14 Gen 3'
+                    azureADDeviceId  = 'aad-1'
+                    extensionAttributes = [pscustomobject]@{ ExtensionAttribute1 = 'ThinkPad T14 Gen 3' }
+                }
+            }
+            Mock Invoke-RestMethod {
+                @([pscustomobject]@{ name = 'ThinkPad T14 Gen 3 (Type 21AH, 21AJ)' })
+            }
+            Mock Update-MgDeviceManagementManagedDevice { }
+            $AuditOnly = $false
+            $UpdateExtensionAttributes = $true
+            $ExtensionAttributeName = 'ExtensionAttribute1'
+            $UpdateNotes = $true
+            Main | Should -Be 0
+            Should -Invoke Update-MgDeviceManagementManagedDevice -Times 0 -Exactly -Because "the value already matches"
+            Should -Invoke Invoke-MgGraphRequest -Times 0 -Exactly -Because "no PATCH is needed"
+        }
+
         It "Is idempotent: converged Notes and disabled extension attributes cause no writes" {
             Mock Get-MgDeviceManagementManagedDevice {
                 [pscustomobject]@{
