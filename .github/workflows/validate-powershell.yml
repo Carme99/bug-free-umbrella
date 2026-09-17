@@ -378,15 +378,8 @@ jobs:
         working-directory: mcp-server
         shell: bash
         run: |
-          # npm ci is the contract; it requires mcp-server/package-lock.json to be committed
-          # (a sibling change un-ignores it). Until that lands the lockfile is absent from the
-          # checkout, so fall back to npm install --no-audit --no-fund.
-          if [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund
-          else
-            echo "::warning::mcp-server/package-lock.json missing — falling back to npm install"
-            npm install --no-audit --no-fund
-          fi
+          # mcp-server/package-lock.json is committed, so npm ci is the reproducible install path.
+          npm ci --no-audit --no-fund
 
       - name: Build (npm run build)
         working-directory: mcp-server
@@ -399,6 +392,35 @@ jobs:
         run: |
           test -s build/index.js || { echo "::error::mcp-server build did not produce build/index.js"; exit 1; }
           echo "[+] mcp-server entry point present: $(wc -c < build/index.js) bytes"
+
+      - name: Smoke — catalog and filesystem launch paths report the same inventory
+        working-directory: mcp-server
+        shell: bash
+        run: |
+          cat > /tmp/inventory-smoke.mjs <<'EOF'
+          import { spawn } from "node:child_process";
+          const run = () => new Promise((res) => {
+            const p = spawn("node", ["build/index.js"], { cwd: process.cwd() });
+            let out = ""; p.stdout.on("data", d => out += d);
+            p.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "smoke", version: "1" } } }) + "\n");
+            p.stdin.write(JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "list_categories", arguments: {} } }) + "\n");
+            setTimeout(() => { p.kill(); res(out); }, 5000);
+          });
+          const out = await run();
+          const msg = out.split("\n").filter(Boolean).map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean).find(x => x.id === 2);
+          const total = JSON.parse(msg.result.content[0].text).totalScripts;
+          console.log(`fallback totalScripts=${total}`);
+          process.exit(total === 381 ? 0 : 1);
+          EOF
+          node /tmp/inventory-smoke.mjs
+          mv ../scripts/.catalog/metadata.json /tmp/metadata.json
+          if ! node /tmp/inventory-smoke.mjs; then
+            mv /tmp/metadata.json ../scripts/.catalog/metadata.json
+            echo "::error::filesystem fallback inventory differs from the catalog count (expected 381)"
+            exit 1
+          fi
+          mv /tmp/metadata.json ../scripts/.catalog/metadata.json
+          echo "[+] both launch paths report the same inventory"
 
   summary:
     name: Validation Summary

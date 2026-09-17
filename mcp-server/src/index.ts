@@ -80,6 +80,21 @@ function extractHelpBlock(content: string): string | null {
   return match ? match[1].trim() : null;
 }
 
+// The same counting convention as tools/Build-Catalog.ps1, which produces metadata.json.
+// Without this the inventory depended on the launch path: the catalog reports only the
+// curated trees, while a bare filesystem walk also swept the mirrored *.Tests.ps1 files
+// and the trees the catalog deliberately excludes.
+const EXCLUDED_TREES = [
+  "scripts/endpoints/devices/winget",
+  "scripts/endpoints/devices/proactive-remediations",
+];
+
+function isExcludedScript(relPosix: string): boolean {
+  if (relPosix.endsWith(".Tests.ps1")) return true;
+  const repoRelative = `scripts/${relPosix}`;
+  return EXCLUDED_TREES.some((tree) => repoRelative.startsWith(`${tree}/`));
+}
+
 function scanScriptsRecursively(root: string, relDir = ""): string[] {
   const results: string[] = [];
   const absDir = path.join(root, relDir);
@@ -92,6 +107,7 @@ function scanScriptsRecursively(root: string, relDir = ""): string[] {
       if (e.name === ".catalog" || e.name === "node_modules" || e.name.startsWith(".")) continue;
       results.push(...scanScriptsRecursively(root, rel));
     } else if (e.isFile() && e.name.endsWith(".ps1")) {
+      if (isExcludedScript(rel.split(path.sep).join("/"))) continue;
       results.push(rel);
     }
   }
