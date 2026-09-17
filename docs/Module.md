@@ -6,7 +6,7 @@
 > `src/BugFreeUmbrella/BugFreeUmbrella.psd1` + `scripts/.catalog/metadata.json`.
 > Do not edit by hand — run `pwsh -File tools/Build-Docs.ps1`.
 
-![Version](https://img.shields.io/badge/version-2.0.2-blue)
+![Version](https://img.shields.io/badge/version-2.0.3-blue)
 ![PowerShell](https://img.shields.io/badge/PowerShell-7%2B-blue)
 ![License](https://img.shields.io/badge/license-Apache%202.0-red)
 

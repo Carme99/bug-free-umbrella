@@ -12,7 +12,7 @@
     File Name  : BugFreeUmbrella.psm1
     Author     : Carme99
     Prerequisite: PowerShell 7.0+ recommended (5.1 minimum for import)
-    Version    : 2.0.2
+    Version    : 2.0.3
 #>
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -940,7 +940,7 @@ function Get-AppInstallErrorReport {
 function Get-AutopilotDeploymentReport {
     <#
     .SYNOPSIS
-        Track Windows Autopilot deployment status and failures from Microsoft Intune.
+        Report device enrolment and compliance state for Windows Autopilot profiles in Intune.
     .DESCRIPTION
         Proxies to scripts/endpoints/intune/reporting/Get-AutopilotDeploymentReport.ps1.
         Original category: endpoints/intune/reporting
@@ -9146,7 +9146,7 @@ function Invoke-StartAzurePolicyRemediation {
 function Invoke-TemplatesWinget {
     <#
     .SYNOPSIS
-        [DEPRECATED] Winget update remediation template - use remediate_v3_standard.ps1.
+        DEPRECATED V1 winget remediation template - thin shim over remediate_v1_legacy.ps1.
     .DESCRIPTION
         Proxies to scripts/endpoints/remediation/winget/_templates/remediate.ps1.
         Original category: endpoints/remediation/winget/_templates
@@ -9161,8 +9161,6 @@ function Invoke-TemplatesWinget {
     [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'Wrapper name mirrors backing script filename scripts/endpoints/remediation/winget/_templates/remediate.ps1')]
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     param(
-        [Parameter()]
-        [String[]]$Arguments,
         [Parameter(ValueFromRemainingArguments)]
         [object[]]$RemainingArgs
     )
@@ -16651,7 +16649,7 @@ function Test-SystemIntegrity {
 function Test-TemplatesWinget {
     <#
     .SYNOPSIS
-        DEPRECATED: use detect_v3.ps1. Legacy winget update detection template (V1).
+        DEPRECATED: use detect_v3.ps1. Thin shim over detect_v1_legacy.ps1 (V1 detection).
     .DESCRIPTION
         Proxies to scripts/endpoints/remediation/winget/_templates/detect.ps1.
         Original category: endpoints/remediation/winget/_templates
@@ -16666,12 +16664,6 @@ function Test-TemplatesWinget {
     [System.Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'Wrapper name mirrors backing script filename scripts/endpoints/remediation/winget/_templates/detect.ps1')]
     [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'Medium')]
     param(
-        [Parameter()]
-        [String]$Id,
-        [Parameter()]
-        [String]$SysgetPath,
-        [Parameter()]
-        [String]$PackageId,
         [Parameter(ValueFromRemainingArguments)]
         [object[]]$RemainingArgs
     )
