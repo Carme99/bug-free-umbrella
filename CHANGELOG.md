@@ -131,6 +131,14 @@ Bug-Free Umbrella historically used **weather-themed codenames** for releases. A
   `endpoints/devices/proactive-remediations/` both presented themselves as live and linked a
   migration table that only exists in `endpoints/remediation/README.md`.
 
+### Security
+
+- **Cleared all 9 open Dependabot advisories** in `mcp-server/package-lock.json` (4 high, 5
+  moderate): `fast-uri` host confusion and repeated-percent hostname SSRF, `hono` `toSSG()`
+  writing files outside the target directory plus query-parser and `parseBody` issues, and `qs`
+  array-limit bypass and `isBuffer` denial of service. Transitive dependencies only; `npm ci`,
+  `npm run build` and both inventory paths re-verified at 381 scripts.
+
 ### Documentation
 
 - Corrected the README "By the Numbers" table: 566 scripts on disk (381 catalogued), 22
